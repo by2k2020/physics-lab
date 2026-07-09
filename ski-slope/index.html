@@ -722,6 +722,7 @@ const E1 = (() => {
     [skierA, skierB].forEach(gp => gp.scale.setScalar(SK));
     [flagA, flagB].forEach(gp => gp.scale.setScalar(SK));
     spray.material.size = 0.035 * SK;
+    followCam = false; camGoal.active = false;
     resetCam();
     setCamBtn('camFull');
     scene.remove(labA); scene.remove(labB);
