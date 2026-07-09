@@ -122,10 +122,13 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">B 속도</span><span id="hud_vB">0.00 m/s</span></div>
       </div>
       <div class="cam-row">
-        <button id="camFree">🎥 자유 카메라</button>
-        <button id="camFollow" class="on">🎯 추적 카메라</button>
+        <button id="camFollow" class="on">🎯 추적</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camFront">▶ 앞</button>
+        <button id="camTop">⬆ 위</button>
+        <button id="camFull">◱ 전체</button>
       </div>
-      <div class="hint">드래그: 회전 · 휠/핀치: 확대 · 우클릭: 이동</div>
+      <div class="hint">드래그하면 자유 카메라 · 휠/핀치: 확대 · 우클릭: 이동</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -227,26 +230,51 @@
     </div>
   </section>
 
-  <!-- ══════ 원리 ══════ -->
+  <!-- ══════ 원리 (초등 눈높이 + 선생님 수업 대본) ══════ -->
   <section id="theory">
     <div class="theory-box">
-      <h2>📖 왜 질량은 결과를 바꾸지 못할까?</h2>
-      <p>세 가지 공식 어디에도 질량 m이 남아 있지 않다 — 힘은 m에 비례하지만 가속도는 힘을 m으로 나눈 값이라 <b>m이 소거</b>되기 때문이다.</p>
-      <ul>
-        <li>자유낙하: <span class="eq">a = g</span> — 중력 mg를 m으로 나누면 g만 남는다</li>
-        <li>경사면: <span class="eq">a = g(sinθ − μcosθ)</span> — 중력도 마찰력도 모두 m에 비례해서 소거</li>
-        <li>평지 정지 거리: <span class="eq">d = v² / 2μg</span> — 역시 m이 없다</li>
+      <h2>🎿 무거운 사람이 더 빨리 내려올까?</h2>
+      <p style="font-size:16px"><b>아니! 무겁든 가볍든 똑같이 내려온다.</b> 오늘 실험에서 확인할 단 하나의 사실이다.</p>
+
+      <h2 style="margin-top:22px">🤔 왜 똑같을까? (비유 하나면 끝)</h2>
+      <p>무거운 썰매는 지구가 <b>더 세게</b> 끌어당긴다. 그런데 무거운 썰매는 <b>움직이기도 그만큼 힘들다</b> —
+        덩치 큰 친구를 밀 때 힘이 더 드는 것처럼.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        끌어당기는 힘 <b>2배</b> ÷ 움직이기 힘든 정도 <b>2배</b> = <b>결국 비긴다!</b><br>
+        그래서 무거워도 가벼워도 속도는 똑같다.
+      </p>
+      <p>그럼 깃털은 왜 늦게 떨어질까? 무거워서가 아니라 <b>공기가 방해해서</b>다.
+        공기가 없는 달에서는 망치와 깃털이 <b>동시에</b> 떨어진다 — 1971년 아폴로 15호 우주인이 직접 보여줬다
+        (유튜브에 "아폴로 15 망치 깃털" 검색, 30초 영상).</p>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계 대본)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 손들기</b> — "무거운 스키어랑 가벼운 스키어, 누가 더 멀리 갈까?" (대부분 무거운 쪽에 손 든다 — 그게 정상!)</li>
+        <li><b>② 시뮬레이터 예측</b> — 질량만 다르게 놓고 ▶실행. "어? 똑같네?" 라는 반응이 나오면 성공</li>
+        <li><b>③ 레고로 진짜 실험</b> — 아래 팁대로 썰매 두 개를 경사로에서 동시 출발</li>
+        <li><b>④ 왜 그런지 설명</b> — 위의 "비긴다" 비유 그대로. 칠판에 "힘 2배 ÷ 무게 2배 = 비김"만 쓰면 된다</li>
+        <li><b>⑤ 반전</b> — 시뮬에서 "공기저항 켜기" 체크! 이번엔 가벼운 쪽이 뒤처진다. "깃털이 늦는 건 공기 때문이구나!"</li>
       </ul>
-      <p>공기저항만 m에 비례하지 않는 힘이라, 공기저항을 켜는 순간 가벼운 쪽이 불리해진다.
-        깃털이 늦게 떨어지는 이유는 가벼워서가 아니라 <b>공기 때문</b>이다 — 1971년 아폴로 15호가 달에서
-        망치와 깃털을 동시에 떨어뜨려 증명했다.</p>
+
       <div class="tip">
-        <b>🧱 실제 레고 실험 팁</b><br>
-        · 미니피겨(약 4g)는 너무 가벼워 정전기·점착 영향이 커진다 — <b>20g vs 60g 썰매</b>(브릭 추가)로 비교 권장<br>
-        · 표면은 매끈한 타일 브릭으로 통일하고, 출발 게이트를 만들어 같은 높이에서 동시에 출발시킬 것<br>
-        · 한 조건당 <b>3회 반복 측정</b>해서 평균 — 한 번 결과로 판단하지 않기<br>
-        · 시뮬레이터로 먼저 예측 → 레고로 실험 → 두 값을 비교하며 오차의 원인을 이야기해 보자
+        <b>🧱 레고 실험 팁</b><br>
+        · 시뮬레이터는 사람 스키어(kg)지만 레고 실험은 <b>썰매 20g vs 60g</b>(브릭으로 무게 추가) — 원리는 완전히 같다<br>
+        · 미니피겨 한 개(4g)는 너무 가벼워 정전기에 달라붙는다 — 꼭 무게를 채울 것<br>
+        · 바닥은 매끈한 타일 브릭으로 통일, 출발 게이트로 동시에 출발<br>
+        · <b>3번 재서 평균</b> — 한 번 결과로 판단하지 않기 (과학자의 습관!)<br>
+        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → 두 값 비교하며 "왜 다르지?" 이야기
       </div>
+
+      <details style="margin-top:18px">
+        <summary>🔎 공식이 궁금한 선생님만 펼치세요 (수업에선 안 써도 됩니다)</summary>
+        <div class="inner" style="padding:12px 16px; line-height:2">
+          모든 식에서 질량 m이 사라지는 게 핵심입니다:<br>
+          · 자유낙하 가속도: <span class="eq">a = g</span> — 중력 mg를 m으로 나누면 g만 남음<br>
+          · 경사면 가속도: <span class="eq">a = g(sinθ − μcosθ)</span> — 중력·마찰력 둘 다 m에 비례해서 소거<br>
+          · 평지 정지 거리: <span class="eq">d = v² ÷ 2μg</span> — 역시 m 없음<br>
+          공기저항만 m과 무관한 힘이라, 켜는 순간 가벼운 쪽이 불리해집니다.
+        </div>
+      </details>
     </div>
   </section>
 </div>
@@ -820,8 +848,39 @@ const E1 = (() => {
     if (!running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; }
   }));
   $('snow1').addEventListener('input', () => { if (snowObj) snowObj.pts.visible = $('snow1').checked; });
-  $('camFree').onclick = () => { followCam = false; $('camFree').classList.add('on'); $('camFollow').classList.remove('on'); resetCam(); };
-  $('camFollow').onclick = () => { followCam = true; $('camFollow').classList.add('on'); $('camFree').classList.remove('on'); };
+  /* — 카메라 프리셋 (부드러운 이동) — */
+  const camGoal = { active: false, pos: new THREE.Vector3(), tgt: new THREE.Vector3() };
+  const CAM_BTNS = ['camFollow', 'camDiag', 'camFront', 'camTop', 'camFull'];
+  function setCamBtn(id) { CAM_BTNS.forEach(b => $(b).classList.toggle('on', b === id)); }
+  function flyTo(px, py, pz, tx, ty, tz, btn) {
+    followCam = false;
+    camGoal.pos.set(px, py, pz); camGoal.tgt.set(tx, ty, tz); camGoal.active = true;
+    setCamBtn(btn);
+  }
+  function presetDiag() {
+    const h = P.h, base = world.base;
+    flyTo(base * 0.35 + h * 0.7, h * 1.0, h * 1.75, base * 0.3, h * 0.62, 0, 'camDiag');
+  }
+  function presetFront() {   // 옆(측면) 프로필 — 물리 보기 최적
+    const h = P.h, span = world.base + world.flat;
+    flyTo(span * 0.38, h * 0.5, span * 0.72, span * 0.38, h * 0.42, 0, 'camFront');
+  }
+  function presetTop() {     // 하늘에서 수직
+    const h = P.h, span = world.base + world.flat;
+    flyTo(span * 0.42, Math.max(span * 0.85, h * 3), 0.02, span * 0.42, 0, 0, 'camTop');
+  }
+  function presetFull() {    // 코스 전체 조망
+    const h = P.h, span = world.base + world.flat;
+    flyTo(span * 0.5, h * 1.9, span * 0.9, span * 0.42, h * 0.2, 0, 'camFull');
+  }
+  $('camDiag').onclick = presetDiag;
+  $('camFront').onclick = presetFront;
+  $('camTop').onclick = presetTop;
+  $('camFull').onclick = presetFull;
+  $('camFollow').onclick = () => { camGoal.active = false; followCam = true; setCamBtn('camFollow'); };
+  controls.addEventListener('start', () => {   // 드래그 = 자유 카메라
+    camGoal.active = false; followCam = false; setCamBtn(null);
+  });
 
   let lastTs = null;
   function frame(ts) {
@@ -845,6 +904,11 @@ const E1 = (() => {
       if (S[1].v > 0.6) emitSpray(pb.x, pb.y, pb.lane, S[1].v);
     }
     stepSpray(real); snowStep(real);
+    if (camGoal.active) {
+      camera.position.lerp(camGoal.pos, 0.09);
+      controls.target.lerp(camGoal.tgt, 0.09);
+      if (camera.position.distanceTo(camGoal.pos) < Math.max(0.05, P.h * 0.01)) camGoal.active = false;
+    }
     if (followCam) {
       const midX = (skierA.position.x + skierB.position.x) / 2;
       const midY = (skierA.position.y + skierB.position.y) / 2;
