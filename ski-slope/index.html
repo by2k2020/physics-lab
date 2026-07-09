@@ -122,11 +122,11 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">B 속도</span><span id="hud_vB">0.00 m/s</span></div>
       </div>
       <div class="cam-row">
-        <button id="camFollow" class="on">🎯 추적</button>
+        <button id="camFull" class="on">◱ 전체</button>
+        <button id="camFollow">🎯 추적</button>
         <button id="camDiag">◤ 대각선</button>
         <button id="camFront">▶ 앞</button>
         <button id="camTop">⬆ 위</button>
-        <button id="camFull">◱ 전체</button>
       </div>
       <div class="hint">드래그하면 자유 카메라 · 휠/핀치: 확대 · 우클릭: 이동</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
@@ -426,7 +426,7 @@ function makeSnowfall(scene, box) {
 const E1 = (() => {
   const K_AIR = 1.2;   // 교육용 과장 공기저항 (kg 스케일)
   let P = {}, S = null, t = 0, samples = [], finished = false, runCount = 0, running = false;
-  let followCam = true;   // 기본: 스키어 추적
+  let followCam = false;   // 기본: 전체 화면 (추적은 버튼)
 
   const cv = $('cv1'), stage = $('stage1');
   const renderer = makeRenderer(cv);
@@ -438,10 +438,10 @@ const E1 = (() => {
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI * 0.49;
   controls.minDistance = 1.2; controls.maxDistance = 400;
-  function resetCam() {
-    const h = P.h || 10, base = world.base || 12;
-    controls.target.set(base * 0.3, h * 0.62, 0);                       // 출발부 중심
-    camera.position.set(base * 0.35 + h * 0.7, h * 1.0, h * 1.75);      // 가깝게
+  function resetCam() {   // 기본: 코스 전체가 한눈에
+    const h = P.h || 10, span = (world.base + world.flat) || 60;
+    controls.target.set(span * 0.42, h * 0.2, 0);
+    camera.position.set(span * 0.5, h * 1.9, span * 0.9);
   }
 
   // 조명 — 한낮 태양 + 하늘 반사광 (전부 밝게 보이도록)
@@ -723,6 +723,7 @@ const E1 = (() => {
     [flagA, flagB].forEach(gp => gp.scale.setScalar(SK));
     spray.material.size = 0.035 * SK;
     resetCam();
+    setCamBtn('camFull');
     scene.remove(labA); scene.remove(labB);
     labA = textSprite('A ' + P.mA + 'kg', { size: 46, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.0075 * SK });
     labB = textSprite('B ' + P.mB + 'kg', { size: 46, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.0075 * SK });
