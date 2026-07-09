@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스키 슬로프 시뮬레이션 — 브릭 프라임 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(1100px 500px at 80% -10%, #14203a 0%, transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, #101a30 0%, transparent 55%),
+      var(--bg);
+    color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    padding: 24px 16px; min-height: 100vh;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+  .logo { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #1f5eff, #4da3ff); display: flex; align-items: center; justify-content: center; font-size: 21px; box-shadow: 0 4px 18px rgba(45,120,255,.35); }
+  header h1 { font-size: 22px; letter-spacing: -0.5px; }
+  header .sub { color: var(--dim); font-size: 12.5px; margin-top: 3px; }
+  .crumb { font-size: 12px; color: var(--dim); margin-bottom: 3px; }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .crumb a:hover { text-decoration: underline; }
+  .crumb span { margin: 0 4px; }
+  .principle { background: linear-gradient(90deg, rgba(77,163,255,.10), rgba(77,163,255,.02)); border: 1px solid rgba(77,163,255,.25); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #cfdcef; margin: 14px 0 22px; line-height: 1.6; }
+  .card { background: linear-gradient(180deg, #131a2b, #101626); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .card-head h2 { font-size: 16.5px; letter-spacing: -0.3px; }
+  .card-head .tag { font-size: 11px; color: var(--dim); border: 1px solid var(--border); border-radius: 20px; padding: 2px 10px; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px 4px 8px; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .btns { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 8px 16px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s, background .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; box-shadow: 0 3px 14px rgba(45,120,255,.35); }
+  button.primary:hover { filter: brightness(1.1); }
+  button:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+  .grid { display: grid; grid-template-columns: 252px 1fr; gap: 16px; }
+  @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
+  .params { background: #0d1424; border: 1px solid var(--border); border-radius: 12px; padding: 14px; font-size: 13px; align-self: start; }
+  .params h3 { font-size: 11.5px; color: var(--dim); margin-bottom: 12px; letter-spacing: 0.6px; }
+  .param { margin-bottom: 14px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px dashed var(--border); color: #c6d2e6; }
+  .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .speed-row { display: flex; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); align-items: center; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); margin-right: 2px; }
+  .speed-row button { padding: 4px 10px; font-size: 12px; border-radius: 7px; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+  .stage { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  canvas.scene { display: block; width: 100%; }
+  .hud { position: absolute; top: 10px; right: 12px; display: flex; gap: 8px; }
+  .hud .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 11px; font-family: var(--mono); font-size: 12.5px; }
+  .hud .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: inherit; }
+  .readouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+  @media (max-width: 640px) { .readouts { grid-template-columns: repeat(2, 1fr); } }
+  .readout { background: #0d1424; border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
+  .readout .k { font-size: 11px; color: var(--dim); margin-bottom: 4px; }
+  .readout .v { font-family: var(--mono); font-size: 17px; letter-spacing: 0.3px; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.f { color: var(--purple); } .readout .v.s { color: #b9c4d6; }
+  .badge { display: inline-flex; align-items: center; gap: 7px; border-radius: 22px; padding: 7px 16px; font-size: 13.5px; font-weight: 700; margin-top: 14px; }
+  .badge.same { background: rgba(46,224,111,.1); color: var(--green); border: 1px solid rgba(46,224,111,.45); box-shadow: 0 0 18px rgba(46,224,111,.12); }
+  .badge.diff { background: rgba(255,176,46,.1); color: var(--amber); border: 1px solid rgba(255,176,46,.45); box-shadow: 0 0 18px rgba(255,176,46,.12); }
+  .badge.none { display: none; }
+  .gtitle { font-size: 11.5px; color: var(--dim); margin: 14px 0 6px; letter-spacing: 0.6px; }
+  canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 12px; background: #0b101d; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 14px; }
+  th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; }
+  th { background: #0d1424; color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+  .theory { font-size: 13.5px; line-height: 1.8; color: #c6d2e6; }
+  .theory h2 { font-size: 16px; margin-bottom: 10px; }
+  .theory .eq { font-family: var(--mono); background: #0d1424; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory ul { margin: 8px 0 8px 20px; }
+  .theory .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">⛷️</div>
+    <div>
+      <div class="crumb"><a href="../">🔬 가상 물리 실험실</a> <span>›</span> 브릭 프라임 과정</div>
+      <h1>스키 슬로프 시뮬레이션</h1>
+      <div class="sub">코딩더메이커 · 레고 스키 경사면 실험 검증용</div>
+    </div>
+  </header>
+  <div class="principle">
+    <b>오늘의 원리 —</b> 경사면 활주와 자유낙하는 같은 법칙을 따른다: <b>질량은 결과를 바꾸지 못한다.</b>
+    공기저항이 있을 때만 차이가 생긴다. 두 실험으로 직접 확인해 보자. (동시 도착이 잘 안 보이면 <b>슬로모션</b>을 켜자)
+  </div>
+
+  <!-- ══════ 실험 1 ══════ -->
+  <div class="card" id="exp1">
+    <div class="card-head">
+      <div class="led-box"><span class="led" id="led1"></span><span class="status-txt" id="st1">준비</span></div>
+      <h2>실험 1 · 야간 경사면 활주</h2>
+      <span class="tag">무거운 스키어가 더 멀리 갈까?</span>
+      <div class="btns">
+        <button class="primary" id="run1">▶ 실행</button>
+        <button id="pause1" disabled>⏸ 일시정지</button>
+        <button id="reset1">↺ 초기화</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="params">
+        <h3>실험 조건 · 높이 h = 0.5 m 고정</h3>
+        <div class="param"><label>스키어 A 질량 <b id="v_mA">20 g</b></label>
+          <input type="range" id="mA" min="10" max="150" value="20" step="5"></div>
+        <div class="param"><label>스키어 B 질량 <b id="v_mB">60 g</b></label>
+          <input type="range" id="mB" min="10" max="150" value="60" step="5"></div>
+        <div class="param"><label>경사각 θ <b id="v_th">40°</b></label>
+          <input type="range" id="th" min="30" max="60" value="40" step="1"></div>
+        <div class="param"><label>마찰계수 μ <b id="v_mu">0.20</b></label>
+          <input type="range" id="mu" min="0.15" max="0.50" value="0.20" step="0.01"></div>
+        <div class="toggle-row">
+          <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
+        </div>
+        <div class="speed-row"><span>재생 속도</span>
+          <button class="on" data-sp="1" id="sp1a">1×</button>
+          <button data-sp="0.25" id="sp1b">0.25× 슬로모션</button>
+        </div>
+      </div>
+      <div>
+        <div class="stage">
+          <canvas class="scene" id="cv1" height="300"></canvas>
+          <div class="hud">
+            <div class="chip"><span class="lab">경과 시간</span><span id="hud_t1">0.000 s</span></div>
+            <div class="chip" style="color:var(--accent)"><span class="lab">A 속도</span><span id="hud_vA">0.00 m/s</span></div>
+            <div class="chip" style="color:var(--orange)"><span class="lab">B 속도</span><span id="hud_vB">0.00 m/s</span></div>
+          </div>
+        </div>
+        <div class="readouts">
+          <div class="readout"><div class="k">A 슬로프 도착 시간</div><div class="v a" id="tA">—</div></div>
+          <div class="readout"><div class="k">B 슬로프 도착 시간</div><div class="v b" id="tB">—</div></div>
+          <div class="readout"><div class="k">A 정지 거리</div><div class="v a" id="dA">—</div></div>
+          <div class="readout"><div class="k">B 정지 거리</div><div class="v b" id="dB">—</div></div>
+        </div>
+        <span class="badge none" id="bd1"></span>
+        <div class="gtitle">속도–시간 그래프</div>
+        <canvas class="graph" id="gr1" height="210"></canvas>
+      </div>
+    </div>
+    <table id="tb1">
+      <thead><tr>
+        <th>회차</th><th>질량 A/B</th><th>경사각</th><th>마찰 μ</th><th>공기저항</th>
+        <th>도착시간 A</th><th>도착시간 B</th><th>정지거리 A</th><th>정지거리 B</th><th>판정</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- ══════ 실험 2 ══════ -->
+  <div class="card" id="exp2">
+    <div class="card-head">
+      <div class="led-box"><span class="led" id="led2"></span><span class="status-txt" id="st2">준비</span></div>
+      <h2>실험 2 · 갈릴레이 낙하 챔버</h2>
+      <span class="tag">깃털과 쇠공, 누가 먼저 떨어질까?</span>
+      <div class="btns">
+        <button class="primary" id="run2">▶ 실행</button>
+        <button id="pause2" disabled>⏸ 일시정지</button>
+        <button id="reset2">↺ 초기화</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="params">
+        <h3>실험 조건 · 높이 h = 5 m 고정</h3>
+        <div class="param"><label>깃털 질량 <b>5 g</b></label></div>
+        <div class="param"><label>쇠공 질량 <b>5 kg</b></label></div>
+        <div class="toggle-row">
+          <input type="checkbox" id="air2"><label for="air2">공기 채우기 (끄면 진공)</label>
+        </div>
+        <div class="speed-row"><span>재생 속도</span>
+          <button class="on" data-sp="1" id="sp2a">1×</button>
+          <button data-sp="0.25" id="sp2b">0.25× 슬로모션</button>
+        </div>
+      </div>
+      <div>
+        <div class="stage">
+          <canvas class="scene" id="cv2" height="330"></canvas>
+          <div class="hud">
+            <div class="chip"><span class="lab">경과 시간</span><span id="hud_t2">0.000 s</span></div>
+          </div>
+        </div>
+        <div class="readouts">
+          <div class="readout"><div class="k">깃털 낙하 시간</div><div class="v f" id="tF">—</div></div>
+          <div class="readout"><div class="k">쇠공 낙하 시간</div><div class="v s" id="tS">—</div></div>
+          <div class="readout"><div class="k">깃털 최종 속도</div><div class="v f" id="vF">—</div></div>
+          <div class="readout"><div class="k">쇠공 최종 속도</div><div class="v s" id="vS">—</div></div>
+        </div>
+        <span class="badge none" id="bd2"></span>
+        <div class="gtitle">속도–시간 그래프</div>
+        <canvas class="graph" id="gr2" height="210"></canvas>
+      </div>
+    </div>
+    <table id="tb2">
+      <thead><tr>
+        <th>회차</th><th>환경</th><th>깃털 시간</th><th>쇠공 시간</th><th>깃털 최종속도</th><th>쇠공 최종속도</th><th>판정</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- ══════ 이론 ══════ -->
+  <div class="card theory">
+    <h2>📖 왜 질량은 결과를 바꾸지 못할까?</h2>
+    <p>세 가지 공식 어디에도 질량 m이 남아 있지 않다 — 힘은 m에 비례하지만 가속도는 힘을 m으로 나눈 값이라 <b>m이 소거</b>되기 때문이다.</p>
+    <ul>
+      <li>자유낙하: <span class="eq">a = g</span> — 중력 mg를 m으로 나누면 g만 남는다</li>
+      <li>경사면: <span class="eq">a = g(sinθ − μcosθ)</span> — 중력도 마찰력도 모두 m에 비례해서 소거</li>
+      <li>평지 정지 거리: <span class="eq">d = v² / 2μg</span> — 역시 m이 없다</li>
+    </ul>
+    <p>공기저항만 m에 비례하지 않는 힘이라, 공기저항을 켜는 순간 가벼운 쪽이 불리해진다.
+      깃털이 늦게 떨어지는 이유는 가벼워서가 아니라 <b>공기 때문</b>이다 — 1971년 아폴로 15호가 달에서
+      망치와 깃털을 동시에 떨어뜨려 증명했다.</p>
+    <div class="tip">
+      <b>🧱 실제 레고 실험 팁</b><br>
+      · 미니피겨(약 4g)는 너무 가벼워 정전기·점착 영향이 커진다 — <b>20g vs 60g 썰매</b>(브릭 추가)로 비교 권장<br>
+      · 표면은 매끈한 타일 브릭으로 통일하고, 출발 게이트를 만들어 같은 높이에서 동시에 출발시킬 것<br>
+      · 한 조건당 <b>3회 반복 측정</b>해서 평균 — 한 번 결과로 판단하지 않기<br>
+      · 시뮬레이터로 먼저 예측 → 레고로 실험 → 두 값을 비교하며 오차의 원인을 이야기해 보자
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const g = 9.8;
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 고해상도 캔버스: CSS 픽셀 좌표계 유지 ── */
+function fit(cv) {
+  const w = cv.clientWidth || cv.parentElement.clientWidth;
+  const h = +cv.getAttribute('height');
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  cv.style.height = h + 'px';
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+/* ── 그래프 (글로우 + 라이브 커서) ── */
+function niceStep(max) {
+  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
+  return 10 * p;
+}
+function drawGraph(cv, series, tMax, vMax, tNow) {
+  const { c, W, H } = fit(cv);
+  const L = 54, R = 16, T = 16, B = 36;
+  c.clearRect(0, 0, W, H);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = '10.5px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#77839a'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) {
+    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + 15);
+  }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - 7, py(v) + 4);
+  }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#8b98ad'; c.textAlign = 'center';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - 7);
+  c.save(); c.translate(13, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText('속도 (m/s)', 0, 0); c.restore();
+  // 현재 시각 커서
+  if (tNow > 0 && tNow < tMax) {
+    c.strokeStyle = 'rgba(255,255,255,.14)'; c.setLineDash([3, 4]);
+    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
+  }
+  series.forEach(s => {
+    if (s.pts.length < 2) return;
+    c.save();
+    c.shadowColor = s.color; c.shadowBlur = 7;
+    c.strokeStyle = s.color; c.lineWidth = 2.2; c.beginPath();
+    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke();
+    const last = s.pts[s.pts.length - 1];
+    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), 3.4, 0, 7); c.fill();
+    c.restore();
+  });
+  let lx = L + 14;
+  c.font = '11px sans-serif';
+  series.forEach(s => {
+    c.fillStyle = s.color; c.fillRect(lx, T + 5, 18, 3.2);
+    c.fillStyle = '#c6d2e6'; c.textAlign = 'left'; c.fillText(s.name, lx + 24, T + 11);
+    lx += 24 + c.measureText(s.name).width + 24;
+  });
+}
+
+/* ── 실행 엔진 (슬로모션·일시정지에도 시간 안 튐) ── */
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    let dt = Math.min((ts - lastTs) / 1000, 0.05) * o.scale();
+    lastTs = ts;
+    const SUB = 20, h = dt / SUB;
+    for (let i = 0; i < SUB; i++) o.step(h);
+    o.draw();
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); o.setStatus('pause'); },
+    stop()  { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : m === 'pause' ? 'pause' : '');
+    txt.textContent = m === 'run' ? '실행 중' : m === 'done' ? '완료' : m === 'pause' ? '일시정지' : '준비';
+  };
+}
+function speedCtl(btn1, btn2, onChange) {
+  let v = 1;
+  const sync = () => { btn1.classList.toggle('on', v === 1); btn2.classList.toggle('on', v !== 1); onChange && onChange(v); };
+  btn1.onclick = () => { v = 1; sync(); };
+  btn2.onclick = () => { v = 0.25; sync(); };
+  return () => v;
+}
+
+/* ── 별하늘 (공용) ── */
+function makeStars(n, W, H) {
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + 0.3, tw: Math.random() * 6.28 });
+  return arr;
+}
+function drawStars(c, stars, t) {
+  stars.forEach(s => {
+    const a = 0.35 + 0.3 * Math.sin(t * 1.7 + s.tw);
+    c.fillStyle = `rgba(210,225,255,${a})`;
+    c.beginPath(); c.arc(s.x, s.y, s.r, 0, 7); c.fill();
+  });
+}
+
+/* ═════════ 실험 1 · 야간 경사면 활주 ═════════ */
+(() => {
+  const K_AIR = 0.008, H_SLOPE = 0.5, FLAT = 4.0;
+  const cv = $('cv1');
+  let P = {}, S = null, t = 0, samples = [], finished = false, runCount = 0;
+  let particles = [], stars = null, wallT = 0;
+  const COLORS = ['#4da3ff', '#ff9046'];
+
+  function readParams() {
+    P = { mA: +$('mA').value / 1000, mB: +$('mB').value / 1000,
+          th: +$('th').value * Math.PI / 180, thDeg: +$('th').value,
+          mu: +$('mu').value, air: $('air1').checked };
+    P.slopeLen = H_SLOPE / Math.sin(P.th);
+  }
+  function reset() {
+    readParams();
+    t = 0; finished = false; samples = []; particles = [];
+    S = [P.mA, P.mB].map(m => ({ m, phase: 'slope', s: 0, x: 0, v: 0, tSlope: null, dStop: null, bob: Math.random() * 6 }));
+    ['tA','tB','dA','dB'].forEach(id => $(id).textContent = '—');
+    $('bd1').className = 'badge none';
+    draw(); drawG();
+  }
+  function step(h) {
+    if (finished) return;
+    t += h; wallT += h;
+    S.forEach(sk => {
+      if (sk.phase === 'stop') return;
+      const kOverM = P.air ? K_AIR / sk.m : 0;
+      if (sk.phase === 'slope') {
+        const a = g * (Math.sin(P.th) - P.mu * Math.cos(P.th)) - kOverM * sk.v * sk.v;
+        sk.v = Math.max(0, sk.v + a * h); sk.s += sk.v * h;
+        if (sk.s >= P.slopeLen) { sk.phase = 'flat'; sk.tSlope = t; sk.x = 0; }
+      } else {
+        const a = -P.mu * g - kOverM * sk.v * sk.v;
+        sk.v += a * h;
+        if (sk.v <= 0) { sk.v = 0; sk.phase = 'stop'; sk.dStop = sk.x; }
+        else sk.x += sk.v * h;
+      }
+    });
+    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.02)
+      samples.push({ t, vA: S[0].v, vB: S[1].v });
+    if (S.every(sk => sk.phase === 'stop')) finished = true;
+  }
+
+  function geo(W, H) {
+    const base = H_SLOPE / Math.tan(P.th), total = base + FLAT;
+    const scale = (W - 90) / total;
+    const x0 = 46, yG = H - 52, yTop = yG - H_SLOPE * scale;
+    return { base, scale, x0, yG, yTop, xFoot: x0 + base * scale };
+  }
+  function skierPos(sk, G) {
+    if (sk.phase === 'slope') {
+      const f = Math.min(sk.s / P.slopeLen, 1);
+      return { x: G.x0 + (G.xFoot - G.x0) * f, y: G.yTop + (G.yG - G.yTop) * f, ang: P.th };
+    }
+    return { x: G.xFoot + sk.x * G.scale, y: G.yG, ang: 0 };
+  }
+  /* 스키어 피겨 — 웅크린 자세, 슬로프 각도에 맞춰 기울임 */
+  function drawSkier(c, x, y, ang, color, label, v) {
+    c.save(); c.translate(x, y); c.rotate(ang * 0.85);
+    // 속도선
+    if (v > 0.4) {
+      c.strokeStyle = 'rgba(180,210,255,.25)'; c.lineWidth = 1.4;
+      for (let i = 0; i < 3; i++) {
+        const yy = -6 - i * 7, len = Math.min(26, v * 7);
+        c.beginPath(); c.moveTo(-14, yy); c.lineTo(-14 - len, yy); c.stroke();
+      }
+    }
+    // 스키
+    c.strokeStyle = '#e8f2ff'; c.lineWidth = 3.4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-15, 0); c.lineTo(17, 0); c.stroke();
+    c.beginPath(); c.moveTo(17, 0); c.quadraticCurveTo(21, -1, 22, -5); c.stroke();
+    // 다리 (무릎 굽힘)
+    c.strokeStyle = color; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(-2, -1); c.lineTo(2, -10); c.lineTo(-3, -18); c.stroke();
+    // 몸통 (앞으로 숙임)
+    c.beginPath(); c.moveTo(-3, -18); c.lineTo(8, -27); c.stroke();
+    // 팔 + 폴
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(4, -24); c.lineTo(13, -17); c.stroke();
+    c.strokeStyle = '#9fb2cc'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(13, -17); c.lineTo(6, 2); c.stroke();
+    // 머리 (헬멧)
+    c.fillStyle = color;
+    c.beginPath(); c.arc(11, -31, 5.4, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.85)';
+    c.beginPath(); c.arc(12.6, -31.8, 1.9, 0, 7); c.fill();
+    c.restore();
+    // 이름표
+    c.fillStyle = color; c.font = 'bold 11.5px sans-serif'; c.textAlign = 'center';
+    c.fillText(label, x, y - 46);
+  }
+  function spray(x, y, v, color) {
+    if (v < 0.35) return;
+    for (let i = 0; i < 2; i++) particles.push({
+      x: x - 12 + Math.random() * 6, y: y - 2,
+      vx: -v * 14 * (0.4 + Math.random() * 0.5), vy: -22 - Math.random() * 30,
+      life: 0.5 + Math.random() * 0.3, age: 0, color,
+    });
+  }
+  function draw() {
+    const { c, W, H } = fit(cv);
+    const G = geo(W, H);
+    if (!stars || stars.W !== W) { stars = makeStars(46, W, H * 0.55); stars.W = W; }
+    // 밤하늘
+    const sky = c.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#070d1d'); sky.addColorStop(0.55, '#0d1730'); sky.addColorStop(1, '#14203a');
+    c.fillStyle = sky; c.fillRect(0, 0, W, H);
+    drawStars(c, stars, wallT);
+    // 달
+    c.fillStyle = 'rgba(235,240,255,.9)'; c.beginPath(); c.arc(W - 70, 44, 13, 0, 7); c.fill();
+    c.fillStyle = '#0d1730'; c.beginPath(); c.arc(W - 64, 40, 11, 0, 7); c.fill();
+    // 먼 산
+    c.fillStyle = '#101a30';
+    c.beginPath(); c.moveTo(0, G.yG - 90);
+    for (let x = 0; x <= W; x += 8) c.lineTo(x, G.yG - 66 - 34 * Math.abs(Math.sin(x * 0.011)) - 14 * Math.sin(x * 0.03));
+    c.lineTo(W, H); c.lineTo(0, H); c.fill();
+    c.fillStyle = '#15223c';
+    c.beginPath(); c.moveTo(0, G.yG - 40);
+    for (let x = 0; x <= W; x += 8) c.lineTo(x, G.yG - 26 - 22 * Math.abs(Math.sin(x * 0.017 + 2)));
+    c.lineTo(W, H); c.lineTo(0, H); c.fill();
+    // 눈 지형 (슬로프+평지)
+    const snow = c.createLinearGradient(0, G.yTop, 0, H);
+    snow.addColorStop(0, '#dbe7f5'); snow.addColorStop(0.7, '#b9cbe2'); snow.addColorStop(1, '#93a9c6');
+    c.fillStyle = snow;
+    c.beginPath(); c.moveTo(0, G.yTop + 6); c.lineTo(G.x0, G.yTop);
+    c.lineTo(G.xFoot, G.yG); c.lineTo(W, G.yG); c.lineTo(W, H); c.lineTo(0, H); c.fill();
+    // 슬로프 능선 하이라이트
+    c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(G.x0, G.yTop); c.lineTo(G.xFoot, G.yG); c.lineTo(W - 8, G.yG); c.stroke();
+    // 출발 게이트
+    c.strokeStyle = '#5b6c8c'; c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(G.x0, G.yTop); c.lineTo(G.x0, G.yTop - 34); c.stroke();
+    c.fillStyle = '#ff5a52';
+    c.beginPath(); c.moveTo(G.x0, G.yTop - 34); c.lineTo(G.x0 + 15, G.yTop - 29); c.lineTo(G.x0, G.yTop - 24); c.fill();
+    c.fillStyle = '#8b98ad'; c.font = '10.5px sans-serif'; c.textAlign = 'left';
+    c.fillText('출발 게이트', G.x0 + 6, G.yTop - 38);
+    // 높이·각도 표기
+    c.strokeStyle = 'rgba(139,152,173,.5)'; c.setLineDash([4, 4]); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(G.x0 - 14, G.yTop); c.lineTo(G.x0 - 14, G.yG); c.stroke(); c.setLineDash([]);
+    c.save(); c.translate(G.x0 - 20, (G.yTop + G.yG) / 2); c.rotate(-Math.PI / 2);
+    c.textAlign = 'center'; c.fillText('높이 0.5 m', 0, 0); c.restore();
+    c.textAlign = 'left'; c.fillText('경사각 ' + P.thDeg + '°', G.xFoot - 66, G.yG - 10);
+    // 평지 눈금 (0.5 m)
+    c.font = '10px sans-serif'; c.textAlign = 'center';
+    for (let d = 0; d <= FLAT + 1e-9; d += 0.5) {
+      const x = G.xFoot + d * G.scale;
+      c.strokeStyle = 'rgba(40,58,90,.55)'; c.lineWidth = d % 1 === 0 ? 1.8 : 1;
+      c.beginPath(); c.moveTo(x, G.yG + 2); c.lineTo(x, G.yG + (d % 1 === 0 ? 12 : 8)); c.stroke();
+      c.fillStyle = '#31435f';
+      if (d % 1 === 0 || G.scale > 150) c.fillText(d.toFixed(1) + ' m', x, G.yG + 24);
+    }
+    // 파티클 (눈보라)
+    particles.forEach(p => { p.age += 0.016; p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.vy += 160 * 0.016; });
+    particles = particles.filter(p => p.age < p.life);
+    if (particles.length > 140) particles.splice(0, particles.length - 140);
+    particles.forEach(p => {
+      const a = 1 - p.age / p.life;
+      c.fillStyle = `rgba(240,248,255,${0.7 * a})`;
+      c.beginPath(); c.arc(p.x, p.y, 1.6 * a + 0.4, 0, 7); c.fill();
+    });
+    // 정지 깃발
+    S.forEach((sk, i) => {
+      if (sk.dStop == null) return;
+      const x = G.xFoot + sk.dStop * G.scale;
+      c.strokeStyle = COLORS[i]; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(x, G.yG); c.lineTo(x, G.yG - 30); c.stroke();
+      c.fillStyle = COLORS[i];
+      c.beginPath(); c.moveTo(x, G.yG - 30); c.lineTo(x + 14, G.yG - 25); c.lineTo(x, G.yG - 20); c.fill();
+      c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
+      c.fillText(sk.dStop.toFixed(2) + ' m', x, G.yG - 36);
+    });
+    // 스키어 (B 먼저 그려서 A가 앞)
+    const names = ['A · ' + Math.round(P.mA * 1000) + 'g', 'B · ' + Math.round(P.mB * 1000) + 'g'];
+    [1, 0].forEach(i => {
+      const sk = S[i], p = skierPos(sk, G);
+      const off = i === 0 ? -7 : 7;   // 레인 살짝 분리
+      spray(p.x + off, p.y, sk.v, COLORS[i]);
+      drawSkier(c, p.x + off, p.y, sk.phase === 'slope' ? P.th : 0, COLORS[i], names[i], sk.v);
+    });
+    // HUD
+    $('hud_t1').textContent = t.toFixed(3) + ' s';
+    $('hud_vA').textContent = S[0].v.toFixed(2) + ' m/s';
+    $('hud_vB').textContent = S[1].v.toFixed(2) + ' m/s';
+  }
+  function drawG() {
+    const tMax = Math.max(1, ...samples.map(s => s.t), t) * 1.06;
+    const vMax = Math.max(0.5, ...samples.map(s => Math.max(s.vA, s.vB))) * 1.18;
+    drawGraph($('gr1'), [
+      { name: '스키어 A', color: COLORS[0], pts: samples.map(s => [s.t, s.vA]) },
+      { name: '스키어 B', color: COLORS[1], pts: samples.map(s => [s.t, s.vB]) },
+    ], tMax, vMax, t);
+  }
+  const fmt = (x, n) => x == null ? '—' : x.toFixed(n);
+  function onDone() {
+    $('tA').textContent = fmt(S[0].tSlope, 3) + ' s';
+    $('tB').textContent = fmt(S[1].tSlope, 3) + ' s';
+    $('dA').textContent = fmt(S[0].dStop, 3) + ' m';
+    $('dB').textContent = fmt(S[1].dStop, 3) + ' m';
+    const bd = $('bd1');
+    const same = Math.abs(S[0].dStop - S[1].dStop) < 0.005 && Math.abs(S[0].tSlope - S[1].tSlope) < 0.005;
+    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 동일 — 질량 무관'; }
+    else { bd.className = 'badge diff'; bd.textContent = `△ 차이 ${Math.abs(S[0].dStop - S[1].dStop).toFixed(3)} m — 공기저항 때문`; }
+    const tb = $('tb1').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${Math.round(P.mA*1000)}g / ${Math.round(P.mB*1000)}g</td>` +
+      `<td>${P.thDeg}°</td><td>${P.mu.toFixed(2)}</td><td class="cond">${P.air ? '켬' : '끔'}</td>` +
+      `<td>${fmt(S[0].tSlope,3)} s</td><td>${fmt(S[1].tSlope,3)} s</td>` +
+      `<td>${fmt(S[0].dStop,3)} m</td><td>${fmt(S[1].dStop,3)} m</td>` +
+      `<td class="cond">${same ? '동일' : '차이'}</td>`;
+    tb.prepend(tr);
+    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    $('pause1').disabled = true; $('run1').disabled = false;
+    drawG();
+  }
+  const setSt = statusUI($('led1'), $('st1'));
+  const scale = speedCtl($('sp1a'), $('sp1b'));
+  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
+
+  $('run1').onclick = () => { if (finished) reset(); eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸ 일시정지'; };
+  $('pause1').onclick = () => {
+    if (eng.running) { eng.pause(); $('pause1').textContent = '▶ 재개'; }
+    else { eng.start(); $('pause1').textContent = '⏸ 일시정지'; }
+  };
+  $('reset1').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸ 일시정지'; };
+  ['mA','mB','th','mu','air1'].forEach(id => $(id).addEventListener('input', () => {
+    $('v_mA').textContent = $('mA').value + ' g';
+    $('v_mB').textContent = $('mB').value + ' g';
+    $('v_th').textContent = $('th').value + '°';
+    $('v_mu').textContent = (+$('mu').value).toFixed(2);
+    if (!eng.running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; }
+  }));
+  window.addEventListener('resize', () => { if (!eng.running) { draw(); drawG(); } });
+  reset();
+})();
+
+/* ═════════ 실험 2 · 갈릴레이 낙하 챔버 ═════════ */
+(() => {
+  const H_DROP = 5;
+  const K_FEATHER = 0.005 * g / (1.6 * 1.6);   // 깃털 종단속도 ≈ 1.6 m/s
+  const cv = $('cv2');
+  let air = false, B = null, t = 0, samples = [], finished = false, runCount = 0;
+  let stars = null, wallT = 0, flashes = [];
+
+  function reset() {
+    air = $('air2').checked;
+    t = 0; finished = false; samples = []; flashes = [];
+    B = [
+      { name: '깃털', m: 0.005, k: air ? K_FEATHER : 0, y: 0, v: 0, tFall: null, vEnd: null, trail: [], sway: Math.random() * 6.28 },
+      { name: '쇠공', m: 5,     k: air ? K_FEATHER : 0, y: 0, v: 0, tFall: null, vEnd: null, trail: [] },
+    ];
+    ['tF','tS','vF','vS'].forEach(id => $(id).textContent = '—');
+    $('bd2').className = 'badge none';
+    draw(); drawG();
+  }
+  function step(h) {
+    if (finished) return;
+    t += h; wallT += h;
+    B.forEach((b, i) => {
+      if (b.tFall != null) return;
+      const a = g - (b.k / b.m) * b.v * b.v;
+      b.v += a * h; b.y += b.v * h;
+      if (b.y >= H_DROP) { b.y = H_DROP; b.tFall = t; b.vEnd = b.v; flashes.push({ i, age: 0 }); }
+    });
+    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.02)
+      samples.push({ t, vF: B[0].tFall ? B[0].vEnd : B[0].v, vS: B[1].tFall ? B[1].vEnd : B[1].v });
+    if (B.every(b => b.tFall != null)) finished = true;
+    if (t > 12) { B.forEach(b => { if (b.tFall == null) { b.tFall = t; b.vEnd = b.v; } }); finished = true; }
+  }
+  function draw() {
+    const { c, W, H } = fit(cv);
+    if (!stars || stars.W !== W) { stars = makeStars(36, W, H * 0.9); stars.W = W; }
+    // 배경
+    const bgG = c.createLinearGradient(0, 0, 0, H);
+    bgG.addColorStop(0, '#0a0f1e'); bgG.addColorStop(1, '#111a2f');
+    c.fillStyle = bgG; c.fillRect(0, 0, W, H);
+    drawStars(c, stars, wallT);
+    const yTop = 34, yG = H - 44, scale = (yG - yTop) / H_DROP;
+    const cw = Math.min(150, W * 0.2);                 // 챔버 폭
+    const cxs = [W * 0.5 - cw - 24, W * 0.5 + 24];     // 챔버 좌상단 x
+    const labels = ['깃털 · 5 g', '쇠공 · 5 kg'];
+    const cols = ['#c792ea', '#c3ccdb'];
+    // 환경 라벨
+    c.font = 'bold 13px sans-serif'; c.textAlign = 'left';
+    c.fillStyle = air ? '#ffb02e' : '#2ee06f';
+    c.fillText(air ? '환경: 공기' : '환경: 진공', 18, 24);
+    c.fillStyle = '#77839a'; c.font = '11px sans-serif';
+    c.fillText(air ? '(공기 분자가 낙하를 방해한다)' : '(방해하는 것이 없다)', air ? 96 : 96, 24);
+    // 높이 눈금 (챔버 사이)
+    c.font = '10.5px sans-serif';
+    for (let m = 0; m <= H_DROP; m++) {
+      const y = yTop + m * scale;
+      c.strokeStyle = 'rgba(90,110,150,.22)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(cxs[0] - 26, y); c.lineTo(cxs[0] - 18, y); c.stroke();
+      c.fillStyle = '#77839a'; c.textAlign = 'right';
+      c.fillText((H_DROP - m) + ' m', cxs[0] - 30, y + 4);
+    }
+    // 챔버 2개
+    B.forEach((b, i) => {
+      const x = cxs[i];
+      // 유리 몸체
+      const glass = c.createLinearGradient(x, 0, x + cw, 0);
+      glass.addColorStop(0, 'rgba(140,175,230,.10)');
+      glass.addColorStop(0.12, 'rgba(140,175,230,.03)');
+      glass.addColorStop(0.88, 'rgba(140,175,230,.03)');
+      glass.addColorStop(1, 'rgba(140,175,230,.12)');
+      c.fillStyle = glass;
+      c.fillRect(x, yTop - 12, cw, yG - yTop + 12);
+      c.strokeStyle = 'rgba(150,185,235,.4)'; c.lineWidth = 1.5;
+      c.strokeRect(x, yTop - 12, cw, yG - yTop + 12);
+      // 유리 하이라이트
+      c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(x + 7, yTop - 4); c.lineTo(x + 7, yG - 8); c.stroke();
+      // 공기 입자 (공기 모드만)
+      if (air) {
+        c.fillStyle = 'rgba(160,190,240,.16)';
+        for (let k = 0; k < 14; k++) {
+          const px = x + 14 + ((k * 37.7 + wallT * 9 * (k % 3 + 1)) % (cw - 28));
+          const py = yTop + ((k * 53.3 + wallT * 14 * ((k + 1) % 3 + 1)) % (yG - yTop - 8));
+          c.beginPath(); c.arc(px, py, 1.5, 0, 7); c.fill();
+        }
+      }
+      // 바닥 패드
+      c.fillStyle = '#22304c';
+      c.fillRect(x - 4, yG, cw + 8, 7);
+      c.fillStyle = '#2c3d5e';
+      c.fillRect(x - 4, yG, cw + 8, 2.5);
+      // 라벨
+      c.fillStyle = cols[i]; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+      c.fillText(labels[i], x + cw / 2, yTop - 20);
+      // 트레일 (잔상)
+      const cx = x + cw / 2;
+      const yy = yTop + b.y * scale;
+      b.trail.push(yy);
+      if (b.trail.length > 14) b.trail.shift();
+      b.trail.forEach((ty, k) => {
+        const a = (k / b.trail.length) * 0.22;
+        c.fillStyle = i === 0 ? `rgba(199,146,234,${a})` : `rgba(195,204,219,${a})`;
+        c.beginPath(); c.arc(cx, ty, i === 0 ? 4 : 8, 0, 7); c.fill();
+      });
+      if (i === 0) drawFeather(c, cx, yy, b);
+      else drawBall(c, cx, yy);
+      // 도착 시각 표시
+      if (b.tFall != null) {
+        c.fillStyle = cols[i]; c.font = 'bold 11px ' + 'monospace'; c.textAlign = 'center';
+        c.fillText(b.tFall.toFixed(3) + ' s', cx, yG + 22);
+      }
+    });
+    // 착지 플래시
+    flashes.forEach(f => f.age += 0.03);
+    flashes = flashes.filter(f => f.age < 1);
+    flashes.forEach(f => {
+      const x = cxs[f.i] + cw / 2, a = 1 - f.age;
+      c.strokeStyle = `rgba(255,255,255,${a * 0.7})`; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(x, yG, 12 + f.age * 26, 4 + f.age * 8, 0, 0, 7); c.stroke();
+    });
+    $('hud_t2').textContent = t.toFixed(3) + ' s';
+
+    function drawFeather(c, x, y, b) {
+      // 공기 모드: 흔들리며 회전, 진공: 곧게
+      const sw = air && b.tFall == null ? Math.sin(t * 5 + b.sway) : 0;
+      c.save(); c.translate(x + sw * 9, y); c.rotate(sw * 0.5);
+      c.strokeStyle = '#c792ea'; c.lineWidth = 1.6; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(0, 9); c.quadraticCurveTo(2, 0, 0, -10); c.stroke();  // 깃대
+      for (let k = -3; k <= 3; k++) {   // 깃가지
+        const yy = k * 2.6 - 1;
+        c.beginPath(); c.moveTo(0.6, yy);
+        c.quadraticCurveTo(5.5, yy - 2.5, 8, yy - 5.5); c.stroke();
+        c.beginPath(); c.moveTo(0.6, yy);
+        c.quadraticCurveTo(-4.5, yy - 2, -7, yy - 4.5); c.stroke();
+      }
+      c.restore();
+    }
+    function drawBall(c, x, y) {
+      const grad = c.createRadialGradient(x - 3.5, y - 4, 1.5, x, y, 11);
+      grad.addColorStop(0, '#f4f7fb'); grad.addColorStop(0.4, '#aeb9cb'); grad.addColorStop(1, '#5c6a80');
+      c.fillStyle = grad;
+      c.beginPath(); c.arc(x, y, 10, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1;
+      c.beginPath(); c.arc(x, y, 10, 0, 7); c.stroke();
+    }
+  }
+  function drawG() {
+    const tMax = Math.max(1, ...samples.map(s => s.t), t) * 1.06;
+    const vMax = Math.max(1, ...samples.map(s => Math.max(s.vF, s.vS))) * 1.18;
+    drawGraph($('gr2'), [
+      { name: '깃털', color: '#c792ea', pts: samples.map(s => [s.t, s.vF]) },
+      { name: '쇠공', color: '#c3ccdb', pts: samples.map(s => [s.t, s.vS]) },
+    ], tMax, vMax, t);
+  }
+  function onDone() {
+    $('tF').textContent = B[0].tFall.toFixed(3) + ' s';
+    $('tS').textContent = B[1].tFall.toFixed(3) + ' s';
+    $('vF').textContent = B[0].vEnd.toFixed(2) + ' m/s';
+    $('vS').textContent = B[1].vEnd.toFixed(2) + ' m/s';
+    const bd = $('bd2');
+    const same = Math.abs(B[0].tFall - B[1].tFall) < 0.005;
+    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 동시 도착 — 질량 무관'; }
+    else { bd.className = 'badge diff'; bd.textContent = `△ 깃털 ${(B[0].tFall - B[1].tFall).toFixed(3)} s 지연 — 공기저항 때문`; }
+    const tb = $('tb2').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${air ? '공기' : '진공'}</td>` +
+      `<td>${B[0].tFall.toFixed(3)} s</td><td>${B[1].tFall.toFixed(3)} s</td>` +
+      `<td>${B[0].vEnd.toFixed(2)} m/s</td><td>${B[1].vEnd.toFixed(2)} m/s</td>` +
+      `<td class="cond">${same ? '동시 도착' : '깃털 지연'}</td>`;
+    tb.prepend(tr);
+    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    $('pause2').disabled = true; $('run2').disabled = false;
+    drawG();
+  }
+  const setSt = statusUI($('led2'), $('st2'));
+  const scale = speedCtl($('sp2a'), $('sp2b'));
+  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
+
+  $('run2').onclick = () => { if (finished) reset(); eng.start(); $('run2').disabled = true; $('pause2').disabled = false; $('pause2').textContent = '⏸ 일시정지'; };
+  $('pause2').onclick = () => {
+    if (eng.running) { eng.pause(); $('pause2').textContent = '▶ 재개'; }
+    else { eng.start(); $('pause2').textContent = '⏸ 일시정지'; }
+  };
+  $('reset2').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run2').disabled = false; $('pause2').disabled = true; $('pause2').textContent = '⏸ 일시정지'; };
+  $('air2').addEventListener('input', () => {
+    if (!eng.running) { reset(); setSt('ready'); $('run2').disabled = false; $('pause2').disabled = true; }
+  });
+  window.addEventListener('resize', () => { if (!eng.running) { draw(); drawG(); } });
+  reset();
+})();
+</script>
+</body>
+</html>

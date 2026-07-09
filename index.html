@@ -6,544 +6,120 @@
 <title>가상 물리 실험실 — 코딩더메이커</title>
 <style>
   :root {
-    --bg: #0d1117; --panel: #161b22; --panel2: #1c2129; --border: #2d333b;
-    --text: #e6edf3; --dim: #8b949e; --accent: #58a6ff; --green: #3fb950;
-    --amber: #d29922; --red: #f85149; --purple: #bc8cff;
-    --mono: 'D2Coding', 'Consolas', 'Courier New', monospace;
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f; --amber: #ffb02e;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 20px; }
-  .wrap { max-width: 1000px; margin: 0 auto; }
-  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
-  header h1 { font-size: 21px; letter-spacing: -0.5px; }
-  header .sub { color: var(--dim); font-size: 13px; }
-  .principle { background: linear-gradient(90deg, #1c2536, #161b22); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: #c9d5e3; margin-bottom: 18px; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 22px; }
-  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-  .card-head h2 { font-size: 16.5px; }
-  .led { width: 10px; height: 10px; border-radius: 50%; background: #444c56; flex: none; }
-  .led.ready { background: #6e7681; }
-  .led.run { background: var(--green); animation: pulse 1s infinite; }
-  .led.done { background: var(--accent); }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(63,185,80,.5); } 50% { box-shadow: 0 0 0 6px rgba(63,185,80,0); } }
-  .status-txt { font-size: 12.5px; color: var(--dim); min-width: 52px; }
-  .btns { margin-left: auto; display: flex; gap: 8px; }
-  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 7px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; }
-  button:hover { border-color: var(--accent); }
-  button.primary { background: #1f4b8e; border-color: #2f6cc4; }
-  button.primary:hover { background: #25599f; }
-  button:disabled { opacity: 0.4; cursor: default; }
-  .grid { display: grid; grid-template-columns: 250px 1fr; gap: 14px; }
-  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
-  .params { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; }
-  .params h3 { font-size: 12px; color: var(--dim); text-transform: none; margin-bottom: 10px; letter-spacing: 0.5px; }
-  .param { margin-bottom: 12px; }
-  .param label { display: flex; justify-content: space-between; margin-bottom: 4px; color: #c9d5e3; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
-  input[type=range] { width: 100%; accent-color: var(--accent); }
-  .toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--border); }
-  .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
-  canvas { background: #0a0e14; border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; }
-  .readouts { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-  .readout { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; min-width: 150px; flex: 1; }
-  .readout .k { font-size: 11.5px; color: var(--dim); margin-bottom: 3px; }
-  .readout .v { font-family: var(--mono); font-size: 16px; }
-  .badge { display: inline-block; border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 700; margin-top: 12px; }
-  .badge.same { background: rgba(63,185,80,.12); color: var(--green); border: 1px solid rgba(63,185,80,.4); }
-  .badge.diff { background: rgba(210,153,34,.12); color: var(--amber); border: 1px solid rgba(210,153,34,.4); }
-  .badge.none { display: none; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
-  th, td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
-  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
-  td { font-family: var(--mono); color: #c9d5e3; }
-  td.cond { font-family: inherit; }
-  .theory { font-size: 13.5px; line-height: 1.75; color: #c9d5e3; }
-  .theory h2 { font-size: 16px; margin-bottom: 10px; }
-  .theory .eq { font-family: var(--mono); background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; color: var(--purple); white-space: nowrap; }
-  .theory ul { margin: 8px 0 8px 20px; }
-  .theory .tip { background: rgba(88,166,255,.07); border: 1px solid rgba(88,166,255,.25); border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
-  .gtitle { font-size: 12px; color: var(--dim); margin: 12px 0 6px; }
+  body {
+    background:
+      radial-gradient(1100px 500px at 80% -10%, #14203a 0%, transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, #101a30 0%, transparent 55%),
+      var(--bg);
+    color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    padding: 28px 16px; min-height: 100vh;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .logo { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, #1f5eff, #4da3ff); display: flex; align-items: center; justify-content: center; font-size: 23px; box-shadow: 0 4px 18px rgba(45,120,255,.35); }
+  header h1 { font-size: 23px; letter-spacing: -0.5px; }
+  header .sub { color: var(--dim); font-size: 13px; margin-top: 3px; }
+  .intro { background: linear-gradient(90deg, rgba(77,163,255,.10), rgba(77,163,255,.02)); border: 1px solid rgba(77,163,255,.25); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #cfdcef; margin: 16px 0 28px; line-height: 1.6; }
+  .course { margin-bottom: 34px; }
+  .course-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .course-head h2 { font-size: 17px; }
+  .course-head .cnt { font-size: 12px; color: var(--dim); }
+  .sims { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  a.sim { display: block; text-decoration: none; color: inherit; background: linear-gradient(180deg, #131a2b, #101626); border: 1px solid var(--border); border-radius: 14px; padding: 18px; transition: transform .12s, border-color .15s, box-shadow .15s; box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+  a.sim:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 14px 34px rgba(30,90,200,.25); }
+  .sim .top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .sim .icon { width: 42px; height: 42px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .sim h3 { font-size: 15.5px; }
+  .sim .lesson { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .sim p { font-size: 12.5px; color: #a9b6cb; line-height: 1.6; }
+  .sim .foot { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; border-radius: 20px; padding: 3px 10px; border: 1px solid; }
+  .pill.on { color: var(--green); border-color: rgba(46,224,111,.45); background: rgba(46,224,111,.08); }
+  .pill.tool { color: var(--dim); border-color: var(--border); }
+  .go { margin-left: auto; color: var(--accent); font-size: 13px; font-weight: 700; }
+  .sim.soon { opacity: .55; pointer-events: none; }
+  .pill.soon { color: var(--amber); border-color: rgba(255,176,46,.4); background: rgba(255,176,46,.07); }
+  footer { color: #55617a; font-size: 11.5px; margin-top: 10px; text-align: center; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>🔬 가상 물리 실험실</h1>
-    <span class="sub">코딩더메이커 — 레고 실험 검증용 시뮬레이터</span>
+    <div class="logo">🔬</div>
+    <div>
+      <h1>가상 물리 실험실</h1>
+      <div class="sub">코딩더메이커 · 수업 시뮬레이터 모음 — 예측하고, 레고로 실험하고, 비교한다</div>
+    </div>
   </header>
-  <div class="principle">
-    <b>오늘의 원리:</b> 경사면 활주와 자유낙하는 같은 법칙을 따른다 — <b>질량은 결과를 바꾸지 못한다.</b>
-    공기저항이 있을 때만 차이가 생긴다. 두 실험으로 직접 확인해 보자.
+  <div class="intro">
+    수업에서 하는 실제 레고 실험을 컴퓨터 안에서 미리 해볼 수 있는 곳이야.
+    <b>시뮬레이터로 예측 → 레고로 진짜 실험 → 두 결과 비교</b> — 이게 과학자의 방법!
+    시뮬레이터는 계속 추가된다.
   </div>
 
-  <!-- ══════ 실험 1: 경사면 활주 ══════ -->
-  <div class="card" id="exp1">
-    <div class="card-head">
-      <span class="led ready" id="led1"></span><span class="status-txt" id="st1">준비</span>
-      <h2>실험 1 · 경사면 활주 — 무거운 스키어가 더 멀리 갈까?</h2>
-      <div class="btns">
-        <button class="primary" id="run1">▶ 실행</button>
-        <button id="pause1" disabled>⏸ 일시정지</button>
-        <button id="reset1">초기화</button>
-      </div>
-    </div>
-    <div class="grid">
-      <div class="params">
-        <h3>실험 조건 (높이 h = 0.5 m 고정)</h3>
-        <div class="param"><label>스키어 A 질량 <b id="v_mA">20 g</b></label>
-          <input type="range" id="mA" min="10" max="150" value="20" step="5"></div>
-        <div class="param"><label>스키어 B 질량 <b id="v_mB">60 g</b></label>
-          <input type="range" id="mB" min="10" max="150" value="60" step="5"></div>
-        <div class="param"><label>경사각 θ <b id="v_th">40°</b></label>
-          <input type="range" id="th" min="30" max="60" value="40" step="1"></div>
-        <div class="param"><label>마찰계수 μ <b id="v_mu">0.20</b></label>
-          <input type="range" id="mu" min="0.15" max="0.50" value="0.20" step="0.01"></div>
-        <div class="toggle-row">
-          <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
-        </div>
-      </div>
-      <div>
-        <canvas id="cv1" width="860" height="270"></canvas>
-        <div class="readouts">
-          <div class="readout"><div class="k">A 슬로프 도착 시간</div><div class="v" id="tA">—</div></div>
-          <div class="readout"><div class="k">B 슬로프 도착 시간</div><div class="v" id="tB">—</div></div>
-          <div class="readout"><div class="k">A 정지 거리</div><div class="v" id="dA">—</div></div>
-          <div class="readout"><div class="k">B 정지 거리</div><div class="v" id="dB">—</div></div>
-        </div>
-        <span class="badge none" id="bd1"></span>
-        <div class="gtitle">속도–시간 그래프</div>
-        <canvas id="gr1" width="860" height="200"></canvas>
-      </div>
-    </div>
-    <table id="tb1">
-      <thead><tr>
-        <th>회차</th><th>질량 A/B</th><th>경사각</th><th>마찰 μ</th><th>공기저항</th>
-        <th>도착시간 A</th><th>도착시간 B</th><th>정지거리 A</th><th>정지거리 B</th><th>판정</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <div id="courses"></div>
 
-  <!-- ══════ 실험 2: 갈릴레이 자유낙하 ══════ -->
-  <div class="card" id="exp2">
-    <div class="card-head">
-      <span class="led ready" id="led2"></span><span class="status-txt" id="st2">준비</span>
-      <h2>실험 2 · 갈릴레이 자유낙하 — 깃털과 쇠공, 누가 먼저 떨어질까?</h2>
-      <div class="btns">
-        <button class="primary" id="run2">▶ 실행</button>
-        <button id="pause2" disabled>⏸ 일시정지</button>
-        <button id="reset2">초기화</button>
-      </div>
-    </div>
-    <div class="grid">
-      <div class="params">
-        <h3>실험 조건 (높이 h = 5 m 고정)</h3>
-        <div class="param"><label>깃털 질량 <b>5 g</b></label></div>
-        <div class="param"><label>쇠공 질량 <b>5 kg</b></label></div>
-        <div class="toggle-row">
-          <input type="checkbox" id="air2"><label for="air2">공기 켜기 (끄면 진공)</label>
-        </div>
-      </div>
-      <div>
-        <canvas id="cv2" width="860" height="300"></canvas>
-        <div class="readouts">
-          <div class="readout"><div class="k">깃털 낙하 시간</div><div class="v" id="tF">—</div></div>
-          <div class="readout"><div class="k">쇠공 낙하 시간</div><div class="v" id="tS">—</div></div>
-          <div class="readout"><div class="k">깃털 최종 속도</div><div class="v" id="vF">—</div></div>
-          <div class="readout"><div class="k">쇠공 최종 속도</div><div class="v" id="vS">—</div></div>
-        </div>
-        <span class="badge none" id="bd2"></span>
-        <div class="gtitle">속도–시간 그래프</div>
-        <canvas id="gr2" width="860" height="200"></canvas>
-      </div>
-    </div>
-    <table id="tb2">
-      <thead><tr>
-        <th>회차</th><th>환경</th><th>깃털 시간</th><th>쇠공 시간</th><th>깃털 최종속도</th><th>쇠공 최종속도</th><th>판정</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- ══════ 이론 ══════ -->
-  <div class="card theory">
-    <h2>📖 왜 질량은 결과를 바꾸지 못할까?</h2>
-    <p>세 가지 공식 어디에도 질량 m이 남아 있지 않다 — 힘은 m에 비례하지만 가속도는 힘을 m으로 나눈 값이라 <b>m이 소거</b>되기 때문이다.</p>
-    <ul>
-      <li>자유낙하: <span class="eq">a = g</span> — 중력 mg를 m으로 나누면 g만 남는다</li>
-      <li>경사면: <span class="eq">a = g(sinθ − μcosθ)</span> — 중력도 마찰력도 모두 m에 비례해서 소거</li>
-      <li>평지 정지 거리: <span class="eq">d = v² / 2μg</span> — 역시 m이 없다</li>
-    </ul>
-    <p>공기저항만 m에 비례하지 않는 힘이라, 공기저항을 켜는 순간 가벼운 쪽이 불리해진다.
-      깃털이 늦게 떨어지는 이유는 가벼워서가 아니라 <b>공기 때문</b>이다 — 1971년 아폴로 15호가 달에서
-      망치와 깃털을 동시에 떨어뜨려 증명했다.</p>
-    <div class="tip">
-      <b>🧱 실제 레고 실험 팁</b><br>
-      · 미니피겨(약 4g)는 너무 가벼워 정전기·점착 영향이 커진다 — <b>20g vs 60g 썰매</b>(브릭 추가)로 비교 권장<br>
-      · 표면은 매끈한 타일 브릭으로 통일하고, 출발 게이트를 만들어 같은 높이에서 동시에 출발시킬 것<br>
-      · 한 조건당 <b>3회 반복 측정</b>해서 평균 — 한 번 결과로 판단하지 않기<br>
-      · 시뮬레이터로 먼저 예측 → 레고로 실험 → 두 값을 비교하며 오차의 원인을 이야기해 보자
-    </div>
-  </div>
+  <footer>코딩더메이커 가상 물리 실험실 · 시뮬레이터는 수업 진도에 맞춰 계속 추가됩니다</footer>
 </div>
 
 <script>
 'use strict';
-const g = 9.8;
+/* ── 시뮬레이터 레지스트리 — 새 시뮬은 여기에 한 줄 추가 + 폴더 생성 ── */
+const COURSES = [
+  {
+    name: '🧱 브릭 프라임 과정',
+    sims: [
+      {
+        id: 'ski-slope', icon: '⛷️', title: '스키 슬로프 시뮬레이션',
+        lesson: '경사면과 마찰 · 갈릴레이 낙하',
+        desc: '질량이 다른 두 스키어가 같은 슬로프를 내려온다 — 무거운 쪽이 더 멀리 갈까? 깃털과 쇠공 낙하까지, "질량은 결과를 바꾸지 못한다"를 눈으로 확인한다.',
+        tags: ['공기저항 토글', '슬로모션', 'v-t 그래프'],
+        ready: true,
+      },
+      { icon: '⚙️', title: '기어비 시뮬레이션', lesson: '기어와 회전 속도', desc: '드라이버·팔로워 기어 잇수를 바꾸면 회전 속도와 힘이 어떻게 변할까?', ready: false },
+    ],
+  },
+  {
+    name: '🤖 로봇 센서 과정',
+    sims: [
+      { icon: '📡', title: '초음파 정지거리 시뮬레이션', lesson: '센서와 제어', desc: '로봇 속도와 감지 거리에 따라 벽 앞에 안전하게 멈출 수 있을까?', ready: false },
+    ],
+  },
+];
 
-/* ───────── 공용: 그래프 렌더러 ───────── */
-function drawGraph(cv, series, tMax, vMax) {
-  const c = cv.getContext('2d');
-  const W = cv.width, H = cv.height, L = 52, R = 14, T = 12, B = 34;
-  c.clearRect(0, 0, W, H);
-  c.font = '11px sans-serif';
-  const px = t => L + (t / tMax) * (W - L - R);
-  const py = v => H - B - (v / vMax) * (H - T - B);
-  // 격자·눈금
-  c.strokeStyle = '#21262d'; c.fillStyle = '#8b949e'; c.lineWidth = 1;
-  const tStep = niceStep(tMax), vStep = niceStep(vMax);
-  for (let t = 0; t <= tMax + 1e-9; t += tStep) {
-    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
-    c.textAlign = 'center'; c.fillText(t.toFixed(tStep < 1 ? 1 : 0), px(t), H - B + 14);
-  }
-  for (let v = 0; v <= vMax + 1e-9; v += vStep) {
-    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
-    c.textAlign = 'right'; c.fillText(v.toFixed(vStep < 1 ? 1 : 0), L - 6, py(v) + 4);
-  }
-  // 축
-  c.strokeStyle = '#484f58'; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
-  c.fillStyle = '#8b949e'; c.textAlign = 'center';
-  c.fillText('시간 (s)', (L + W - R) / 2, H - 6);
-  c.save(); c.translate(14, (T + H - B) / 2); c.rotate(-Math.PI / 2);
-  c.fillText('속도 (m/s)', 0, 0); c.restore();
-  // 데이터 선
-  series.forEach(s => {
-    if (s.pts.length < 2) return;
-    c.strokeStyle = s.color; c.lineWidth = 2; c.beginPath();
-    s.pts.forEach((p, i) => { const x = px(p[0]), y = py(p[1]); i ? c.lineTo(x, y) : c.moveTo(x, y); });
-    c.stroke();
+const root = document.getElementById('courses');
+COURSES.forEach(course => {
+  const readyCnt = course.sims.filter(s => s.ready).length;
+  const sec = document.createElement('section');
+  sec.className = 'course';
+  sec.innerHTML = `<div class="course-head"><h2>${course.name}</h2><span class="cnt">시뮬레이터 ${readyCnt}개 가동 중</span></div>`;
+  const grid = document.createElement('div');
+  grid.className = 'sims';
+  course.sims.forEach(s => {
+    const a = document.createElement('a');
+    a.className = 'sim' + (s.ready ? '' : ' soon');
+    a.href = s.ready ? s.id + '/' : '#';
+    a.innerHTML = `
+      <div class="top">
+        <div class="icon">${s.icon}</div>
+        <div><h3>${s.title}</h3><div class="lesson">${s.lesson}</div></div>
+      </div>
+      <p>${s.desc}</p>
+      <div class="foot">
+        ${s.ready
+          ? `<span class="pill on">● 가동 중</span>` + (s.tags || []).map(t => `<span class="pill tool">${t}</span>`).join('')
+          : `<span class="pill soon">준비 중</span>`}
+        ${s.ready ? '<span class="go">실험하러 가기 →</span>' : ''}
+      </div>`;
+    grid.appendChild(a);
   });
-  // 범례 (한국어)
-  let lx = L + 12;
-  series.forEach(s => {
-    c.fillStyle = s.color; c.fillRect(lx, T + 6, 18, 3);
-    c.fillStyle = '#c9d5e3'; c.textAlign = 'left'; c.fillText(s.name, lx + 24, T + 11);
-    lx += 24 + c.measureText(s.name).width + 22;
-  });
-}
-function niceStep(max) {
-  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
-  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
-  return 10 * p;
-}
-
-/* ───────── 공용: 실행 루프 (일시정지에도 시간 안 튐) ───────── */
-function makeEngine({ step, draw, isDone, onDone, setStatus }) {
-  let running = false, raf = null, lastTs = null;
-  function frame(ts) {
-    if (!running) return;
-    if (lastTs == null) lastTs = ts;
-    let dt = Math.min((ts - lastTs) / 1000, 0.05);
-    lastTs = ts;
-    const SUB = 20, h = dt / SUB;
-    for (let i = 0; i < SUB; i++) step(h);
-    draw();
-    if (isDone()) { running = false; lastTs = null; setStatus('done'); onDone(); return; }
-    raf = requestAnimationFrame(frame);
-  }
-  return {
-    start() { if (running) return; running = true; lastTs = null; setStatus('run'); raf = requestAnimationFrame(frame); },
-    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); setStatus('pause'); },
-    stop() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
-    get running() { return running; },
-  };
-}
-function statusUI(led, txt) {
-  return mode => {
-    led.className = 'led ' + (mode === 'run' ? 'run' : mode === 'done' ? 'done' : 'ready');
-    txt.textContent = mode === 'run' ? '실행 중' : mode === 'done' ? '완료' : mode === 'pause' ? '일시정지' : '준비';
-  };
-}
-const $ = id => document.getElementById(id);
-
-/* ═════════ 실험 1: 경사면 활주 ═════════ */
-const E1 = (() => {
-  const K_AIR = 0.008, H_SLOPE = 0.5;
-  const cv = $('cv1'), ctx = cv.getContext('2d');
-  let P = {};           // 실행 시점 파라미터
-  let S = null;         // 스키어 상태 [A, B]
-  let t = 0, samples = [];
-  let finished = false, runCount = 0;
-
-  function readParams() {
-    P = {
-      mA: +$('mA').value / 1000, mB: +$('mB').value / 1000,
-      th: +$('th').value * Math.PI / 180, mu: +$('mu').value,
-      air: $('air1').checked,
-      thDeg: +$('th').value,
-    };
-    P.slopeLen = H_SLOPE / Math.sin(P.th);
-  }
-  function reset() {
-    readParams();
-    t = 0; finished = false; samples = [];
-    S = [P.mA, P.mB].map(m => ({ m, phase: 'slope', s: 0, x: 0, v: 0, tSlope: null, dStop: null }));
-    ['tA','tB','dA','dB'].forEach(id => $(id).textContent = '—');
-    $('bd1').className = 'badge none';
-    draw(); drawG();
-  }
-  function step(h) {
-    if (finished) return;
-    t += h;
-    S.forEach(sk => {
-      if (sk.phase === 'stop') return;
-      const kOverM = P.air ? K_AIR / sk.m : 0;
-      if (sk.phase === 'slope') {
-        const a = g * (Math.sin(P.th) - P.mu * Math.cos(P.th)) - kOverM * sk.v * sk.v;
-        sk.v = Math.max(0, sk.v + a * h);
-        sk.s += sk.v * h;
-        if (sk.s >= P.slopeLen) { sk.phase = 'flat'; sk.tSlope = t; sk.x = 0; }
-      } else {
-        const a = -P.mu * g - kOverM * sk.v * sk.v;
-        sk.v = sk.v + a * h;
-        if (sk.v <= 0) { sk.v = 0; sk.phase = 'stop'; sk.dStop = sk.x; }
-        else sk.x += sk.v * h;
-      }
-    });
-    if ((samples.length === 0 || t - samples[samples.length - 1].t > 0.02)) {
-      samples.push({ t, vA: S[0].v, vB: S[1].v });
-    }
-    if (S.every(sk => sk.phase === 'stop')) finished = true;
-  }
-
-  /* 화면 좌표: 슬로프 밑변 + 평지 4.0m 를 캔버스에 맞춤 */
-  function geo() {
-    const base = H_SLOPE / Math.tan(P.th);
-    const total = base + 4.0;
-    const scale = (cv.width - 80) / total;
-    const x0 = 40, yG = cv.height - 46, yTop = yG - H_SLOPE * scale;
-    return { base, scale, x0, yG, yTop, xFoot: x0 + base * scale };
-  }
-  function skierPos(sk, G) {
-    if (sk.phase === 'slope') {
-      const f = Math.min(sk.s / P.slopeLen, 1);
-      return { x: G.x0 + (G.xFoot - G.x0) * f, y: G.yTop + (G.yG - G.yTop) * f };
-    }
-    return { x: G.xFoot + sk.x * G.scale, y: G.yG };
-  }
-  function draw() {
-    const G = geo();
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    // 슬로프·지면
-    ctx.strokeStyle = '#484f58'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(G.x0, G.yTop); ctx.lineTo(G.xFoot, G.yG); ctx.lineTo(cv.width - 20, G.yG); ctx.stroke();
-    // 높이 표시
-    ctx.strokeStyle = '#2d333b'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(G.x0, G.yTop); ctx.lineTo(G.x0, G.yG); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#8b949e'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText('높이 0.5 m', G.x0 + 4, (G.yTop + G.yG) / 2);
-    ctx.fillText('경사각 ' + P.thDeg + '°', G.xFoot - 60, G.yG - 8);
-    // 평지 눈금자 (0.5m 간격)
-    ctx.textAlign = 'center';
-    for (let d = 0; d <= 4.0 + 1e-9; d += 0.5) {
-      const x = G.xFoot + d * G.scale;
-      ctx.strokeStyle = '#484f58';
-      ctx.beginPath(); ctx.moveTo(x, G.yG); ctx.lineTo(x, G.yG + 7); ctx.stroke();
-      ctx.fillStyle = '#8b949e';
-      ctx.fillText(d.toFixed(1) + ' m', x, G.yG + 20);
-    }
-    // 스키어 + 정지 깃발
-    const colors = ['#58a6ff', '#f0883e'];
-    const names = ['A ' + Math.round(P.mA * 1000) + 'g', 'B ' + Math.round(P.mB * 1000) + 'g'];
-    S.forEach((sk, i) => {
-      const p = skierPos(sk, G), dy = i ? -26 : -44;
-      if (sk.dStop != null) {   // 깃발
-        ctx.strokeStyle = colors[i]; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(p.x, G.yG); ctx.lineTo(p.x, G.yG - 26); ctx.stroke();
-        ctx.fillStyle = colors[i];
-        ctx.beginPath(); ctx.moveTo(p.x, G.yG - 26); ctx.lineTo(p.x + 13, G.yG - 21); ctx.lineTo(p.x, G.yG - 16); ctx.fill();
-        ctx.font = '10.5px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(sk.dStop.toFixed(2) + ' m', p.x, G.yG - 32);
-      }
-      // 몸통(원) + 스키(선)
-      ctx.fillStyle = colors[i];
-      ctx.beginPath(); ctx.arc(p.x, p.y + dy + 34, 7, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = colors[i]; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(p.x - 11, p.y + dy + 44); ctx.lineTo(p.x + 11, p.y + dy + 44); ctx.stroke();
-      ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(names[i], p.x, p.y + dy + 18);
-    });
-  }
-  function drawG() {
-    const tMax = Math.max(1, ...samples.map(s => s.t), t) * 1.05;
-    const vMax = Math.max(0.5, ...samples.map(s => Math.max(s.vA, s.vB))) * 1.15;
-    drawGraph($('gr1'), [
-      { name: '스키어 A', color: '#58a6ff', pts: samples.map(s => [s.t, s.vA]) },
-      { name: '스키어 B', color: '#f0883e', pts: samples.map(s => [s.t, s.vB]) },
-    ], tMax, vMax);
-  }
-  function fmt(x, n) { return x == null ? '—' : x.toFixed(n); }
-  function onDone() {
-    $('tA').textContent = fmt(S[0].tSlope, 3) + ' s';
-    $('tB').textContent = fmt(S[1].tSlope, 3) + ' s';
-    $('dA').textContent = fmt(S[0].dStop, 3) + ' m';
-    $('dB').textContent = fmt(S[1].dStop, 3) + ' m';
-    const bd = $('bd1');
-    const same = Math.abs(S[0].dStop - S[1].dStop) < 0.005 && Math.abs(S[0].tSlope - S[1].tSlope) < 0.005;
-    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 동일 — 질량 무관'; }
-    else { bd.className = 'badge diff'; bd.textContent = '△ 차이 — 공기저항 때문'; }
-    // 기록 테이블 (최근 8회)
-    const tb = $('tb1').querySelector('tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${Math.round(P.mA*1000)}g / ${Math.round(P.mB*1000)}g</td>` +
-      `<td>${P.thDeg}°</td><td>${P.mu.toFixed(2)}</td><td class="cond">${P.air ? '켬' : '끔'}</td>` +
-      `<td>${fmt(S[0].tSlope,3)} s</td><td>${fmt(S[1].tSlope,3)} s</td>` +
-      `<td>${fmt(S[0].dStop,3)} m</td><td>${fmt(S[1].dStop,3)} m</td>` +
-      `<td class="cond">${same ? '동일' : '차이'}</td>`;
-    tb.prepend(tr);
-    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
-    $('pause1').disabled = true; $('run1').disabled = false;
-    drawG();
-  }
-  const setSt = statusUI($('led1'), $('st1'));
-  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt });
-
-  $('run1').onclick = () => {
-    if (finished) reset();
-    eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸ 일시정지';
-  };
-  $('pause1').onclick = () => {
-    if (eng.running) { eng.pause(); $('pause1').textContent = '▶ 재개'; }
-    else { eng.start(); $('pause1').textContent = '⏸ 일시정지'; }
-  };
-  $('reset1').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸ 일시정지'; };
-  // 파라미터 변경 → 실행 중 아니면 자동 리셋
-  ['mA','mB','th','mu','air1'].forEach(id => $(id).addEventListener('input', () => {
-    $('v_mA').textContent = $('mA').value + ' g';
-    $('v_mB').textContent = $('mB').value + ' g';
-    $('v_th').textContent = $('th').value + '°';
-    $('v_mu').textContent = (+$('mu').value).toFixed(2);
-    if (!eng.running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; }
-  }));
-  reset();
-  return {};
-})();
-
-/* ═════════ 실험 2: 갈릴레이 자유낙하 ═════════ */
-const E2 = (() => {
-  const H_DROP = 5;
-  // 깃털 종단속도 ≈ 1.6 m/s → k = mg/v² = 0.005·9.8/2.56
-  const K_FEATHER = 0.005 * g / (1.6 * 1.6);
-  const cv = $('cv2'), ctx = cv.getContext('2d');
-  let air = false, B = null, t = 0, samples = [], finished = false, runCount = 0;
-
-  function reset() {
-    air = $('air2').checked;
-    t = 0; finished = false; samples = [];
-    B = [
-      { name: '깃털', m: 0.005, k: air ? K_FEATHER : 0, y: 0, v: 0, tFall: null, vEnd: null },
-      { name: '쇠공', m: 5,     k: air ? K_FEATHER : 0, y: 0, v: 0, tFall: null, vEnd: null },
-    ];
-    ['tF','tS','vF','vS'].forEach(id => $(id).textContent = '—');
-    $('bd2').className = 'badge none';
-    draw(); drawG();
-  }
-  function step(h) {
-    if (finished) return;
-    t += h;
-    B.forEach(b => {
-      if (b.tFall != null) return;
-      const a = g - (b.k / b.m) * b.v * b.v;
-      b.v += a * h; b.y += b.v * h;
-      if (b.y >= H_DROP) { b.y = H_DROP; b.tFall = t; b.vEnd = b.v; }
-    });
-    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.02) {
-      samples.push({ t, vF: B[0].tFall ? B[0].vEnd : B[0].v, vS: B[1].tFall ? B[1].vEnd : B[1].v });
-    }
-    if (B.every(b => b.tFall != null)) finished = true;
-    if (t > 12) { B.forEach(b => { if (b.tFall == null) { b.tFall = t; b.vEnd = b.v; } }); finished = true; } // 안전장치
-  }
-  function draw() {
-    const W = cv.width, H = cv.height;
-    const yTop = 30, yG = H - 40, scale = (yG - yTop) / H_DROP;
-    ctx.clearRect(0, 0, W, H);
-    // 환경 라벨
-    ctx.fillStyle = air ? '#d29922' : '#3fb950'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText(air ? '환경: 공기' : '환경: 진공', 20, 22);
-    // 높이 눈금 (1m)
-    ctx.font = '11px sans-serif';
-    for (let m = 0; m <= H_DROP; m++) {
-      const y = yTop + m * scale;
-      ctx.strokeStyle = '#21262d'; ctx.beginPath(); ctx.moveTo(70, y); ctx.lineTo(W - 40, y); ctx.stroke();
-      ctx.fillStyle = '#8b949e'; ctx.textAlign = 'right';
-      ctx.fillText((H_DROP - m) + ' m', 62, y + 4);
-    }
-    // 바닥
-    ctx.strokeStyle = '#484f58'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(70, yG); ctx.lineTo(W - 40, yG); ctx.stroke(); ctx.lineWidth = 1;
-    // 낙하체 2개
-    const xF = W * 0.38, xS = W * 0.62;
-    // 깃털 (선 몇 개로 표현)
-    const yF = yTop + B[0].y * scale;
-    ctx.strokeStyle = '#bc8cff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(xF - 10, yF + 6); ctx.quadraticCurveTo(xF, yF - 10, xF + 10, yF + 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xF - 6, yF + 4); ctx.lineTo(xF + 6, yF - 3); ctx.stroke();
-    ctx.fillStyle = '#bc8cff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('깃털 5 g', xF, yF - 16);
-    // 쇠공
-    const yS = yTop + B[1].y * scale;
-    ctx.fillStyle = '#8b949e';
-    ctx.beginPath(); ctx.arc(xS, yS, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#c9d5e3';
-    ctx.fillText('쇠공 5 kg', xS, yS - 18);
-  }
-  function drawG() {
-    const tMax = Math.max(1, ...samples.map(s => s.t), t) * 1.05;
-    const vMax = Math.max(1, ...samples.map(s => Math.max(s.vF, s.vS))) * 1.15;
-    drawGraph($('gr2'), [
-      { name: '깃털', color: '#bc8cff', pts: samples.map(s => [s.t, s.vF]) },
-      { name: '쇠공', color: '#8b949e', pts: samples.map(s => [s.t, s.vS]) },
-    ], tMax, vMax);
-  }
-  function onDone() {
-    $('tF').textContent = B[0].tFall.toFixed(3) + ' s';
-    $('tS').textContent = B[1].tFall.toFixed(3) + ' s';
-    $('vF').textContent = B[0].vEnd.toFixed(2) + ' m/s';
-    $('vS').textContent = B[1].vEnd.toFixed(2) + ' m/s';
-    const bd = $('bd2');
-    const same = Math.abs(B[0].tFall - B[1].tFall) < 0.005;
-    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 동시 도착 — 질량 무관'; }
-    else { bd.className = 'badge diff'; bd.textContent = '△ 깃털 지연 — 공기저항 때문'; }
-    const tb = $('tb2').querySelector('tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${air ? '공기' : '진공'}</td>` +
-      `<td>${B[0].tFall.toFixed(3)} s</td><td>${B[1].tFall.toFixed(3)} s</td>` +
-      `<td>${B[0].vEnd.toFixed(2)} m/s</td><td>${B[1].vEnd.toFixed(2)} m/s</td>` +
-      `<td class="cond">${same ? '동시 도착' : '깃털 지연'}</td>`;
-    tb.prepend(tr);
-    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
-    $('pause2').disabled = true; $('run2').disabled = false;
-    drawG();
-  }
-  const setSt = statusUI($('led2'), $('st2'));
-  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt });
-
-  $('run2').onclick = () => {
-    if (finished) reset();
-    eng.start(); $('run2').disabled = true; $('pause2').disabled = false; $('pause2').textContent = '⏸ 일시정지';
-  };
-  $('pause2').onclick = () => {
-    if (eng.running) { eng.pause(); $('pause2').textContent = '▶ 재개'; }
-    else { eng.start(); $('pause2').textContent = '⏸ 일시정지'; }
-  };
-  $('reset2').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run2').disabled = false; $('pause2').disabled = true; $('pause2').textContent = '⏸ 일시정지'; };
-  $('air2').addEventListener('input', () => {
-    if (!eng.running) { reset(); setSt('ready'); $('run2').disabled = false; $('pause2').disabled = true; }
-  });
-  reset();
-  return {};
-})();
+  sec.appendChild(grid);
+  root.appendChild(sec);
+});
 </script>
 </body>
 </html>
