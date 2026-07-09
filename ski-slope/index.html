@@ -122,8 +122,8 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">B 속도</span><span id="hud_vB">0.00 m/s</span></div>
       </div>
       <div class="cam-row">
-        <button id="camFree" class="on">🎥 자유 카메라</button>
-        <button id="camFollow">🎯 추적 카메라</button>
+        <button id="camFree">🎥 자유 카메라</button>
+        <button id="camFollow" class="on">🎯 추적 카메라</button>
       </div>
       <div class="hint">드래그: 회전 · 휠/핀치: 확대 · 우클릭: 이동</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
@@ -380,7 +380,7 @@ function makeSnowfall(scene, box) {
     spd[i] = 0.25 + Math.random() * 0.5;
   }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xdfe9ff, size: 0.022, transparent: true, opacity: 0.75, sizeAttenuation: true });
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.022, transparent: true, opacity: 0.9, sizeAttenuation: true });
   const pts = new THREE.Points(geo, mat);
   scene.add(pts);
   return dt => {
@@ -398,48 +398,48 @@ function makeSnowfall(scene, box) {
 const E1 = (() => {
   const K_AIR = 1.2;   // 교육용 과장 공기저항 (kg 스케일)
   let P = {}, S = null, t = 0, samples = [], finished = false, runCount = 0, running = false;
-  let followCam = false;
+  let followCam = true;   // 기본: 스키어 추적
 
   const cv = $('cv1'), stage = $('stage1');
   const renderer = makeRenderer(cv);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x070c1a);
-  scene.fog = new THREE.Fog(0x0a1226, 9, 26);
-  const camera = new THREE.PerspectiveCamera(46, 2, 0.05, 80);
+  scene.background = new THREE.Color(0x8fc0ec);   // 맑은 겨울 하늘
+  scene.fog = new THREE.Fog(0xaacdec, 60, 400);
+  const camera = new THREE.PerspectiveCamera(46, 2, 0.05, 800);
   const controls = new OrbitControls(camera, cv);
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI * 0.49;
   controls.minDistance = 1.2; controls.maxDistance = 400;
   function resetCam() {
-    const span = (world.base + world.flat) || 20;
-    controls.target.set(span * 0.32, (P.h || 10) * 0.28, 0);
-    camera.position.set(span * 0.3 + (P.h || 10) * 0.4, (P.h || 10) * 0.75, span * 0.62);
+    const h = P.h || 10, base = world.base || 12;
+    controls.target.set(base * 0.3, h * 0.62, 0);                       // 출발부 중심
+    camera.position.set(base * 0.35 + h * 0.7, h * 1.0, h * 1.75);      // 가깝게
   }
 
-  // 조명 — 달빛 + 야간 투광등
-  scene.add(new THREE.HemisphereLight(0x8fb3ff, 0x0a1020, 0.55));
-  const moon = new THREE.DirectionalLight(0xbfd4ff, 1.0);
+  // 조명 — 한낮 태양 + 하늘 반사광 (전부 밝게 보이도록)
+  scene.add(new THREE.HemisphereLight(0xdfeeff, 0x9aa7b8, 0.9));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const moon = new THREE.DirectionalLight(0xfff4e0, 1.7);   // 태양
   moon.position.set(-4, 8, 5);
   moon.castShadow = true;
   moon.shadow.mapSize.set(2048, 2048);
-  moon.shadow.camera.left = -7; moon.shadow.camera.right = 9;
-  moon.shadow.camera.top = 7; moon.shadow.camera.bottom = -4;
   scene.add(moon);
 
-  // 별 + 달
+  // 해 + 구름
   {
-    const N = 500, geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const r = 40 + Math.random() * 15, a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI * 0.45;
-      pos[i * 3] = r * Math.cos(e) * Math.cos(a);
-      pos[i * 3 + 1] = 3 + r * Math.sin(e);
-      pos[i * 3 + 2] = r * Math.cos(e) * Math.sin(a);
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 20, 20), new THREE.MeshBasicMaterial({ color: 0xfff7dc, fog: false }));
+    sun.position.set(-90, 120, 90); scene.add(sun);
+    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false });
+    for (let i = 0; i < 8; i++) {
+      const cl = new THREE.Group();
+      for (let k = 0; k < 4; k++) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(5 + Math.random() * 5, 10, 10), cloudMat);
+        puff.position.set(k * 7 - 10 + Math.random() * 4, Math.random() * 2.5, Math.random() * 4);
+        puff.scale.y = 0.5; cl.add(puff);
+      }
+      cl.position.set(-160 + i * 55 + Math.random() * 25, 70 + Math.random() * 45, -140 - Math.random() * 90);
+      scene.add(cl);
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xcfe0ff, size: 0.09, transparent: true, opacity: 0.8 })));
-    const moonBall = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 24), new THREE.MeshBasicMaterial({ color: 0xf2f5ff }));
-    moonBall.position.set(-13, 12, -18); scene.add(moonBall);
   }
 
   /* — 지형 (높이·경사각에 따라 전체 재구축, 스케일 대응) — */
@@ -463,6 +463,7 @@ const E1 = (() => {
     moon.shadow.camera.top = h * 2; moon.shadow.camera.bottom = -h;
     moon.shadow.camera.updateProjectionMatrix();
     moon.position.set(-h, h * 2.2, h * 1.4);
+    scene.fog.near = span * 1.6; scene.fog.far = span * 5;
     // 평지 트랙
     const flatMesh = new THREE.Mesh(new THREE.BoxGeometry(FLAT + h * 0.6, 0.3, TW), snowMat);
     flatMesh.position.set(base + (FLAT + h * 0.6) / 2 - h * 0.1, -0.15, 0);
@@ -502,7 +503,7 @@ const E1 = (() => {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.04 * SK, 0.25 * SK, 0.04 * SK), new THREE.MeshStandardMaterial({ color: 0x5b6c8c }));
       post.position.set(base + d, 0.125 * SK, TW / 2 + 0.2);
       terrain.add(post);
-      const lab = textSprite(d + ' m', { size: 36, color: '#9fb2cc', scale: 0.0055 * SK });
+      const lab = textSprite(d + ' m', { size: 36, color: '#1f3050', scale: 0.0055 * SK });
       lab.position.set(base + d, 0.5 * SK, TW / 2 + 0.3);
       terrain.add(lab);
       const line = new THREE.Mesh(new THREE.BoxGeometry(0.03 * SK, 0.02, TW), new THREE.MeshStandardMaterial({ color: 0x9db2d2 }));
@@ -534,23 +535,19 @@ const E1 = (() => {
       terrain.add(tree);
     }
     // 먼 산
-    const mMat = new THREE.MeshStandardMaterial({ color: 0x131e36, roughness: 1 });
+    const mMat = new THREE.MeshStandardMaterial({ color: 0xbdd0e6, roughness: 1 });
     for (let i = 0; i < 7; i++) {
       const m = new THREE.Mesh(new THREE.ConeGeometry(span * (0.3 + Math.random() * 0.3), h * (1.2 + Math.random() * 1.2), 5), mMat);
       m.position.set(-span * 0.3 + i * span * 0.28, -0.3, -(TW / 2 + h * 1.8 + Math.random() * h));
       terrain.add(m);
     }
-    // 야간 투광등 3개
-    [[base * 0.45, 1], [base + FLAT * 0.3, -1], [base + FLAT * 0.75, 1]].forEach(([x, s]) => {
-      const ph = h * 0.45;
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * SK, 0.06 * SK, ph, 8), new THREE.MeshStandardMaterial({ color: 0x39445c }));
-      pole.position.set(x, ph / 2, s * (TW / 2 + 0.6)); pole.castShadow = true; terrain.add(pole);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.35 * SK, 0.18 * SK, 0.25 * SK), new THREE.MeshStandardMaterial({ color: 0x222b40, emissive: 0xffe9b0, emissiveIntensity: 0.9 }));
-      head.position.set(x, ph + 0.05, s * (TW / 2 + 0.5)); terrain.add(head);
-      const spot = new THREE.SpotLight(0xffe2a8, 30 * SK * SK, h * 2.2, 0.62, 0.55, 1.3);
-      spot.position.copy(head.position);
-      spot.target.position.set(x + h * 0.1, 0, 0);
-      terrain.add(spot); terrain.add(spot.target);
+    // 코스 깃발 (슬라롬 느낌 장식)
+    [[base * 0.3, 1, 0xe23c3c], [base * 0.7, -1, 0x2563eb], [base + FLAT * 0.25, 1, 0xe23c3c], [base + FLAT * 0.55, -1, 0x2563eb]].forEach(([x, sd, col]) => {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * SK, 0.03 * SK, 1.3 * SK, 6), new THREE.MeshStandardMaterial({ color: 0xb8c4da }));
+      const y = x < base ? (h - x * Math.tan(P.th)) : 0;
+      pole.position.set(x, y + 0.65 * SK, sd * (TW / 2 - 0.4)); pole.castShadow = true; terrain.add(pole);
+      const fl = new THREE.Mesh(new THREE.BoxGeometry(0.5 * SK, 0.3 * SK, 0.02), new THREE.MeshStandardMaterial({ color: col, side: THREE.DoubleSide }));
+      fl.position.set(x + 0.25 * SK, y + 1.1 * SK, sd * (TW / 2 - 0.4)); terrain.add(fl);
     });
     scene.add(terrain);
   }
