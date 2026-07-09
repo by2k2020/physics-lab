@@ -133,7 +133,7 @@
       <div class="param"><label>스키어 B 질량 <b id="v_mB">60 g</b></label>
         <input type="range" id="mB" min="10" max="150" value="60" step="5"></div>
       <div class="param"><label>경사각 θ <b id="v_th">40°</b></label>
-        <input type="range" id="th" min="30" max="60" value="40" step="1"></div>
+        <input type="range" id="th" min="10" max="75" value="40" step="1"></div>
       <div class="param"><label>마찰계수 μ <b id="v_mu">0.20</b></label>
         <input type="range" id="mu" min="0.15" max="0.50" value="0.20" step="0.01"></div>
       <div class="toggle-row">
@@ -566,7 +566,20 @@ function drawStars(c, stars, t) {
   const scale = speedCtl([$('sp1a'), $('sp1b'), $('sp1c')]);
   const eng = makeEngine({ step, draw: r => { draw(r); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
 
-  $('run1').onclick = () => { if (finished) reset(); eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸'; };
+  $('run1').onclick = () => {
+    if (finished) reset();
+    // 경사가 낮아 정지 마찰을 못 이기는 경우 — 출발 자체가 안 됨 (교육 포인트)
+    if (Math.tan(P.th) <= P.mu) {
+      finished = true; setSt('done');
+      const bd = $('bd1');
+      bd.className = 'badge diff';
+      bd.textContent = `⛔ 출발 못 함 — tan${P.thDeg}° ≤ μ ${P.mu.toFixed(2)}, 마찰이 중력을 이김 (경사각을 높여보자)`;
+      ['tA','tB'].forEach(id => $(id).textContent = '출발 못 함');
+      ['dA','dB'].forEach(id => $(id).textContent = '0.000 m');
+      return;
+    }
+    eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸';
+  };
   $('pause1').onclick = () => {
     if (eng.running) { eng.pause(); $('pause1').textContent = '▶'; }
     else { eng.start(); $('pause1').textContent = '⏸'; }
