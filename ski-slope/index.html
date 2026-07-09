@@ -135,17 +135,22 @@
         <button id="pause1" disabled>⏸</button>
         <button id="reset1">↺</button>
       </div>
-      <h3>실험 조건 · 높이 h = 0.5 m 고정</h3>
-      <div class="param"><label>스키어 A 질량 <b id="v_mA">20 g</b></label>
-        <input type="range" id="mA" min="10" max="150" value="20" step="5"></div>
-      <div class="param"><label>스키어 B 질량 <b id="v_mB">60 g</b></label>
-        <input type="range" id="mB" min="10" max="150" value="60" step="5"></div>
+      <h3>실험 조건</h3>
+      <div class="param"><label>스키어 A 질량 <b id="v_mA">40 kg</b></label>
+        <input type="range" id="mA" min="30" max="120" value="40" step="5"></div>
+      <div class="param"><label>스키어 B 질량 <b id="v_mB">80 kg</b></label>
+        <input type="range" id="mB" min="30" max="120" value="80" step="5"></div>
+      <div class="param"><label>슬로프 높이 h <b id="v_h">10 m</b></label>
+        <input type="range" id="hh" min="5" max="25" value="10" step="1"></div>
       <div class="param"><label>경사각 θ <b id="v_th">40°</b></label>
         <input type="range" id="th" min="10" max="75" value="40" step="1"></div>
       <div class="param"><label>마찰계수 μ <b id="v_mu">0.20</b></label>
         <input type="range" id="mu" min="0.15" max="0.50" value="0.20" step="0.01"></div>
       <div class="toggle-row">
         <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="snow1" checked><label for="snow1">❄️ 눈 내리기 (화면이 끊기면 끄기)</label>
       </div>
       <div class="speed-row"><span>재생 속도</span>
         <button class="on" id="sp1a">1×</button>
@@ -165,7 +170,7 @@
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
           <table id="tb1">
-            <thead><tr><th>#</th><th>질량</th><th>θ</th><th>μ</th><th>공기</th><th>시간A/B</th><th>거리A/B</th><th>판정</th></tr></thead>
+            <thead><tr><th>#</th><th>질량</th><th>h</th><th>θ</th><th>μ</th><th>공기</th><th>시간A/B</th><th>거리A/B</th><th>판정</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -265,9 +270,11 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
 
 /* ── 2D 그래프 (사이드 패널) ── */
 function fit2d(cv) {
-  const w = cv.clientWidth, h = +cv.getAttribute('height');
+  if (!cv.dataset.h) cv.dataset.h = cv.getAttribute('height');   // 설계 높이 고정 (되먹임 방지)
+  const w = cv.clientWidth, h = +cv.dataset.h;
   if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
     cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+    cv.style.height = h + 'px';
   }
   const c = cv.getContext('2d');
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -389,7 +396,7 @@ function makeSnowfall(scene, box) {
 
 /* ═════════ 실험 1 · 3D 스키 슬로프 ═════════ */
 const E1 = (() => {
-  const K_AIR = 0.008, H_SLOPE = 0.5, FLAT = 4.0, LANE = 0.38;
+  const K_AIR = 1.2;   // 교육용 과장 공기저항 (kg 스케일)
   let P = {}, S = null, t = 0, samples = [], finished = false, runCount = 0, running = false;
   let followCam = false;
 
@@ -402,12 +409,12 @@ const E1 = (() => {
   const controls = new OrbitControls(camera, cv);
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI * 0.49;
-  controls.minDistance = 1.2; controls.maxDistance = 16;
+  controls.minDistance = 1.2; controls.maxDistance = 400;
   function resetCam() {
-    camera.position.set(3.0, 1.9, 5.4);
-    controls.target.set(2.2, 0.25, 0);
+    const span = (world.base + world.flat) || 20;
+    controls.target.set(span * 0.32, (P.h || 10) * 0.28, 0);
+    camera.position.set(span * 0.3 + (P.h || 10) * 0.4, (P.h || 10) * 0.75, span * 0.62);
   }
-  resetCam();
 
   // 조명 — 달빛 + 야간 투광등
   scene.add(new THREE.HemisphereLight(0x8fb3ff, 0x0a1020, 0.55));
@@ -418,16 +425,6 @@ const E1 = (() => {
   moon.shadow.camera.left = -7; moon.shadow.camera.right = 9;
   moon.shadow.camera.top = 7; moon.shadow.camera.bottom = -4;
   scene.add(moon);
-  function floodlight(x, z) {
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 1.4, 8), new THREE.MeshStandardMaterial({ color: 0x39445c }));
-    pole.position.set(x, 0.7, z); pole.castShadow = true; scene.add(pole);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.1), new THREE.MeshStandardMaterial({ color: 0x222b40, emissive: 0xffe9b0, emissiveIntensity: 0.9 }));
-    head.position.set(x, 1.42, z + (z > 0 ? -0.04 : 0.04)); scene.add(head);
-    const spot = new THREE.SpotLight(0xffe2a8, 22, 7.5, 0.62, 0.55, 1.4);
-    spot.position.copy(head.position);
-    spot.target.position.set(x + 0.4, 0, 0);
-    scene.add(spot); scene.add(spot.target);
-  }
 
   // 별 + 달
   {
@@ -445,136 +442,190 @@ const E1 = (() => {
     moonBall.position.set(-13, 12, -18); scene.add(moonBall);
   }
 
-  /* — 지형 (경사각에 따라 재구축) — */
+  /* — 지형 (높이·경사각에 따라 전체 재구축, 스케일 대응) — */
   const snowMat = new THREE.MeshStandardMaterial({ color: 0xe8eef8, roughness: 0.92, metalness: 0 });
   const snowSideMat = new THREE.MeshStandardMaterial({ color: 0xc6d4e8, roughness: 0.95 });
-  let terrain = null, decoOnce = false;
-  const world = { base: 1, slopeLen: 1 };
+  let terrain = null;
+  const world = { base: 1, slopeLen: 1, flat: 20, TW: 5, SK: 1 };
+  function tickStep(flat) { return flat > 80 ? 20 : flat > 40 ? 10 : flat > 16 ? 5 : 2; }
   function buildTerrain() {
     if (terrain) scene.remove(terrain);
     terrain = new THREE.Group();
-    const base = H_SLOPE / Math.tan(P.th);
-    world.base = base; world.slopeLen = H_SLOPE / Math.sin(P.th);
-    const TW = 2.2;
+    const h = P.h;
+    const base = h / Math.tan(P.th);
+    world.base = base; world.slopeLen = h / Math.sin(P.th);
+    world.flat = Math.ceil((h / P.mu) * 1.06 / 5) * 5;   // 이 μ 최대 정지거리 + 여유
+    world.TW = Math.max(4, h * 0.5);
+    world.SK = Math.max(1, h * 0.28);
+    const FLAT = world.flat, TW = world.TW, SK = world.SK;
+    const span = base + FLAT;
+    moon.shadow.camera.left = -h; moon.shadow.camera.right = span + h;
+    moon.shadow.camera.top = h * 2; moon.shadow.camera.bottom = -h;
+    moon.shadow.camera.updateProjectionMatrix();
+    moon.position.set(-h, h * 2.2, h * 1.4);
     // 평지 트랙
-    const flat = new THREE.Mesh(new THREE.BoxGeometry(FLAT + 1.6, 0.12, TW), snowMat);
-    flat.position.set(base + (FLAT + 1.6) / 2 - 0.3, -0.06, 0);
-    flat.receiveShadow = true; terrain.add(flat);
-    // 경사면 (쐐기) — 윗면이 출발점(0, h)→슬로프발(base, 0) 선에 오도록
-    const wedge = new THREE.Mesh(new THREE.BoxGeometry(world.slopeLen + 0.4, 0.12, TW), snowMat);
+    const flatMesh = new THREE.Mesh(new THREE.BoxGeometry(FLAT + h * 0.6, 0.3, TW), snowMat);
+    flatMesh.position.set(base + (FLAT + h * 0.6) / 2 - h * 0.1, -0.15, 0);
+    flatMesh.receiveShadow = true; terrain.add(flatMesh);
+    // 경사면 (쐐기)
+    const wedge = new THREE.Mesh(new THREE.BoxGeometry(world.slopeLen + h * 0.15, 0.3, TW), snowMat);
     wedge.rotation.z = -P.th;
-    const midS = world.slopeLen / 2 - 0.1;
+    const midS = world.slopeLen / 2 - h * 0.04;
     wedge.position.set(
-      Math.cos(P.th) * midS - Math.sin(P.th) * 0.06,
-      H_SLOPE - Math.sin(P.th) * midS - Math.cos(P.th) * 0.06,
+      Math.cos(P.th) * midS - Math.sin(P.th) * 0.15,
+      h - Math.sin(P.th) * midS - Math.cos(P.th) * 0.15,
       0);
     wedge.receiveShadow = true; terrain.add(wedge);
     // 출발대
-    const top = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, TW), snowMat);
-    top.position.set(-0.45, H_SLOPE - 0.06, 0);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(h * 0.35, 0.3, TW), snowMat);
+    top.position.set(-h * 0.175, h - 0.15, 0);
     top.receiveShadow = true; terrain.add(top);
     // 주변 설원
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), snowSideMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(span * 4 + 60, span * 3 + 40), snowSideMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.set(4, -0.13, 0);
+    ground.position.set(span * 0.4, -0.32, 0);
     ground.receiveShadow = true; terrain.add(ground);
     // 출발 게이트
     [-1, 1].forEach(s => {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.8, 8), new THREE.MeshStandardMaterial({ color: 0xb8c4da }));
-      pole.position.set(0, H_SLOPE + 0.4, s * TW / 2 * 0.92);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06 * SK, 0.06 * SK, 1.6 * SK, 8), new THREE.MeshStandardMaterial({ color: 0xb8c4da }));
+      pole.position.set(0, h + 0.8 * SK, s * TW / 2 * 0.92);
       pole.castShadow = true; terrain.add(pole);
     });
-    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, TW * 0.92), new THREE.MeshStandardMaterial({ color: 0xe23c3c }));
-    banner.position.set(0, H_SLOPE + 0.72, 0);
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.1 * SK, 0.32 * SK, TW * 0.92), new THREE.MeshStandardMaterial({ color: 0xe23c3c }));
+    banner.position.set(0, h + 1.45 * SK, 0);
     terrain.add(banner);
-    const gateLab = textSprite('출발 게이트', { size: 40, color: '#ffffff', bg: 'rgba(10,16,30,.75)', scale: 0.003 });
-    gateLab.position.set(0, H_SLOPE + 0.95, 0); terrain.add(gateLab);
-    // 거리 눈금 (0.5 m)
-    for (let d = 0; d <= FLAT + 1e-9; d += 0.5) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.1, 0.015), new THREE.MeshStandardMaterial({ color: 0x5b6c8c }));
-      post.position.set(base + d, 0.05, TW / 2 + 0.09);
+    const gateLab = textSprite('출발 게이트', { size: 40, color: '#ffffff', bg: 'rgba(10,16,30,.75)', scale: 0.006 * SK });
+    gateLab.position.set(0, h + 2.0 * SK, 0); terrain.add(gateLab);
+    // 거리 눈금
+    const step = tickStep(FLAT);
+    for (let d = 0; d <= FLAT + 1e-9; d += step) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.04 * SK, 0.25 * SK, 0.04 * SK), new THREE.MeshStandardMaterial({ color: 0x5b6c8c }));
+      post.position.set(base + d, 0.125 * SK, TW / 2 + 0.2);
       terrain.add(post);
-      const lab = textSprite(d.toFixed(1) + ' m', { size: 36, color: '#9fb2cc', scale: 0.0026 });
-      lab.position.set(base + d, 0.2, TW / 2 + 0.14);
+      const lab = textSprite(d + ' m', { size: 36, color: '#9fb2cc', scale: 0.0055 * SK });
+      lab.position.set(base + d, 0.5 * SK, TW / 2 + 0.3);
       terrain.add(lab);
-      const line = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.005, TW), new THREE.MeshStandardMaterial({ color: 0x9db2d2 }));
-      line.position.set(base + d, 0.006, 0);
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.03 * SK, 0.02, TW), new THREE.MeshStandardMaterial({ color: 0x9db2d2 }));
+      line.position.set(base + d, 0.015, 0);
       terrain.add(line);
     }
     // 각도 라벨
-    const angLab = textSprite('경사각 ' + P.thDeg + '° · 높이 0.5 m', { size: 38, color: '#cfe0ff', bg: 'rgba(10,16,30,.7)', scale: 0.0028 });
-    angLab.position.set(base * 0.5 - 0.3, H_SLOPE + 0.28, 1.15);
+    const angLab = textSprite(`경사각 ${P.thDeg}° · 높이 ${P.h} m`, { size: 38, color: '#cfe0ff', bg: 'rgba(10,16,30,.7)', scale: 0.006 * SK });
+    angLab.position.set(base * 0.5, h * 0.62, TW / 2 + 0.6);
     terrain.add(angLab);
-    scene.add(terrain);
-    if (!decoOnce) {
-      decoOnce = true;
-      // 소나무 숲 (트랙 밖)
-      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2f24 });
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x14352a, roughness: 0.9 });
-      const capMat = new THREE.MeshStandardMaterial({ color: 0xdde8f5, roughness: 0.95 });
-      for (let i = 0; i < 26; i++) {
-        const tx = -1.5 + Math.random() * 9, tz = (Math.random() > 0.5 ? 1 : -1) * (1.7 + Math.random() * 4);
-        const h = 0.5 + Math.random() * 0.7;
-        const tree = new THREE.Group();
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, h * 0.25, 6), trunkMat);
-        trunk.position.y = h * 0.125; tree.add(trunk);
-        for (let k = 0; k < 3; k++) {
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16 * h * (1 - k * 0.22), h * 0.36, 8), leafMat);
-          cone.position.y = h * (0.3 + k * 0.24); cone.castShadow = true; tree.add(cone);
-          const cap = new THREE.Mesh(new THREE.ConeGeometry(0.16 * h * (1 - k * 0.22) * 0.75, h * 0.1, 8), capMat);
-          cap.position.y = h * (0.3 + k * 0.24) + h * 0.13; tree.add(cap);
-        }
-        tree.position.set(tx, -0.13, tz);
-        scene.add(tree);
+    // 소나무 숲
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2f24 });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x14352a, roughness: 0.9 });
+    const capMat = new THREE.MeshStandardMaterial({ color: 0xdde8f5, roughness: 0.95 });
+    for (let i = 0; i < 24; i++) {
+      const tx = -base * 0.4 + Math.random() * span * 1.1;
+      const tz = (Math.random() > 0.5 ? 1 : -1) * (TW / 2 + h * 0.25 + Math.random() * h * 0.9);
+      const th = h * (0.28 + Math.random() * 0.35);
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(th * 0.04, th * 0.055, th * 0.25, 6), trunkMat);
+      trunk.position.y = th * 0.125; tree.add(trunk);
+      for (let k = 0; k < 3; k++) {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(th * 0.3 * (1 - k * 0.22), th * 0.36, 8), leafMat);
+        cone.position.y = th * (0.3 + k * 0.24); cone.castShadow = true; tree.add(cone);
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(th * 0.3 * (1 - k * 0.22) * 0.75, th * 0.1, 8), capMat);
+        cap.position.y = th * (0.3 + k * 0.24) + th * 0.13; tree.add(cap);
       }
-      // 먼 산
-      const mMat = new THREE.MeshStandardMaterial({ color: 0x131e36, roughness: 1 });
-      for (let i = 0; i < 7; i++) {
-        const m = new THREE.Mesh(new THREE.ConeGeometry(3 + Math.random() * 3, 3.5 + Math.random() * 3, 5), mMat);
-        m.position.set(-6 + i * 4 + Math.random() * 2, -0.1, -12 - Math.random() * 6);
-        scene.add(m);
-      }
-      floodlight(world.base * 0.4, 1.35);
-      floodlight(world.base + 1.4, -1.35);
-      floodlight(world.base + 3.2, 1.35);
+      tree.position.set(tx, -0.3, tz);
+      terrain.add(tree);
     }
+    // 먼 산
+    const mMat = new THREE.MeshStandardMaterial({ color: 0x131e36, roughness: 1 });
+    for (let i = 0; i < 7; i++) {
+      const m = new THREE.Mesh(new THREE.ConeGeometry(span * (0.3 + Math.random() * 0.3), h * (1.2 + Math.random() * 1.2), 5), mMat);
+      m.position.set(-span * 0.3 + i * span * 0.28, -0.3, -(TW / 2 + h * 1.8 + Math.random() * h));
+      terrain.add(m);
+    }
+    // 야간 투광등 3개
+    [[base * 0.45, 1], [base + FLAT * 0.3, -1], [base + FLAT * 0.75, 1]].forEach(([x, s]) => {
+      const ph = h * 0.45;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * SK, 0.06 * SK, ph, 8), new THREE.MeshStandardMaterial({ color: 0x39445c }));
+      pole.position.set(x, ph / 2, s * (TW / 2 + 0.6)); pole.castShadow = true; terrain.add(pole);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.35 * SK, 0.18 * SK, 0.25 * SK), new THREE.MeshStandardMaterial({ color: 0x222b40, emissive: 0xffe9b0, emissiveIntensity: 0.9 }));
+      head.position.set(x, ph + 0.05, s * (TW / 2 + 0.5)); terrain.add(head);
+      const spot = new THREE.SpotLight(0xffe2a8, 30 * SK * SK, h * 2.2, 0.62, 0.55, 1.3);
+      spot.position.copy(head.position);
+      spot.target.position.set(x + h * 0.1, 0, 0);
+      terrain.add(spot); terrain.add(spot.target);
+    });
+    scene.add(terrain);
   }
 
-  /* — 스키어 3D 피겨 — */
+  /* — 스키어: 레고 미니피겨 스타일 (각지고 귀엽게) — */
   function makeSkier(color) {
     const gp = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x1a2234, roughness: 0.6 });
+    const jacket = new THREE.MeshStandardMaterial({ color, roughness: 0.5 });
+    const pants = new THREE.MeshStandardMaterial({ color: 0x22304c, roughness: 0.6 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
     const skiMat = new THREE.MeshStandardMaterial({ color: 0xeef4ff, roughness: 0.3, metalness: 0.2 });
-    [-0.05, 0.05].forEach(z => {
-      const ski = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.012, 0.045), skiMat);
-      ski.position.set(0.03, 0.006, z); ski.castShadow = true; gp.add(ski);
-      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.012, 0.045), skiMat);
-      tip.position.set(0.215, 0.028, z); tip.rotation.z = 0.7; gp.add(tip);
+    // 스키 2짝 (넓은 스탠스)
+    [-0.055, 0.055].forEach(z => {
+      const ski = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.014, 0.05), skiMat);
+      ski.position.set(0.04, 0.007, z); ski.castShadow = true; gp.add(ski);
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.014, 0.05), skiMat);
+      tip.position.set(0.235, 0.032, z); tip.rotation.z = 0.65; gp.add(tip);
+      // 부츠
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.055), pants);
+      boot.position.set(0.02, 0.038, z); boot.castShadow = true; gp.add(boot);
     });
-    const legL = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.09, 4, 8), dark);
-    legL.position.set(0.01, 0.075, -0.05); legL.rotation.z = 0.35; gp.add(legL);
-    const legR = legL.clone(); legR.position.z = 0.05; gp.add(legR);
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.13, 4, 10), mat);
-    torso.position.set(0.045, 0.2, 0); torso.rotation.z = -0.85; torso.castShadow = true; gp.add(torso);
-    [-0.07, 0.07].forEach(z => {
-      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.016, 0.08, 4, 8), mat);
-      arm.position.set(0.1, 0.2, z); arm.rotation.z = -1.9; gp.add(arm);
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.24, 6), new THREE.MeshStandardMaterial({ color: 0x9fb2cc }));
-      pole.position.set(0.06, 0.11, z); pole.rotation.z = 0.5; gp.add(pole);
+    // 다리 블록 (미니피겨처럼 통짜, 살짝 굽힘)
+    const legs = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.1, 0.13), pants);
+    legs.position.set(0.015, 0.11, 0); legs.rotation.z = 0.18; legs.castShadow = true; gp.add(legs);
+    const hip = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.035, 0.135), pants);
+    hip.position.set(0.005, 0.175, 0); hip.rotation.z = 0.1; gp.add(hip);
+    // 몸통 (사다리꼴 재킷 — 위가 좁음)
+    const torsoGeo = new THREE.CylinderGeometry(0.062, 0.085, 0.15, 4, 1);
+    const torso = new THREE.Mesh(torsoGeo, jacket);
+    torso.rotation.y = Math.PI / 4;             // 사각 단면 정렬
+    torso.scale.z = 0.72;                       // 납작하게
+    torso.position.set(0.02, 0.27, 0); torso.rotation.z = -0.14;
+    torso.castShadow = true; gp.add(torso);
+    // 지퍼 라인
+    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.13, 0.012), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+    zip.position.set(0.085, 0.27, 0); zip.rotation.z = -0.14; gp.add(zip);
+    // 팔 (앞으로 나란히 굽힘) + 노란 손 + 폴
+    [-0.095, 0.095].forEach(z => {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.045), jacket);
+      arm.position.set(0.09, 0.27, z); arm.rotation.z = -1.15; arm.castShadow = true; gp.add(arm);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 10), skin);
+      hand.position.set(0.145, 0.235, z); gp.add(hand);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.26, 6), new THREE.MeshStandardMaterial({ color: 0x9fb2cc }));
+      pole.position.set(0.11, 0.12, z); pole.rotation.z = 0.35; gp.add(pole);
     });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), mat);
-    head.position.set(0.13, 0.31, 0); head.castShadow = true; gp.add(head);
-    const visor = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 8, 0, Math.PI),
-      new THREE.MeshStandardMaterial({ color: 0x0f1626, roughness: 0.15, metalness: 0.6 }));
-    visor.position.set(0.165, 0.305, 0);
-    gp.add(visor);
+    // 머리 (노란 미니피겨 실린더 + 얼굴)
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.095, 20), skin);
+    head.position.set(0.035, 0.4, 0); head.castShadow = true; gp.add(head);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+    [-0.024, 0.024].forEach(z => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), eyeMat);
+      eye.position.set(0.087, 0.415, z); gp.add(eye);
+    });
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 12, Math.PI * 0.8), eyeMat);
+    smile.position.set(0.087, 0.39, 0);
+    smile.rotation.y = Math.PI / 2; smile.rotation.z = Math.PI + 0.35;
+    gp.add(smile);
+    // 헬멧 (반구) + 흰 고글 밴드
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.062, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), jacket);
+    helmet.position.set(0.035, 0.435, 0); helmet.castShadow = true; gp.add(helmet);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.022, 0.115), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    band.position.set(0.09, 0.437, 0); gp.add(band);
+    const goggle = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.03, 0.09),
+      new THREE.MeshStandardMaterial({ color: 0x0f1626, roughness: 0.1, metalness: 0.5 }));
+    goggle.position.set(0.096, 0.437, 0); gp.add(goggle);
+    // 목도리 포인트
+    const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.014, 8, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }));
+    scarf.rotation.x = Math.PI / 2;
+    scarf.position.set(0.03, 0.35, 0); gp.add(scarf);
     return gp;
   }
   const skierA = makeSkier(0x3d8bff), skierB = makeSkier(0xff8a3d);
   scene.add(skierA, skierB);
-  const labA = textSprite('A', { size: 46, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.0032 });
-  const labB = textSprite('B', { size: 46, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.0032 });
+  let labA = textSprite('A', { size: 46, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.0075 });
+  let labB = textSprite('B', { size: 46, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.0075 });
   scene.add(labA, labB);
 
   function makeFlag(color) {
@@ -602,8 +653,9 @@ const E1 = (() => {
   function emitSpray(x, y, z, v) {
     for (let k = 0; k < 2; k++) {
       const i = sprayI = (sprayI + 1) % SPRAY_N;
-      sprayPos[i * 3] = x - 0.15; sprayPos[i * 3 + 1] = y + 0.02; sprayPos[i * 3 + 2] = z + (Math.random() - 0.5) * 0.1;
-      sprayV[i] = { vx: -v * 0.35 * (0.4 + Math.random() * 0.5), vy: 0.5 + Math.random() * 0.7, vz: (Math.random() - 0.5) * 0.5, life: 0.55 };
+      const SK = world.SK;
+      sprayPos[i * 3] = x - 0.25 * SK; sprayPos[i * 3 + 1] = y + 0.03 * SK; sprayPos[i * 3 + 2] = z + (Math.random() - 0.5) * 0.18 * SK;
+      sprayV[i] = { vx: -v * 0.3 * (0.4 + Math.random() * 0.5), vy: (0.5 + Math.random() * 0.7) * SK, vz: (Math.random() - 0.5) * 0.6 * SK, life: 0.6 };
     }
   }
   function stepSpray(dt) {
@@ -612,23 +664,44 @@ const E1 = (() => {
       if (p.life <= 0) continue;
       p.life -= dt;
       sprayPos[i * 3] += p.vx * dt; sprayPos[i * 3 + 1] += p.vy * dt; sprayPos[i * 3 + 2] += p.vz * dt;
-      p.vy -= 3.4 * dt;
+      p.vy -= 3.4 * world.SK * dt;
       if (p.life <= 0) sprayPos[i * 3 + 1] = -5;
     }
     sprayGeo.attributes.position.needsUpdate = true;
   }
-  const snowStep = makeSnowfall(scene, { x0: -2, x1: 9, z0: -5, z1: 5, h: 5 });
+  let snowObj = null;
+  function rebuildSnow() {
+    if (snowObj) { scene.remove(snowObj.pts); }
+    const span = world.base + world.flat;
+    const before = scene.children.length;
+    const step = makeSnowfall(scene, { x0: -world.base, x1: span * 1.1, z0: -span * 0.6, z1: span * 0.6, h: P.h * 1.8 });
+    const pts = scene.children[scene.children.length - 1];   // makeSnowfall이 방금 추가한 Points
+    pts.material.size = 0.03 * world.SK;
+    pts.visible = $('snow1').checked;
+    snowObj = { pts, step };
+  }
+  const snowStep = dt => { if (snowObj && snowObj.pts.visible) snowObj.step(dt); };
 
   /* — 물리 (검증된 엔진 그대로) — */
   function readParams() {
-    P = { mA: +$('mA').value / 1000, mB: +$('mB').value / 1000,
+    P = { mA: +$('mA').value, mB: +$('mB').value, h: +$('hh').value,
           th: +$('th').value * Math.PI / 180, thDeg: +$('th').value,
           mu: +$('mu').value, air: $('air1').checked };
-    P.slopeLen = H_SLOPE / Math.sin(P.th);
+    P.slopeLen = P.h / Math.sin(P.th);
   }
   function reset() {
     readParams();
     buildTerrain();
+    rebuildSnow();
+    const SK = world.SK;
+    [skierA, skierB].forEach(gp => gp.scale.setScalar(SK));
+    [flagA, flagB].forEach(gp => gp.scale.setScalar(SK));
+    spray.material.size = 0.035 * SK;
+    resetCam();
+    scene.remove(labA); scene.remove(labB);
+    labA = textSprite('A ' + P.mA + 'kg', { size: 46, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.0075 * SK });
+    labB = textSprite('B ' + P.mB + 'kg', { size: 46, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.0075 * SK });
+    scene.add(labA, labB);
     t = 0; finished = false; samples = [];
     S = [P.mA, P.mB].map(m => ({ m, phase: 'slope', s: 0, x: 0, v: 0, tSlope: null, dStop: null }));
     ['tA','tB','dA','dB'].forEach(id => $(id).textContent = '—');
@@ -662,26 +735,27 @@ const E1 = (() => {
   }
   function skierWorld(sk, lane) {
     if (sk.phase === 'slope') {
-      return { x: Math.cos(P.th) * sk.s, y: H_SLOPE - Math.sin(P.th) * sk.s, ang: -P.th, lane };
+      return { x: Math.cos(P.th) * sk.s, y: P.h - Math.sin(P.th) * sk.s, ang: -P.th, lane };
     }
     return { x: world.base + sk.x, y: 0, ang: 0, lane };
   }
+  const lane = () => world.TW * 0.17;
   function place() {
-    const pa = skierWorld(S[0], LANE), pb = skierWorld(S[1], -LANE);
+    const pa = skierWorld(S[0], lane()), pb = skierWorld(S[1], -lane());
     [[skierA, pa, labA], [skierB, pb, labB]].forEach(([gp, p, lab]) => {
       gp.position.set(p.x, p.y, p.lane);
       gp.rotation.z = p.ang;
-      lab.position.set(p.x, p.y + 0.52, p.lane);
+      lab.position.set(p.x, p.y + 0.75 * world.SK, p.lane);
     });
     if (S[0].dStop != null && !flagA.visible) {
-      flagA.position.set(world.base + S[0].dStop, 0, LANE + 0.16); flagA.visible = true;
-      flagLabA = textSprite(S[0].dStop.toFixed(2) + ' m', { size: 38, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.0028 });
-      flagLabA.position.set(world.base + S[0].dStop, 0.48, LANE + 0.16); scene.add(flagLabA);
+      flagA.position.set(world.base + S[0].dStop, 0, lane() + 0.3 * world.SK); flagA.visible = true;
+      flagLabA = textSprite(S[0].dStop.toFixed(2) + ' m', { size: 38, color: '#7db4ff', bg: 'rgba(10,16,30,.8)', scale: 0.006 * world.SK });
+      flagLabA.position.set(world.base + S[0].dStop, 0.75 * world.SK, lane() + 0.3 * world.SK); scene.add(flagLabA);
     }
     if (S[1].dStop != null && !flagB.visible) {
-      flagB.position.set(world.base + S[1].dStop, 0, -LANE - 0.16); flagB.visible = true;
-      flagLabB = textSprite(S[1].dStop.toFixed(2) + ' m', { size: 38, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.0028 });
-      flagLabB.position.set(world.base + S[1].dStop, 0.48, -LANE - 0.16); scene.add(flagLabB);
+      flagB.position.set(world.base + S[1].dStop, 0, -lane() - 0.3 * world.SK); flagB.visible = true;
+      flagLabB = textSprite(S[1].dStop.toFixed(2) + ' m', { size: 38, color: '#ffb27d', bg: 'rgba(10,16,30,.8)', scale: 0.006 * world.SK });
+      flagLabB.position.set(world.base + S[1].dStop, 0.75 * world.SK, -lane() - 0.3 * world.SK); scene.add(flagLabB);
     }
     $('hud_t1').textContent = t.toFixed(3) + ' s';
     $('hud_vA').textContent = S[0].v.toFixed(2) + ' m/s';
@@ -707,7 +781,7 @@ const E1 = (() => {
     else { bd.className = 'badge diff'; bd.textContent = `△ 차이 ${Math.abs(S[0].dStop - S[1].dStop).toFixed(3)} m — 공기저항 때문`; }
     const tb = $('tb1').querySelector('tbody');
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${Math.round(P.mA*1000)}/${Math.round(P.mB*1000)}g</td>` +
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.mA}/${P.mB}kg</td><td>${P.h}m</td>` +
       `<td>${P.thDeg}°</td><td>${P.mu.toFixed(2)}</td><td class="cond">${P.air ? '켬' : '끔'}</td>` +
       `<td>${fmt(S[0].tSlope,2)}/${fmt(S[1].tSlope,2)}s</td>` +
       `<td>${fmt(S[0].dStop,2)}/${fmt(S[1].dStop,2)}m</td>` +
@@ -740,13 +814,15 @@ const E1 = (() => {
     $('pause1').textContent = running ? '⏸' : '▶';
   };
   $('reset1').onclick = () => { running = false; reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸'; };
-  ['mA','mB','th','mu','air1'].forEach(id => $(id).addEventListener('input', () => {
-    $('v_mA').textContent = $('mA').value + ' g';
-    $('v_mB').textContent = $('mB').value + ' g';
+  ['mA','mB','hh','th','mu','air1'].forEach(id => $(id).addEventListener('input', () => {
+    $('v_mA').textContent = $('mA').value + ' kg';
+    $('v_mB').textContent = $('mB').value + ' kg';
+    $('v_h').textContent = $('hh').value + ' m';
     $('v_th').textContent = $('th').value + '°';
     $('v_mu').textContent = (+$('mu').value).toFixed(2);
     if (!running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; }
   }));
+  $('snow1').addEventListener('input', () => { if (snowObj) snowObj.pts.visible = $('snow1').checked; });
   $('camFree').onclick = () => { followCam = false; $('camFree').classList.add('on'); $('camFollow').classList.remove('on'); resetCam(); };
   $('camFollow').onclick = () => { followCam = true; $('camFollow').classList.add('on'); $('camFree').classList.remove('on'); };
 
@@ -766,17 +842,18 @@ const E1 = (() => {
       const SUB = 20, hh = dt / SUB;
       for (let i = 0; i < SUB; i++) stepPhysics(hh);
       place(); drawG();
-      const pa = skierWorld(S[0], LANE);
-      if (S[0].v > 0.35) emitSpray(pa.x, pa.y, pa.lane, S[0].v);
-      const pb = skierWorld(S[1], -LANE);
-      if (S[1].v > 0.35) emitSpray(pb.x, pb.y, pb.lane, S[1].v);
+      const pa = skierWorld(S[0], lane());
+      if (S[0].v > 0.6) emitSpray(pa.x, pa.y, pa.lane, S[0].v);
+      const pb = skierWorld(S[1], -lane());
+      if (S[1].v > 0.6) emitSpray(pb.x, pb.y, pb.lane, S[1].v);
     }
     stepSpray(real); snowStep(real);
     if (followCam) {
       const midX = (skierA.position.x + skierB.position.x) / 2;
       const midY = (skierA.position.y + skierB.position.y) / 2;
-      controls.target.lerp(new THREE.Vector3(midX, midY + 0.2, 0), 0.08);
-      camera.position.lerp(new THREE.Vector3(midX + 0.6, midY + 1.1, 3.1), 0.05);
+      const SK = world.SK;
+      controls.target.lerp(new THREE.Vector3(midX, midY + 0.4 * SK, 0), 0.08);
+      camera.position.lerp(new THREE.Vector3(midX + 1.2 * SK, midY + 2.2 * SK, 6.5 * SK), 0.05);
     }
     controls.update();
     renderer.render(scene, camera);
