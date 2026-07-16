@@ -98,6 +98,59 @@ const COURSES = [
 ];
 
 const root = document.getElementById('courses');
+renderStatic();
+
+/* ── 수업 시뮬레이터(AI 생성) — 수업 PT 서버(:9410, 게이트웨이 /lessons/)에서 동적 로드 ── */
+const LESSONS_BASE = 'https://hub.ctmrobotics.com/lessons/';
+const SIM_ICONS = { '이노베이터': '🦾', '스파이크프라임': '🤖', '스파이크에센셜': '🚀', '브릭큐에센셜': '🧱',
+  '브릭큐프라임': '⚙️', '스팀파크': '🎡', '코딩익스프레스': '🚂', '위두7세': '🐣', '위두스크래치': '🐱' };
+const escT = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const encP = p => String(p).split('/').map(encodeURIComponent).join('/');
+
+fetch(LESSONS_BASE + 'api/simulators', { credentials: 'include' })
+  .then(r => { if (!r.ok) throw 0; return r.json(); })
+  .then(d => renderLessonSims(d.simulators || []))
+  .catch(() => renderLessonSims(null));
+
+function renderLessonSims(sims) {
+  const sec = document.createElement('section');
+  sec.className = 'course';
+  if (sims && sims.length) {
+    sec.innerHTML = `<div class="course-head"><h2>🎓 수업 시뮬레이터 (차시별 · AI 생성)</h2><span class="cnt">시뮬레이터 ${sims.length}개 가동 중</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'sims';
+    sims.forEach(s => {
+      const a = document.createElement('a');
+      a.className = 'sim';
+      a.href = LESSONS_BASE + encP(s.url);
+      a.target = '_blank';
+      a.innerHTML = `
+        <div class="top">
+          <div class="icon">${SIM_ICONS[s.course] || '🎮'}</div>
+          <div><h3>${escT(s.title)}</h3><div class="lesson">${escT(s.course)} · ${escT(s.folder)}</div></div>
+        </div>
+        <p>${escT((s.concepts || []).join(' · '))}</p>
+        <div class="foot">
+          <span class="pill on">● 가동 중</span><span class="pill tool">AI 초안</span>
+          <span class="go">실험하러 가기 →</span>
+        </div>`;
+      grid.appendChild(a);
+    });
+    sec.appendChild(grid);
+  } else {
+    // 미로그인/서버 미접속 — 시뮬레이터관 링크 카드로 안내
+    sec.innerHTML = `<div class="course-head"><h2>🎓 수업 시뮬레이터 (차시별 · AI 생성)</h2></div>
+      <div class="sims"><a class="sim" href="${LESSONS_BASE}sims.html" target="_blank">
+        <div class="top"><div class="icon">🎮</div>
+          <div><h3>수업 시뮬레이터관 열기</h3><div class="lesson">수업 PT 시스템 · 차시별 시뮬레이터 모음</div></div></div>
+        <p>수업 PPT 지식과 26년 공식 교안을 바탕으로 AI가 만든 차시별 시뮬레이터를 모아 봅니다. (학원 로그인 필요)</p>
+        <div class="foot"><span class="pill tool">허브 로그인 후 열람</span><span class="go">바로가기 →</span></div>
+      </a></div>`;
+  }
+  root.appendChild(sec);
+}
+
+function renderStatic() {
 COURSES.forEach(course => {
   const readyCnt = course.sims.filter(s => s.ready).length;
   const sec = document.createElement('section');
@@ -126,6 +179,7 @@ COURSES.forEach(course => {
   sec.appendChild(grid);
   root.appendChild(sec);
 });
+}
 </script>
 </body>
 </html>
