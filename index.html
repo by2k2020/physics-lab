@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>가상 물리 실험실 — 코딩더메이커</title>
+<title>가상실험실 — 코딩더메이커</title>
 <style>
   :root {
     --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
@@ -51,7 +51,7 @@
   <header>
     <div class="logo">🔬</div>
     <div>
-      <h1>가상 물리 실험실</h1>
+      <h1>가상실험실</h1>
       <div class="sub">코딩더메이커 · 수업 시뮬레이터 모음 — 예측하고, 레고로 실험하고, 비교한다</div>
     </div>
   </header>
@@ -63,7 +63,7 @@
 
   <div id="courses"></div>
 
-  <footer>코딩더메이커 가상 물리 실험실 · 시뮬레이터는 수업 진도에 맞춰 계속 추가됩니다</footer>
+  <footer>코딩더메이커 가상실험실 · 시뮬레이터는 수업 진도에 맞춰 계속 추가됩니다</footer>
 </div>
 
 <script>
@@ -85,6 +85,18 @@ const COURSES = [
         lesson: '기어와 회전 속도',
         desc: '드라이버·팔로워 기어 잇수를 바꾸면 속도와 힘이 어떻게 변할까? 아이들러 기어를 끼우면? — 속도와 힘의 맞바꿈을 눈으로 확인한다.',
         tags: ['8·16·24·40T', '아이들러 실험', '회전수 그래프'],
+        ready: true,
+      },
+    ],
+  },
+  {
+    name: '✈️ 항공 · 드론 과정',
+    sims: [
+      {
+        id: 'flight-attitude', icon: '✈️', title: '요·피치·롤 비행 시뮬레이션',
+        lesson: '3축 회전과 비행기 조종',
+        desc: '비행기는 어떻게 방향을 바꿀까? 요·피치·롤 세 회전을 축별로 돌려 보고, 직접 조종해서 링 10개를 통과한다 — 드론과 스파이크 허브 자이로 센서의 3축이 바로 이것.',
+        tags: ['3D · 카메라 회전', '자유 비행 모드', '인공수평의'],
         ready: true,
       },
     ],
