@@ -82,12 +82,18 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 6px 0; }
-  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 10.5px; font-weight: 600; }
-  table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 700; }
-  table.mx td.miss { color: #4a5568; }
-  table.mx td.lab { color: var(--dim); font-size: 10.5px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 16px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 8px 0; }
+  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 11.5px; font-weight: 600; padding: 6px 0; }
+  table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
+  table.mx td.miss { color: #ff6a5e; font-weight: 700; }
+  table.mx td.empty { color: #38445c; }
+  table.mx td.lab { color: var(--dim); font-size: 11.5px; font-family: 'Malgun Gothic',sans-serif; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   #theory.on { display: block; }
   .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
@@ -147,11 +153,11 @@
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
 
       <div class="param"><label>💪 던지는 힘 <b id="v_pw">3</b></label>
-        <input type="range" id="pw" min="1" max="8" value="3" step="1"></div>
+        <div class="srow"><button class="step" data-t="pw" data-s="-1">◀</button><input type="range" id="pw" min="1" max="8" value="3" step="1"><button class="step" data-t="pw" data-s="1">▶</button></div></div>
       <div class="param"><label>🏀 골대 거리 <b id="v_d">2</b></label>
-        <input type="range" id="dd" min="1" max="8" value="2" step="1"></div>
+        <div class="srow"><button class="step" data-t="dd" data-s="-1">◀</button><input type="range" id="dd" min="1" max="8" value="2" step="1"><button class="step" data-t="dd" data-s="1">▶</button></div></div>
       <div class="param"><label>📏 골대 높이 <b id="v_h">1</b></label>
-        <input type="range" id="hh" min="1" max="8" value="1" step="1"></div>
+        <div class="srow"><button class="step" data-t="hh" data-s="-1">▼</button><input type="range" id="hh" min="1" max="8" value="1" step="1"><button class="step" data-t="hh" data-s="1">▲</button></div></div>
 
       <div class="toggle-row">
         <input type="checkbox" id="air"><label for="air">공기저항 켜기 (교육용 과장)</label>
@@ -164,13 +170,20 @@
         <button class="primary" id="fire">🏀 던지기</button>
         <button class="ghost" id="reset">↺</button>
       </div>
+      <div class="ctl-row">
+        <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 이 힘으로 표 전부 체크</button>
+        <button class="ghost" id="clearMx">지우기</button>
+      </div>
       <div class="speed-row"><span>재생 속도</span>
         <button class="on" id="spa">1×</button>
         <button id="spb">0.5×</button>
         <button id="spc">0.25×</button>
       </div>
 
-      <h3>측정값</h3>
+      <h3>📋 거리 × 높이 득점표 <span style="text-transform:none;color:#5a6a85">(O 골인 · X 노골)</span></h3>
+      <table class="mx" id="matrix"></table>
+
+      <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
         <div class="readout"><div class="k">발사 각도</div><div class="v a" id="ro_ang">—</div></div>
         <div class="readout"><div class="k">초기 속도</div><div class="v a" id="ro_v0">—</div></div>
@@ -182,11 +195,6 @@
 
       <h3>높이–시간 그래프</h3>
       <canvas class="graph" id="gr" height="150"></canvas>
-
-      <details open>
-        <summary>📋 거리 × 높이 득점표</summary>
-        <div class="inner"><table class="mx" id="matrix"></table></div>
-      </details>
     </div>
   </section>
 
@@ -550,8 +558,7 @@ function drawMatrix() {
   for (const h of hs) html += `<tr><td class="lab">${h}</td>` + dists.map(d => {
     const r = results[d + '|' + h];
     const cur = (d === cfg.dist && h === cfg.h) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
-    const mark = r === true ? '<td class="hit"' + cur + '>O</td>' : r === false ? '<td class="miss"' + cur + '>X</td>' : '<td class="miss"' + cur + '></td>';
-    return mark;
+    return r === true ? '<td class="hit"' + cur + '>O</td>' : r === false ? '<td class="miss"' + cur + '>X</td>' : '<td class="empty"' + cur + '></td>';
   }).join('') + '</tr>';
   $('matrix').innerHTML = html;
 }
@@ -570,6 +577,38 @@ slider('pw', 'v_pw', 'pw');
 slider('dd', 'v_d', 'dist');
 slider('hh', 'v_h', 'h');
 $('air').addEventListener('input', () => { cfg.air = $('air').checked; if (!flying) reset(); });
+
+// ◀▶▲▼ 화살표로 1단위 변경
+document.querySelectorAll('.step').forEach(b => b.onclick = () => {
+  const el = $(b.dataset.t);
+  el.value = Math.min(8, Math.max(1, +el.value + +b.dataset.s));
+  el.dispatchEvent(new Event('input'));
+});
+
+// ⚡ 자동 실험 — 현재 힘·공기저항 설정으로 64칸 전부 시뮬레이션해 O/X 채움
+let scanTimer = null;
+$('autoScan').onclick = () => {
+  if (flying || scanTimer) return;
+  const combos = [];
+  for (let h = 1; h <= 8; h++) for (let d = 1; d <= 8; d++) combos.push([d, h]);
+  const orig = { d: cfg.dist, h: cfg.h };
+  let i = 0;
+  setSt('run', '자동 실험 중… (힘 ' + cfg.pw + ')');
+  scanTimer = setInterval(() => {
+    if (i >= combos.length) {
+      clearInterval(scanTimer); scanTimer = null;
+      cfg.dist = orig.d; cfg.h = orig.h; reset();
+      setSt('done', '자동 실험 완료 — 힘 ' + cfg.pw + (cfg.air ? '·공기저항' : '') + '으로 들어가는 칸이 O');
+      drawMatrix();
+      return;
+    }
+    const [d, h] = combos[i++];
+    cfg.dist = d; cfg.h = h;
+    results[d + '|' + h] = simulate().scored;
+    drawMatrix();
+  }, 26);
+};
+$('clearMx').onclick = () => { if (scanTimer) { clearInterval(scanTimer); scanTimer = null; } for (const k in results) delete results[k]; drawMatrix(); setSt('ready'); };
 
 /* ── 발사 흐름 (예측 모드 포함) ── */
 function startFire() {
