@@ -38,6 +38,15 @@
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 10px 24px; font-size: 17px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.in { display: inline-flex; background: rgba(20,60,35,.8); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 30px rgba(46,224,111,.3); }
   .badge.out { display: inline-flex; background: rgba(70,50,10,.8); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 26px rgba(255,176,46,.25); }
+  .analysis { display: none; position: absolute; top: 62px; left: 14px; width: min(400px, 44%); background: rgba(10,16,28,.88); backdrop-filter: blur(6px); border: 1px solid rgba(120,150,200,.35); border-radius: 14px; overflow: hidden; }
+  .analysis.on { display: block; }
+  .an-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(30,45,75,.6); font-size: 14px; }
+  .an-head button { background: transparent; border: none; color: var(--dim); font-size: 15px; cursor: pointer; }
+  .an-body { padding: 12px 16px 14px; font-size: 13.5px; line-height: 1.8; color: #cfdcef; }
+  .an-body .big { font-size: 17px; font-weight: 800; color: var(--green); }
+  .an-body .row { margin: 7px 0; padding: 8px 11px; background: rgba(20,30,52,.7); border-radius: 9px; }
+  .an-body .row b { color: var(--accent); }
+  .an-body .why { border-left: 3px solid var(--amber); padding-left: 10px; color: #e8d9b0; font-size: 12.5px; margin-top: 9px; }
   .predict { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; flex-direction: column; align-items: center; gap: 12px; background: rgba(8,12,22,.8); backdrop-filter: blur(5px); border: 1px solid rgba(120,150,200,.3); border-radius: 16px; padding: 22px 30px; }
   .predict.on { display: flex; }
   .predict .q { font-size: 19px; font-weight: 800; }
@@ -148,6 +157,10 @@
         </div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+      <div class="analysis" id="analysis">
+        <div class="an-head"><b>📊 실험 결과 분석</b><button onclick="document.getElementById('analysis').classList.remove('on')">✕</button></div>
+        <div class="an-body" id="anBody"></div>
+      </div>
     </div>
     <div class="side">
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
@@ -594,30 +607,74 @@ document.querySelectorAll('.step').forEach(b => b.onclick = () => {
   el.dispatchEvent(new Event('input'));
 });
 
-// ⚡ 자동 실험 — 현재 힘·공기저항 설정으로 64칸 전부 시뮬레이션해 O/X 채움
+// ⚡ 자동 실험 — 현재 힘·공기저항으로 64칸 전부 체크.
+// 같은 힘이면 포물선은 하나뿐이므로: 궤적을 띄워 둔 채 골대가 전 위치를 훑고 지나가며 O/X를 채운다.
 let scanTimer = null;
 $('autoScan').onclick = () => {
   if (flying || scanTimer) return;
   const combos = [];
   for (let h = 1; h <= 8; h++) for (let d = 1; d <= 8; d++) combos.push([d, h]);
   const orig = { d: cfg.dist, h: cfg.h };
+  $('analysis').classList.remove('on');
+  $('bd').className = 'badge';
+  // 이 힘의 포물선을 계속 표시 (골대 위치와 무관하게 동일)
+  const trajS = simulate();
+  setTraj(trajS.pts, 0x2ee06f);
+  trajLine.visible = true;
+  // 골대가 거리 8까지 훑는 동안 전부 보이도록 전체 코트 뷰
+  const hx8 = DIST_M(8), sp8 = Math.max(hx8, 2.4);
+  flyTo(hx8 * 0.5, sp8 * 0.5 + 0.6, sp8 * 1.55 + 2.2, hx8 * 0.5, sp8 * 0.38, 0, 'camSide');
   let i = 0;
   setSt('run', '자동 실험 중… (힘 ' + cfg.pw + ')');
   scanTimer = setInterval(() => {
     if (i >= combos.length) {
       clearInterval(scanTimer); scanTimer = null;
-      cfg.dist = orig.d; cfg.h = orig.h; reset();
-      setSt('done', '자동 실험 완료 — 힘 ' + cfg.pw + (cfg.air ? '·공기저항' : '') + '으로 들어가는 칸이 O');
-      drawMatrix();
+      cfg.dist = orig.d; cfg.h = orig.h;
+      layoutScene(); S = simulate(); placeBallOnHand(); drawMatrix();
+      setSt('done', '자동 실험 완료');
+      showAnalysis(trajS);
       return;
     }
     const [d, h] = combos[i++];
     cfg.dist = d; cfg.h = h;
     results[d + '|' + h] = simulate().scored;
+    layoutScene();          // 골대가 실제로 이동하며 궤적에 걸리는 게 보임
     drawMatrix();
-  }, 26);
+  }, 45);
 };
-$('clearMx').onclick = () => { if (scanTimer) { clearInterval(scanTimer); scanTimer = null; } for (const k in results) delete results[k]; drawMatrix(); setSt('ready'); };
+$('clearMx').onclick = () => {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  for (const k in results) delete results[k];
+  $('analysis').classList.remove('on');
+  drawMatrix(); setSt('ready');
+};
+
+// 실험 결과 분석 — 표 데이터에서 규칙을 계산해 3D 화면 빈 공간에 표시 (생성 아님, 전부 계산값)
+function showAnalysis(trajS) {
+  const hits = [];
+  for (let h = 1; h <= 8; h++) for (let d = 1; d <= 8; d++) if (results[d + '|' + h] === true) hits.push([d, h]);
+  const el = $('anBody');
+  const airTag = cfg.air ? ' + 공기저항' : '';
+  if (!hits.length) {
+    el.innerHTML = `<div class="big" style="color:var(--amber)">골인 0칸</div>
+      <div class="row">힘 <b>${cfg.pw}</b>${airTag}으로는 어떤 거리·높이에도 들어가지 않았어요.</div>
+      <div class="why">힘을 바꿔서 다시 자동 실험을 해보세요 — 포물선이 달라지면 들어가는 칸이 생깁니다.</div>`;
+  } else {
+    const dists = [...new Set(hits.map(x => x[0]))].sort((a, b) => a - b);
+    const far = hits.reduce((m, x) => x[0] > m[0] ? x : m);
+    const near = hits.reduce((m, x) => x[0] < m[0] ? x : m);
+    // 거리별 골인 높이 → "멀수록 낮아지는" 패턴 감지
+    const hiOfD = {};
+    hits.forEach(([d, h]) => { hiOfD[d] = Math.max(hiOfD[d] || 0, h); });
+    const falling = dists.length >= 2 && hiOfD[dists[0]] > hiOfD[dists[dists.length - 1]];
+    el.innerHTML = `<div class="big">골인 ${hits.length}칸 / 64칸</div>
+      <div class="row">💪 힘 <b>${cfg.pw}</b>${airTag} · 최고 속도 <b>${trajS.v0.toFixed(1)} m/s</b> · 최고 높이 <b>${trajS.apex.toFixed(2)} m</b></div>
+      <div class="row">들어간 거리: <b>${dists.join(', ')}</b>${dists.length > 1 ? ` — 가장 먼 골인은 거리 <b>${far[0]}</b>·높이 <b>${far[1]}</b>` : ''}</div>
+      ${falling ? `<div class="row">규칙 발견: 가까울수록 <b>높은 골대</b>(높이 ${hiOfD[near[0]]}), 멀수록 <b>낮은 골대</b>(높이 ${hiOfD[far[0]]})에 들어갔어요.</div>` : ''}
+      <div class="why">왜? 공은 <b>포물선</b>으로 날아가요 — 올라갔다가 내려오죠. 그래서 O가 있는 칸을 이으면 지금 화면의 초록 궤적과 같은 모양이 됩니다.${cfg.air ? ' 공기저항 때문에 전체가 가까운 쪽으로 당겨졌어요.' : ' 공기저항을 켜고 다시 해보면 O가 어디로 움직일까요?'}</div>`;
+  }
+  $('analysis').classList.add('on');
+}
 
 /* ── 발사 흐름 (예측 모드 포함) ── */
 function startFire() {
