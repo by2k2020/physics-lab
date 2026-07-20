@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>집게 시뮬레이션 — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.good { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.warn { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.bad  { display: inline-flex; background: rgba(70,15,12,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.3); }
+
+  .side { width: 340px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+
+  .mission { display: flex; gap: 6px; margin-bottom: 14px; }
+  .mchip { flex: 1; text-align: center; font-size: 12px; padding: 7px 4px; background: #0c1220; border: 1px solid var(--border); border-radius: 9px; color: var(--dim); }
+  .mchip.done { color: var(--green); border-color: rgba(46,224,111,.55); background: rgba(46,224,111,.07); font-weight: 700; }
+
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; touch-action: pan-x; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 7px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+
+  .formula { font-family: var(--mono); font-size: 12px; background: #121a2c; border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; color: var(--purple); margin-bottom: 13px; line-height: 1.7; word-break: keep-all; }
+  .formula b { color: var(--orange); }
+
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 15.5px; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.g { color: var(--green); } .readout .v.r { color: var(--red); }
+
+  .bars { margin: 4px 0 14px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 50px; flex: none; }
+  .bar-track { flex: 1; height: 14px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; position: relative; }
+  .zone { position: absolute; top: 0; height: 100%; }
+  .zone.safe { background: rgba(46,224,111,.18); border-left: 1px solid rgba(46,224,111,.5); border-right: 1px solid rgba(46,224,111,.5); }
+  .zone.danger { background: rgba(255,90,82,.15); }
+  .bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 6px; transition: width .12s, background .2s; }
+  .bar-row .val { width: 52px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .zone-hint { font-size: 10.5px; color: var(--dim); margin: -4px 0 0 58px; }
+  .zone-hint b { color: var(--green); font-weight: 600; }
+
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  td.ok { color: var(--green); font-family: inherit; font-weight: 700; }
+  td.slip { color: var(--amber); font-family: inherit; font-weight: 700; }
+  td.brk { color: var(--red); font-family: inherit; font-weight: 700; }
+  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+
+  .scroll-tab { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  .scroll-tab.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+  .cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+  .pcard { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 12.5px; line-height: 1.7; }
+  .pcard .big { font-size: 22px; }
+  .pcard b { display: block; margin: 2px 0 4px; font-size: 13.5px; }
+  .pcard.p1 b { color: var(--red); } .pcard.p2 b { color: var(--accent); } .pcard.p3 b { color: var(--orange); }
+
+  .qcard { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+  .qcard .q { font-size: 14.5px; font-weight: 700; margin-bottom: 11px; color: var(--text); }
+  .choices { display: flex; flex-direction: column; gap: 7px; }
+  .choices button { text-align: left; padding: 10px 14px; font-size: 13.5px; border-radius: 9px; }
+  .choices button.correct { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); font-weight: 700; }
+  .choices button.wrong { border-color: var(--red); color: var(--red); background: rgba(255,90,82,.08); }
+  .explain { display: none; margin-top: 10px; font-size: 12.5px; background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 9px; padding: 10px 13px; line-height: 1.7; }
+  .explain.show { display: block; }
+  .quiz-score { font-size: 14px; font-weight: 800; margin: 4px 0 14px; color: var(--amber); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 54vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+    .cards3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 21차시</div>
+      <div class="title">🦞 집게 시뮬레이션 — 지렛대의 힘</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="game">🎯 미션 · 집게 옮기기</button>
+      <button class="tab" data-tab="quiz">🔮 예측 퀴즈</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 미션 ══════ -->
+  <section class="exp on" id="game">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">지렛대 배율</span><span id="hud_ratio" style="color:var(--purple)">×1.0</span></div>
+        <div class="chip"><span class="lab">악력 (내가 누르는 힘)</span><span id="hud_grip" style="color:var(--accent)">0 N</span></div>
+        <div class="chip"><span class="lab">출력힘 (집게가 무는 힘)</span><span id="hud_out" style="color:var(--orange)">0 N</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 물건을 골라 봐</span></div>
+      <h3>🎯 미션 — 3가지 물건을 깨뜨리지 말고 바구니로!</h3>
+      <div class="mission">
+        <span class="mchip" id="m_sponge">🧽 스펀지</span>
+        <span class="mchip" id="m_wood">🪵 나무토막</span>
+        <span class="mchip" id="m_glass">🥛 유리컵</span>
+      </div>
+      <h3>실험 조건</h3>
+      <div class="param"><label>손잡이 길이 (힘점까지 거리) <b id="v_h">10cm</b></label>
+        <div class="pick" id="pickH">
+          <button data-i="0">짧게 5cm</button>
+          <button data-i="1" class="on">보통 10cm</button>
+          <button data-i="2">길게 20cm</button>
+        </div>
+      </div>
+      <div class="param"><label>집을 물건 <b id="v_o">스펀지</b></label>
+        <div class="pick" id="pickO">
+          <button data-o="sponge" class="on">🧽 스펀지</button>
+          <button data-o="wood">🪵 나무토막</button>
+          <button data-o="glass">🥛 유리컵</button>
+        </div>
+      </div>
+      <div class="param"><label>악력 — 손잡이를 쥐는 힘 <b id="v_g">0 N</b></label>
+        <input type="range" id="grip" min="0" max="100" value="0" step="5"></div>
+      <div class="formula" id="formula">출력힘 = 악력 × (손잡이 ÷ 집게)</div>
+      <h3>힘 게이지 — 초록 구간에 맞춰 봐!</h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">악력</span>
+          <div class="bar-track"><div class="bar-fill" id="barG" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:0%"></div></div>
+          <span class="val" id="valG">0 N</span></div>
+        <div class="bar-row"><span class="lab">출력힘</span>
+          <div class="bar-track">
+            <div class="zone safe" id="zoneSafe"></div>
+            <div class="zone danger" id="zoneDanger"></div>
+            <div class="bar-fill" id="barO" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:0%"></div>
+          </div>
+          <span class="val" id="valO">0 N</span></div>
+        <div class="zone-hint" id="zoneHint"><b>초록</b> = 잡히는 힘</div>
+      </div>
+      <div class="ctl-row">
+        <button class="primary" id="carry">🤏 집어서 바구니로 옮기기</button>
+        <button id="resetM" title="미션 리셋">↺</button>
+      </div>
+      <h3>물건 정보</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">잡는 데 필요한 힘 (최소)</div><div class="v g" id="r_min">—</div></div>
+        <div class="readout"><div class="k">깨짐 한계 (최대)</div><div class="v r" id="r_max">—</div></div>
+        <div class="readout"><div class="k">지렛대 배율</div><div class="v" id="r_ratio" style="color:var(--purple)">—</div></div>
+        <div class="readout"><div class="k">지금 출력힘</div><div class="v b" id="r_out">—</div></div>
+      </div>
+      <details open>
+        <summary>📋 실험 기록 (최근 10회)</summary>
+        <div class="inner">
+          <table id="tb">
+            <thead><tr><th>#</th><th>손잡이</th><th>물건</th><th>악력→출력</th><th>결과</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 예측 퀴즈 ══════ -->
+  <section class="scroll-tab" id="quiz">
+    <div class="theory-box">
+      <h2>🔮 예측해 보자!</h2>
+      <div class="quiz-score" id="qscore">맞힌 문제: 0 / 3</div>
+      <div class="qcard">
+        <div class="q">Q1. 손잡이를 <u>길게</u> 바꾸면, 같은 악력으로 물건을 잡는 힘은 어떻게 될까?</div>
+        <div class="choices" data-ans="0">
+          <button>💪 더 세진다</button>
+          <button>😮 더 약해진다</button>
+          <button>😐 똑같다</button>
+        </div>
+        <div class="explain">정답: <b>더 세진다!</b> 받침점에서 힘점(손잡이 끝)까지 멀어질수록 지렛대가 힘을 키워 줘.
+          배율 = 손잡이 길이 ÷ 집게 길이. 손잡이 20cm ÷ 집게 10cm = 2배!</div>
+      </div>
+      <div class="qcard">
+        <div class="q">Q2. 유리컵을 깨뜨리지 않고 집으려면 어떻게 해야 할까?</div>
+        <div class="choices" data-ans="1">
+          <button>💥 긴 손잡이로 힘껏 꽉 잡는다</button>
+          <button>🎯 필요한 만큼만 살살 힘을 조절한다</button>
+          <button>🤷 아무렇게나 세게 잡는다</button>
+        </div>
+        <div class="explain">정답: <b>힘 조절!</b> 유리컵은 25N보다 세게 잡아야 안 미끄러지지만, 60N을 넘으면 쨍그랑 깨져.
+          긴 손잡이는 힘이 2배가 되니까 살짝만 쥐어야 해.</div>
+      </div>
+      <div class="qcard">
+        <div class="q">Q3. 가위처럼 X자로 교차된 집게에서 <u>받침점</u>은 어디일까?</div>
+        <div class="choices" data-ans="1">
+          <button>✋ 손잡이 끝</button>
+          <button>📍 두 막대가 만나는 가운데 핀</button>
+          <button>🦷 물건을 무는 집게 끝</button>
+        </div>
+        <div class="explain">정답: <b>가운데 핀!</b> 지렛대의 3요소 — 받침점(가운데 핀), 힘점(내 손이 쥐는 곳), 작용점(물건을 무는 곳).
+          미션 화면에서 빨강·파랑·주황 점으로 확인해 봐.</div>
+      </div>
+      <button id="qreset">↺ 퀴즈 다시 풀기</button>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section class="scroll-tab" id="theory">
+    <div class="theory-box">
+      <h2>📖 집게는 지렛대야 — 힘을 바꾸는 마법</h2>
+      <p>가위처럼 X자로 교차한 집게는 <b>지렛대 2개를 겹친 것</b>이야. 지렛대에는 꼭 필요한 세 친구가 있어.</p>
+      <div class="cards3">
+        <div class="pcard p1"><span class="big">📍</span><b>받침점</b>막대가 돌아가는 중심. 집게에서는 가운데 연결 핀!</div>
+        <div class="pcard p2"><span class="big">✋</span><b>힘점</b>내가 힘을 주는 곳. 집게에서는 손잡이 끝!</div>
+        <div class="pcard p3"><span class="big">🦷</span><b>작용점</b>물건에 힘이 전해지는 곳. 집게 끝의 이빨!</div>
+      </div>
+      <ul>
+        <li>힘 배율: <span class="eq">배율 = 손잡이 길이 ÷ 집게 길이</span></li>
+        <li>출력힘: <span class="eq">집게가 무는 힘 = 악력 × 배율</span></li>
+        <li>손잡이(힘점 거리)가 길수록 → 같은 악력으로 <b>더 세게</b> 물 수 있어!</li>
+      </ul>
+      <table>
+        <thead><tr><th>손잡이</th><th>배율</th><th>악력 50N일 때 출력힘</th><th>어울리는 일</th></tr></thead>
+        <tbody>
+          <tr><td>짧게 5cm</td><td>×0.5</td><td>25N</td><td class="cond">유리컵처럼 살살 잡기</td></tr>
+          <tr><td>보통 10cm</td><td>×1.0</td><td>50N</td><td class="cond">골고루 무난하게</td></tr>
+          <tr><td>길게 20cm</td><td>×2.0</td><td>100N</td><td class="cond">무거운 나무토막 꽉 잡기</td></tr>
+        </tbody>
+      </table>
+      <p><b>물건마다 필요한 힘이 달라!</b> 너무 약하면 스르륵 미끄러지고, 너무 세면 깨져 버려.</p>
+      <table>
+        <thead><tr><th>물건</th><th>잡는 데 필요한 힘</th><th>깨짐 한계</th><th>공략법</th></tr></thead>
+        <tbody>
+          <tr><td class="cond">🧽 스펀지</td><td>5N 이상</td><td>없음 (말랑말랑)</td><td class="cond">아무 손잡이나 OK</td></tr>
+          <tr><td class="cond">🪵 나무토막</td><td>60N 이상</td><td>없음 (튼튼)</td><td class="cond">긴 손잡이가 편해</td></tr>
+          <tr><td class="cond">🥛 유리컵</td><td>25N 이상</td><td>60N — 넘으면 쨍그랑!</td><td class="cond">힘 조절이 핵심</td></tr>
+        </tbody>
+      </table>
+      <p><b>생활 속 집게 지렛대</b> — 가위·펜치·장도리는 손잡이가 길어서 힘이 커지는 지렛대야.
+        반대로 젓가락·핀셋은 힘점이 받침점에 가까워서 힘은 줄지만 <b>정밀하게</b> 움직일 수 있지.
+        무엇을 얻고 무엇을 내줄지 — 기어비랑 똑같은 맞바꾸기야!</p>
+      <div class="tip">
+        <b>🧱 브릭큐로 진짜 집게 만들 때 팁</b><br>
+        · 긴 블록 2개를 X자로 겹치고 가운데를 핀으로 연결하면 집게 완성!<br>
+        · 핀 위치를 옮기면 손잡이·집게 길이 비율이 바뀌어 — 시뮬처럼 힘이 달라지는지 실험해 봐<br>
+        · 지우개(스펀지 역할)와 블록(나무토막 역할)을 실제로 집어 옮겨 보고, 종이컵으로 유리컵 놀이!<br>
+        · 집게 끝에 고무줄을 감으면 미끄럼이 줄어 — 마찰력의 도움이야
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('game').classList.toggle('on', b.dataset.tab === 'game');
+  $('quiz').classList.toggle('on', b.dataset.tab === 'quiz');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+const easeIO = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* ── 상수 ── */
+const JAW_CM = 10;
+const HANDLES = [
+  { name: '짧게', cm: 5 },
+  { name: '보통', cm: 10 },
+  { name: '길게', cm: 20 },
+];
+const OBJS = {
+  sponge: { name: '스펀지', emoji: '🧽', min: 5,  max: Infinity, w: 6, h: 5, squishy: true },
+  wood:   { name: '나무토막', emoji: '🪵', min: 60, max: Infinity, w: 5, h: 6, squishy: false },
+  glass:  { name: '유리컵', emoji: '🥛', min: 25, max: 60, w: 6, h: 7, squishy: false },
+};
+const TH_MAX = 30 * Math.PI / 180;   // 최대 벌어짐 반각
+const OUT_SCALE = 200;               // 출력힘 게이지 최대(N)
+
+/* ── 상태 ── */
+const S = {
+  h: 1, objKey: 'sponge', grip: 0,
+  theta: TH_MAX,
+  phase: 'idle', phaseT: 0,
+  dx: 0, dy: 0,               // 집게 이동 오프셋
+  objState: 'ground',         // ground | held | falling | gone
+  fall: null,                 // { x, y, vy, floorY }
+  particles: [],
+  delivered: { sponge: false, wood: false, glass: false },
+  basket: [],                 // 배달된 물건 키 목록
+  runCount: 0,
+  badgeTimer: 0,
+};
+const OBJ = () => OBJS[S.objKey];
+const ratio = () => HANDLES[S.h].cm / JAW_CM;
+const outForce = () => S.grip * ratio();
+
+/* ── UI 갱신 ── */
+function setBadge(cls, txt, hold) {
+  const bd = $('bd');
+  bd.className = 'badge ' + cls;
+  bd.textContent = txt;
+  S.badgeTimer = hold || 4;
+}
+function setStatus(mode, txt) {
+  $('led').className = 'led ' + mode;
+  $('st').textContent = txt;
+}
+function updateReadouts() {
+  const o = OBJ(), r = ratio(), out = outForce();
+  const hcm = HANDLES[S.h].cm;
+  $('hud_ratio').textContent = '×' + r.toFixed(1);
+  $('hud_grip').textContent = S.grip + ' N';
+  $('hud_out').textContent = out.toFixed(0) + ' N';
+  $('v_g').textContent = S.grip + ' N';
+  $('formula').innerHTML =
+    `출력힘 = 악력 × (손잡이 ÷ 집게)<br>= ${S.grip}N × (${hcm}cm ÷ ${JAW_CM}cm) = ${S.grip}N × ${r.toFixed(1)} = <b>${out.toFixed(0)}N</b>`;
+  $('r_min').textContent = o.min + ' N';
+  $('r_max').textContent = isFinite(o.max) ? o.max + ' N' : '없음';
+  $('r_ratio').textContent = '×' + r.toFixed(1);
+  $('r_out').textContent = out.toFixed(0) + ' N';
+  // 게이지
+  $('barG').style.width = S.grip + '%';
+  $('valG').textContent = S.grip + ' N';
+  $('barO').style.width = clamp(out / OUT_SCALE * 100, 0, 100) + '%';
+  $('valO').textContent = out.toFixed(0) + ' N';
+  const maxV = Math.min(isFinite(o.max) ? o.max : OUT_SCALE, OUT_SCALE);
+  $('zoneSafe').style.left = (o.min / OUT_SCALE * 100) + '%';
+  $('zoneSafe').style.width = ((maxV - o.min) / OUT_SCALE * 100) + '%';
+  if (isFinite(o.max)) {
+    $('zoneDanger').style.display = 'block';
+    $('zoneDanger').style.left = (o.max / OUT_SCALE * 100) + '%';
+    $('zoneDanger').style.width = ((OUT_SCALE - o.max) / OUT_SCALE * 100) + '%';
+    $('zoneHint').innerHTML = '<b>초록</b> = 잡히는 힘 · <span style="color:var(--red)">빨강</span> = 깨지는 힘';
+  } else {
+    $('zoneDanger').style.display = 'none';
+    $('zoneHint').innerHTML = '<b>초록</b> = 잡히는 힘 (이 물건은 안 깨져!)';
+  }
+  const fill = $('barO');
+  if (out > o.max) fill.style.background = 'linear-gradient(90deg,#b91c1c,#ff5a52)';
+  else if (out >= o.min) fill.style.background = 'linear-gradient(90deg,#15803d,#2ee06f)';
+  else fill.style.background = 'linear-gradient(90deg,#c2410c,#ff9046)';
+}
+function updateMission() {
+  for (const k of ['sponge', 'wood', 'glass']) {
+    const el = $('m_' + k);
+    el.classList.toggle('done', S.delivered[k]);
+    el.textContent = (S.delivered[k] ? '✓ ' : '') + OBJS[k].emoji + ' ' + OBJS[k].name;
+  }
+}
+function addRow(resultCls, resultTxt) {
+  const tb = $('tb').querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${++S.runCount}</td><td class="cond">${HANDLES[S.h].name} ×${ratio().toFixed(1)}</td>` +
+    `<td class="cond">${OBJ().emoji}${OBJ().name}</td><td>${S.grip}→${outForce().toFixed(0)}N</td>` +
+    `<td class="${resultCls}">${resultTxt}</td>`;
+  tb.prepend(tr);
+  while (tb.children.length > 10) tb.removeChild(tb.lastChild);
+}
+function setControlsEnabled(en) {
+  $('grip').disabled = !en;
+  $('carry').disabled = !en;
+  document.querySelectorAll('#pickH button, #pickO button').forEach(b => b.disabled = !en);
+}
+
+/* ── 이벤트 처리 ── */
+function checkLiveBreak() {
+  const o = OBJ();
+  if (S.phase === 'idle' && S.objState === 'ground' && outForce() > o.max) {
+    doBreak();
+  }
+}
+function doBreak() {
+  addRow('brk', '깨짐 💥');
+  setBadge('bad', `🥛 쨍그랑! ${OBJ().name}이 깨졌어 💥 힘이 ${outForce().toFixed(0)}N — 한계 ${OBJ().max}N을 넘었어!`, 5);
+  setStatus('', '너무 셌어… 새 물건이 곧 나와');
+  spawnShards();
+  S.objState = 'gone';
+  S.phase = 'break'; S.phaseT = 0;
+  setControlsEnabled(false);
+}
+function doSlip() {
+  addRow('slip', '미끄러짐');
+  setBadge('warn', `😮 미끄러졌어! 출력힘 ${outForce().toFixed(0)}N < 필요한 힘 ${OBJ().min}N — 더 세게 잡아야 해`, 5);
+  setStatus('', '더 세게! 악력을 올리거나 손잡이를 길게 해 봐');
+  S.phase = 'slip'; S.phaseT = 0;
+  setControlsEnabled(false);
+}
+function doCarry() {
+  if (S.phase !== 'idle' || S.objState !== 'ground') return;
+  const o = OBJ(), out = outForce();
+  if (out > o.max) { doBreak(); return; }
+  if (out < o.min) { doSlip(); return; }
+  S.objState = 'held';
+  S.phase = 'lift'; S.phaseT = 0;
+  setBadge('good', `👍 잡았어! ${out.toFixed(0)}N으로 꽉 — 바구니로 옮기는 중…`, 6);
+  setStatus('run', '옮기는 중…');
+  setControlsEnabled(false);
+}
+function finishDelivery() {
+  S.delivered[S.objKey] = true;
+  S.basket.push(S.objKey);
+  updateMission();
+  addRow('ok', '성공 ✓');
+  const all = ['sponge', 'wood', 'glass'].every(k => S.delivered[k]);
+  if (all) {
+    setBadge('good', '🎉 미션 완료! 3가지 물건을 전부 깨뜨리지 않고 옮겼어 — 힘 조절 최고!', 10);
+    setStatus('done', '미션 완료! 🎉');
+  } else {
+    setBadge('good', `🎯 ${OBJ().name} 배달 성공! 다음 물건을 골라 봐`, 5);
+    setStatus('done', '성공! 다음 물건을 골라 봐');
+  }
+}
+function respawn() {
+  S.objState = 'ground';
+  S.phase = 'idle'; S.phaseT = 0;
+  S.dx = 0; S.dy = 0; S.fall = null;
+  setControlsEnabled(true);
+  if (outForce() > OBJ().max) {
+    // 새 물건까지 바로 깨지지 않게 손을 풀어 준다
+    S.grip = 0; $('grip').value = 0;
+    updateReadouts();
+    return true;
+  }
+  return false;
+}
+
+/* ── 유리 파편 ── */
+function spawnShards() {
+  S.particles = [];
+  const L = lastLayout;
+  if (!L) return;
+  const x0 = L.objX, y0 = L.yG - OBJ().h * L.s * 0.5;
+  for (let i = 0; i < 16; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 220;
+    S.particles.push({
+      x: x0 + (Math.random() - 0.5) * 20, y: y0 + (Math.random() - 0.5) * 26,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 110,
+      rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 12,
+      life: 1.1, size: 3 + Math.random() * 6,
+    });
+  }
+}
+
+/* ── 물건 그리기 ── */
+function drawObj(c, key, cx, yBot, s, squish) {
+  const o = OBJS[key];
+  const w = o.w * s * (1 + (squish || 0) * 0.5), h = o.h * s * (1 - (squish || 0));
+  c.save();
+  if (key === 'sponge') {
+    c.fillStyle = '#f5c944';
+    c.beginPath(); c.roundRect(cx - w / 2, yBot - h, w, h, 6); c.fill();
+    c.strokeStyle = '#b8922a'; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = 'rgba(140,105,20,.5)';
+    [[-.28, -.6], [.22, -.35], [-.05, -.75], [.3, -.72], [-.3, -.25]].forEach(p => {
+      c.beginPath(); c.arc(cx + p[0] * w, yBot + p[1] * h, Math.max(1.6, s * 0.32), 0, 7); c.fill();
+    });
+  } else if (key === 'wood') {
+    const g = c.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
+    g.addColorStop(0, '#a56a30'); g.addColorStop(0.5, '#c08445'); g.addColorStop(1, '#8f5a28');
+    c.fillStyle = g;
+    c.beginPath(); c.roundRect(cx - w / 2, yBot - h, w, h, 3); c.fill();
+    c.strokeStyle = '#6e421c'; c.lineWidth = 1.5; c.stroke();
+    c.strokeStyle = 'rgba(90,55,20,.55)'; c.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      c.beginPath(); c.moveTo(cx - w / 2 + 3, yBot - h * i / 4);
+      c.bezierCurveTo(cx - w / 6, yBot - h * i / 4 + 3, cx + w / 6, yBot - h * i / 4 - 3, cx + w / 2 - 3, yBot - h * i / 4);
+      c.stroke();
+    }
+  } else { // glass
+    const top = yBot - h, wTop = w, wBot = w * 0.74;
+    c.beginPath();
+    c.moveTo(cx - wTop / 2, top); c.lineTo(cx - wBot / 2, yBot);
+    c.lineTo(cx + wBot / 2, yBot); c.lineTo(cx + wTop / 2, top); c.closePath();
+    c.fillStyle = 'rgba(150,210,255,.22)'; c.fill();
+    c.strokeStyle = 'rgba(185,228,255,.85)'; c.lineWidth = 2; c.stroke();
+    c.beginPath(); c.ellipse(cx, top, wTop / 2, Math.max(2.5, s * 0.5), 0, 0, 7);
+    c.strokeStyle = 'rgba(210,240,255,.9)'; c.lineWidth = 1.5; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(cx - wTop * 0.28, top + h * 0.18); c.lineTo(cx - wBot * 0.3, yBot - h * 0.15); c.stroke();
+    // 담긴 물
+    c.beginPath();
+    const wl = yBot - h * 0.42;
+    c.moveTo(cx - (wBot + (wTop - wBot) * 0.42) / 2, wl); c.lineTo(cx - wBot / 2 + 1.5, yBot - 1.5);
+    c.lineTo(cx + wBot / 2 - 1.5, yBot - 1.5); c.lineTo(cx + (wBot + (wTop - wBot) * 0.42) / 2, wl); c.closePath();
+    c.fillStyle = 'rgba(90,170,255,.3)'; c.fill();
+  }
+  c.restore();
+}
+
+/* ── 메인 렌더 ── */
+const cv = $('cv');
+let lastLayout = null;
+
+function computeLayout(W, H) {
+  const s = Math.min(W / 78, H / 52);
+  const yG = H * 0.82;
+  const Lj = JAW_CM * s;
+  const o = OBJ();
+  const objW = o.w * s;
+  const thetaC = Math.asin(clamp(objW / (2 * Lj), 0, 0.9));
+  const baseX = clamp(W * 0.32, HANDLES[2].cm * s * Math.sin(TH_MAX) + 60, W * 0.45);
+  const gyBase = yG - o.h * s * 0.5 - Lj * Math.cos(thetaC);
+  const basketX = W - Math.max(75, W * 0.11);
+  return { s, yG, Lj, thetaC, baseX, gyBase, basketX, objX: baseX, objW };
+}
+
+function drawScene(dt) {
+  const { c, W, H } = fit(cv);
+  const L = computeLayout(W, H);
+  lastLayout = L;
+  const o = OBJ();
+
+  // 배경
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(120,145,190,.08)';
+  for (let x = 20; x < W; x += 26)
+    for (let y = 20; y < L.yG - 8; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+  // 바닥
+  c.fillStyle = '#131c30';
+  c.fillRect(0, L.yG, W, H - L.yG);
+  c.strokeStyle = 'rgba(120,150,200,.35)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(0, L.yG); c.lineTo(W, L.yG); c.stroke();
+
+  // 출발 지점 표시
+  c.strokeStyle = 'rgba(77,163,255,.35)'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
+  c.beginPath(); c.ellipse(L.objX, L.yG + 7, L.objW * 0.9, 5, 0, 0, 7); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#5a6a85'; c.font = '11px sans-serif'; c.textAlign = 'center';
+  c.fillText('출발', L.objX, L.yG + 24);
+
+  // 바구니
+  const bw = Math.max(78, L.s * 9), bh = Math.max(46, L.s * 5.2);
+  const bx = L.basketX, byT = L.yG - bh;
+  c.beginPath();
+  c.moveTo(bx - bw / 2, byT); c.lineTo(bx - bw / 2 + 8, L.yG);
+  c.lineTo(bx + bw / 2 - 8, L.yG); c.lineTo(bx + bw / 2, byT);
+  c.fillStyle = '#3b2d17'; c.fill();
+  c.strokeStyle = '#8a6a35'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = 'rgba(190,150,80,.4)'; c.lineWidth = 1.2;
+  for (let i = 1; i <= 3; i++) {
+    const t = i / 4;
+    c.beginPath();
+    c.moveTo(bx - bw / 2 + 8 * t, byT + bh * t); c.lineTo(bx + bw / 2 - 8 * t, byT + bh * t); c.stroke();
+  }
+  // 바구니 속 배달된 물건들
+  S.basket.forEach((k, i) => {
+    const col = i % 3, row = Math.floor(i / 3);
+    drawObj(c, k, bx - bw * 0.24 + col * bw * 0.24, L.yG - 4 - row * L.s * 3.2, L.s * 0.52, 0);
+  });
+  c.fillStyle = '#b9915a'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+  c.fillText('🧺 바구니', bx, byT - 10);
+
+  // ── 페이즈 진행 ──
+  S.phaseT += dt;
+  const carryDist = bx - L.baseX;
+  if (S.phase === 'lift') {
+    const k = easeIO(clamp(S.phaseT / 0.45, 0, 1));
+    S.dy = -Math.max(46, L.s * 5) * k;
+    if (S.phaseT >= 0.45) { S.phase = 'move'; S.phaseT = 0; }
+  } else if (S.phase === 'move') {
+    const k = easeIO(clamp(S.phaseT / 1.15, 0, 1));
+    S.dx = carryDist * k;
+    if (S.phaseT >= 1.15) {
+      S.phase = 'drop'; S.phaseT = 0;
+      const jy = (L.gyBase + S.dy) + L.Lj * Math.cos(S.theta);
+      S.objState = 'falling';
+      S.fall = { x: L.baseX + S.dx, y: jy + o.h * L.s * 0.5, vy: 0, floorY: L.yG - 5 };
+    }
+  } else if (S.phase === 'drop') {
+    if (S.fall) {
+      S.fall.vy += 1150 * dt;
+      S.fall.y += S.fall.vy * dt;
+      if (S.fall.y >= S.fall.floorY) {
+        S.fall = null; S.objState = 'gone';
+        finishDelivery();
+      }
+    }
+    if (S.phaseT >= 0.55 && !S.fall) { S.phase = 'return'; S.phaseT = 0; }
+  } else if (S.phase === 'return') {
+    const k = easeIO(clamp(S.phaseT / 0.9, 0, 1));
+    S.dx = carryDist * (1 - k);
+    S.dy = -Math.max(46, L.s * 5) * (1 - k);
+    if (S.phaseT >= 0.9) respawn();
+  } else if (S.phase === 'slip') {
+    const rise = Math.max(30, L.s * 3.2);
+    if (S.phaseT < 0.45) S.dy = -rise * easeIO(S.phaseT / 0.45);
+    else if (S.phaseT < 1.0) S.dy = -rise * (1 - easeIO((S.phaseT - 0.45) / 0.55));
+    else { S.dy = 0; S.phase = 'idle'; setControlsEnabled(true); }
+  } else if (S.phase === 'break') {
+    if (S.phaseT >= 1.15) { S.phase = 'respawn'; S.phaseT = 0; }
+  } else if (S.phase === 'respawn') {
+    if (S.phaseT >= 0.5) {
+      const released = respawn();
+      setStatus('', '새 ' + o.name + ' 등장! ' + (released ? '손은 풀어 뒀어 — 살살 조절해 봐' : '다시 도전해 봐'));
+    }
+  }
+
+  // ── 집게 각도 ──
+  const out = outForce();
+  let squish = 0;
+  if (o.squishy && S.objState !== 'gone') squish = clamp((out - o.min * 2) / 350, 0, 0.32);
+  const thFree = Math.max(0.05, TH_MAX * (1 - S.grip / 115));
+  let thTarget;
+  if (S.phase === 'drop' || S.phase === 'return' || S.phase === 'respawn') thTarget = TH_MAX;
+  else if ((S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC)
+    thTarget = Math.max(thFree, L.thetaC * (1 - squish));
+  else thTarget = thFree;
+  S.theta += (thTarget - S.theta) * Math.min(1, dt * 12);
+  const th = S.theta;
+
+  // ── 물건 ──
+  const gx = L.baseX + S.dx, gy = L.gyBase + S.dy;
+  const jawTipY = gy + L.Lj * Math.cos(th);
+  if (S.objState === 'ground') drawObj(c, S.objKey, L.objX, L.yG, L.s, squish);
+  else if (S.objState === 'held') drawObj(c, S.objKey, gx, jawTipY + o.h * L.s * 0.5, L.s, squish);
+  else if (S.objState === 'falling' && S.fall) drawObj(c, S.objKey, S.fall.x, S.fall.y, L.s, 0);
+
+  // ── 파편 ──
+  for (let i = S.particles.length - 1; i >= 0; i--) {
+    const p = S.particles[i];
+    p.life -= dt;
+    if (p.life <= 0) { S.particles.splice(i, 1); continue; }
+    p.vy += 900 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    if (p.y > L.yG - 2) { p.y = L.yG - 2; p.vy *= -0.35; p.vx *= 0.7; }
+    c.save(); c.globalAlpha = clamp(p.life, 0, 1);
+    c.translate(p.x, p.y); c.rotate(p.rot);
+    c.fillStyle = 'rgba(185,228,255,.9)';
+    c.beginPath(); c.moveTo(0, -p.size); c.lineTo(p.size * 0.7, p.size * 0.5); c.lineTo(-p.size * 0.7, p.size * 0.5);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  if (S.phase === 'break' && S.phaseT < 0.8) {
+    c.font = 'bold ' + Math.max(20, L.s * 2.6) + 'px sans-serif';
+    c.textAlign = 'center'; c.fillStyle = 'rgba(255,90,82,' + clamp(1 - S.phaseT, 0, 1) + ')';
+    c.fillText('쨍그랑!! 💥', L.objX, L.yG - o.h * L.s - 24);
+  }
+
+  // ── 집게 (X자 링키지) ──
+  const hcm = HANDLES[S.h].cm;
+  const hs = hcm * L.s * Math.sin(th), hc = hcm * L.s * Math.cos(th);
+  const js = L.Lj * Math.sin(th), jc = L.Lj * Math.cos(th);
+  const armW = Math.max(7, L.s * 0.95);
+  // 팔 2개: 손잡이끝(위) ↔ 받침점 ↔ 집게끝(아래)
+  const arms = [
+    { hx: gx - hs, hy: gy - hc, jx: gx + js, jy: gy + jc, col: '#2563eb', lit: '#7db4ff' },
+    { hx: gx + hs, hy: gy - hc, jx: gx - js, jy: gy + jc, col: '#1d4ed8', lit: '#5a95e8' },
+  ];
+  arms.forEach(a => {
+    c.strokeStyle = a.col; c.lineWidth = armW; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(a.hx, a.hy); c.lineTo(a.jx, a.jy); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = armW * 0.35;
+    c.beginPath(); c.moveTo(a.hx, a.hy); c.lineTo(a.jx, a.jy); c.stroke();
+    // 테크닉 구멍
+    c.fillStyle = 'rgba(0,0,0,.4)';
+    for (let t = 0.2; t < 1; t += 0.2) {
+      const px = a.hx + (a.jx - a.hx) * t, py = a.hy + (a.jy - a.hy) * t;
+      if (Math.hypot(px - gx, py - gy) > armW) {
+        c.beginPath(); c.arc(px, py, armW * 0.22, 0, 7); c.fill();
+      }
+    }
+    // 손잡이 그립
+    c.strokeStyle = '#0e1a33'; c.lineWidth = armW * 1.5; c.lineCap = 'round';
+    const gl = 0.16;
+    c.beginPath();
+    c.moveTo(a.hx, a.hy);
+    c.lineTo(a.hx + (gx - a.hx) * gl, a.hy + (gy - a.hy) * gl);
+    c.stroke();
+    // 집게 이빨 패드
+    c.fillStyle = '#ff9046';
+    c.beginPath(); c.arc(a.jx, a.jy, armW * 0.62, 0, 7); c.fill();
+    c.strokeStyle = '#c2410c'; c.lineWidth = 1.5; c.stroke();
+  });
+  // 받침점 핀
+  c.fillStyle = '#0b0f18';
+  c.beginPath(); c.arc(gx, gy, armW * 0.85, 0, 7); c.fill();
+  c.strokeStyle = '#39445c'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#ff5a52';
+  c.beginPath(); c.arc(gx, gy, armW * 0.32, 0, 7); c.fill();
+
+  // 악력 화살표 (손잡이를 안쪽으로)
+  if (S.grip > 0) {
+    const alen = 12 + S.grip * 0.45;
+    [[gx - hs, gy - hc, 1], [gx + hs, gy - hc, -1]].forEach(([x, y, d]) => {
+      c.strokeStyle = '#4da3ff'; c.fillStyle = '#4da3ff'; c.lineWidth = 3; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(x - d * (alen + 10), y); c.lineTo(x - d * 10, y); c.stroke();
+      c.beginPath(); c.moveTo(x - d * 4, y); c.lineTo(x - d * 13, y - 6); c.lineTo(x - d * 13, y + 6);
+      c.closePath(); c.fill();
+    });
+    c.fillStyle = '#4da3ff'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+    c.fillText(`악력 ${S.grip}N`, gx, gy - hc - 14);
+  }
+  // 출력힘 표시 (집게 끝)
+  if (out > 0 && (S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC + 0.02) {
+    c.fillStyle = '#ff9046'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+    c.fillText(`출력 ${out.toFixed(0)}N`, gx, gy + jc + Math.max(26, o.h * L.s * 0.5 + 22));
+  }
+
+  // 3요소 라벨
+  c.font = '10.5px sans-serif'; c.textAlign = 'left';
+  c.fillStyle = '#ff5a52'; c.fillText('● 받침점', gx + armW + 6, gy + 3);
+  c.fillStyle = '#4da3ff'; c.fillText('● 힘점', gx + hs + 10, gy - hc + 3);
+  c.fillStyle = '#ff9046'; c.fillText('● 작용점', gx + js + 10, gy + jc + 3);
+  // 길이 표시
+  c.fillStyle = '#8b98ad'; c.font = '10px sans-serif'; c.textAlign = 'right';
+  c.fillText(`손잡이 ${hcm}cm`, gx - hs / 2 - 12, gy - hc / 2);
+  c.fillText(`집게 ${JAW_CM}cm`, gx - js / 2 - 12, gy + jc / 2 + 4);
+
+  // 배지 자동 숨김
+  if (S.badgeTimer > 0) {
+    S.badgeTimer -= dt;
+    if (S.badgeTimer <= 0) $('bd').className = 'badge';
+  }
+}
+
+/* ── 루프 ── */
+let lastTs = null;
+function loop(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  if ($('game').classList.contains('on')) drawScene(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ── 입력 바인딩 ── */
+$('grip').addEventListener('input', () => {
+  S.grip = +$('grip').value;
+  updateReadouts();
+  checkLiveBreak();
+});
+document.querySelectorAll('#pickH button').forEach(b => b.onclick = () => {
+  if (S.phase !== 'idle') return;
+  S.h = +b.dataset.i;
+  document.querySelectorAll('#pickH button').forEach(x => x.classList.toggle('on', x === b));
+  $('v_h').textContent = HANDLES[S.h].cm + 'cm';
+  updateReadouts();
+  checkLiveBreak();
+});
+document.querySelectorAll('#pickO button').forEach(b => b.onclick = () => {
+  if (S.phase !== 'idle') return;
+  S.objKey = b.dataset.o;
+  document.querySelectorAll('#pickO button').forEach(x => x.classList.toggle('on', x === b));
+  $('v_o').textContent = OBJ().name;
+  S.objState = 'ground'; S.particles = [];
+  setStatus('', OBJ().name + ' 등장 — 힘을 조절해서 집어 봐');
+  updateReadouts();
+  checkLiveBreak();
+});
+$('carry').onclick = doCarry;
+$('resetM').onclick = () => {
+  if (S.phase !== 'idle') return;
+  S.delivered = { sponge: false, wood: false, glass: false };
+  S.basket = [];
+  S.objState = 'ground'; S.particles = [];
+  updateMission();
+  setStatus('', '미션 리셋! 다시 3가지를 옮겨 봐');
+  $('bd').className = 'badge';
+};
+
+/* ── 퀴즈 ── */
+let qCorrect = 0;
+function bindQuiz() {
+  document.querySelectorAll('.choices').forEach(ch => {
+    const ans = +ch.dataset.ans;
+    [...ch.children].forEach((b, i) => b.onclick = () => {
+      if (ch.dataset.done) return;
+      ch.dataset.done = '1';
+      if (i === ans) { b.classList.add('correct'); qCorrect++; }
+      else { b.classList.add('wrong'); ch.children[ans].classList.add('correct'); }
+      ch.parentElement.querySelector('.explain').classList.add('show');
+      $('qscore').textContent = `맞힌 문제: ${qCorrect} / 3`;
+    });
+  });
+}
+bindQuiz();
+$('qreset').onclick = () => {
+  qCorrect = 0;
+  $('qscore').textContent = '맞힌 문제: 0 / 3';
+  document.querySelectorAll('.choices').forEach(ch => {
+    delete ch.dataset.done;
+    [...ch.children].forEach(b => b.classList.remove('correct', 'wrong'));
+    ch.parentElement.querySelector('.explain').classList.remove('show');
+  });
+};
+
+/* ── 초기화 ── */
+updateReadouts();
+updateMission();
+</script>
+</body>
+</html>

@@ -37,7 +37,7 @@
   .sim .lesson { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
   .sim p { font-size: 12.5px; color: #a9b6cb; line-height: 1.6; }
   .sim .foot { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
-  .pill { font-size: 11px; border-radius: 20px; padding: 3px 10px; border: 1px solid; }
+  .pill { font-size: 11px; border-radius: 20px; padding: 3px 10px; border: 1px solid; white-space: nowrap; }
   .pill.on { color: var(--green); border-color: rgba(46,224,111,.45); background: rgba(46,224,111,.08); }
   .pill.tool { color: var(--dim); border-color: var(--border); }
   .go { margin-left: auto; color: var(--accent); font-size: 13px; font-weight: 700; }
@@ -97,6 +97,97 @@ const COURSES = [
         lesson: '힘과 포물선 · 균형과 불균형',
         desc: '무게추 낙하로 공을 던지는 발사기 — 세기·거리·높이를 바꿔 골을 넣는다. "멀수록 더 세게, 공기저항 켜면 못 넣는다"를 눈으로 확인한다.',
         tags: ['3D · 카메라 회전', '예측 모드', '거리×높이 득점표'],
+        ready: true,
+      },
+      {
+        id: 'dance-party', icon: '🕺', title: '댄스파티 기어 시뮬레이션',
+        lesson: '12차시 · 기어와 회전 방향',
+        desc: '댄서들이 기어 위에서 빙글빙글 — 잇수와 아이들러를 바꾸면 회전 방향·속도가 어떻게 변할까? 미션 5개로 기어 트레인을 마스터한다.',
+        tags: ['미션 모드', '예측 게임', '기어 8·16·24·40T'],
+        ready: true,
+      },
+      {
+        id: 'pulley-crane', icon: '🏗️', title: '도르래 크레인 시뮬레이션',
+        lesson: '13·23차시 · 도르래와 기계적 이득',
+        desc: '고정·움직·복합 도르래로 화물을 들어올린다 — 힘은 줄고 당길 줄은 길어지는 맞바꿈을 힘 게이지로 확인. 40kg 바위 미션.',
+        tags: ['힘 게이지', '올리기·내리기', '미션'],
+        ready: true,
+      },
+      {
+        id: 'race-run', icon: '🏃', title: '경주하기 시뮬레이션',
+        lesson: '14차시 · 기어비와 속도·힘',
+        desc: '크랭크 러너로 AI와 경주 — 속도형·힘형 기어비 선택이 평지와 오르막에서 승부를 가른다. 실속까지 재현.',
+        tags: ['AI 대전', '예측 도전', '오르막 실험'],
+        ready: true,
+      },
+      {
+        id: 'target-practice', icon: '🎯', title: '목표물 맞추기 시뮬레이션',
+        lesson: '15차시 · 발사각과 포물선',
+        desc: '무게추 발사기로 거리별 표적판을 쓰러뜨린다 — 각도와 세기를 조절해 45° 최대 사거리를 눈으로 확인.',
+        tags: ['3D · 카메라 회전', '예측 모드', '각도×세기 기록표'],
+        ready: true,
+      },
+      {
+        id: 'tightrope', icon: '🤸', title: '균형을 잡는 소녀 시뮬레이션',
+        lesson: '16차시 · 무게중심과 균형',
+        desc: '외줄 위 소녀의 균형봉에 추를 걸어 10초 버티기 — 무게중심 점이 움직이는 걸 보며 균형·불균형 힘을 배운다. 바람 도전.',
+        tags: ['3D', '무게중심 시각화', '버티기 기록'],
+        ready: true,
+      },
+      {
+        id: 'hockey', icon: '🏒', title: '하키 시뮬레이션',
+        lesson: '17차시 · 밀기 힘과 마찰',
+        desc: '골키퍼 타이밍을 읽고 슛! 빙판과 거친 바닥에서 퍽이 미끄러지는 거리가 왜 다른지 자동 실험으로 확인한다.',
+        tags: ['3D · 카메라 회전', '자동 실험', '마찰 비교'],
+        ready: true,
+      },
+      {
+        id: 'zipline', icon: '🚡', title: '집라인 시뮬레이션',
+        lesson: '18차시 · 경사와 안전 속도',
+        desc: '높이·무게·도르래 마찰을 조절해 사뿐히 도착시켜라 — 너무 빠르면 쿵, 너무 느리면 대롱대롱. 질량은 속도를 거의 못 바꾼다!',
+        tags: ['3D · 슬로모션', 'v-t 그래프', '예측 퀴즈'],
+        ready: true,
+      },
+      {
+        id: 'frog-jump', icon: '🐸', title: '개구리 점프 시뮬레이션',
+        lesson: '19차시 · 탄성 에너지',
+        desc: '고무줄을 당겨 개구리를 점프시켜 연잎을 건넌다 — 당김 2배면 거리는 4배! 탄성 에너지의 비밀을 궤적으로 확인.',
+        tags: ['연잎 건너기', '고스트 궤적 비교', '예측 모드'],
+        ready: true,
+      },
+      {
+        id: 'fishing', icon: '🎣', title: '낚시하러 가자 시뮬레이션',
+        lesson: '20차시 · 릴과 기어비',
+        desc: '릴 기어비를 골라 물고기를 감아올린다 — 작은 물고기는 속도형, 큰 물고기는 힘형. 기어비의 힘·속도 맞바꿈을 낚시로 배운다.',
+        tags: ['릴 감기', '힘 게이지', '어항 수집'],
+        ready: true,
+      },
+      {
+        id: 'gripper', icon: '🦞', title: '집게 시뮬레이션',
+        lesson: '21차시 · 지렛대 배율',
+        desc: '손잡이 길이를 바꿔 스펀지·나무·유리컵을 옮긴다 — 세게 집으면 유리가 쨍그랑! 지렛대 힘 배율과 힘 조절을 배운다.',
+        tags: ['지렛대 게이지', '미션 운반', '예측 퀴즈'],
+        ready: true,
+      },
+      {
+        id: 'balance-scale', icon: '⚖️', title: '저울 시뮬레이션',
+        lesson: '22차시 · 모멘트와 수평',
+        desc: '추를 걸이에 걸어 수평 만들기 — 가벼워도 멀리 걸면 이긴다! 모멘트=무게×거리를 퀴즈 10문항으로 확인.',
+        tags: ['드래그 배치', '퀴즈 10문항', '모멘트 게이지'],
+        ready: true,
+      },
+      {
+        id: 'mechanism-quiz', icon: '🧩', title: '메커니즘 예측하기',
+        lesson: '24차시 · 종합 예측 퀴즈',
+        desc: '기어·도르래·지렛대 10문제 — 먼저 예측하고 재생해서 확인한다. 브릭큐 에센셜 총정리 등급전.',
+        tags: ['10문제', '재생 검증', '등급 배지'],
+        ready: true,
+      },
+      {
+        id: 'ball-kick', icon: '⚽', title: '공차기 게임 시뮬레이션',
+        lesson: '25차시 · 위치에너지와 킥',
+        desc: '다리를 들어올린 각도가 킥의 세기 — 진자 에너지로 공을 차서 골을 넣는다. 잔디와 맨땅의 구름 마찰 비교.',
+        tags: ['3D · 카메라 회전', '자동 실험', '예측 모드'],
         ready: true,
       },
     ],

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>낚시하러 가자 — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; z-index: 5; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.good { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.warn { display: inline-flex; background: rgba(70,50,10,.78); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.bad  { display: inline-flex; background: rgba(70,18,14,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 350px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 6px 0 10px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .pick3 { display: flex; gap: 6px; margin-bottom: 12px; }
+  .pick3 button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; line-height: 1.4; }
+  .pick3 button small { display: block; font-size: 10px; color: var(--dim); font-family: var(--mono); }
+  .pick3 button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+  .pick3 button.on small { color: var(--accent); }
+  .quiz { border: 1px dashed rgba(199,146,234,.5); background: rgba(199,146,234,.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  .quiz .q { font-size: 12.5px; color: var(--purple); font-weight: 700; margin-bottom: 8px; }
+  .quiz .a { display: flex; gap: 6px; }
+  .quiz .a button { flex: 1; padding: 6px 0; font-size: 12px; border-radius: 8px; }
+  .quiz .a button.on { border-color: var(--purple); color: var(--purple); background: rgba(199,146,234,.12); font-weight: 700; }
+  .quiz .msg { font-size: 11px; color: var(--dim); margin-top: 7px; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .ctl-row .primary { flex: 1; }
+  #reelBtn { width: 100%; padding: 18px 0; font-size: 17px; font-weight: 800; border-radius: 14px; margin-bottom: 12px;
+    background: linear-gradient(135deg, #c2410c, #ff9046); border-color: #ff9046; color: #fff;
+    touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 16px rgba(255,144,70,.25); }
+  #reelBtn:disabled { box-shadow: none; }
+  #reelBtn.holding { transform: scale(0.97); box-shadow: 0 0 22px rgba(255,144,70,.5); }
+  canvas.gearview { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; margin-bottom: 12px; }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 72px; flex: none; }
+  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .12s; }
+  .bar-row .val { width: 44px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .tank { display: flex; gap: 8px; margin-bottom: 12px; }
+  .slot { flex: 1; background: #0c1526; border: 1px solid var(--border); border-radius: 10px; padding: 9px 4px 7px; text-align: center; }
+  .slot .icon { font-size: 22px; filter: grayscale(1) brightness(0.45); transition: filter .4s; }
+  .slot.got { border-color: rgba(46,224,111,.5); box-shadow: 0 0 12px rgba(46,224,111,.15); }
+  .slot.got .icon { filter: none; }
+  .slot .nm { font-size: 10.5px; color: var(--dim); margin-top: 3px; }
+  .slot.got .nm { color: var(--green); font-weight: 700; }
+  details { margin-top: 4px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 48vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 20차시</div>
+      <div class="title">🎣 낚시하러 가자 — 릴 기어비 낚시</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="game">🎣 낚시터</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 낚시터 ══════ -->
+  <section class="exp on" id="game">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">낚시 시간</span><span id="hud_t">0.0 s</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">물고기 깊이</span><span id="hud_d">— m</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">줄 감는 속도</span><span id="hud_v">0.0 m/s</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <h3>1️⃣ 릴 기어비 고르기 (크랭크 → 줄감개)</h3>
+      <div class="pick3" id="pickGear">
+        <button data-g="speed">⚡ 속도형<small>1:3 · 24T→8T</small></button>
+        <button data-g="even" class="on">⚖️ 균형<small>1:1 · 16T→16T</small></button>
+        <button data-g="power">💪 힘형<small>3:1 · 8T→24T</small></button>
+      </div>
+      <h3>2️⃣ 물고기 고르기</h3>
+      <div class="pick3" id="pickFish">
+        <button data-f="small" class="on">🐟 소형<small>얕고 가벼움</small></button>
+        <button data-f="mid">🐠 중형<small>제법 무거움</small></button>
+        <button data-f="big">🐡 대형<small>깊고 아주 무거움</small></button>
+      </div>
+      <div class="quiz" id="quizBox">
+        <div class="q" id="quizQ">❓ 예측! 소형 물고기엔 어떤 기어가 좋을까?</div>
+        <div class="a" id="quizA">
+          <button data-g="speed">⚡ 속도형</button>
+          <button data-g="even">⚖️ 균형</button>
+          <button data-g="power">💪 힘형</button>
+        </div>
+        <div class="msg" id="quizMsg">골라 놓고 직접 낚아서 맞는지 확인해 봐!</div>
+      </div>
+      <div class="ctl-row">
+        <button class="primary" id="castBtn">🎣 낚시 시작</button>
+        <button id="giveupBtn" disabled>그만두기</button>
+      </div>
+      <button id="reelBtn" disabled>🌀 릴 감기 — 꾹 누르거나 연타!</button>
+      <h3>릴 기어 돌아가는 모습</h3>
+      <canvas class="gearview" id="gearCv" height="130"></canvas>
+      <h3>힘 대결 — 내 당김 힘 vs 물고기 저항</h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">내 당김 힘</span><div class="bar-track"><div class="bar-fill" id="barPull" style="background:linear-gradient(90deg,#166534,#2ee06f);width:0%"></div></div><span class="val" id="valPull">—</span></div>
+        <div class="bar-row"><span class="lab">물고기 저항</span><div class="bar-track"><div class="bar-fill" id="barRes" style="background:linear-gradient(90deg,#7f1d1d,#ff5a52);width:0%"></div></div><span class="val" id="valRes">—</span></div>
+      </div>
+      <h3>🏆 미션 — 세 마리를 모두 어항에 모으자!</h3>
+      <div class="tank">
+        <div class="slot" id="slot_small"><div class="icon">🐟</div><div class="nm">소형</div></div>
+        <div class="slot" id="slot_mid"><div class="icon">🐠</div><div class="nm">중형</div></div>
+        <div class="slot" id="slot_big"><div class="icon">🐡</div><div class="nm">대형</div></div>
+      </div>
+      <details open>
+        <summary>📋 낚시 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table id="tb">
+            <thead><tr><th>#</th><th>기어</th><th>물고기</th><th>시간</th><th>결과</th><th>예측</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <h2>📖 릴의 비밀 — 기어비는 힘과 속도를 맞바꾸는 장치야</h2>
+      <p>낚싯대의 릴 안에는 기어 두 개가 맞물려 있어. 크랭크(손잡이) 쪽 기어가 <b>드라이버</b>,
+        줄을 감는 줄감개 쪽 기어가 <b>팔로워</b>야. 맞물린 기어는 <b>지나가는 톱니 수가 항상 같아서</b>,
+        잇수가 다르면 도는 속도와 힘이 달라져.</p>
+      <ul>
+        <li>기어비: <span class="eq">기어비 = 팔로워 잇수 ÷ 드라이버 잇수</span></li>
+        <li>줄 감는 속도: <span class="eq">줄감개 회전 = 내 크랭크 회전 ÷ 기어비</span></li>
+        <li>당기는 힘: <span class="eq">당김 힘 = 내 힘 × 기어비</span> — 속도를 내주면 그만큼 힘을 얻어!</li>
+      </ul>
+      <table>
+        <thead><tr><th>릴 종류</th><th>기어 (크랭크→줄감개)</th><th>결과</th><th>어울리는 물고기</th></tr></thead>
+        <tbody>
+          <tr><td class="cond">⚡ 속도형 1:3</td><td>24T → 8T</td><td class="cond">줄은 3배 빨리 · 힘은 ⅓</td><td class="cond">가벼운 소형 — 순식간에 낚아채기</td></tr>
+          <tr><td class="cond">⚖️ 균형 1:1</td><td>16T → 16T</td><td class="cond">속도·힘 그대로</td><td class="cond">중형 — 무난하게</td></tr>
+          <tr><td class="cond">💪 힘형 3:1</td><td>8T → 24T</td><td class="cond">힘은 3배 · 줄은 ⅓ 속도</td><td class="cond">무거운 대형 — 천천히, 하지만 확실하게</td></tr>
+        </tbody>
+      </table>
+      <p><b>왜 대형 물고기는 힘형으로만 잡힐까?</b> 물고기 저항보다 내 당김 힘이 세야 줄이 감겨.
+        힘이 모자라면 아무리 크랭크를 돌려도 줄이 안 감기고 물고기가 버텨.
+        속도형은 빠르지만 힘이 ⅓이라 큰 물고기 앞에선 꼼짝도 못 해.
+        반대로 힘형은 느리지만 힘이 3배라 대형도 끌어올릴 수 있지.
+        <b>세상에 공짜는 없어 — 빠르면 약하고, 세면 느려!</b></p>
+      <div class="tip">
+        <b>🧱 실제 브릭큐 낚싯대 팁</b><br>
+        · 크랭크 축에 작은 기어, 줄감개 축에 큰 기어를 끼우면 힘형 릴 완성!<br>
+        · 기어를 서로 바꿔 끼우면 속도형 — 손잡이를 돌려 보면 느낌이 완전 달라<br>
+        · 무거운 것(지우개 뭉치)과 가벼운 것(종이 클립)을 매달아 어느 릴이 유리한지 겨뤄 보기<br>
+        · 자전거 기어, 자동차 저단 기어도 똑같은 원리야 — 오르막에선 힘형!
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 탭 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('game').classList.toggle('on', b.dataset.tab === 'game');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+/* ── 데이터 ── */
+const BASE_FORCE = 10;            // 내 기본 힘
+const LINE_PER_REV = 0.45;        // 줄감개 1회전당 감기는 줄(m)
+const CRANK_RPS = 2.0;            // 꾹 눌렀을 때 크랭크 회전/초
+const GEARS = {
+  speed: { name: '⚡ 속도형', short: '속도형', label: '1:3', drvT: 24, flwT: 8,  spd: 3,   frc: 1/3 },
+  even:  { name: '⚖️ 균형',  short: '균형',  label: '1:1', drvT: 16, flwT: 16, spd: 1,   frc: 1 },
+  power: { name: '💪 힘형',  short: '힘형',  label: '3:1', drvT: 8,  flwT: 24, spd: 1/3, frc: 3 },
+};
+const FISH = {
+  small: { name: '소형', icon: '🐟', depth: 3.2, res: 2,  size: 15, color: '#2ee06f', light: '#a8f5c8', best: 'speed',
+           bestWhy: '가벼우니까 힘은 조금만 있어도 돼 — 빠른 속도형이 최고!' },
+  mid:   { name: '중형', icon: '🐠', depth: 4.2, res: 8,  size: 23, color: '#ffb02e', light: '#ffd98a', best: 'even',
+           bestWhy: '속도형(힘 3.3)으론 못 당겨 — 균형 1:1이면 힘도 되고 속도도 적당해!' },
+  big:   { name: '대형', icon: '🐡', depth: 5.2, res: 20, size: 33, color: '#ff5a52', light: '#ffb0a8', best: 'power',
+           bestWhy: '저항 20을 이기려면 힘 30이 필요해 — 힘 3배 힘형만 가능!' },
+};
+
+/* ── 상태 ── */
+let gearKey = 'even', fishKey = 'small';
+let mode = 'idle';                 // idle | fight | done
+let t = 0, depth = 0, crankAng = 0, boost = 0, holdingPtr = false, holdingKey = false;
+let lineSpeed = 0, stalled = false, struggling = false, hintShown = false;
+let prediction = null, runCount = 0;
+const caught = { small: false, mid: false, big: false };
+const bubbles = [];
+let wave = 0, lastTs = null, caughtFishAnim = 0;
+
+const holding = () => holdingPtr || holdingKey;
+const gear = () => GEARS[gearKey];
+const fish = () => FISH[fishKey];
+const pullForce = () => BASE_FORCE * gear().frc;
+
+/* ── UI 컨트롤 ── */
+function pick3(el, attr, onSel) {
+  el.querySelectorAll('button').forEach(b => b.onclick = () => {
+    if (mode === 'fight') return;
+    el.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    onSel(b.dataset[attr]);
+  });
+}
+pick3($('pickGear'), 'g', k => { gearKey = k; refreshStatic(); });
+pick3($('pickFish'), 'f', k => { fishKey = k; prediction = null; refreshQuiz(); refreshStatic(); });
+
+$('quizA').querySelectorAll('button').forEach(b => b.onclick = () => {
+  if (mode === 'fight') return;
+  prediction = b.dataset.g;
+  $('quizA').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('quizMsg').textContent = `네 예측: ${GEARS[prediction].name} ${GEARS[prediction].label} — 직접 낚아서 확인해 보자!`;
+});
+function refreshQuiz() {
+  $('quizQ').textContent = `❓ 예측! ${fish().name} 물고기엔 어떤 기어가 좋을까?`;
+  $('quizA').querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  $('quizMsg').textContent = '골라 놓고 직접 낚아서 맞는지 확인해 봐!';
+}
+
+function setBadge(cls, txt) { const b = $('bd'); b.className = 'badge ' + cls; b.textContent = txt; }
+function hideBadge() { $('bd').className = 'badge'; }
+
+function refreshStatic() {
+  const g = gear(), f = fish();
+  $('valPull').textContent = pullForce().toFixed(1);
+  $('barPull').style.width = Math.min(100, pullForce() / 32 * 100) + '%';
+  if (mode !== 'fight') {
+    $('valRes').textContent = f.res.toFixed(1);
+    $('barRes').style.width = Math.min(100, f.res / 32 * 100) + '%';
+    $('hud_d').textContent = f.depth.toFixed(1) + ' m';
+    $('hud_t').textContent = '0.0 s';
+    $('hud_v').textContent = '0.0 m/s';
+  }
+}
+
+/* ── 낚시 진행 ── */
+$('castBtn').onclick = () => {
+  if (mode === 'fight') return;
+  mode = 'fight';
+  t = 0; depth = fish().depth; boost = 0; lineSpeed = 0; stalled = false;
+  bubbles.length = 0; caughtFishAnim = 0;
+  hideBadge();
+  $('castBtn').disabled = true; $('giveupBtn').disabled = false; $('reelBtn').disabled = false;
+  lockPicks(true);
+};
+$('giveupBtn').onclick = () => { if (mode === 'fight') finish(false, '스스로 그만뒀어'); };
+
+function lockPicks(lock) {
+  document.querySelectorAll('#pickGear button, #pickFish button, #quizA button')
+    .forEach(b => b.disabled = lock);
+}
+
+/* 릴 버튼 — 꾹(holding) + 연타(boost) */
+const reelBtn = $('reelBtn');
+reelBtn.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (mode !== 'fight') return;
+  holdingPtr = true; boost = Math.min(1.2, boost + 0.45);
+  reelBtn.classList.add('holding');
+  reelBtn.setPointerCapture(e.pointerId);
+});
+['pointerup', 'pointercancel'].forEach(ev => reelBtn.addEventListener(ev, () => {
+  holdingPtr = false;
+  if (!holding()) reelBtn.classList.remove('holding');
+}));
+window.addEventListener('keydown', e => { if (e.code === 'Space' && mode === 'fight') { e.preventDefault(); if (!holdingKey) { holdingKey = true; boost = Math.min(1.2, boost + 0.45); reelBtn.classList.add('holding'); } } });
+window.addEventListener('keyup', e => { if (e.code === 'Space') { holdingKey = false; if (!holding()) reelBtn.classList.remove('holding'); } });
+
+function step(dt) {
+  if (mode !== 'fight') return;
+  t += dt;
+  boost = Math.max(0, boost - dt * 0.8);
+  const g = gear(), f = fish();
+
+  // 물고기 몸부림 — 주기적으로 저항이 세짐
+  struggling = t > 1.2 && (t % 3.5) < 1.0;
+  const res = f.res * (struggling ? 1.45 : 1);
+  $('valRes').textContent = res.toFixed(1);
+  $('barRes').style.width = Math.min(100, res / 32 * 100) + '%';
+
+  const cranking = holding() || boost > 0.05;
+  const crankRate = (holding() ? CRANK_RPS : 0) + boost * CRANK_RPS * 0.75;
+
+  if (cranking && pullForce() > res) {
+    stalled = false;
+    lineSpeed = crankRate * g.spd * LINE_PER_REV;
+    depth -= lineSpeed * dt;
+    crankAng += crankRate * Math.PI * 2 * dt;
+    if (Math.random() < dt * 14) spawnBubble();
+  } else if (cranking) {
+    stalled = true;                       // 힘 부족 — 줄이 안 감김
+    lineSpeed = 0;
+    depth += 0.3 * dt;
+    crankAng += crankRate * 0.25 * Math.PI * 2 * dt;   // 헛도는 느낌
+  } else {
+    stalled = false;
+    lineSpeed = 0;
+    depth += 0.45 * dt;                   // 안 감으면 물고기가 도망감
+  }
+  depth = Math.max(0, depth);
+
+  if (stalled && !hintShown && t > 2.5 && pullForce() <= f.res) {
+    setBadge('warn', `🐟 물고기가 버텨! 힘 ${pullForce().toFixed(1)} < 저항 ${f.res.toFixed(1)} — 더 힘센 기어가 필요해`);
+    hintShown = true;
+  }
+
+  if (depth <= 0.12) { finish(true); return; }
+  if (depth > f.depth + 1.4) { finish(false, '물고기가 깊이 도망갔어'); return; }
+  if (t > 40) { finish(false, '너무 오래 걸려서 놓쳤어'); return; }
+
+  $('hud_t').textContent = t.toFixed(1) + ' s';
+  $('hud_d').textContent = depth.toFixed(1) + ' m';
+  $('hud_v').textContent = lineSpeed.toFixed(1) + ' m/s';
+}
+
+function finish(success, why) {
+  mode = 'done';
+  holdingPtr = holdingKey = false; reelBtn.classList.remove('holding');
+  $('castBtn').disabled = false; $('giveupBtn').disabled = true; $('reelBtn').disabled = true;
+  lockPicks(false);
+  hintShown = false;
+  const g = gear(), f = fish();
+
+  let predTxt = '—';
+  if (prediction) {
+    const hit = prediction === f.best;
+    predTxt = hit ? '적중 ✓' : '빗나감';
+    $('quizMsg').textContent = hit
+      ? `🎉 예측 적중! ${f.bestWhy}`
+      : `아쉽다! 정답은 ${GEARS[f.best].name} ${GEARS[f.best].label} — ${f.bestWhy}`;
+  }
+
+  if (success) {
+    caught[fishKey] = true;
+    $('slot_' + fishKey).classList.add('got');
+    caughtFishAnim = 1;
+    const all = caught.small && caught.mid && caught.big;
+    setBadge('good', all
+      ? `🏆 미션 완료! 세 마리 다 모았다 — 기어비 마스터!`
+      : `🎉 ${f.name} 낚았다! ${t.toFixed(1)}초 (${g.short} ${g.label})`);
+  } else {
+    setBadge('bad', `😢 놓쳤어… ${why}. ${pullForce() <= f.res ? '더 힘센 기어로 바꿔 봐!' : '릴을 쉬지 말고 감아 봐!'}`);
+  }
+
+  const tb = $('tb').querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${++runCount}</td><td class="cond">${g.short} ${g.label}</td>` +
+    `<td class="cond">${f.icon} ${f.name}</td><td>${t.toFixed(1)}s</td>` +
+    `<td class="cond" style="color:${success ? 'var(--green)' : 'var(--red)'}">${success ? '성공' : '실패'}</td>` +
+    `<td class="cond">${predTxt}</td>`;
+  tb.prepend(tr);
+  while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+  refreshStatic();
+}
+
+/* ── 그리기: 낚시터 장면 ── */
+function spawnBubble() {
+  bubbles.push({ y: 0, r: 1.5 + Math.random() * 2.5, vy: 18 + Math.random() * 22, life: 1, offX: (Math.random() - 0.5) * 22 });
+}
+function roundedRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
+
+function drawFishShape(c, x, y, size, color, light, ang, mouthUp) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  const L = size * 2.1, Hh = size * 1.15;
+  // 꼬리
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(L * 0.42, 0);
+  c.lineTo(L * 0.62, -Hh * 0.55);
+  c.lineTo(L * 0.62, Hh * 0.55);
+  c.closePath(); c.fill();
+  // 몸통
+  const bg = c.createLinearGradient(0, -Hh / 2, 0, Hh / 2);
+  bg.addColorStop(0, light); bg.addColorStop(1, color);
+  c.fillStyle = bg;
+  c.beginPath(); c.ellipse(0, 0, L / 2, Hh / 2, 0, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  // 지느러미
+  c.fillStyle = 'rgba(0,0,0,.18)';
+  c.beginPath(); c.ellipse(L * 0.05, Hh * 0.1, L * 0.13, Hh * 0.22, 0.6, 0, 7); c.fill();
+  // 눈
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(-L * 0.28, -Hh * 0.12, size * 0.14, 0, 7); c.fill();
+  c.fillStyle = '#111'; c.beginPath(); c.arc(-L * 0.28, -Hh * 0.12, size * 0.07, 0, 7); c.fill();
+  // 입
+  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(-L * 0.42, mouthUp ? -Hh * 0.05 : Hh * 0.05, size * 0.12, 0.4, 2.2); c.stroke();
+  c.restore();
+}
+
+function drawScene(dt) {
+  const cv = $('cv');
+  const { c, W, H } = fit(cv);
+  wave += dt;
+  const waterY = H * 0.28;
+  const f = fish(), g = gear();
+  const maxD = 6.8;
+  const pxPerM = (H - waterY - 26) / maxD;
+
+  // 하늘
+  const sky = c.createLinearGradient(0, 0, 0, waterY);
+  sky.addColorStop(0, '#101a38'); sky.addColorStop(1, '#1b2f55');
+  c.fillStyle = sky; c.fillRect(0, 0, W, waterY);
+  // 달 + 별
+  c.fillStyle = '#ffe9b8'; c.beginPath(); c.arc(W * 0.82, waterY * 0.34, 16, 0, 7); c.fill();
+  c.fillStyle = '#1b2f55'; c.beginPath(); c.arc(W * 0.82 + 7, waterY * 0.34 - 4, 13, 0, 7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.5)';
+  for (let i = 0; i < 14; i++) {
+    const sx = (i * 137.5) % W, sy = ((i * 91.7) % (waterY * 0.8));
+    c.fillRect(sx, sy, 1.6, 1.6);
+  }
+
+  // 물
+  const wat = c.createLinearGradient(0, waterY, 0, H);
+  wat.addColorStop(0, '#0d3a63'); wat.addColorStop(0.55, '#08284a'); wat.addColorStop(1, '#041226');
+  c.fillStyle = wat; c.fillRect(0, waterY, W, H - waterY);
+  // 물결
+  c.strokeStyle = 'rgba(140,200,255,.45)'; c.lineWidth = 2;
+  c.beginPath();
+  for (let x = 0; x <= W; x += 6) {
+    const y = waterY + Math.sin(x * 0.025 + wave * 2.2) * 3;
+    x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+  }
+  c.stroke();
+  c.strokeStyle = 'rgba(140,200,255,.14)';
+  c.beginPath();
+  for (let x = 0; x <= W; x += 6) {
+    const y = waterY + 9 + Math.sin(x * 0.03 + wave * 1.7 + 2) * 3;
+    x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+  }
+  c.stroke();
+
+  // 바닥 + 수초
+  c.fillStyle = '#0c1a2e'; c.beginPath();
+  c.moveTo(0, H); c.lineTo(0, H - 16);
+  for (let x = 0; x <= W; x += 40) c.lineTo(x, H - 16 - Math.sin(x * 0.02) * 6);
+  c.lineTo(W, H); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(46,150,110,.5)'; c.lineWidth = 2.5; c.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const bx = W * (0.12 + i * 0.16), sw = Math.sin(wave * 1.4 + i) * 6;
+    c.beginPath(); c.moveTo(bx, H - 14);
+    c.quadraticCurveTo(bx + sw, H - 34, bx + sw * 1.8, H - 52 - (i % 3) * 8);
+    c.stroke();
+  }
+
+  // 깊이 눈금 (오른쪽)
+  c.font = '10px sans-serif'; c.textAlign = 'right';
+  for (let m = 0; m <= maxD; m += 1) {
+    const y = waterY + m * pxPerM;
+    if (y > H - 22) break;
+    c.strokeStyle = 'rgba(140,170,220,.22)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(W - 34, y); c.lineTo(W - 26, y); c.stroke();
+    c.fillStyle = 'rgba(160,185,225,.55)';
+    c.fillText(m + ' m', W - 38, y + 3.5);
+  }
+
+  // 부두 (오른쪽 아님 — 왼쪽)
+  const dockW = Math.min(150, W * 0.24), dockY = waterY - 26;
+  c.fillStyle = '#3a2c1c'; c.fillRect(0, dockY, dockW, 12);
+  c.fillStyle = '#2a2015';
+  for (let x = 8; x < dockW; x += 26) c.fillRect(x, dockY, 3, 12);
+  c.fillStyle = '#241b12';
+  c.fillRect(dockW * 0.25, dockY + 12, 8, waterY - dockY + 6);
+  c.fillRect(dockW * 0.75, dockY + 12, 8, waterY - dockY + 6);
+
+  // 아이 (간단한 미니피겨)
+  const kidX = dockW * 0.45, kidY = dockY;
+  c.fillStyle = '#ffcf6b'; c.beginPath(); c.arc(kidX, kidY - 44, 9, 0, 7); c.fill();  // 머리
+  c.fillStyle = '#e34b40'; roundedRect(c, kidX - 8, kidY - 35, 16, 21, 4); c.fill();  // 몸
+  c.fillStyle = '#2f5fd0'; c.fillRect(kidX - 8, kidY - 15, 6, 15); c.fillRect(kidX + 2, kidY - 15, 6, 15); // 다리
+  // 팔
+  c.strokeStyle = '#e34b40'; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(kidX + 5, kidY - 30); c.lineTo(kidX + 17, kidY - 24); c.stroke();
+
+  // 낚싯대 — 긴장도에 따라 휘어짐
+  const tension = mode === 'fight' ? (stalled ? 1 : 0.55) : 0.12;
+  const baseX = kidX + 16, baseY = kidY - 25;
+  const tipX = Math.min(W * 0.46, baseX + W * 0.26);
+  const tipY = waterY - H * 0.2 + tension * 26;
+  c.strokeStyle = '#c9a15a'; c.lineWidth = 3.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(baseX, baseY);
+  c.quadraticCurveTo(baseX + (tipX - baseX) * 0.6, baseY - (baseY - tipY) * 1.15, tipX, tipY);
+  c.stroke();
+  // 릴 (막대 밑) — 크랭크 회전 표시
+  const reelX = baseX + 14, reelY = baseY + 10;
+  c.fillStyle = '#39445c'; c.beginPath(); c.arc(reelX, reelY, 8, 0, 7); c.fill();
+  c.strokeStyle = '#8b98ad'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(reelX, reelY);
+  c.lineTo(reelX + Math.cos(crankAng) * 10, reelY + Math.sin(crankAng) * 10); c.stroke();
+  c.fillStyle = '#ffb02e';
+  c.beginPath(); c.arc(reelX + Math.cos(crankAng) * 10, reelY + Math.sin(crankAng) * 10, 3, 0, 7); c.fill();
+
+  // 물고기 위치
+  let fx = tipX, fy;
+  if (mode === 'fight') {
+    const sway = Math.sin(t * 1.3) * (14 + depth * 4) + (struggling ? Math.sin(t * 22) * 7 : 0);
+    fx = tipX + sway;
+    fy = waterY + depth * pxPerM;
+  }
+
+  // 낚싯줄
+  if (mode === 'fight') {
+    c.strokeStyle = stalled ? 'rgba(255,110,100,.9)' : 'rgba(230,240,255,.65)';
+    c.lineWidth = stalled ? 1.8 : 1.2;
+    c.beginPath(); c.moveTo(tipX, tipY);
+    c.quadraticCurveTo(tipX + (fx - tipX) * 0.3, (tipY + fy) / 2, fx, fy - f.size * 0.9);
+    c.stroke();
+    // 물고기
+    const wig = Math.sin(t * (struggling ? 18 : 6)) * 0.22;
+    drawFishShape(c, fx, fy, f.size, f.color, f.light, -Math.PI / 2 + wig, true);
+    if (struggling) {
+      c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ff5a52';
+      c.fillText('💢 버티는 중!', fx, fy + f.size * 1.9);
+    }
+    // 거품
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const b = bubbles[i];
+      b.life -= dt * 0.55; b.y -= b.vy * dt;
+      if (b.life <= 0) { bubbles.splice(i, 1); continue; }
+      c.strokeStyle = `rgba(180,220,255,${b.life * 0.55})`; c.lineWidth = 1;
+      c.beginPath(); c.arc(fx + b.offX, fy + b.y - f.size, b.r, 0, 7); c.stroke();
+    }
+  } else {
+    // 대기: 찌만 동동
+    const bobY = waterY + Math.sin(wave * 2.5) * 3;
+    c.strokeStyle = 'rgba(230,240,255,.5)'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(tipX, tipY); c.lineTo(tipX, bobY - 6); c.stroke();
+    c.fillStyle = '#ff5a52'; c.beginPath(); c.arc(tipX, bobY - 3, 5, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(tipX, bobY - 6, 2.5, 0, 7); c.fill();
+    // 목표 물고기 미리보기 (물속에서 유영)
+    const px = W * 0.62 + Math.sin(wave * 0.7) * 26;
+    const py = waterY + f.depth * pxPerM + Math.sin(wave * 1.6) * 6;
+    drawFishShape(c, px, py, f.size, f.color, f.light, Math.sin(wave * 0.9) * 0.1, false);
+    c.font = '11.5px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(210,225,250,.75)';
+    c.fillText(`${f.name} · 깊이 ${f.depth} m · 저항 ${f.res}`, px, py - f.size * 1.5);
+  }
+
+  // 잡은 직후 연출
+  if (caughtFishAnim > 0) {
+    caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.6);
+    const k = 1 - caughtFishAnim;
+    const ay = waterY - 30 - k * 40;
+    drawFishShape(c, tipX, ay, f.size * (0.7 + caughtFishAnim * 0.3), f.color, f.light, -0.4 + Math.sin(wave * 12) * 0.15, true);
+    c.globalAlpha = caughtFishAnim;
+    c.font = 'bold 17px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#2ee06f';
+    c.fillText('낚았다!', tipX, ay - f.size * 1.6);
+    c.globalAlpha = 1;
+  }
+}
+
+/* ── 그리기: 릴 기어 인셋 ── */
+function drawGearShape(c, x, y, teeth, ang, color, light, R) {
+  const tooth = Math.max(4.5, R * 0.18);
+  const rOut = R + tooth / 2, rIn = R - tooth / 2;
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.beginPath();
+  for (let i = 0; i < teeth; i++) {
+    const a0 = (i / teeth) * Math.PI * 2, a1 = ((i + 0.25) / teeth) * Math.PI * 2;
+    const a2 = ((i + 0.5) / teeth) * Math.PI * 2, a3 = ((i + 0.75) / teeth) * Math.PI * 2;
+    if (i === 0) c.moveTo(Math.cos(a0) * rOut, Math.sin(a0) * rOut);
+    c.arc(0, 0, rOut, a0, a1);
+    c.lineTo(Math.cos(a1 + 0.25 / teeth) * rIn, Math.sin(a1 + 0.25 / teeth) * rIn);
+    c.arc(0, 0, rIn, a2, a3);
+    c.lineTo(Math.cos(a3 + 0.25 / teeth) * rOut, Math.sin(a3 + 0.25 / teeth) * rOut);
+  }
+  c.closePath();
+  const body = c.createRadialGradient(-R * 0.3, -R * 0.3, R * 0.2, 0, 0, rOut);
+  body.addColorStop(0, light); body.addColorStop(1, color);
+  c.fillStyle = body; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, Math.max(6, R * 0.22), 0, 7); c.fill();
+  const s = Math.max(3.5, R * 0.11);
+  c.fillStyle = '#39445c';
+  c.fillRect(-s / 2, -s * 1.5, s, s * 3); c.fillRect(-s * 1.5, -s / 2, s * 3, s);
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(rIn - Math.max(3.5, R * 0.12), 0, Math.max(2.2, R * 0.06), 0, 7); c.fill();
+  c.restore();
+}
+function dirArrow(c, x, y, r, cw, color) {
+  c.save(); c.translate(x, y);
+  c.strokeStyle = color; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath();
+  if (cw) c.arc(0, 0, r, -2.2, -0.9);
+  else c.arc(0, 0, r, -2.2, -1.0, true);
+  c.stroke();
+  const tip = cw ? -0.9 : -2.2;
+  const tx = Math.cos(tip) * r, ty = Math.sin(tip) * r;
+  const tang = tip + (cw ? Math.PI / 2 : -Math.PI / 2);
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(tx + Math.cos(tang) * 8, ty + Math.sin(tang) * 8);
+  c.lineTo(tx + Math.cos(tang + 2.5) * 6, ty + Math.sin(tang + 2.5) * 6);
+  c.lineTo(tx + Math.cos(tang - 2.5) * 6, ty + Math.sin(tang - 2.5) * 6);
+  c.fill();
+  c.restore();
+}
+function drawGearInset() {
+  const { c, W, H } = fit($('gearCv'));
+  c.clearRect(0, 0, W, H);
+  const g = gear();
+  const unit = Math.min((W * 0.55) / (g.drvT + g.flwT), (H * 0.50) / Math.max(g.drvT, g.flwT));
+  const rD = g.drvT * unit / 2, rF = g.flwT * unit / 2;
+  const cy = H * 0.50;
+  const cxD = W / 2 - (rD + rF) / 2 - 2, cxF = cxD + rD + rF;
+  const flwAng = -crankAng * (g.drvT / g.flwT);
+  drawGearShape(c, cxD, cy, g.drvT, crankAng, '#2563eb', '#7db4ff', rD);
+  drawGearShape(c, cxF, cy, g.flwT, flwAng + Math.PI / g.flwT, '#c2410c', '#ffb27d', rF);
+  dirArrow(c, cxD, cy, rD + 11, true, '#4da3ff');
+  dirArrow(c, cxF, cy, rF + 11, false, '#ff9046');
+  c.font = 'bold 10.5px sans-serif'; c.textAlign = 'center';
+  c.fillStyle = '#4da3ff'; c.fillText(`크랭크 ${g.drvT}T (내 손)`, cxD, 13);
+  c.fillStyle = '#ff9046'; c.fillText(`줄감개 ${g.flwT}T`, cxF, H - 5);
+  c.fillStyle = '#c792ea'; c.textAlign = 'left'; c.font = '10px sans-serif';
+  c.fillText(`${g.label}`, 6, H - 6);
+  c.fillText(`힘 ×${g.frc >= 1 ? g.frc.toFixed(0) : '⅓'}`, 6, 14);
+  c.fillText(`속도 ×${g.spd >= 1 ? g.spd.toFixed(0) : '⅓'}`, 6, 26);
+}
+
+/* ── 메인 루프 ── */
+function loop(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  if (mode === 'fight') step(dt);
+  else if (!holding()) crankAng += dt * 0.4;   // 대기 중 천천히 회전 (구조 보여주기)
+  if ($('game').classList.contains('on')) { drawScene(dt); drawGearInset(); }
+  requestAnimationFrame(loop);
+}
+refreshQuiz();
+refreshStatic();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

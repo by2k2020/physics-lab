@@ -409,8 +409,13 @@ for (let d = 1; d <= 8; d++) {
 // 전광판 점수 (던질 때마다 갱신)
 let scoreSprite = null, shots = 0, goals = 0, cheerT = 0;
 function updateScore() {
-  if (scoreSprite) scene.remove(scoreSprite);
+  if (scoreSprite) {
+    scene.remove(scoreSprite);
+    scoreSprite.material.map.dispose(); scoreSprite.material.dispose(); scoreSprite.geometry.dispose();
+  }
   scoreSprite = textSprite(`골인 ${goals}  ·  시도 ${shots}`, { size: 44, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007, plane: true });
+  const gw = scoreSprite.geometry.parameters.width;
+  if (gw > 2.1) scoreSprite.scale.setScalar(2.1 / gw);   // 전광판(폭 2.3) 밖으로 글자가 삐져나가지 않게
   scoreSprite.position.set(5.4, 2.6, -3.72); scene.add(scoreSprite);
 }
 // 응원 관중 (벤치 위 미니피겨들 — 골인하면 점프)
@@ -552,9 +557,10 @@ function setTraj(pts, color) {
   const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], p[1], 0)));
   trajLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1 }));
   trajGroup.add(trajLine);
-  while (trajGroup.children.length > 10) trajGroup.remove(trajGroup.children[0]);
+  while (trajGroup.children.length > 10) dropTraj(trajGroup.children[0]);
 }
-function clearTraj() { while (trajGroup.children.length) trajGroup.remove(trajGroup.children[0]); trajLine = null; }
+function dropTraj(l) { trajGroup.remove(l); l.geometry.dispose(); l.material.dispose(); }
+function clearTraj() { while (trajGroup.children.length) dropTraj(trajGroup.children[0]); trajLine = null; }
 // 스프레이(득점 이펙트)
 const SPRAY_N = 120;
 const sprayGeo = new THREE.BufferGeometry(); const sprayPos = new Float32Array(SPRAY_N * 3);
@@ -633,6 +639,7 @@ function reset() {
   S = simulate();
   placeBallOnHand();
   $('bd').className = 'badge';
+  $('fire').disabled = false;
   ['ro_ang', 'ro_v0', 'ro_apex', 'ro_time', 'ro_gap', 'ro_range'].forEach(id => $(id).textContent = '—');
   drawHTGraph({ pts: [] }, 1, 1, 0);
   setSt('ready');
@@ -776,7 +783,9 @@ function showAnalysis(trajS) {
 
 /* ── 발사 흐름 (예측 모드 포함) ── */
 function startFire() {
-  if ($('predictMode').checked && !finished) {
+  if (flying || scanTimer) return;
+  if ($('predictMode').checked) {
+    if (finished) reset();   // 새 시도 준비 후 매번 예측 질문
     $('predict').classList.add('on'); pendingPredict = true; return;
   }
   launch();

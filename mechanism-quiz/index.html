@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메커니즘 예측하기 — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; touch-action: manipulation; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.ok { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.no { display: inline-flex; background: rgba(70,30,25,.78); color: #ff9a94; border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.22); }
+
+  .side { width: 356px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 2px 0 0; }
+  .prog-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: #0c1220; color: var(--dim); font-size: 11px; font-family: var(--mono); display: flex; align-items: center; justify-content: center; }
+  .dot.cur { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.5); }
+  .dot.ok { background: rgba(46,224,111,.15); border-color: var(--green); color: var(--green); }
+  .dot.bad { background: rgba(255,90,82,.12); border-color: var(--red); color: var(--red); }
+  .score-chip { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--green); background: #0c1220; border: 1px solid var(--border); border-radius: 9px; padding: 4px 11px; }
+
+  .qcard { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; }
+  .qcard .qnum { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .qcard .qtext { font-size: 14.5px; line-height: 1.65; font-weight: 600; }
+
+  .choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice { text-align: left; background: var(--panel2); color: var(--text); border: 1.5px solid var(--border); border-radius: 11px; padding: 12px 14px; font-size: 14px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 10px; transition: border-color .12s, transform .06s; touch-action: manipulation; }
+  .choice:active { transform: scale(0.98); }
+  .choice .no { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #0c1220; border: 1px solid var(--border); color: var(--dim); font-size: 12px; font-family: var(--mono); display: flex; align-items: center; justify-content: center; }
+  .choice.picked { border-color: var(--accent); background: rgba(77,163,255,.1); }
+  .choice.picked .no { border-color: var(--accent); color: var(--accent); }
+  .choice.right { border-color: var(--green); background: rgba(46,224,111,.12); }
+  .choice.right .no { border-color: var(--green); color: var(--green); }
+  .choice.wrong { border-color: var(--red); background: rgba(255,90,82,.1); opacity: .85; }
+  .choice.wrong .no { border-color: var(--red); color: var(--red); }
+  .choice:disabled { cursor: default; }
+
+  button { font-family: inherit; touch-action: manipulation; }
+  .ctl-row { display: flex; gap: 8px; }
+  .btn { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14.5px; cursor: pointer; font-weight: 700; transition: transform .06s, border-color .15s; }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; flex: 1; }
+  .btn.go { background: linear-gradient(135deg, #0d9b4d, #23c76a); border-color: #23c76a; flex: 1; }
+
+  .explain { display: none; background: #0c1220; border: 1px solid var(--border); border-left: 3px solid var(--amber); border-radius: 10px; padding: 11px 13px; font-size: 13px; line-height: 1.6; color: #d8e2f2; }
+  .explain.show { display: block; }
+  .explain b { color: var(--amber); }
+
+  .hint { font-size: 12px; color: var(--dim); line-height: 1.6; }
+
+  /* 결과 화면 */
+  #result { display: none; flex: 1; overflow-y: auto; padding: 30px 18px; }
+  #result.on { display: block; }
+  .result-box { max-width: 520px; margin: 0 auto; text-align: center; }
+  .medal { font-size: 74px; line-height: 1.1; }
+  .grade { font-size: 22px; font-weight: 800; margin: 8px 0 2px; }
+  .final-score { font-family: var(--mono); font-size: 17px; color: var(--accent); margin-bottom: 20px; }
+  .result-list { text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+  .result-item { display: flex; align-items: center; gap: 10px; padding: 9px 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .result-item:last-child { border-bottom: none; }
+  .result-item .rmark { font-weight: 800; width: 20px; flex: none; }
+  .result-item .rmark.o { color: var(--green); } .result-item .rmark.x { color: var(--red); }
+  .result-item .rq { color: #c6d2e6; flex: 1; }
+  .result-item .rex { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+
+  /* 원리 */
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 14px; color: var(--text); }
+  .pcard { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 16px 20px; margin-bottom: 14px; }
+  .pcard h4 { font-size: 15px; margin-bottom: 8px; }
+  .pcard ul { margin: 4px 0 4px 20px; }
+  .pcard .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 46vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 24차시</div>
+      <div class="title">🔮 메커니즘 예측하기 — 결과 맞히기 퀴즈</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="quiz">🎯 예측 퀴즈</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 퀴즈 ══════ -->
+  <section class="exp on" id="quiz">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">문제</span><span id="hud_q">1 / 10</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">맞힌 개수</span><span id="hud_s">0</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="prog-row" id="dots"></div>
+      <div class="qcard">
+        <div class="qnum" id="qnum">Q1</div>
+        <div class="qtext" id="qtext"></div>
+      </div>
+      <h3>어떻게 될지 예측해 봐!</h3>
+      <div class="choices" id="choices"></div>
+      <div class="ctl-row">
+        <button class="btn primary" id="play" disabled>▶ 재생하고 확인</button>
+        <button class="btn" id="replay" disabled>↺ 다시 보기</button>
+      </div>
+      <div class="explain" id="explain"></div>
+      <div class="ctl-row">
+        <button class="btn go" id="next" style="display:none">다음 문제 →</button>
+      </div>
+      <div class="hint" id="hint">① 그림을 잘 보고 답을 고른 뒤 ② [▶ 재생하고 확인]을 누르면 메커니즘이 진짜로 움직이면서 정답이 나와!</div>
+    </div>
+  </section>
+
+  <!-- ══════ 결과 ══════ -->
+  <section id="result">
+    <div class="result-box">
+      <div class="medal" id="rMedal">🥇</div>
+      <div class="grade" id="rGrade"></div>
+      <div class="final-score" id="rScore"></div>
+      <div class="result-list" id="rList"></div>
+      <button class="btn primary" id="retry" style="padding:13px 40px">↺ 다시 풀기</button>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <h2>📖 메커니즘 예측 총정리 — 이것만 알면 다 맞힌다!</h2>
+      <div class="pcard">
+        <h4>⚙️ 기어 — 방향과 속도</h4>
+        <ul>
+          <li>맞물린 기어 2개는 <b>서로 반대 방향</b>으로 돌아.</li>
+          <li>기어가 3개면 방향이 두 번 뒤집혀서 <b>양쪽 끝은 같은 방향</b>! 가운데 기어(아이들러)는 방향만 이어 줄 뿐 속도는 못 바꿔.</li>
+          <li>속도는 잇수 반대로: <span class="eq">작은 기어가 빨리, 큰 기어가 천천히</span></li>
+          <li>8T→40T는 5:1 <b>감속</b> — 속도 ⅕, 힘 5배. 40T→8T는 <b>가속</b> — 속도 5배, 힘 ⅕.</li>
+        </ul>
+      </div>
+      <div class="pcard">
+        <h4>🪢 도르래 — 방향과 힘</h4>
+        <ul>
+          <li><b>고정 도르래</b>: 천장에 붙어 있어. 힘은 그대로지만 <b>방향을 바꿔 줘</b> — 아래로 당기면 짐이 위로!</li>
+          <li><b>움직 도르래</b>: 짐과 같이 움직여. 줄 2가닥이 짐을 나눠 들어서 <span class="eq">힘 = 절반</span>. 대신 줄은 2배 길게 당겨야 해.</li>
+        </ul>
+      </div>
+      <div class="pcard">
+        <h4>⚖️ 지렛대 — 돌리는 힘(모멘트)</h4>
+        <ul>
+          <li>돌리는 힘 = <span class="eq">무게 × 받침까지 거리</span>. 시소는 이 값이 큰 쪽으로 기울어!</li>
+          <li>받침대를 <b>짐 가까이</b> 둘수록 내 손 쪽 거리가 길어져서 작은 힘으로 들 수 있어.</li>
+        </ul>
+      </div>
+      <div class="pcard">
+        <h4>🔄 크랭크 — 운동 바꾸기</h4>
+        <ul>
+          <li>크랭크는 모터의 <b>회전 운동</b>을 <b>왕복(앞뒤) 운동</b>으로 바꿔 줘. 재봉틀, 증기기관이 다 이 원리야!</li>
+        </ul>
+      </div>
+      <div class="tip">
+        <b>🧱 예측의 기술</b><br>
+        움직이기 전에 머릿속으로 먼저 돌려 보는 게 진짜 엔지니어의 힘이야.
+        ① 어디서 힘이 들어오지? ② 방향이 몇 번 뒤집히지? ③ 커지는 건 속도야, 힘이야?
+        이 세 가지만 차근차근 따라가면 어떤 메커니즘도 예측할 수 있어!
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const TAU = Math.PI * 2;
+const ease = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u);
+
+/* ── 탭 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  const quizMode = b.dataset.tab === 'quiz';
+  $('quiz').classList.toggle('on', quizMode && !state.showResult);
+  $('result').classList.toggle('on', quizMode && state.showResult);
+  $('theory').classList.toggle('on', !quizMode);
+  if (quizMode && !state.showResult) requestAnimationFrame(() => drawFrame(state.lastT));
+});
+
+/* ── 캔버스 유틸 ── */
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function drawBg(c, W, H) {
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(120,145,190,.08)';
+  for (let x = 20; x < W; x += 26)
+    for (let y = 20; y < H; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+}
+function drawGear(c, x, y, teeth, ang, color, opts = {}) {
+  const R = opts.r;
+  const tooth = Math.max(6, R * 0.16);
+  const rOut = R + tooth / 2, rIn = R - tooth / 2;
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.beginPath();
+  const N = teeth;
+  for (let i = 0; i < N; i++) {
+    const a0 = (i / N) * TAU, a1 = ((i + 0.25) / N) * TAU;
+    const a2 = ((i + 0.5) / N) * TAU, a3 = ((i + 0.75) / N) * TAU;
+    if (i === 0) c.moveTo(Math.cos(a0) * rOut, Math.sin(a0) * rOut);
+    c.arc(0, 0, rOut, a0, a1);
+    c.lineTo(Math.cos(a1 + 0.25 / N) * rIn, Math.sin(a1 + 0.25 / N) * rIn);
+    c.arc(0, 0, rIn, a2, a3);
+    c.lineTo(Math.cos(a3 + 0.25 / N) * rOut, Math.sin(a3 + 0.25 / N) * rOut);
+  }
+  c.closePath();
+  const body = c.createRadialGradient(-R * 0.3, -R * 0.3, R * 0.2, 0, 0, rOut);
+  body.addColorStop(0, opts.light); body.addColorStop(1, color);
+  c.fillStyle = body; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+  if (R > 34) {
+    c.fillStyle = 'rgba(0,0,0,.28)';
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + Math.PI / 4;
+      c.beginPath(); c.arc(Math.cos(a) * R * 0.55, Math.sin(a) * R * 0.55, R * 0.17, 0, 7); c.fill();
+    }
+  }
+  c.fillStyle = '#0b0f18';
+  c.beginPath(); c.arc(0, 0, Math.max(9, R * 0.2), 0, 7); c.fill();
+  const s = Math.max(4.5, R * 0.1);
+  c.fillStyle = '#39445c';
+  c.fillRect(-s / 2, -s * 1.5, s, s * 3);
+  c.fillRect(-s * 1.5, -s / 2, s * 3, s);
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.arc(rIn - Math.max(5, R * 0.1), 0, Math.max(3, R * 0.05), 0, 7); c.fill();
+  c.restore();
+}
+function dirArrow(c, x, y, r, cw, color) {
+  c.save(); c.translate(x, y);
+  c.strokeStyle = color; c.lineWidth = 2.5; c.lineCap = 'round';
+  c.beginPath();
+  if (cw) c.arc(0, 0, r, -2.2, -0.9);
+  else c.arc(0, 0, r, -2.2, -1.0, true);
+  c.stroke();
+  const tip = cw ? -0.9 : -2.2;
+  const tx = Math.cos(tip) * r, ty = Math.sin(tip) * r;
+  const tang = tip + (cw ? Math.PI / 2 : -Math.PI / 2);
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(tx + Math.cos(tang) * 9, ty + Math.sin(tang) * 9);
+  c.lineTo(tx + Math.cos(tang + 2.5) * 7, ty + Math.sin(tang + 2.5) * 7);
+  c.lineTo(tx + Math.cos(tang - 2.5) * 7, ty + Math.sin(tang - 2.5) * 7);
+  c.fill();
+  c.restore();
+}
+function qMark(c, x, y, size = 26) {
+  c.save();
+  c.fillStyle = 'rgba(255,176,46,.14)';
+  c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2;
+  c.beginPath(); c.arc(x, y, size, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#ffb02e'; c.font = `bold ${size * 1.2}px sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('?', x, y + 2);
+  c.restore(); c.textBaseline = 'alphabetic';
+}
+function label(c, x, y, txt, color = '#c6d2e6', size = 12.5, bold = true) {
+  c.font = `${bold ? 'bold ' : ''}${size}px sans-serif`;
+  c.textAlign = 'center'; c.fillStyle = color;
+  c.fillText(txt, x, y);
+}
+function crate(c, x, y, w, h, txt) {
+  const g = c.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, '#b07a3c'); g.addColorStop(1, '#7d5426');
+  c.fillStyle = g;
+  c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x, y, w, h, 5); c.fill(); c.stroke();
+  c.strokeStyle = 'rgba(90,60,24,.7)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(x, y + h / 2); c.lineTo(x + w, y + h / 2);
+  c.moveTo(x + w / 2, y); c.lineTo(x + w / 2, y + h); c.stroke();
+  if (txt) label(c, x + w / 2, y + h / 2 + 4, txt, '#3c2810', 12);
+}
+function pulleyWheel(c, x, y, r, rot) {
+  c.save(); c.translate(x, y); c.rotate(rot);
+  const g = c.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
+  g.addColorStop(0, '#7a8db0'); g.addColorStop(1, '#3c4a68');
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+  c.strokeStyle = '#202c44'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = 'rgba(20,28,46,.8)'; c.lineWidth = r * 0.28;
+  c.beginPath(); c.arc(0, 0, r * 0.82, 0, 7); c.stroke();
+  c.strokeStyle = '#28344e'; c.lineWidth = 3;
+  for (let k = 0; k < 3; k++) {
+    const a = k * TAU / 3;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62); c.stroke();
+  }
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.18, 0, 7); c.fill();
+  c.restore();
+}
+function ceiling(c, W, y = 42) {
+  c.fillStyle = '#18233c';
+  c.fillRect(0, 0, W, y);
+  c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
+  c.strokeStyle = 'rgba(120,145,190,.25)'; c.lineWidth = 1.5;
+  for (let x = 10; x < W; x += 22) {
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + 12, y - 14); c.stroke();
+  }
+}
+function ground(c, W, H, y) {
+  c.strokeStyle = '#3a4661'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
+  c.strokeStyle = 'rgba(120,145,190,.22)'; c.lineWidth = 1.5;
+  for (let x = 8; x < W; x += 22) {
+    c.beginPath(); c.moveTo(x + 12, y); c.lineTo(x, y + 13); c.stroke();
+  }
+}
+function rope(c, pts, width = 3) {
+  c.strokeStyle = '#d9b88a'; c.lineWidth = width; c.lineCap = 'round';
+  c.beginPath();
+  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  c.stroke();
+}
+function hand(c, x, y, txt) {
+  c.font = '26px sans-serif'; c.textAlign = 'center';
+  c.fillText('✊', x, y);
+  if (txt) label(c, x, y + 22, txt, '#ffb02e', 12);
+}
+function railAxis(c, W, y) {
+  c.strokeStyle = 'rgba(90,110,150,.25)'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(30, y); c.lineTo(W - 30, y); c.stroke();
+}
+
+/* ══════════ 문제 정의 ══════════
+   draw(c, W, H, ts, revealed) — ts: 애니메이션 경과 초 (0 = 정지 상태) */
+const QUESTIONS = [
+  { /* 1. 기어 2개 방향 */
+    q: '왼쪽 파란 기어가 시계 방향으로 돌아. 맞물린 오른쪽 주황 기어는 어느 쪽으로 돌까?',
+    choices: ['시계 방향 (왼쪽과 같게)', '반시계 방향 (왼쪽과 반대)', '움직이지 않는다'],
+    answer: 1, dur: 2.5,
+    short: '기어 2개 — 방향',
+    explain: '맞물린 기어 2개는 이가 서로 밀어서 <b>항상 반대 방향</b>으로 돌아!',
+    okMsg: '맞물린 기어는 반대 방향!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const y = H * 0.5; railAxis(c, W, y);
+      const r = Math.min(W * 0.16, H * 0.24);
+      const xA = W / 2 - r - 2, xB = W / 2 + r + 2;
+      const ang = TAU * 0.45 * ts;
+      drawGear(c, xA, y, 24, ang, '#2563eb', { r, light: '#7db4ff' });
+      drawGear(c, xB, y, 24, -ang + Math.PI / 24, '#c2410c', { r, light: '#ffb27d' });
+      dirArrow(c, xA, y, r + 16, true, '#4da3ff');
+      label(c, xA, y - r - 28, '시계 방향으로 돌아', '#4da3ff');
+      if (ts === 0 && !rev) qMark(c, xB, y - r - 34);
+      else { dirArrow(c, xB, y, r + 16, false, '#ff9046'); label(c, xB, y + r + 36, '반시계 방향!', '#ff9046'); }
+    }
+  },
+  { /* 2. 기어 3개 아이들러 */
+    q: '기어 3개가 한 줄로 맞물려 있어. 왼쪽 기어가 시계 방향으로 돌면 맨 오른쪽 기어는?',
+    choices: ['시계 방향 (왼쪽과 같게)', '반시계 방향 (왼쪽과 반대)', '움직이지 않는다'],
+    answer: 0, dur: 2.5,
+    short: '기어 3개 — 아이들러',
+    explain: '방향이 <b>두 번</b> 뒤집혀서 결국 왼쪽과 같은 방향이 돼. 가운데는 아이들러 기어야!',
+    okMsg: '두 번 뒤집으면 원래대로 — 끝 기어는 같은 방향!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const y = H * 0.5; railAxis(c, W, y);
+      const teeth = [24, 16, 24];
+      const unit = Math.min(W * 0.6 / 64, H * 0.42 / 24);
+      const r = teeth.map(n => n * unit / 2);
+      const x0 = W / 2 - (r[0] + r[1] * 2 + r[2]) / 2;
+      const cx = [x0, x0 + r[0] + r[1], x0 + r[0] + 2 * r[1] + r[2]];
+      const ang = TAU * 0.4 * ts;
+      const angs = [ang, -ang * 24 / 16 + Math.PI / 16, ang + Math.PI / 24 / 2];
+      const cols = ['#2563eb', '#7c3aed', '#c2410c'], lts = ['#7db4ff', '#c9a6ff', '#ffb27d'];
+      teeth.forEach((n, i) => drawGear(c, cx[i], y, n, angs[i], cols[i], { r: r[i], light: lts[i] }));
+      dirArrow(c, cx[0], y, r[0] + 15, true, '#4da3ff');
+      label(c, cx[0], y - r[0] - 26, '시계 방향', '#4da3ff');
+      label(c, cx[1], y + r[1] + 30, '아이들러', '#c792ea', 11.5);
+      if (ts === 0 && !rev) qMark(c, cx[2], y - r[2] - 32);
+      else {
+        dirArrow(c, cx[1], y, r[1] + 14, false, '#c792ea');
+        dirArrow(c, cx[2], y, r[2] + 15, true, '#ff9046');
+        label(c, cx[2], y - r[2] - 26, '시계 방향! (같다)', '#ff9046');
+      }
+    }
+  },
+  { /* 3. 8T→40T 누가 빠른가 */
+    q: '작은 기어(8T)가 모터에 붙어 큰 기어(40T)를 돌리고 있어. 어느 기어가 더 빨리 돌까?',
+    choices: ['작은 기어(8T)가 빠르다', '큰 기어(40T)가 빠르다', '둘이 똑같이 돈다'],
+    answer: 0, dur: 3,
+    short: '8T→40T — 속도 비교',
+    explain: '이가 적은 기어가 빨리 돌아. <b>8T가 5바퀴</b> 돌 때 40T는 겨우 1바퀴!',
+    okMsg: '작은 기어 승! 8T 5바퀴 = 40T 1바퀴',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const y = H * 0.5; railAxis(c, W, y);
+      const unit = Math.min(W * 0.55 / 48, H * 0.38 / 40 * 2);
+      const rA = 8 * unit / 2, rB = 40 * unit / 2;
+      const xA = W / 2 - rB * 0.85 - rA, xB = xA + rA + rB;
+      const ang = TAU * 1.5 * ts;
+      drawGear(c, xA, y, 8, ang, '#2563eb', { r: rA, light: '#7db4ff' });
+      drawGear(c, xB, y, 40, -ang / 5 + Math.PI / 40, '#c2410c', { r: rB, light: '#ffb27d' });
+      c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+      const mw = 62;
+      c.beginPath(); c.roundRect(xA - rA - mw - 22, y - 28, mw, 56, 9); c.fill(); c.stroke();
+      label(c, xA - rA - mw / 2 - 22, y + 4, '모터', '#8b98ad', 11, false);
+      c.strokeStyle = '#39445c'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(xA - rA - 22, y); c.lineTo(xA, y); c.stroke();
+      label(c, xA, y - rA - 24, '8T', '#4da3ff');
+      label(c, xB, y - rB - 24, '40T', '#ff9046');
+      if (ts === 0 && !rev) qMark(c, W / 2, Math.max(48, y - rB - 48));
+      if (ts > 0 || rev) {
+        label(c, xA, y + rA + 34, `${(ang / TAU).toFixed(1)}바퀴 — 쌩쌩!`, '#4da3ff');
+        label(c, xB, y + rB + 34, `${(ang / TAU / 5).toFixed(1)}바퀴 — 느릿느릿`, '#ff9046');
+      }
+    }
+  },
+  { /* 4. 40T→8T 몇 배 */
+    q: '이번엔 반대! 큰 기어(40T)가 작은 기어(8T)를 돌려. 작은 기어의 속도는 어떻게 될까?',
+    choices: ['5배 빨라진다', '5배 느려진다', '속도가 똑같다'],
+    answer: 0, dur: 3,
+    short: '40T→8T — 속도 배율',
+    explain: '40÷8=5. 큰 기어가 <b>1바퀴</b> 돌면 작은 기어는 <b>5바퀴</b>! 대신 힘은 ⅕로 약해져.',
+    okMsg: '5배 가속! 대신 힘은 ⅕',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const y = H * 0.5; railAxis(c, W, y);
+      const unit = Math.min(W * 0.55 / 48, H * 0.38 / 40 * 2);
+      const rA = 40 * unit / 2, rB = 8 * unit / 2;
+      const xA = W / 2 - rB * 2 - rA * 0.55, xB = xA + rA + rB;
+      const ang = TAU * 0.4 * ts;
+      drawGear(c, xA, y, 40, ang, '#2563eb', { r: rA, light: '#7db4ff' });
+      drawGear(c, xB, y, 8, -ang * 5 + Math.PI / 8, '#c2410c', { r: rB, light: '#ffb27d' });
+      dirArrow(c, xA, y, rA + 16, true, '#4da3ff');
+      label(c, xA, y - rA - 26, '40T · 모터가 돌려', '#4da3ff');
+      label(c, xB, y - rB - 24, '8T', '#ff9046');
+      if (ts === 0 && !rev) qMark(c, xB, y + rB + 40);
+      if (ts > 0 || rev) {
+        label(c, xA, y + rA + 32, `${(ang / TAU).toFixed(1)}바퀴`, '#4da3ff');
+        label(c, xB, y + rB + 40, `${(ang / TAU * 5).toFixed(1)}바퀴 ×5배!`, '#ff9046');
+      }
+    }
+  },
+  { /* 5. 고정 도르래 */
+    q: '천장에 매달린 고정 도르래야. 줄을 아래로 쭉 당기면 상자는 어떻게 될까?',
+    choices: ['위로 올라간다', '아래로 내려간다', '제자리에 가만히 있는다'],
+    answer: 0, dur: 2.5,
+    short: '고정 도르래 — 방향',
+    explain: '고정 도르래는 <b>힘의 방향을 바꿔 줘</b>. 내가 아래로 당기면 짐은 반대로 위로!',
+    okMsg: '아래로 당기면 짐은 위로!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H); ceiling(c, W);
+      const px = W / 2, py = 118, pr = Math.min(36, H * 0.07);
+      const lift = Math.min(H * 0.26, 150) * ease(ts / 2.5);
+      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(px, 42); c.lineTo(px, py); c.stroke();
+      const bw = 66, bh = Math.min(60, H * 0.11);
+      const boxTop = H * 0.58 - lift;
+      rope(c, [[px - pr, py], [px - pr, boxTop]]);
+      const handY = H * 0.42 + lift;
+      rope(c, [[px + pr, py], [px + pr, handY]]);
+      pulleyWheel(c, px, py, pr, lift / pr);
+      crate(c, px - pr - bw / 2, boxTop, bw, bh, '짐');
+      hand(c, px + pr, handY + 12, '아래로 당긴다!');
+      c.strokeStyle = '#ffb02e'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(px + pr + 34, handY - 18); c.lineTo(px + pr + 34, handY + 16); c.stroke();
+      c.fillStyle = '#ffb02e';
+      c.beginPath(); c.moveTo(px + pr + 34, handY + 26); c.lineTo(px + pr + 27, handY + 12); c.lineTo(px + pr + 41, handY + 12); c.fill();
+      if (ts === 0 && !rev) qMark(c, px - pr - bw / 2 - 42, boxTop + bh / 2);
+      else {
+        c.fillStyle = '#2ee06f';
+        const ax = px - pr - bw / 2 - 30, ay = boxTop + bh / 2;
+        c.beginPath(); c.moveTo(ax, ay - 24); c.lineTo(ax - 9, ay - 8); c.lineTo(ax + 9, ay - 8); c.fill();
+        c.fillRect(ax - 3.5, ay - 8, 7, 26);
+        label(c, ax, ay + 38, '위로!', '#2ee06f');
+      }
+    }
+  },
+  { /* 6. 움직 도르래 */
+    q: '이번엔 도르래가 상자에 붙어서 같이 움직이는 움직 도르래야. 들어 올리는 힘은 얼마나 들까?',
+    choices: ['절반의 힘이면 된다', '짐 무게와 똑같은 힘', '두 배의 힘이 든다'],
+    answer: 0, dur: 3,
+    short: '움직 도르래 — 힘',
+    explain: '줄 <b>2가닥</b>이 짐을 나눠 들어서 힘은 절반! 대신 줄은 <b>2배 길게</b> 당겨야 해.',
+    okMsg: '줄 2가닥이 나눠 든다 — 힘 절반!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H); ceiling(c, W);
+      const u = ease(ts / 3);
+      const d = Math.min(H * 0.16, 85) * u;
+      const mx = W / 2 - 45, fx = W / 2 + 65, fy = 112, fr = 26;
+      const mr = 30, my = H * 0.5 - d;
+      const ax = mx - mr;
+      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(fx, 42); c.lineTo(fx, fy); c.stroke();
+      c.fillStyle = '#39445c'; c.fillRect(ax - 7, 42, 14, 12);
+      rope(c, [[ax, 48], [ax, my]]);
+      c.strokeStyle = '#d9b88a'; c.lineWidth = 3;
+      c.beginPath(); c.arc(mx, my, mr, Math.PI, 0, true); c.stroke();
+      rope(c, [[mx + mr, my], [mx + mr, fy + 4], [fx - fr, fy]]);
+      const handY = H * 0.4 + d * 2;
+      rope(c, [[fx + fr, fy], [fx + fr, handY]]);
+      pulleyWheel(c, fx, fy, fr, d * 2 / fr);
+      pulleyWheel(c, mx, my, mr, -d / mr);
+      const bw = 74, bh = Math.min(58, H * 0.11);
+      c.strokeStyle = '#55617a'; c.lineWidth = 4;
+      c.beginPath(); c.moveTo(mx, my); c.lineTo(mx, my + mr + 14); c.stroke();
+      crate(c, mx - bw / 2, my + mr + 14, bw, bh, '짐 10');
+      hand(c, fx + fr, handY + 14, '');
+      label(c, fx + fr, handY + 36, rev || ts > 0 ? '힘 5만큼만!' : '얼마나 힘들까?', '#ffb02e');
+      label(c, ax - 26, H * 0.42, '줄 ①', '#8b98ad', 11.5);
+      label(c, mx + mr + 24, H * 0.42, '줄 ②', '#8b98ad', 11.5);
+      if (ts === 0 && !rev) qMark(c, fx + fr + 52, handY - 10);
+      if (rev || ts > 0) {
+        label(c, W / 2, H - 34, `내가 당긴 줄 ${Math.round(d * 2)}  →  짐이 올라간 높이 ${Math.round(d)} (절반!)`, '#2ee06f', 13);
+      }
+    }
+  },
+  { /* 7. 지렛대 받침 위치 */
+    q: '지렛대로 무거운 돌을 들어 올리려고 해. 받침대를 어디에 두면 힘이 가장 적게 들까?',
+    choices: ['돌(짐) 가까이', '내 손잡이 가까이', '어디에 두든 힘은 똑같다'],
+    answer: 0, dur: 2.5,
+    short: '지렛대 — 받침 위치',
+    explain: '받침이 <b>짐에 가까울수록</b> 내 손 쪽 거리가 길어져서 작은 힘으로도 들 수 있어!',
+    okMsg: '받침은 짐 가까이 — 작은 힘으로 번쩍!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const gy = H - 64; ground(c, W, H, gy);
+      const u = ease(ts / 2.5);
+      const fx = W * 0.36, fy = gy - 52;
+      const th = u * 0.13;
+      c.fillStyle = '#39445c'; c.strokeStyle = '#202c44'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx - 30, gy); c.lineTo(fx + 30, gy); c.closePath(); c.fill(); c.stroke();
+      const xL = W * 0.16, xR = W * 0.88;
+      c.save(); c.translate(fx, fy); c.rotate(th);
+      c.fillStyle = '#8a6a3a'; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(xL - fx, -8, xR - xL, 14, 5); c.fill(); c.stroke();
+      const rockX = xL - fx + 26;
+      c.fillStyle = '#6d7a94'; c.strokeStyle = '#39445c';
+      c.beginPath();
+      c.ellipse(rockX, -34, 30, 26, 0.2, 0, 7); c.fill(); c.stroke();
+      label(c, rockX, -30, '돌', '#1c2436', 13);
+      c.font = '24px sans-serif'; c.textAlign = 'center';
+      c.fillText('✊', xR - fx - 12, -16);
+      c.restore();
+      label(c, fx, gy + 26, '받침대 (돌 가까이)', '#ffb02e', 12.5);
+      c.strokeStyle = 'rgba(77,163,255,.5)'; c.lineWidth = 2; c.setLineDash([4, 4]);
+      c.beginPath(); c.moveTo(xL + 20, gy + 44); c.lineTo(fx, gy + 44); c.stroke();
+      c.beginPath(); c.moveTo(fx, gy + 58); c.lineTo(xR - 10, gy + 58); c.stroke(); c.setLineDash([]);
+      label(c, (xL + fx) / 2, gy + 40, '짧다', '#4da3ff', 11);
+      label(c, (fx + xR) / 2, gy + 54, '길~다 (내 손 쪽)', '#4da3ff', 11);
+      if (ts === 0 && !rev) qMark(c, fx, fy - 60);
+      if (u > 0.6 || rev) label(c, W * 0.24, fy - 92, '번쩍! 조금만 눌러도 올라가', '#2ee06f', 13.5);
+    }
+  },
+  { /* 8. 시소 모멘트 */
+    q: '시소 왼쪽엔 2칸 거리에 블록 2개, 오른쪽엔 3칸 거리에 블록 1개를 올렸어. 어느 쪽으로 기울까?',
+    choices: ['왼쪽으로 기운다', '오른쪽으로 기운다', '딱 수평을 유지한다'],
+    answer: 0, dur: 2.5,
+    short: '시소 — 모멘트',
+    explain: '돌리는 힘 = 무게 × 거리. 왼쪽 <b>2×2=4</b>, 오른쪽 <b>1×3=3</b> → 왼쪽이 이겨!',
+    okMsg: '왼쪽 2×2=4 > 오른쪽 1×3=3',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const gy = H - 70; ground(c, W, H, gy);
+      const cx = W / 2, cy = gy - 64;
+      const th = -ease(ts / 2.5) * 0.13;
+      c.fillStyle = '#39445c'; c.strokeStyle = '#202c44'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx - 34, gy); c.lineTo(cx + 34, gy); c.closePath(); c.fill(); c.stroke();
+      const half = Math.min(W * 0.36, 300), unit = half / 3.6;
+      c.save(); c.translate(cx, cy); c.rotate(th);
+      c.fillStyle = '#8a6a3a'; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(-half, -7, half * 2, 13, 5); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5;
+      for (let k = -3; k <= 3; k++) {
+        if (k === 0) continue;
+        c.beginPath(); c.moveTo(k * unit, -7); c.lineTo(k * unit, 6); c.stroke();
+      }
+      const bs = 30;
+      c.fillStyle = '#c2410c'; c.strokeStyle = '#7a2708'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -7 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -7 - bs * 2, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.fillStyle = '#2563eb'; c.strokeStyle = '#173a8a';
+      c.beginPath(); c.roundRect(3 * unit - bs / 2, -7 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.restore();
+      label(c, cx - 2 * unit, cy + 42, '2칸 · 블록 2개', '#ff9046');
+      label(c, cx + 3 * unit, cy + 42, '3칸 · 블록 1개', '#4da3ff');
+      if (ts === 0 && !rev) qMark(c, cx, cy - 84);
+      if (rev || ts > 1.2) label(c, cx, cy - 96, '왼쪽 4 vs 오른쪽 3 → 왼쪽으로 기운다!', '#2ee06f', 13.5);
+    }
+  },
+  { /* 9. 크랭크 왕복 */
+    q: '모터가 크랭크(빨간 원판)를 빙글빙글 돌리면, 연결된 막대 끝은 무슨 운동을 하게 될까?',
+    choices: ['앞뒤로 왔다 갔다 (왕복 운동)', '크랭크처럼 같이 빙글빙글 회전', '전혀 움직이지 않는다'],
+    answer: 0, dur: 3,
+    short: '크랭크 — 운동 변환',
+    explain: '크랭크는 <b>회전 운동을 왕복 운동으로</b> 바꿔 줘. 재봉틀·증기기관이 다 이 원리야!',
+    okMsg: '회전 → 왕복! 밀었다 당겼다',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H);
+      const y = H * 0.52;
+      const cxC = W * 0.28, R = Math.min(56, W * 0.09, H * 0.13);
+      const L = R * 3;
+      const ang = TAU * (2 / 3) * ts * 1.5 - Math.PI / 2;
+      const pinX = cxC + R * Math.cos(ang), pinY = y + R * Math.sin(ang);
+      const sx = cxC + R * Math.cos(ang) + Math.sqrt(L * L - Math.pow(R * Math.sin(ang), 2));
+      c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+      c.beginPath(); c.roundRect(cxC - R - 84, y - 28, 64, 56, 9); c.fill(); c.stroke();
+      label(c, cxC - R - 52, y + 4, '모터', '#8b98ad', 11, false);
+      c.strokeStyle = '#39445c'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(cxC - R - 20, y); c.lineTo(cxC, y); c.stroke();
+      c.strokeStyle = 'rgba(90,110,150,.4)'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(cxC + L - R - 6, y - 15); c.lineTo(W * 0.92, y - 15); c.stroke();
+      c.beginPath(); c.moveTo(cxC + L - R - 6, y + 15); c.lineTo(W * 0.92, y + 15); c.stroke();
+      const g = c.createRadialGradient(cxC - R * 0.3, y - R * 0.3, R * 0.2, cxC, y, R);
+      g.addColorStop(0, '#ffb27d'); g.addColorStop(1, '#c2410c');
+      c.fillStyle = g; c.strokeStyle = '#7a2708'; c.lineWidth = 2;
+      c.beginPath(); c.arc(cxC, y, R, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(cxC, y, 7, 0, 7); c.fill();
+      c.strokeStyle = '#5a708f'; c.lineWidth = 8; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(pinX, pinY); c.lineTo(sx, y); c.stroke();
+      c.fillStyle = '#e8eef7'; c.beginPath(); c.arc(pinX, pinY, 6, 0, 7); c.fill();
+      c.fillStyle = '#2563eb'; c.strokeStyle = '#173a8a'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(sx - 6, y - 13, 46, 26, 5); c.fill(); c.stroke();
+      dirArrow(c, cxC, y, R + 16, true, '#ff9046');
+      label(c, cxC, y - R - 26, '크랭크 · 빙글빙글', '#ff9046');
+      if (ts === 0 && !rev) qMark(c, sx + 60, y - 44);
+      else {
+        label(c, sx + 20, y - 34, '← 왔다 갔다 →', '#2ee06f', 13.5);
+      }
+    }
+  },
+  { /* 10. 종합: 기어+도르래 */
+    q: '종합 문제! 모터의 8T가 40T를 돌리고, 40T에 붙은 드럼이 줄을 감아 올려. 상자는 어떻게 될까?',
+    choices: ['천천히 올라간다 (힘은 세게)', '빠르게 올라간다 (힘은 약하게)', '아래로 내려간다'],
+    answer: 0, dur: 3,
+    short: '종합 — 기어+도르래',
+    explain: '8T→40T는 <b>5:1 감속</b>. 드럼이 천천히 돌며 줄을 감으니 상자는 <b>힘 있게, 천천히</b> 올라가!',
+    okMsg: '5:1 감속 윈치 — 천천히, 힘차게 올라간다!',
+    draw(c, W, H, ts, rev) {
+      drawBg(c, W, H); ceiling(c, W);
+      const u = ts / 3;
+      const gy = H * 0.68;
+      const unit = Math.min(W * 0.34 / 48, H * 0.3 / 40 * 2);
+      const r8 = 8 * unit / 2, r40 = 40 * unit / 2;
+      const xA = W * 0.16, xB = xA + r8 + r40;
+      const rD = r40 * 0.42;
+      const motorAng = TAU * 2.4 * u;
+      const angB = -motorAng / 5;
+      const px = W * 0.72, py = 116, pr = 28;
+      const lift = Math.abs(angB) * rD * 0.55;
+      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(px, 42); c.lineTo(px, py); c.stroke();
+      const bw = 64, bh = Math.min(56, H * 0.1);
+      const boxTop = H * 0.56 - lift;
+      c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+      c.beginPath(); c.roundRect(xA - r8 - 74, gy - 26, 56, 52, 9); c.fill(); c.stroke();
+      label(c, xA - r8 - 46, gy + 4, '모터', '#8b98ad', 11, false);
+      c.strokeStyle = '#39445c'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(xA - r8 - 18, gy); c.lineTo(xA, gy); c.stroke();
+      drawGear(c, xB, gy, 40, angB + Math.PI / 40, '#c2410c', { r: r40, light: '#ffb27d' });
+      c.save(); c.translate(xB, gy); c.rotate(angB);
+      const dg = c.createRadialGradient(-rD * 0.3, -rD * 0.3, rD * 0.2, 0, 0, rD);
+      dg.addColorStop(0, '#9aa8c4'); dg.addColorStop(1, '#4a5878');
+      c.fillStyle = dg; c.strokeStyle = '#202c44'; c.lineWidth = 2;
+      c.beginPath(); c.arc(0, 0, rD, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = '#d9b88a';
+      c.beginPath(); c.arc(rD * 0.7, 0, 4, 0, 7); c.fill();
+      c.restore();
+      rope(c, [[xB, gy - rD], [xB, py + 6], [px - pr, py]]);
+      rope(c, [[px + pr, py], [px + pr, boxTop]]);
+      pulleyWheel(c, px, py, pr, -lift / pr);
+      crate(c, px + pr - bw / 2, boxTop, bw, bh, '짐');
+      drawGear(c, xA, gy, 8, motorAng, '#2563eb', { r: r8, light: '#7db4ff' });
+      dirArrow(c, xA, gy, r8 + 14, true, '#4da3ff');
+      label(c, xA, gy - r8 - 24, '8T', '#4da3ff');
+      label(c, xB, gy + r40 + 24, '40T + 줄 감는 드럼', '#ff9046');
+      if (ts === 0 && !rev) qMark(c, px + pr + 48, boxTop + bh / 2);
+      else {
+        c.fillStyle = '#2ee06f';
+        const ax = px + pr + 44, ay = boxTop + bh / 2;
+        c.beginPath(); c.moveTo(ax, ay - 22); c.lineTo(ax - 8, ay - 8); c.lineTo(ax + 8, ay - 8); c.fill();
+        c.fillRect(ax - 3, ay - 8, 6, 22);
+        label(c, ax, ay + 32, '천천히!', '#2ee06f', 12);
+      }
+    }
+  },
+];
+
+/* ══════════ 퀴즈 상태 & 진행 ══════════ */
+const cv = $('cv');
+const state = { idx: 0, picked: -1, phase: 'pick', score: 0, results: [], lastT: 0, raf: null, showResult: false };
+
+function drawFrame(ts) {
+  state.lastT = ts;
+  const { c, W, H } = fit(cv);
+  const q = QUESTIONS[state.idx];
+  q.draw(c, W, H, ts, state.phase === 'revealed');
+}
+
+function buildDots() {
+  const box = $('dots');
+  box.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === state.idx ? ' cur' : '') +
+      (state.results[i] === true ? ' ok' : state.results[i] === false ? ' bad' : '');
+    d.textContent = i + 1;
+    box.appendChild(d);
+  });
+  const sc = document.createElement('div');
+  sc.className = 'score-chip';
+  sc.textContent = `${state.score}점`;
+  box.appendChild(sc);
+}
+
+function loadQuestion() {
+  cancelAnim();
+  const q = QUESTIONS[state.idx];
+  state.picked = -1; state.phase = 'pick';
+  $('qnum').textContent = `Q${state.idx + 1}`;
+  $('qtext').textContent = q.q;
+  $('hud_q').textContent = `${state.idx + 1} / 10`;
+  $('hud_s').textContent = state.score;
+  const box = $('choices');
+  box.innerHTML = '';
+  q.choices.forEach((txt, i) => {
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.innerHTML = `<span class="no">${i + 1}</span><span>${txt}</span>`;
+    b.onclick = () => pick(i);
+    box.appendChild(b);
+  });
+  $('play').disabled = true;
+  $('replay').disabled = true;
+  $('next').style.display = 'none';
+  $('explain').className = 'explain';
+  $('bd').className = 'badge';
+  $('hint').style.display = state.idx === 0 ? 'block' : 'none';
+  buildDots();
+  requestAnimationFrame(() => drawFrame(0));
+}
+
+function pick(i) {
+  if (state.phase !== 'pick') return;
+  state.picked = i;
+  [...$('choices').children].forEach((b, k) => b.classList.toggle('picked', k === i));
+  $('play').disabled = false;
+}
+
+function cancelAnim() { if (state.raf) { cancelAnimationFrame(state.raf); state.raf = null; } }
+
+function playAnim(onEnd) {
+  cancelAnim();
+  const q = QUESTIONS[state.idx];
+  const t0 = performance.now();
+  const frame = now => {
+    const ts = Math.min((now - t0) / 1000, q.dur);
+    drawFrame(ts);
+    if (ts < q.dur) state.raf = requestAnimationFrame(frame);
+    else { state.raf = null; onEnd && onEnd(); }
+  };
+  state.raf = requestAnimationFrame(frame);
+}
+
+$('play').onclick = () => {
+  if (state.phase !== 'pick' || state.picked < 0) return;
+  state.phase = 'playing';
+  [...$('choices').children].forEach(b => b.disabled = true);
+  $('play').disabled = true;
+  playAnim(reveal);
+};
+
+function reveal() {
+  const q = QUESTIONS[state.idx];
+  const correct = state.picked === q.answer;
+  state.phase = 'revealed';
+  state.results[state.idx] = correct;
+  if (correct) state.score++;
+  [...$('choices').children].forEach((b, k) => {
+    b.classList.remove('picked');
+    if (k === q.answer) b.classList.add('right');
+    else if (k === state.picked) b.classList.add('wrong');
+  });
+  const bd = $('bd');
+  bd.className = 'badge ' + (correct ? 'ok' : 'no');
+  bd.textContent = correct ? `⭕ 정답! ${q.okMsg}` : `❌ 아쉽다! 정답은 "${q.choices[q.answer]}"`;
+  const ex = $('explain');
+  ex.innerHTML = (correct ? '💡 ' : '📚 ') + q.explain;
+  ex.className = 'explain show';
+  $('replay').disabled = false;
+  const nx = $('next');
+  nx.style.display = 'block';
+  nx.textContent = state.idx === QUESTIONS.length - 1 ? '🏁 결과 보기' : '다음 문제 →';
+  $('hud_s').textContent = state.score;
+  buildDots();
+  drawFrame(q.dur);
+}
+
+$('replay').onclick = () => {
+  if (state.phase !== 'revealed') return;
+  $('replay').disabled = true;
+  playAnim(() => { $('replay').disabled = false; });
+};
+
+$('next').onclick = () => {
+  if (state.idx < QUESTIONS.length - 1) { state.idx++; loadQuestion(); }
+  else showResult();
+};
+
+function showResult() {
+  cancelAnim();
+  state.showResult = true;
+  $('quiz').classList.remove('on');
+  $('result').classList.add('on');
+  const s = state.score;
+  const medal = s >= 9 ? '🥇' : s >= 7 ? '🥈' : s >= 5 ? '🥉' : '💪';
+  const grade = s >= 9 ? '금메달 — 메커니즘 마스터!' : s >= 7 ? '은메달 — 예측 고수!' :
+    s >= 5 ? '동메달 — 조금만 더!' : '다시 도전 — 원리 탭을 읽고 와!';
+  $('rMedal').textContent = medal;
+  $('rGrade').textContent = grade;
+  $('rScore').textContent = `${s} / 10 문제 정답`;
+  const list = $('rList');
+  list.innerHTML = '';
+  QUESTIONS.forEach((q, i) => {
+    const ok = state.results[i];
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    div.innerHTML = `<span class="rmark ${ok ? 'o' : 'x'}">${ok ? 'O' : 'X'}</span>` +
+      `<span class="rq">Q${i + 1}. ${q.short}${ok ? '' : `<span class="rex">${q.explain.replace(/<[^>]+>/g, '')}</span>`}</span>`;
+    list.appendChild(div);
+  });
+}
+
+$('retry').onclick = () => {
+  state.idx = 0; state.score = 0; state.results = []; state.showResult = false;
+  $('result').classList.remove('on');
+  $('quiz').classList.add('on');
+  loadQuestion();
+};
+
+window.addEventListener('resize', () => {
+  if ($('quiz').classList.contains('on') && !state.raf) drawFrame(state.lastT);
+});
+
+loadQuestion();
+</script>
+</body>
+</html>

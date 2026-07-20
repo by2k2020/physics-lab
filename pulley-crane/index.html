@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>도르래 크레인 시뮬레이션 — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.diff { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.fail { display: inline-flex; background: rgba(70,18,14,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 350px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 10px 0 8px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; touch-action: manipulation; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  .mission { border: 1.5px solid rgba(255,176,46,.45); background: rgba(70,50,10,.22); border-radius: 12px; padding: 10px 13px; margin-bottom: 12px; }
+  .mission.ok { border-color: rgba(46,224,111,.55); background: rgba(20,60,35,.28); }
+  .mission .m-title { font-size: 13.5px; font-weight: 800; color: var(--amber); }
+  .mission.ok .m-title { color: var(--green); }
+  .mission .m-sub { font-size: 11.5px; color: #c6d2e6; margin-top: 3px; line-height: 1.5; }
+
+  .pick3 { display: flex; gap: 6px; }
+  .pick3 button { flex: 1; padding: 8px 2px; border-radius: 10px; display: flex; flex-direction: column; gap: 2px; align-items: center; }
+  .pick3 button .p-name { font-size: 12.5px; font-weight: 700; word-break: keep-all; text-align: center; }
+  .pick3 button .p-desc { font-size: 10px; color: var(--dim); font-family: var(--mono); }
+  .pick3 button.on { border-color: var(--accent); background: rgba(77,163,255,.12); }
+  .pick3 button.on .p-name { color: var(--accent); }
+
+  .pullbtn { width: 100%; margin-top: 10px; padding: 17px 0; font-size: 17px; font-weight: 800; border-radius: 13px; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 4px 16px rgba(45,120,255,.35); }
+  .pullbtn:active, .pullbtn.hold { transform: scale(0.96); background: linear-gradient(135deg, #1a4fd6, #2f79e6); }
+  .downrow { display: flex; gap: 7px; margin-top: 8px; }
+  .downrow button { flex: 1; padding: 11px 0; font-size: 13px; font-weight: 700; border-radius: 11px; }
+  .downrow .brake { border-color: rgba(46,224,111,.5); color: var(--green); }
+  .downrow .drop { border-color: rgba(255,90,82,.5); color: var(--red); }
+  .downrow .rst { flex: 0 0 52px; }
+
+  .gauge { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; }
+  .gauge .g-head { display: flex; justify-content: space-between; font-size: 11.5px; color: #c6d2e6; margin-bottom: 6px; }
+  .gauge .g-head b { font-family: var(--mono); font-weight: 600; }
+  .g-track { position: relative; height: 16px; background: #070c16; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .g-fill { height: 100%; border-radius: 7px; width: 0%; transition: none; }
+  .g-mark { position: absolute; top: -2px; bottom: -2px; width: 2.5px; background: var(--red); box-shadow: 0 0 6px rgba(255,90,82,.8); }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 72px; flex: none; }
+  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-row .val { width: 56px; text-align: right; font-family: var(--mono); font-size: 12px; }
+
+  .quiz { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .quiz .q { font-size: 12.5px; color: #c6d2e6; line-height: 1.55; margin-bottom: 8px; }
+  .quiz .opts { display: flex; gap: 6px; }
+  .quiz .opts button { flex: 1; padding: 7px 0; font-family: var(--mono); font-size: 12.5px; border-radius: 8px; }
+  .quiz .opts button.ok { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); }
+  .quiz .opts button.no { border-color: var(--red); color: var(--red); background: rgba(255,90,82,.08); }
+  .quiz .fb { font-size: 11.5px; margin-top: 7px; line-height: 1.5; display: none; }
+  .quiz .fb.show { display: block; }
+  .quiz .fb.good { color: var(--green); }
+  .quiz .fb.bad { color: var(--amber); }
+
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 10px 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  th, td { border: 1px solid var(--border); padding: 4px 3px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; -webkit-user-select: text; user-select: text; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 52vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 · 13차시 크레인 / 23차시 올리기와 내리기</div>
+      <div class="title">🏗️ 도르래 크레인 시뮬레이션</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp1">🏗️ 크레인 조종</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 크레인 조종 ══════ -->
+  <section class="exp on" id="exp1">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip" style="color:var(--green)"><span class="lab">화물 높이</span><span id="hud_h">0.0 m</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">당긴 줄 길이</span><span id="hud_rope">0.0 m</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">필요한 힘</span><span id="hud_need">10</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="mission" id="mission">
+        <div class="m-title" id="m_title">🎯 미션 · 40kg 바위를 꼭대기(3m)까지!</div>
+        <div class="m-sub" id="m_sub">내 팔 힘은 최대 <b>15</b>야. 어떤 도르래를 골라야 40kg 바위가 올라갈까?</div>
+      </div>
+
+      <h3>① 도르래 구성 고르기</h3>
+      <div class="pick3" id="pickCfg">
+        <button data-cfg="fixed" class="on"><span class="p-name">고정 1개</span><span class="p-desc">힘×1 · 줄×1</span></button>
+        <button data-cfg="movable"><span class="p-name">움직 1개</span><span class="p-desc">힘×½ · 줄×2</span></button>
+        <button data-cfg="compound"><span class="p-name">복합 (고정+움직)</span><span class="p-desc">힘×¼ · 줄×4</span></button>
+      </div>
+
+      <h3>② 화물 무게 고르기</h3>
+      <div class="pick3" id="pickW">
+        <button data-w="10" class="on"><span class="p-name">📦 10kg</span><span class="p-desc">상자</span></button>
+        <button data-w="20"><span class="p-name">🚛 20kg</span><span class="p-desc">컨테이너</span></button>
+        <button data-w="40"><span class="p-name">🪨 40kg</span><span class="p-desc">바위</span></button>
+      </div>
+
+      <h3>③ 줄 당기기 — 연타하거나 꾹 눌러!</h3>
+      <button class="pullbtn" id="pull">💪 당기기!</button>
+      <div class="downrow">
+        <button class="brake" id="lower">🐢 천천히 내리기 (브레이크)</button>
+        <button class="drop" id="drop">⚠️ 줄 확 놓기</button>
+        <button class="rst" id="reset">↺</button>
+      </div>
+
+      <h3>힘 게이지 — 빨간 선(필요한 힘)을 넘겨야 올라가!</h3>
+      <div class="gauge">
+        <div class="g-head"><span>💪 내 힘</span><b><span id="g_pow" style="color:var(--accent)">0</span> / 필요 <span id="g_need" style="color:var(--red)">10</span></b></div>
+        <div class="g-track">
+          <div class="g-fill" id="g_fill" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div>
+          <div class="g-mark" id="g_mark" style="left:24%"></div>
+        </div>
+      </div>
+
+      <h3>줄을 당긴 만큼 vs 올라간 높이</h3>
+      <div class="bar-row"><span class="lab">🪢 당긴 줄</span><div class="bar-track"><div class="bar-fill" id="barRope" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:0%"></div></div><span class="val" id="valRope">0.0 m</span></div>
+      <div class="bar-row"><span class="lab">📈 화물 높이</span><div class="bar-track"><div class="bar-fill" id="barH" style="background:linear-gradient(90deg,#15803d,#2ee06f);width:0%"></div></div><span class="val" id="valH">0.0 m</span></div>
+
+      <h3>🔮 예측해 보자</h3>
+      <div class="quiz" id="q1">
+        <div class="q">Q1. 움직 도르래로 화물을 <b>1m</b> 올리려면 줄은 몇 m 당겨야 할까?</div>
+        <div class="opts">
+          <button data-ok="0">1 m</button><button data-ok="1">2 m</button><button data-ok="0">4 m</button>
+        </div>
+        <div class="fb"></div>
+      </div>
+      <div class="quiz" id="q2">
+        <div class="q">Q2. 40kg 바위를 <b>복합 도르래(힘×¼)</b>로 들면 필요한 힘은?</div>
+        <div class="opts">
+          <button data-ok="1">10</button><button data-ok="0">20</button><button data-ok="0">40</button>
+        </div>
+        <div class="fb"></div>
+      </div>
+
+      <details open>
+        <summary>📋 실험 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table id="tb">
+            <thead><tr><th>#</th><th>도르래</th><th>무게</th><th>필요 힘</th><th>당긴 줄</th><th>높이</th><th>판정</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <h2>📖 도르래 — 힘과 거리를 맞바꾸는 마법의 바퀴</h2>
+      <p><b>고정 도르래</b>는 천장에 매달린 바퀴야. 힘은 하나도 안 줄여 주지만,
+        아래로 당기면 물건이 위로 올라가지. <b>힘의 방향을 바꿔 주는 것</b>이 고정 도르래의 일이야.
+        국기 게양대에서 줄을 아래로 당기면 국기가 위로 올라가는 것과 똑같아!</p>
+      <p><b>움직 도르래</b>는 화물에 붙어서 같이 움직이는 바퀴야. 줄 <b>두 가닥</b>이 화물을 나눠 들기 때문에
+        내가 낼 힘은 <b>절반</b>이면 돼. 대신 줄은 <b>2배</b>로 당겨야 해. 공짜는 없거든!</p>
+      <ul>
+        <li>필요한 힘: <span class="eq">필요한 힘 = 화물 무게 ÷ 줄 가닥 수</span></li>
+        <li>당길 줄 길이: <span class="eq">당길 줄 = 올릴 높이 × 줄 가닥 수</span></li>
+        <li>줄 가닥 수를 <b>기계적 이득</b>이라고 불러 — 힘이 몇 배 이득인지 알려 주는 수야.</li>
+      </ul>
+      <table>
+        <thead><tr><th>도르래 구성</th><th>줄 가닥</th><th>40kg 들 때 힘</th><th>1m 올릴 때 당길 줄</th><th>특징</th></tr></thead>
+        <tbody>
+          <tr><td class="cond">고정 1개</td><td>1</td><td>40</td><td>1 m</td><td class="cond">방향만 바꿈 (아래로 당김)</td></tr>
+          <tr><td class="cond">움직 1개</td><td>2</td><td>20</td><td>2 m</td><td class="cond">힘 절반, 줄 2배</td></tr>
+          <tr><td class="cond">복합 (고정+움직 2개)</td><td>4</td><td>10</td><td>4 m</td><td class="cond">힘 ¼, 줄 4배 — 크레인!</td></tr>
+        </tbody>
+      </table>
+      <p><b>힘 ↓ 거리 ↑ 맞바꿈</b> — 도르래는 일(힘×거리)을 공짜로 줄여 주지 않아.
+        힘을 반으로 줄이면 그만큼 줄을 2배 길게 당겨야 하지.
+        기어에서 속도와 힘을 맞바꿨던 것과 완전히 같은 규칙이야!</p>
+      <p><b>내릴 때는?</b> 올릴 때보다 내릴 때가 더 위험해. 줄을 확 놓으면 화물이 <b>쿵!</b> 떨어져서 부서져.
+        진짜 크레인은 <b>브레이크</b>로 줄이 천천히 풀리게 해서 살살 내려놓는단다.
+        시뮬레이터에서 "줄 확 놓기"를 눌러 보면 왜 브레이크가 필요한지 바로 알 수 있어.</p>
+      <div class="tip">
+        <b>🧱 브릭큐 조립 팁</b><br>
+        · 13차시 크레인: 도르래 바퀴에 줄을 걸고, 줄이 홈에서 빠지지 않는지 확인!<br>
+        · 움직 도르래를 만들면 손으로 느껴 봐 — 진짜로 힘이 반이 되는지!<br>
+        · 23차시 올리기와 내리기: 모터를 반대로 돌리면 내려가. 내릴 때는 <b>모터 속도를 느리게</b> 하는 게 브레이크야.<br>
+        · 주변에서 도르래 찾기: 국기 게양대, 블라인드 줄, 엘리베이터, 공사장 크레인 🏗️
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('exp1').classList.toggle('on', b.dataset.tab === 'exp1');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+/* ── 상수 ── */
+const CONFIGS = {
+  fixed:    { name: '고정 도르래',  ma: 1 },
+  movable:  { name: '움직 도르래',  ma: 2 },
+  compound: { name: '복합 도르래',  ma: 4 },
+};
+const LOADS = {
+  10: { name: '상자',     color: '#8a5a2b', light: '#c8935a' },
+  20: { name: '컨테이너', color: '#1d4ed8', light: '#5b8def' },
+  40: { name: '바위',     color: '#4b5563', light: '#9aa5b1' },
+};
+const MAX_H = 3;            // m
+const MAX_PULL = 15;        // 내 팔 힘 최대
+const GAUGE_MAX = 44;       // 힘 게이지 스케일
+const ROPE_MAX = MAX_H * 4; // 거리 바 스케일 (12m)
+
+/* ── 상태 ── */
+const S = {
+  cfg: 'fixed', w: 10,
+  h: 0, rope: 0, power: 0,
+  holding: false, lowering: false, dropping: false,
+  arrived: false, failLogged: false, stuckT: 0,
+  shakeT: 0, t: 0, runCount: 0, missionDone: false,
+};
+const ma = () => CONFIGS[S.cfg].ma;
+const need = () => S.w / ma();
+
+/* ── 선택 버튼 ── */
+function bindPick(boxId, onSel) {
+  const box = $(boxId);
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    onSel(b.dataset);
+  }));
+}
+bindPick('pickCfg', d => { S.cfg = d.cfg; softReset(); });
+bindPick('pickW',   d => { S.w = +d.w;   softReset(); });
+
+function softReset() {
+  S.h = 0; S.rope = 0; S.power = 0;
+  S.lowering = false; S.dropping = false;
+  S.arrived = false; S.failLogged = false; S.stuckT = 0;
+  hideBadge();
+}
+function hideBadge() { $('bd').className = 'badge'; }
+function showBadge(cls, txt) { const b = $('bd'); b.className = 'badge ' + cls; b.textContent = txt; }
+
+/* ── 당기기 / 내리기 버튼 (터치+마우스) ── */
+function holdBtn(el, down, up) {
+  const dn = e => { e.preventDefault(); down(); el.classList.add('hold'); };
+  const upf = () => { up(); el.classList.remove('hold'); };
+  el.addEventListener('pointerdown', dn);
+  el.addEventListener('pointerup', upf);
+  el.addEventListener('pointerleave', upf);
+  el.addEventListener('pointercancel', upf);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdBtn($('pull'),
+  () => { if (S.dropping) return; S.holding = true; S.lowering = false;
+          S.power = Math.min(MAX_PULL, S.power + 4); },  // 연타 보너스
+  () => { S.holding = false; });
+holdBtn($('lower'),
+  () => { if (S.dropping) return; S.lowering = true; S.holding = false; },
+  () => { S.lowering = false; });
+$('drop').addEventListener('click', () => {
+  if (S.h > 0.05 && !S.dropping) { S.dropping = true; S.holding = false; S.lowering = false; }
+});
+$('reset').addEventListener('click', softReset);
+
+/* ── 결과표 ── */
+function logRow(verdict) {
+  const tb = $('tb').querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${++S.runCount}</td><td class="cond">${CONFIGS[S.cfg].name}</td>` +
+    `<td>${S.w}kg</td><td>${need().toFixed(1)}</td><td>${S.rope.toFixed(1)}m</td>` +
+    `<td>${S.h.toFixed(1)}m</td><td class="cond">${verdict}</td>`;
+  tb.prepend(tr);
+  while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+}
+
+/* ── 예측 퀴즈 ── */
+[['q1', '딩동댕! 움직 도르래는 줄 2가닥이 들어서, 줄을 2배(2m) 당겨야 1m 올라가.',
+        '아쉬워! 힘이 절반이 된 만큼 줄은 2배 — 정답은 2m야.'],
+ ['q2', '딩동댕! 40 ÷ 4 = 10. 복합 도르래면 내 힘(15)으로 충분해!',
+        '아쉬워! 줄 4가닥이 나눠 들어서 40÷4=10이 정답이야.']]
+.forEach(([id, good, bad]) => {
+  const q = $(id), fb = q.querySelector('.fb');
+  q.querySelectorAll('.opts button').forEach(b => b.addEventListener('click', () => {
+    if (q.dataset.done) return;
+    q.dataset.done = '1';
+    const right = b.dataset.ok === '1';
+    b.classList.add(right ? 'ok' : 'no');
+    q.querySelectorAll('.opts button').forEach(x => { if (x.dataset.ok === '1') x.classList.add('ok'); });
+    fb.textContent = right ? good : bad;
+    fb.className = 'fb show ' + (right ? 'good' : 'bad');
+  }));
+});
+
+/* ── 물리 스텝 ── */
+function step(dt) {
+  S.t += dt;
+  const nd = need();
+
+  // 힘: 꾹 누르면 차오르고, 놓으면 스르르 빠짐
+  if (S.holding) S.power += (MAX_PULL - S.power) * Math.min(1, 5 * dt);
+  else S.power *= Math.exp(-3.5 * dt);
+  if (S.power < 0.05) S.power = 0;
+
+  if (S.dropping) {                      // 줄 확 놓기 — 추락!
+    S.arrived = false; S.failLogged = false; S.stuckT = 0;
+    S.h -= 3 * dt; S.rope = Math.max(0, S.rope - 3 * ma() * dt);
+    if (S.h <= 0) {
+      S.h = 0; S.dropping = false; S.shakeT = 0.55;
+      showBadge('fail', '💥 쿵!! 확 놓으면 화물이 부서져 — 브레이크로 천천히 내리자!');
+    }
+  } else if (S.lowering && S.h > 0) {    // 브레이크 하강
+    S.arrived = false; S.failLogged = false; S.stuckT = 0;
+    S.h = Math.max(0, S.h - 0.5 * dt);
+    S.rope = Math.max(0, S.rope - 0.5 * ma() * dt);
+    if (S.h === 0) showBadge('same', '✓ 사뿐히 착지! 브레이크로 내리면 안전해');
+  } else if (S.power > nd && S.h < MAX_H) {  // 상승
+    const spd = Math.min(0.9, 0.15 + 0.5 * (S.power - nd) / Math.max(nd, 1));
+    const dh = Math.min(spd * dt, MAX_H - S.h);
+    S.h += dh;
+    S.rope += dh * ma();
+    S.stuckT = 0;
+    if (S.h >= MAX_H - 1e-9 && !S.arrived) {
+      S.h = MAX_H;
+      S.arrived = true;
+      if (S.w === 40 && !S.missionDone) {
+        S.missionDone = true;
+        const m = $('mission'); m.classList.add('ok');
+        $('m_title').textContent = '🏆 미션 성공! 40kg 바위를 들어올렸어!';
+        $('m_sub').innerHTML = `${CONFIGS[S.cfg].name}의 힘! 필요한 힘 ${nd.toFixed(0)} — 대신 줄을 ${S.rope.toFixed(1)}m나 당겼지?`;
+        showBadge('same', `🏆 미션 성공! ${CONFIGS[S.cfg].name}로 40kg을 3m까지!`);
+      } else {
+        showBadge('same', `🎉 꼭대기 도착! 높이 3m — 당긴 줄 ${S.rope.toFixed(1)}m (${ma()}배)`);
+      }
+      logRow('성공 🎉');
+    }
+  } else if (S.holding && S.power >= Math.min(MAX_PULL * 0.93, nd) && S.power <= nd && S.h < MAX_H) {
+    // 최대 힘으로도 못 드는 중
+    S.stuckT += dt;
+    if (S.stuckT > 1.4 && !S.failLogged) {
+      S.failLogged = true;
+      showBadge('fail', `😣 아무리 당겨도 꿈쩍 안 해! 내 힘 최대 ${MAX_PULL} < 필요 ${nd.toFixed(0)} — 다른 도르래를 써 보자!`);
+      logRow('실패 — 힘 부족');
+    }
+  }
+  if (S.shakeT > 0) S.shakeT = Math.max(0, S.shakeT - dt);
+}
+
+/* ── 게이지 DOM ── */
+function updatePanel() {
+  const nd = need();
+  $('hud_h').textContent = S.h.toFixed(1) + ' m';
+  $('hud_rope').textContent = S.rope.toFixed(1) + ' m';
+  $('hud_need').textContent = nd.toFixed(nd % 1 ? 1 : 0) + ' (' + S.w + 'kg ÷ ' + ma() + ')';
+  $('g_pow').textContent = S.power.toFixed(1);
+  $('g_need').textContent = nd.toFixed(nd % 1 ? 1 : 0);
+  const f = $('g_fill');
+  f.style.width = Math.min(100, S.power / GAUGE_MAX * 100) + '%';
+  f.style.background = S.power > nd
+    ? 'linear-gradient(90deg,#15803d,#2ee06f)'
+    : 'linear-gradient(90deg,#1f5eff,#4da3ff)';
+  $('g_mark').style.left = Math.min(98, nd / GAUGE_MAX * 100) + '%';
+  $('barRope').style.width = Math.min(100, S.rope / ROPE_MAX * 100) + '%';
+  $('barH').style.width = Math.min(100, S.h / ROPE_MAX * 100) + '%';
+  $('valRope').textContent = S.rope.toFixed(1) + ' m';
+  $('valH').textContent = S.h.toFixed(1) + ' m';
+}
+
+/* ── 그리기 유틸 ── */
+function wheel(c, x, y, r, ang, color) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r + 3, 0, 7); c.fill();
+  const g = c.createRadialGradient(-r*0.3, -r*0.3, r*0.2, 0, 0, r);
+  g.addColorStop(0, '#ffd97a'); g.addColorStop(1, color);
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = 'rgba(0,0,0,.3)';
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2;
+    c.beginPath(); c.arc(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.16, 0, 7); c.fill();
+  }
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.22, 0, 7); c.fill();
+  c.restore();
+}
+function rope(c, pts, width = 2.5) {
+  c.strokeStyle = '#d9b06a'; c.lineWidth = width; c.lineCap = 'round';
+  c.beginPath();
+  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  c.stroke();
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = width * 0.4;
+  c.beginPath();
+  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  c.stroke();
+}
+function lattice(c, x, y0, y1, w) {
+  c.strokeStyle = '#33415e'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x - w/2, y0); c.lineTo(x - w/2, y1); c.moveTo(x + w/2, y0); c.lineTo(x + w/2, y1); c.stroke();
+  c.lineWidth = 1.6;
+  const stepY = 26;
+  for (let y = y0, i = 0; y < y1 - 4; y += stepY, i++) {
+    c.beginPath();
+    if (i % 2) { c.moveTo(x - w/2, y); c.lineTo(x + w/2, y + stepY); }
+    else { c.moveTo(x + w/2, y); c.lineTo(x - w/2, y + stepY); }
+    c.stroke();
+  }
+}
+
+/* ── 메인 그리기 ── */
+const cv = $('cv');
+function draw() {
+  const { c, W, H } = fit(cv);
+  const shx = S.shakeT > 0 ? (Math.random() - 0.5) * S.shakeT * 26 : 0;
+  const shy = S.shakeT > 0 ? (Math.random() - 0.5) * S.shakeT * 18 : 0;
+  c.save(); c.translate(shx, shy);
+
+  // 하늘 + 별 점
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(-30, -30, W + 60, H + 60);
+  c.fillStyle = 'rgba(120,145,190,.08)';
+  for (let x = 20; x < W; x += 34)
+    for (let y = 20; y < H * 0.7; y += 34) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+
+  const groundY = H - 46;
+  const jibY = 74;
+  const mastX = Math.max(86, W * 0.19);
+  const px = Math.min(W - 130, mastX + Math.max(210, W * 0.4));  // 도르래 매달림 x
+  const M = ma(), nd = need();
+  const L = LOADS[S.w];
+
+  // 땅
+  c.fillStyle = '#111a2e'; c.fillRect(-30, groundY, W + 60, H - groundY + 30);
+  c.strokeStyle = '#2c3d5e'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(-30, groundY); c.lineTo(W + 30, groundY); c.stroke();
+  c.strokeStyle = 'rgba(90,110,150,.25)'; c.lineWidth = 1.3;
+  for (let x = 0; x < W + 20; x += 22) {
+    c.beginPath(); c.moveTo(x, groundY + 2); c.lineTo(x - 10, groundY + 14); c.stroke();
+  }
+
+  // 크레인 몸체
+  lattice(c, mastX, jibY - 8, groundY, 30);                       // 기둥
+  c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(mastX - 34, groundY - 6, 68, 12, 3); c.fill(); c.stroke();  // 받침
+  c.fillStyle = '#1c2a48';
+  c.beginPath(); c.roundRect(mastX - 70, jibY - 26, 46, 34, 5); c.fill(); c.stroke();    // 카운터웨이트
+  c.fillStyle = '#8b98ad'; c.font = '10px sans-serif'; c.textAlign = 'center';
+  c.fillText('무게추', mastX - 47, jibY - 6);
+  c.fillStyle = '#18233c';
+  c.beginPath(); c.roundRect(mastX - 16, jibY - 20, 40, 26, 5); c.fill(); c.stroke();    // 조종석
+  c.fillStyle = 'rgba(77,163,255,.35)';
+  c.beginPath(); c.roundRect(mastX - 10, jibY - 15, 18, 12, 3); c.fill();
+  // 지브 (수평 팔)
+  c.strokeStyle = '#33415e'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(mastX - 24, jibY); c.lineTo(px + 46, jibY); c.stroke();
+  c.lineWidth = 1.6;
+  for (let x = mastX + 20, i = 0; x < px + 30; x += 24, i++) {
+    c.beginPath();
+    if (i % 2) { c.moveTo(x, jibY - 9); c.lineTo(x + 24, jibY + 9); }
+    else { c.moveTo(x, jibY + 9); c.lineTo(x + 24, jibY - 9); }
+    c.stroke();
+  }
+  c.strokeStyle = '#33415e'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(mastX - 24, jibY - 9); c.lineTo(px + 46, jibY - 9);
+  c.moveTo(mastX - 24, jibY + 9); c.lineTo(px + 46, jibY + 9); c.stroke();
+
+  // 화물 위치 계산
+  const loadW = S.w === 10 ? 62 : S.w === 20 ? 96 : 84;
+  const loadH2 = S.w === 10 ? 52 : S.w === 20 ? 56 : 62;
+  const blockGap = M > 1 ? 46 : 26;                       // 훅/움직도르래 공간
+  const liftPx = groundY - loadH2 - (jibY + 60) - blockGap;
+  const pxPerM = liftPx / MAX_H;
+  const sway = (S.holding || S.lowering || S.dropping) ? Math.sin(S.t * 2.4) * 4 : 0;
+  const lx = px + sway;                                    // 화물 중심 x
+  const loadTop = groundY - loadH2 - S.h * pxPerM;
+  const wheelAng = S.rope * 1.6;
+
+  // 높이 눈금자
+  const rulerX = px + 74;
+  c.strokeStyle = 'rgba(120,150,200,.3)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(rulerX, groundY); c.lineTo(rulerX, groundY - MAX_H * pxPerM - loadH2); c.stroke();
+  c.font = '10.5px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#77839a';
+  for (let m = 0; m <= MAX_H; m++) {
+    const y = groundY - loadH2 - m * pxPerM;
+    c.beginPath(); c.moveTo(rulerX - 5, y); c.lineTo(rulerX + 5, y); c.stroke();
+    c.fillText(m + 'm', rulerX + 9, y + 3.5);
+  }
+  // 목표선
+  const goalY = groundY - loadH2 - MAX_H * pxPerM;
+  c.strokeStyle = 'rgba(46,224,111,.5)'; c.setLineDash([5, 5]); c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(px - 70, goalY); c.lineTo(rulerX, goalY); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#2ee06f'; c.font = 'bold 11px sans-serif';
+  c.fillText('🎯 목표 3m', px - 68, goalY - 7);
+
+  // 도르래 브래킷 (지브에 매달림)
+  c.strokeStyle = '#39445c'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(px, jibY + 6); c.lineTo(px, jibY + 22); c.stroke();
+  const fbY = jibY + 34;                                   // 고정 블록 중심 y
+
+  // 손잡이(사람) 쪽 위치
+  const mastWheelY = jibY + 20;
+  const handleBob = S.holding ? Math.sin(S.t * 16) * 7 : 0;
+  const handleY = groundY - 118 + handleBob;
+  const handleX = mastX + 44;
+
+  // ── 구성별 줄 + 도르래 ──
+  if (M === 1) {
+    // 고정 1개: 화물 → 고정바퀴 → 지브 따라 → 기둥바퀴 → 손
+    rope(c, [[px + 14, fbY], [lx + 6, loadTop - 14]]);
+    rope(c, [[px - 14, fbY], [mastX + 14, mastWheelY]]);
+    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
+    wheel(c, px, fbY, 15, wheelAng, '#c98a2e');
+    // 훅
+    hook(c, lx + 6, loadTop - 14, loadTop);
+  } else if (M === 2) {
+    const mbY = loadTop - 26;                              // 움직 도르래 중심
+    rope(c, [[px + 26, jibY + 8], [lx + 13, mbY]]);        // 고정 끝(지브 고정)
+    rope(c, [[lx - 13, mbY], [px - 24, fbY]]);             // 움직 → 고정(방향전환)
+    rope(c, [[px - 24 - 12, fbY], [mastX + 14, mastWheelY]]);
+    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
+    c.strokeStyle = '#39445c'; c.lineWidth = 3;            // 지브 고정점
+    c.beginPath(); c.moveTo(px + 26, jibY + 6); c.lineTo(px + 26, jibY + 12); c.stroke();
+    wheel(c, px - 24, fbY, 13, wheelAng, '#c98a2e');       // 방향전환 고정
+    wheel(c, lx, mbY, 14, -wheelAng, '#2ea3c9');           // 움직 도르래
+    c.strokeStyle = '#39445c'; c.lineWidth = 3.5;          // 움직도르래 ↔ 화물
+    c.beginPath(); c.moveTo(lx, mbY + 6); c.lineTo(lx, loadTop); c.stroke();
+    labelPulley(c, lx, mbY - 52, '움직');
+  } else {
+    // 복합: 고정 2 + 움직 2, 4가닥
+    const mbY = loadTop - 26;
+    const off = [-27, -9, 9, 27];
+    for (let i = 0; i < 4; i++) rope(c, [[px + off[i], fbY + 4], [lx + off[i], mbY]]);
+    rope(c, [[px - 40, fbY], [mastX + 14, mastWheelY]]);
+    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
+    wheel(c, px - 18, fbY, 13, wheelAng, '#c98a2e');
+    wheel(c, px + 18, fbY, 13, wheelAng, '#c98a2e');
+    wheel(c, lx - 18, mbY, 13, -wheelAng, '#2ea3c9');
+    wheel(c, lx + 18, mbY, 13, -wheelAng, '#2ea3c9');
+    c.strokeStyle = '#39445c'; c.lineWidth = 3.5;
+    c.beginPath(); c.moveTo(lx, mbY + 8); c.lineTo(lx, loadTop); c.stroke();
+    c.fillStyle = '#1a2234'; c.strokeStyle = '#39445c'; c.lineWidth = 1.5;
+    c.beginPath(); c.roundRect(lx - 36, mbY - 5, 72, 10, 4); c.fill(); c.stroke();
+    labelPulley(c, lx, mbY - 14, '움직 ×2');
+  }
+  // 기둥 위 방향전환 바퀴 (공통)
+  wheel(c, mastX + 14, mastWheelY, 11, wheelAng, '#c98a2e');
+
+  // 화물
+  drawLoad(c, lx, loadTop, loadW, loadH2, L);
+
+  // 사람 + 손잡이
+  drawPuller(c, handleX, handleY, groundY, S.holding);
+
+  // 당긴 줄 코일
+  const coilR = 7 + Math.min(20, S.rope * 1.6);
+  c.strokeStyle = '#d9b06a'; c.lineWidth = 3;
+  c.beginPath(); c.arc(mastX - 44, groundY - coilR - 4, coilR, 0, 7); c.stroke();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(mastX - 44, groundY - coilR - 4, coilR * 0.6, 0, 7); c.stroke();
+  c.fillStyle = '#77839a'; c.font = '10px sans-serif'; c.textAlign = 'center';
+  c.fillText('당긴 줄 ' + S.rope.toFixed(1) + 'm', mastX - 44, groundY + 14);
+
+  // 구성 라벨
+  c.font = 'bold 12.5px sans-serif'; c.textAlign = 'center';
+  c.fillStyle = '#ffb02e';
+  c.fillText(`${CONFIGS[S.cfg].name} — 줄 ${M}가닥 · 필요한 힘 ${nd.toFixed(nd % 1 ? 1 : 0)}`, px, jibY - 16);
+
+  c.restore();
+}
+function hook(c, rx, ry, loadTop) {
+  c.strokeStyle = '#9aa5b1'; c.lineWidth = 3.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx, loadTop - 2); c.stroke();
+  c.beginPath(); c.arc(rx - 4, loadTop - 4, 5, -0.4, 3.2); c.stroke();
+}
+function labelPulley(c, x, y, txt) {
+  c.fillStyle = '#5bd0f0'; c.font = 'bold 10.5px sans-serif'; c.textAlign = 'center';
+  c.fillText(txt, x, y + 30);
+}
+function drawLoad(c, cx, top, w, h, L) {
+  c.save();
+  if (S.w === 40) {                       // 바위
+    const g = c.createRadialGradient(cx - w*0.2, top + h*0.25, 6, cx, top + h/2, w*0.7);
+    g.addColorStop(0, L.light); g.addColorStop(1, L.color);
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(cx - w/2, top + h*0.75);
+    c.quadraticCurveTo(cx - w/2 - 6, top + h*0.3, cx - w*0.24, top + h*0.08);
+    c.quadraticCurveTo(cx, top - 6, cx + w*0.3, top + h*0.14);
+    c.quadraticCurveTo(cx + w/2 + 5, top + h*0.42, cx + w*0.4, top + h*0.85);
+    c.quadraticCurveTo(cx, top + h + 4, cx - w/2, top + h*0.75);
+    c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(cx - w*0.15, top + h*0.25); c.lineTo(cx + w*0.05, top + h*0.55); c.stroke();
+  } else {
+    const g = c.createLinearGradient(cx - w/2, top, cx + w/2, top + h);
+    g.addColorStop(0, L.light); g.addColorStop(1, L.color);
+    c.fillStyle = g;
+    c.beginPath(); c.roundRect(cx - w/2, top, w, h, 5); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
+    if (S.w === 20) {                     // 컨테이너 세로 골
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2;
+      for (let x = cx - w/2 + 10; x < cx + w/2 - 5; x += 12) {
+        c.beginPath(); c.moveTo(x, top + 5); c.lineTo(x, top + h - 5); c.stroke();
+      }
+    } else {                              // 상자 테이프
+      c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(cx, top + 2); c.lineTo(cx, top + h - 2); c.stroke();
+    }
+  }
+  c.fillStyle = '#fff'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
+  c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 4;
+  c.fillText(S.w + 'kg', cx, top + h / 2 + 5);
+  c.restore();
+}
+function drawPuller(c, hx, hy, groundY, pulling) {
+  // 손잡이
+  c.fillStyle = '#c2410c';
+  c.beginPath(); c.roundRect(hx - 14, hy - 6, 28, 12, 6); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
+  // 사람 (막대)
+  const lean = pulling ? 10 : 0;
+  const bx = hx + 20 + lean, by = groundY;
+  c.strokeStyle = '#8fb6ea'; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(bx, by); c.lineTo(bx + 6 - lean * 0.5, by - 30);          // 다리
+  c.moveTo(bx + 12, by); c.lineTo(bx + 6 - lean * 0.5, by - 30);
+  c.lineTo(bx + 2 - lean, by - 52);                                  // 몸통
+  c.moveTo(bx + 2 - lean, by - 46); c.lineTo(hx + 8, hy + 2);        // 팔
+  c.stroke();
+  c.fillStyle = '#8fb6ea';
+  c.beginPath(); c.arc(bx - lean, by - 62, 8, 0, 7); c.fill();       // 머리
+  if (pulling) {
+    c.fillStyle = '#ffb02e'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+    c.fillText('영차!', bx + 4, by - 78);
+    // 당기는 방향 화살
+    c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, hy + 30); c.stroke();
+    c.fillStyle = 'rgba(255,176,46,.8)';
+    c.beginPath(); c.moveTo(hx, hy + 36); c.lineTo(hx - 5, hy + 28); c.lineTo(hx + 5, hy + 28); c.fill();
+  }
+}
+
+/* ── 메인 루프 ── */
+let lastTs = null;
+function frame(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  step(dt);
+  if ($('exp1').classList.contains('on')) { draw(); updatePanel(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.addEventListener('resize', () => { if ($('exp1').classList.contains('on')) draw(); });
+</script>
+</body>
+</html>

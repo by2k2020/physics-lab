@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>저울 시뮬레이션 — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; pointer-events: none; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; pointer-events: none; }
+  #free .badge-wrap { bottom: 108px; } /* keep badge above the weight tray drawn at canvas bottom */
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.diff { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.bad { display: inline-flex; background: rgba(70,18,14,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 340px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .hint-txt { font-size: 12px; color: #b7c3d8; line-height: 1.65; background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 10px 13px; margin-bottom: 13px; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 15.5px; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .sub { font-family: var(--mono); font-size: 10.5px; color: var(--dim); margin-top: 3px; min-height: 13px; word-break: break-all; }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 58px; flex: none; }
+  .bar-track { flex: 1; height: 12px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+  .bar-row .val { width: 40px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .ans-col { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .ans-col button { padding: 12px 14px; font-size: 14px; font-weight: 700; text-align: left; }
+  .ans-col button.pick { border-color: var(--accent); background: rgba(77,163,255,.12); }
+  .ans-col button.good { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); }
+  .ans-col button.wrong { border-color: var(--red); color: var(--red); background: rgba(255,90,82,.1); }
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+  td .ok { color: var(--green); } td .no { color: var(--red); }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 56vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 22차시</div>
+      <div class="title">⚖️ 저울 시뮬레이션</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="free">자유 실험 · 수평 만들기</button>
+      <button class="tab" data-tab="quiz">퀴즈 · 어느 쪽으로 기울까?</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 자유 실험 ══════ -->
+  <section class="exp on" id="free">
+    <div class="stage">
+      <canvas class="scene" id="cvF"></canvas>
+      <div class="hud">
+        <div class="chip" style="color:var(--accent)"><span class="lab">◀ 왼쪽 모멘트</span><span id="hudML">0</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">오른쪽 모멘트 ▶</span><span id="hudMR">0</span></div>
+        <div class="chip"><span class="lab">저울 상태</span><span id="hudSt">비어 있음</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bdF"></span></div>
+    </div>
+    <div class="side">
+      <div class="hint-txt">🧲 아래 <b>추 상자</b>에서 추를 <b>끌어서</b> 저울 걸이(1~4칸)에 매달아 봐.<br>
+        추를 <b>탭해서 고른 뒤 걸이를 탭</b>해도 돼. 매달린 추를 탭하면 빠져!</div>
+      <div class="ctl-row">
+        <button class="primary" id="btnChal">🎯 도전 만들기 (왼쪽 무작위)</button>
+        <button id="btnClear">🧹 치우기</button>
+      </div>
+      <h3>모멘트 = 무게 × 칸수</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">◀ 왼쪽 모멘트</div><div class="v a" id="roML">0</div><div class="sub" id="foML">—</div></div>
+        <div class="readout"><div class="k">오른쪽 모멘트 ▶</div><div class="v b" id="roMR">0</div><div class="sub" id="foMR">—</div></div>
+      </div>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">◀ 왼쪽</span><div class="bar-track"><div class="bar-fill" id="barL" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:0%"></div></div><span class="val" id="valL">0</span></div>
+        <div class="bar-row"><span class="lab">오른쪽 ▶</span><div class="bar-track"><div class="bar-fill" id="barR" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:0%"></div></div><span class="val" id="valR">0</span></div>
+      </div>
+      <div class="readouts">
+        <div class="readout" style="grid-column:1/3"><div class="k">판정</div><div class="v" id="roSt" style="font-family:inherit;font-size:14px">추를 매달아 봐</div></div>
+      </div>
+      <details open>
+        <summary>🏅 수평 성공 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table id="tbF">
+            <thead><tr><th>#</th><th>왼쪽 배치</th><th>오른쪽 배치</th><th>모멘트</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 퀴즈 ══════ -->
+  <section class="exp" id="quiz">
+    <div class="stage">
+      <canvas class="scene" id="cvQ"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">문제</span><span id="hudQno">1 / 10</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">점수</span><span id="hudScore">0</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">◀ 왼쪽 모멘트</span><span id="hudQML">?</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">오른쪽 모멘트 ▶</span><span id="hudQMR">?</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bdQ"></span></div>
+    </div>
+    <div class="side">
+      <div class="hint-txt">🔒 저울이 잠겨 있어. 추 배치를 잘 보고 <b>어느 쪽으로 기울지 예측</b>해 봐.<br>
+        답을 고르면 저울이 풀리면서 정답을 보여 줄게!</div>
+      <h3>내 예측은?</h3>
+      <div class="ans-col">
+        <button id="ansL">◀ 왼쪽으로 기울어요</button>
+        <button id="ansE">▬ 수평이에요</button>
+        <button id="ansR">오른쪽으로 기울어요 ▶</button>
+      </div>
+      <div class="ctl-row">
+        <button class="primary" id="btnNext" disabled>다음 문제 ▶</button>
+      </div>
+      <h3>확인 계산</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">◀ 왼쪽 모멘트</div><div class="v a" id="qML">?</div><div class="sub" id="qFL">답을 고르면 공개</div></div>
+        <div class="readout"><div class="k">오른쪽 모멘트 ▶</div><div class="v b" id="qMR">?</div><div class="sub" id="qFR">답을 고르면 공개</div></div>
+      </div>
+      <details open>
+        <summary>📋 퀴즈 기록</summary>
+        <div class="inner">
+          <table id="tbQ">
+            <thead><tr><th>#</th><th>좌</th><th>우</th><th>내 답</th><th>정답</th><th>판정</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <h2>📖 시소의 비밀 — 가벼워도 멀리 있으면 이긴다!</h2>
+      <p>시소에서 몸무게가 가벼운 친구가 무거운 친구를 들어 올리려면 어떻게 해야 할까?
+        맞아, <b>더 멀리 앉으면 돼!</b> 저울을 기울이는 힘은 무게만으로 정해지는 게 아니라
+        <b>가운데(받침점)에서 얼마나 멀리 있느냐</b>도 똑같이 중요해.</p>
+      <ul>
+        <li>기울이는 힘(모멘트): <span class="eq">모멘트 = 무게 × 거리(칸수)</span></li>
+        <li>저울은 <span class="eq">왼쪽 모멘트 vs 오른쪽 모멘트</span> — 큰 쪽으로 기울어져</li>
+        <li>두 모멘트가 똑같으면? <b>수평!</b> 무게가 달라도 수평이 될 수 있어</li>
+      </ul>
+      <table>
+        <thead><tr><th>왼쪽</th><th>오른쪽</th><th>모멘트 비교</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>10g × 1칸</td><td>10g × 1칸</td><td>10 = 10</td><td class="cond">수평</td></tr>
+          <tr><td>10g × 1칸</td><td>5g × 2칸</td><td>10 = 10</td><td class="cond">수평 — 절반 무게로도!</td></tr>
+          <tr><td>10g × 1칸</td><td>2g × 4칸 + 1g × 3칸</td><td>10 &lt; 11</td><td class="cond">오른쪽으로 — 3g가 10g를 이김</td></tr>
+          <tr><td>5g × 4칸</td><td>10g × 1칸</td><td>20 &gt; 10</td><td class="cond">왼쪽으로 — 가벼운 쪽이 승리</td></tr>
+        </tbody>
+      </table>
+      <p><b>왜 그럴까?</b> 받침점에서 멀수록 같은 무게라도 저울을 빙 돌리는 힘이 커져.
+        문 손잡이가 문의 <b>끝쪽</b>에 달린 것도 같은 이유야 — 멀리서 밀수록 작은 힘으로 문이 열리거든.
+        이런 원리를 <b>지렛대의 원리</b>라고 불러.</p>
+      <div class="tip">
+        <b>🧱 브릭큐로 진짜 저울 만들기 팁</b><br>
+        · 긴 빔의 <b>정가운데 구멍</b>에 축을 끼워야 해 — 한 칸이라도 어긋나면 빈 저울도 기울어져!<br>
+        · 축이 뻑뻑하면 저울이 잘 안 움직여. 살짝 헐렁하게 끼우자<br>
+        · 브릭 부품을 추 대신 걸어 보고, 시뮬처럼 <b>무게×칸수</b>를 계산해서 수평을 예측해 보기<br>
+        · 친구와 게임: 한 명이 왼쪽에 추를 걸면, 다른 한 명은 <b>다른 조합</b>으로 수평 만들기!
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const MASSES = [1, 2, 5, 10];
+const MCOL = { 1: ['#15803d', '#4ade80'], 2: ['#1d4ed8', '#7db4ff'], 5: ['#6d28d9', '#c9a6ff'], 10: ['#c2410c', '#ffb27d'] };
+const MSIZE = { 1: 0.42, 2: 0.50, 5: 0.60, 10: 0.72 };
+const MAX_ANG = 0.30;           // 최대 기울기 (rad)
+const MAX_STACK = 3;
+
+let activeTab = 'free';
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  ['free', 'quiz'].forEach(id => $(id).classList.toggle('on', b.dataset.tab === id));
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  activeTab = b.dataset.tab;
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+function drawBackdrop(c, W, H) {
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(120,145,190,.08)';
+  for (let x = 20; x < W; x += 26)
+    for (let y = 20; y < H; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+}
+
+function weightSize(m, u) { return Math.max(20, MSIZE[m] * u); }
+
+function drawWeight(c, x, y, m, u, ghost) {
+  // (x, y) = 추 윗변 중앙. 고리 + 몸통 + 라벨
+  const s = weightSize(m, u);
+  c.save();
+  if (ghost) c.globalAlpha = 0.85;
+  c.strokeStyle = '#55617a'; c.lineWidth = 2.5;
+  c.beginPath(); c.arc(x, y - s * 0.10, s * 0.14, Math.PI, 0); c.stroke();   // 고리
+  const g = c.createLinearGradient(x - s / 2, y, x + s / 2, y + s);
+  g.addColorStop(0, MCOL[m][1]); g.addColorStop(1, MCOL[m][0]);
+  c.fillStyle = g;
+  c.beginPath(); c.roundRect(x - s / 2, y, s, s, s * 0.16); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.14)';
+  c.beginPath(); c.roundRect(x - s / 2 + 2, y + 2, s - 4, s * 0.28, s * 0.12); c.fill();
+  c.fillStyle = '#fff'; c.font = `bold ${Math.max(10, s * 0.32)}px sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(m + 'g', x, y + s * 0.56);
+  c.restore();
+  return s;
+}
+
+/* ═════════ 저울 팩토리 ═════════ */
+function makeScale(cv, opts) {
+  const S = {
+    hooks: {},                 // '-4'..'-1','1'..'4' → [mass,...]
+    theta: 0, omega: 0, locked: false,
+    selected: 0, drag: null, hover: 0,
+    L: null,                   // 마지막 레이아웃 (히트 테스트용)
+  };
+  for (let d = -4; d <= 4; d++) if (d) S.hooks[d] = [];
+
+  S.clear = () => { for (const k in S.hooks) S.hooks[k] = []; changed(); };
+  S.place = (d, m) => { if (S.hooks[d].length < MAX_STACK) { S.hooks[d].push(m); changed(); return true; } return false; };
+  S.momentSide = sign => {
+    let sum = 0;
+    for (let d = 1; d <= 4; d++) S.hooks[sign * d].forEach(m => sum += m * d);
+    return sum;
+  };
+  S.formula = sign => {
+    const parts = [];
+    for (let d = 1; d <= 4; d++) S.hooks[sign * d].forEach(m => parts.push(m + '×' + d));
+    return parts.length ? parts.join(' + ') + ' = ' + S.momentSide(sign) : '—';
+  };
+  S.count = sign => { let n = 0; for (let d = 1; d <= 4; d++) n += S.hooks[sign * d].length; return n; };
+  function changed() { opts.onChange && opts.onChange(); }
+
+  S.step = dt => {
+    const diff = S.momentSide(1) - S.momentSide(-1);      // + → 오른쪽으로 기움
+    const target = S.locked ? 0 : MAX_ANG * Math.tanh(diff / 14);
+    const acc = (target - S.theta) * 26 - S.omega * 8;
+    S.omega += acc * dt;
+    S.theta += S.omega * dt;
+  };
+  S.settled = () => Math.abs(S.omega) < 0.02 &&
+    Math.abs(S.theta - (S.locked ? 0 : MAX_ANG * Math.tanh((S.momentSide(1) - S.momentSide(-1)) / 14))) < 0.01;
+
+  function layout(W, H) {
+    const trayH = opts.interactive ? Math.max(72, Math.min(92, H * 0.15)) : 0;
+    const u = Math.min(74, W * 0.100, (H - trayH) * 0.135);
+    return { W, H, u, px: W / 2, py: (H - trayH) * 0.42, trayH };
+  }
+
+  S.draw = () => {
+    const f = fit(cv); if (!f) return;
+    const { c, W, H } = f;
+    const L = layout(W, H); S.L = L;
+    const { u, px, py } = L;
+    drawBackdrop(c, W, H);
+
+    // ── 받침대 ──
+    const baseY = py + u * 2.6;
+    c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(px - u * 0.34, py + u * 0.1); c.lineTo(px + u * 0.34, py + u * 0.1);
+    c.lineTo(px + u * 1.0, baseY); c.lineTo(px - u * 1.0, baseY);
+    c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(px - u * 1.5, baseY, u * 3, u * 0.26, 6); c.fill(); c.stroke();
+
+    // ── 빔 (레고 스타일: 구멍 뚫린 막대) ──
+    c.save();
+    c.translate(px, py); c.rotate(S.theta);
+    const half = 4.55 * u, bh = Math.max(16, u * 0.42);
+    const bg2 = c.createLinearGradient(0, -bh / 2, 0, bh / 2);
+    bg2.addColorStop(0, '#ffd34d'); bg2.addColorStop(1, '#d99a1b');
+    c.fillStyle = bg2;
+    c.beginPath(); c.roundRect(-half, -bh / 2, half * 2, bh, bh / 2); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.2; c.stroke();
+    for (let d = -4; d <= 4; d++) {                         // 구멍 + 칸수
+      c.fillStyle = 'rgba(20,15,5,.55)';
+      c.beginPath(); c.arc(d * u, 0, bh * 0.26, 0, 7); c.fill();
+      if (d) {
+        c.fillStyle = 'rgba(60,40,5,.9)'; c.font = `bold ${Math.max(9, u * 0.17)}px sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(Math.abs(d), d * u, -bh * 0.95);
+        c.strokeStyle = '#8a6410'; c.lineWidth = 2.5;        // 걸이 핀
+        c.beginPath(); c.moveTo(d * u, bh * 0.2); c.lineTo(d * u, bh * 0.75); c.stroke();
+      }
+    }
+    c.restore();
+
+    // ── 중심축 (십자) ──
+    c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(px, py, Math.max(9, u * 0.17), 0, 7); c.fill();
+    c.strokeStyle = '#39445c'; c.lineWidth = 3;
+    const s0 = Math.max(5, u * 0.10);
+    c.beginPath(); c.moveTo(px - s0, py); c.lineTo(px + s0, py); c.moveTo(px, py - s0); c.lineTo(px, py + s0); c.stroke();
+
+    // ── 매달린 추 (끈은 항상 수직) ──
+    const cosT = Math.cos(S.theta), sinT = Math.sin(S.theta);
+    S.wRects = [];
+    for (let d = -4; d <= 4; d++) {
+      if (!d) continue;
+      const hx = px + cosT * d * u, hy = py + sinT * d * u + u * 0.16;
+      if (S.hover === d && opts.interactive) {               // 배치 후보 하이라이트
+        c.strokeStyle = 'rgba(77,163,255,.85)'; c.lineWidth = 2.5;
+        c.beginPath(); c.arc(hx, hy, u * 0.34, 0, 7); c.stroke();
+        c.fillStyle = 'rgba(77,163,255,.12)'; c.fill();
+      }
+      const arr = S.hooks[d];
+      if (!arr.length) continue;
+      const strL = u * 0.22;
+      c.strokeStyle = '#55617a'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(hx, hy - u * 0.05); c.lineTo(hx, hy + strL); c.stroke();
+      let y = hy + strL + weightSize(arr[0], u) * 0.14;
+      arr.forEach((m, i) => {
+        const s = drawWeight(c, hx, y, m, u, false);
+        S.wRects.push({ d, i, m, x: hx - s / 2, y, w: s, h: s });
+        y += s * 0.92;
+      });
+    }
+
+    // ── 추 상자 (트레이) ──
+    S.tRects = [];
+    if (opts.interactive) {
+      const th = L.trayH, ty = H - th;
+      c.fillStyle = 'rgba(10,15,28,.85)';
+      c.fillRect(0, ty, W, th);
+      c.strokeStyle = '#263046'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0, ty); c.lineTo(W, ty); c.stroke();
+      const bw = Math.min(84, W / 5.6), gap = 12;
+      let x = W / 2 - (bw * 4 + gap * 3) / 2;
+      c.font = '10.5px sans-serif'; c.fillStyle = '#8b98ad'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      c.fillText('추 상자 — 끌어서 매달기', 12, ty + 16);
+      MASSES.forEach(m => {
+        const box = { m, x, y: ty + th / 2 - bw * 0.38, w: bw, h: bw * 0.76 };
+        c.fillStyle = S.selected === m ? 'rgba(77,163,255,.14)' : '#121a2c';
+        c.strokeStyle = S.selected === m ? '#4da3ff' : '#263046';
+        c.lineWidth = S.selected === m ? 2 : 1;
+        c.beginPath(); c.roundRect(box.x, box.y, box.w, box.h, 10); c.fill(); c.stroke();
+        drawWeight(c, x + bw / 2, box.y + box.h / 2 - weightSize(m, u * 0.8) * 0.55, m, u * 0.8, false);
+        S.tRects.push(box);
+        x += bw + gap;
+      });
+    }
+
+    // ── 드래그 고스트 ──
+    if (S.drag) drawWeight(c, S.drag.x, S.drag.y - weightSize(S.drag.m, u) * 0.4, S.drag.m, u, true);
+  };
+
+  // ── 히트 테스트 ──
+  S.nearestHook = (x, y) => {
+    if (!S.L) return 0;
+    const { u, px, py } = S.L;
+    const cosT = Math.cos(S.theta), sinT = Math.sin(S.theta);
+    let best = 0, bd = u * 1.05;
+    for (let d = -4; d <= 4; d++) {
+      if (!d) continue;
+      const hx = px + cosT * d * u, hy = py + sinT * d * u;
+      const dist = Math.hypot(x - hx, (y - hy) * 0.45);      // 세로로 관대하게
+      if (dist < bd) { bd = dist; best = d; }
+    }
+    return best;
+  };
+
+  if (opts.interactive) {
+    let down = null;
+    const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    cv.addEventListener('pointerdown', e => {
+      e.preventDefault(); cv.setPointerCapture(e.pointerId);
+      const p = pos(e);
+      down = { ...p, moved: false, grab: null };
+      const wr = (S.wRects || []).slice().reverse().find(r => p.x >= r.x - 6 && p.x <= r.x + r.w + 6 && p.y >= r.y - 6 && p.y <= r.y + r.h + 6);
+      if (wr) {                                              // 매달린 추 집기 → 탭이면 제거, 끌면 이동
+        S.hooks[wr.d].splice(wr.i, 1); changed();
+        down.grab = 'hook'; down.origD = wr.d;
+        S.drag = { m: wr.m, x: p.x, y: p.y };
+        return;
+      }
+      const tr = (S.tRects || []).find(r => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
+      if (tr) { down.grab = 'tray'; down.trayM = tr.m; }
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!down) return;
+      const p = pos(e);
+      if (Math.hypot(p.x - down.x, p.y - down.y) > 8) down.moved = true;
+      if (down.grab === 'tray' && down.moved && !S.drag) S.drag = { m: down.trayM, x: p.x, y: p.y };
+      if (S.drag) { S.drag.x = p.x; S.drag.y = p.y; S.hover = S.nearestHook(p.x, p.y); }
+    });
+    const finish = e => {
+      if (!down) return;
+      const p = pos(e);
+      if (S.drag) {
+        const d = S.nearestHook(p.x, p.y);
+        if (down.moved && d && !S.place(d, S.drag.m) && down.grab === 'hook')
+          S.place(down.origD, S.drag.m);                     // 칸이 가득 차면 원래 자리로 복귀 (바깥이면 소멸)
+        // 탭(안 움직임)으로 집은 추 → 제거 확정 (이미 splice됨)
+      } else if (down.grab === 'tray' && !down.moved) {
+        S.selected = S.selected === down.trayM ? 0 : down.trayM;   // 탭 선택 토글
+      } else if (!down.grab && !down.moved && S.selected) {
+        const d = S.nearestHook(p.x, p.y);
+        if (d) S.place(d, S.selected);                       // 선택 상태에서 걸이 탭 배치
+      }
+      S.drag = null; S.hover = 0; down = null;
+    };
+    cv.addEventListener('pointerup', finish);
+    cv.addEventListener('pointercancel', () => { S.drag = null; S.hover = 0; down = null; });
+  }
+  return S;
+}
+
+/* ═════════ 자유 실험 ═════════ */
+const Free = (() => {
+  const sc = makeScale($('cvF'), { interactive: true, onChange: refresh });
+  let lastKey = '', doneKeys = new Set(), successCount = 0, challenge = false;
+
+  function refresh() {
+    const ml = sc.momentSide(-1), mr = sc.momentSide(1);
+    $('hudML').textContent = ml; $('hudMR').textContent = mr;
+    $('roML').textContent = ml; $('roMR').textContent = mr;
+    $('foML').textContent = sc.formula(-1); $('foMR').textContent = sc.formula(1);
+    const mx = Math.max(40, ml, mr);
+    $('barL').style.width = (ml / mx * 100) + '%'; $('valL').textContent = ml;
+    $('barR').style.width = (mr / mx * 100) + '%'; $('valR').textContent = mr;
+    lastKey = JSON.stringify(sc.hooks);
+    if (challenge && !sc.count(-1)) challenge = false;       // 왼쪽을 다 치우면 도전 무효
+    const bd = $('bdF');
+    if (ml + mr === 0) bd.className = 'badge';
+    else if (challenge) {
+      bd.className = 'badge diff';
+      bd.textContent = `🎯 왼쪽 모멘트 ${ml} — 오른쪽에 추를 걸어 수평을 만들어 봐!`;
+    } else if (ml !== mr) bd.className = 'badge';             // 배치가 바뀌면 지난 성공 배지 제거
+  }
+  function stateTxt() {
+    const ml = sc.momentSide(-1), mr = sc.momentSide(1);
+    if (ml + mr === 0) return ['비어 있음', ''];
+    if (ml > mr) return ['◀ 왼쪽으로 기울어짐 (' + ml + ' > ' + mr + ')', 'l'];
+    if (mr > ml) return ['오른쪽으로 기울어짐 ▶ (' + ml + ' < ' + mr + ')', 'r'];
+    return ['수평! (' + ml + ' = ' + mr + ')', 'e'];
+  }
+  function tick(dt) {
+    sc.step(dt); sc.draw();
+    const [txt, kind] = stateTxt();
+    $('hudSt').textContent = kind === 'e' ? '⚖️ 수평!' : kind ? '기울어짐' : '비어 있음';
+    $('roSt').textContent = txt;
+    $('roSt').style.color = kind === 'e' ? 'var(--green)' : kind ? 'var(--amber)' : 'var(--dim)';
+    // 수평 성공 판정 (양쪽 모두 추가 있고, 새 배치이고, 흔들림이 멎었을 때)
+    const ml = sc.momentSide(-1), mr = sc.momentSide(1);
+    if (ml === mr && ml > 0 && sc.count(-1) && sc.count(1) && sc.settled() && !doneKeys.has(lastKey)) {
+      doneKeys.add(lastKey);
+      successCount++;
+      const bd = $('bdF');
+      bd.className = 'badge same';
+      bd.textContent = challenge ? `🏆 도전 성공! 좌 = 우 = ${ml} — 수평 ${successCount}회째`
+                                 : `🎉 수평 성공! 좌 = 우 = ${ml} (무게가 달라도 모멘트가 같으면 수평)`;
+      challenge = false;
+      const tb = $('tbF').querySelector('tbody');
+      const tr = document.createElement('tr');
+      const desc = s => { const p = []; for (let d = 1; d <= 4; d++) sc.hooks[s * d].forEach(m => p.push(`${m}g×${d}`)); return p.join(', ') || '—'; };
+      tr.innerHTML = `<td>${successCount}</td><td>${desc(-1)}</td><td>${desc(1)}</td><td>${ml}</td>`;
+      tb.prepend(tr);
+      while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    }
+  }
+  $('btnClear').onclick = () => { sc.clear(); $('bdF').className = 'badge'; challenge = false; };
+  $('btnChal').onclick = () => {
+    sc.clear();
+    const n = 1 + (Math.random() < 0.5 ? 1 : 0);
+    for (let i = 0; i < n; i++)
+      sc.place(-(1 + Math.floor(Math.random() * 4)), MASSES[Math.floor(Math.random() * 4)]);
+    challenge = true;
+    const bd = $('bdF');
+    bd.className = 'badge diff';
+    bd.textContent = `🎯 왼쪽 모멘트 ${sc.momentSide(-1)} — 오른쪽에 추를 걸어 수평을 만들어 봐!`;
+  };
+  refresh();
+  return { tick };
+})();
+
+/* ═════════ 퀴즈 ═════════ */
+const Quiz = (() => {
+  const sc = makeScale($('cvQ'), { interactive: false });
+  const N = 10;
+  let qs = [], qi = 0, score = 0, phase = 'ask';   // ask → reveal → done
+
+  const randM = () => MASSES[Math.floor(Math.random() * 4)];
+  const randD = () => 1 + Math.floor(Math.random() * 4);
+  const randSide = () => {
+    const arr = [{ m: randM(), d: randD() }];
+    if (Math.random() < 0.5) arr.push({ m: randM(), d: randD() });
+    return arr;
+  };
+  const moment = arr => arr.reduce((s, w) => s + w.m * w.d, 0);
+  function equalRight(target) {                    // target 모멘트를 만드는 오른쪽 조합 탐색
+    const singles = [], pairs = [];
+    for (const m of MASSES) for (let d = 1; d <= 4; d++) {
+      if (m * d === target) singles.push([{ m, d }]);
+      for (const m2 of MASSES) for (let d2 = 1; d2 <= 4; d2++)
+        if (m * d + m2 * d2 === target) pairs.push([{ m, d }, { m: m2, d: d2 }]);
+    }
+    const pool = singles.length && Math.random() < 0.6 ? singles : (pairs.length ? pairs : singles);
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  }
+  function genQuestions() {
+    const out = [
+      { L: [{ m: 10, d: 1 }], R: [{ m: 2, d: 4 }, { m: 1, d: 3 }] },   // 3g가 10g를 이김
+      { L: [{ m: 5, d: 4 }], R: [{ m: 10, d: 1 }] },                   // 가벼운 쪽 승리
+      { L: [{ m: 10, d: 1 }], R: [{ m: 5, d: 2 }] },                   // 절반 무게로 수평
+    ];
+    let eq = 1;
+    while (out.length < N) {
+      if (eq < 3 && Math.random() < 0.45) {
+        const L = randSide(), R = equalRight(moment(L));
+        if (R) { out.push({ L, R }); eq++; continue; }
+      }
+      const q = { L: randSide(), R: randSide() };
+      if (moment(q.L) === moment(q.R)) eq++;
+      out.push(q);
+    }
+    for (let i = out.length - 1; i > 0; i--) {     // 셔플
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+  function answerOf(q) {
+    const ml = moment(q.L), mr = moment(q.R);
+    return ml > mr ? 'L' : mr > ml ? 'R' : 'E';
+  }
+  const ANS_TXT = { L: '◀ 왼쪽', E: '▬ 수평', R: '오른쪽 ▶' };
+  const btns = { L: $('ansL'), E: $('ansE'), R: $('ansR') };
+
+  function loadQ() {
+    const q = qs[qi];
+    sc.clear();
+    q.L.forEach(w => sc.place(-w.d, w.m));
+    q.R.forEach(w => sc.place(w.d, w.m));
+    sc.locked = true; sc.theta = 0; sc.omega = 0;
+    phase = 'ask';
+    $('hudQno').textContent = (qi + 1) + ' / ' + N;
+    $('hudQML').textContent = '?'; $('hudQMR').textContent = '?';
+    $('qML').textContent = '?'; $('qMR').textContent = '?';
+    $('qFL').textContent = '답을 고르면 공개'; $('qFR').textContent = '답을 고르면 공개';
+    $('bdQ').className = 'badge';
+    $('btnNext').disabled = true;
+    for (const k in btns) { btns[k].disabled = false; btns[k].className = ''; }
+  }
+  function choose(pick) {
+    if (phase !== 'ask') return;
+    phase = 'reveal';
+    const q = qs[qi], ans = answerOf(q);
+    const ml = moment(q.L), mr = moment(q.R);
+    sc.locked = false;                             // 저울 풀기 → 애니메이션으로 확인
+    const ok = pick === ans;
+    if (ok) score++;
+    $('hudScore').textContent = score;
+    $('hudQML').textContent = ml; $('hudQMR').textContent = mr;
+    $('qML').textContent = ml; $('qMR').textContent = mr;
+    $('qFL').textContent = sc.formula(-1); $('qFR').textContent = sc.formula(1);
+    for (const k in btns) {
+      btns[k].disabled = true;
+      btns[k].className = k === ans ? 'good' : (k === pick ? 'wrong' : '');
+    }
+    const bd = $('bdQ');
+    bd.className = ok ? 'badge same' : 'badge bad';
+    bd.textContent = ok ? `✓ 정답! ${ml} vs ${mr} → ${ANS_TXT[ans]}`
+                        : `✗ 아쉽다! ${ml} vs ${mr} → 정답은 ${ANS_TXT[ans]}`;
+    const tb = $('tbQ').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${qi + 1}</td><td>${ml}</td><td>${mr}</td>` +
+      `<td class="cond">${ANS_TXT[pick]}</td><td class="cond">${ANS_TXT[ans]}</td>` +
+      `<td>${ok ? '<span class="ok">○</span>' : '<span class="no">✗</span>'}</td>`;
+    tb.prepend(tr);
+    $('btnNext').disabled = false;
+    $('btnNext').textContent = qi + 1 < N ? '다음 문제 ▶' : '결과 보기 🏁';
+  }
+  function next() {
+    if (phase === 'done') { restart(); return; }
+    if (qi + 1 < N) { qi++; loadQ(); return; }
+    phase = 'done';
+    const bd = $('bdQ');
+    bd.className = score >= 7 ? 'badge same' : 'badge diff';
+    bd.textContent = score === N ? `🏆 만점! ${score} / ${N} — 저울 박사 인정!`
+      : score >= 7 ? `🎉 최종 점수 ${score} / ${N} — 훌륭해!`
+      : `💪 최종 점수 ${score} / ${N} — 모멘트=무게×칸수, 다시 도전!`;
+    $('btnNext').textContent = '🔄 다시 도전 (새 문제)';
+    for (const k in btns) btns[k].disabled = true;
+  }
+  function restart() {
+    qs = genQuestions(); qi = 0; score = 0;
+    $('hudScore').textContent = 0;
+    $('tbQ').querySelector('tbody').innerHTML = '';
+    $('btnNext').textContent = '다음 문제 ▶';
+    loadQ();
+  }
+  for (const k in btns) btns[k].onclick = () => choose(k);
+  $('btnNext').onclick = next;
+  restart();
+  return { tick(dt) { sc.step(dt); sc.draw(); } };
+})();
+
+/* ═════════ 메인 루프 ═════════ */
+let lastTs = null;
+function loop(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  if (activeTab === 'free') Free.tick(dt);
+  else if (activeTab === 'quiz') Quiz.tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

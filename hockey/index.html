@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>하키 슛 시뮬레이션 3D — 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
+  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 10px 24px; font-size: 17px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.in { display: inline-flex; background: rgba(20,60,35,.8); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 30px rgba(46,224,111,.3); }
+  .badge.out { display: inline-flex; background: rgba(70,50,10,.8); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 26px rgba(255,176,46,.25); }
+  .badge.blk { display: inline-flex; background: rgba(60,20,20,.8); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 26px rgba(255,90,82,.25); }
+  .analysis { display: none; position: absolute; top: 62px; left: 14px; width: min(400px, 44%); background: rgba(10,16,28,.88); backdrop-filter: blur(6px); border: 1px solid rgba(120,150,200,.35); border-radius: 14px; overflow: hidden; }
+  .analysis.on { display: block; }
+  .an-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(30,45,75,.6); font-size: 14px; }
+  .an-head button { background: transparent; border: none; color: var(--dim); font-size: 15px; cursor: pointer; }
+  .an-body { padding: 12px 16px 14px; font-size: 13.5px; line-height: 1.8; color: #cfdcef; }
+  .an-body .big { font-size: 17px; font-weight: 800; color: var(--green); }
+  .an-body .row { margin: 7px 0; padding: 8px 11px; background: rgba(20,30,52,.7); border-radius: 9px; }
+  .an-body .row b { color: var(--accent); }
+  .an-body .why { border-left: 3px solid var(--amber); padding-left: 10px; color: #e8d9b0; font-size: 12.5px; margin-top: 9px; }
+  .predict { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; flex-direction: column; align-items: center; gap: 12px; background: rgba(8,12,22,.8); backdrop-filter: blur(5px); border: 1px solid rgba(120,150,200,.3); border-radius: 16px; padding: 22px 30px; }
+  .predict.on { display: flex; }
+  .predict .q { font-size: 19px; font-weight: 800; text-align: center; }
+  .predict .sub { font-size: 12.5px; color: var(--dim); }
+  .predict .btns { display: flex; gap: 10px; }
+  .predict button { padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; }
+  .predict button:hover { border-color: var(--accent); }
+  .side { width: 344px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; text-transform: uppercase; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  button.p { padding: 11px 8px; font-size: 13.5px; font-weight: 700; display: flex; flex-direction: column; gap: 2px; align-items: center; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; transition: .1s; }
+  button.p small { font-size: 10.5px; color: var(--dim); font-weight: 400; }
+  button.p:hover { border-color: var(--accent); }
+  button.p.on { background: linear-gradient(135deg,#0e5aa7,#3d9bff); border-color: #3d9bff; color: #fff; }
+  button.p.on small { color: #d7ecff; }
+  button.p.on.rough { background: linear-gradient(135deg,#8a4d1f,#c2793a); border-color: #c2793a; }
+  button.p.on.rough small { color: #ffe6d3; }
+  .param { margin: 6px 0 14px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
+  .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .ctl-row { display: flex; gap: 8px; margin: 8px 0 4px; }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border: 1px solid #3d8bff; color: #fff; font-weight: 800; flex: 1; padding: 13px; border-radius: 10px; font-size: 15px; cursor: pointer; font-family: inherit; }
+  button.primary:disabled { opacity: .4; cursor: default; }
+  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; cursor: pointer; font-family: inherit; }
+  .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); }
+  .speed-row button { padding: 4px 11px; font-size: 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; font-family: inherit; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 15.5px; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.g { color: var(--green); } .readout .v.s { color: #b9c4d6; }
+  canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 12.5px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 8px 0; }
+  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 11.5px; font-weight: 600; padding: 6px 0; }
+  table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
+  table.mx td.miss { color: #ff6a5e; font-weight: 700; }
+  table.mx td.empty { color: #38445c; }
+  table.mx td.lab { color: var(--dim); font-size: 11.5px; font-family: 'Malgun Gothic',sans-serif; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .card { background: #121a2c; border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin: 12px 0; font-size: 15px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 56vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 17차시</div>
+      <div class="title">🏒 하키 슛 시뮬레이션<span class="t3d">3D</span></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp">실험 · 하키</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <section class="exp on" id="exp">
+    <div class="stage" id="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">슛 세기</span><span id="hud_pw">4</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">슛 방향</span><span id="hud_ang">중앙</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">바닥</span><span id="hud_sf">🧊 빙판</span></div>
+      </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬛ 위</button>
+        <button id="camBack">🥅 골대 뒤</button>
+      </div>
+      <div class="hint">드래그: 회전 · 휠/핀치: 확대</div>
+      <div class="predict" id="predict">
+        <div class="q">🤔 이 세기면 퍽이 골대까지 갈까?</div>
+        <div class="sub">마찰을 생각해 봐 — 지금 바닥은 <b id="predSurf">빙판</b>!</div>
+        <div class="btns">
+          <button id="predIn">⭕ 간다</button>
+          <button id="predOut">❌ 못 간다</button>
+        </div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+      <div class="analysis" id="analysis">
+        <div class="an-head"><b>📊 실험 결과 분석</b><button onclick="document.getElementById('analysis').classList.remove('on')">✕</button></div>
+        <div class="an-body" id="anBody"></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
+
+      <div class="param"><label>💪 슛 세기 (미는 힘) <b id="v_pw">4</b></label>
+        <div class="srow"><button class="step" data-t="pw" data-s="-1">◀</button><input type="range" id="pw" min="1" max="8" value="4" step="1"><button class="step" data-t="pw" data-s="1">▶</button></div></div>
+      <div class="param"><label>🎯 슛 방향 <b id="v_ang">중앙</b></label>
+        <div class="srow"><button class="step" data-t="ang" data-s="-1">◀</button><input type="range" id="ang" min="-3" max="3" value="0" step="1"><button class="step" data-t="ang" data-s="1">▶</button></div></div>
+
+      <h3>🧊 바닥 고르기 (마찰)</h3>
+      <div class="presets">
+        <button class="p on" id="sfIce">🧊 빙판<small>마찰 작음 — 잘 미끄러짐</small></button>
+        <button class="p" id="sfRough">🟫 거친 바닥<small>마찰 큼 — 금방 멈춤</small></button>
+      </div>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="keeper" checked><label for="keeper">🧤 골키퍼 넣기 (좌우로 왔다갔다)</label>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 예측 모드 (슛 전에 물어보기)</label>
+      </div>
+
+      <div class="ctl-row">
+        <button class="primary" id="fire">🏒 슛!</button>
+        <button class="ghost" id="reset">↺</button>
+      </div>
+      <div class="ctl-row">
+        <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 세기 1~8 거리 전부 재기</button>
+        <button class="ghost" id="clearMx">지우기</button>
+      </div>
+      <div class="speed-row"><span>재생 속도</span>
+        <button class="on" id="spa">1×</button>
+        <button id="spb">0.5×</button>
+        <button id="spc">0.25×</button>
+      </div>
+
+      <h3>📋 세기 × 바닥 → 퍽 도달 거리 <span style="text-transform:none;color:#5a6a85">(골대까지 6.0 m)</span></h3>
+      <table class="mx" id="matrix"></table>
+
+      <h3 style="margin-top:14px">측정값</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">퍽 처음 속도</div><div class="v a" id="ro_v0">—</div></div>
+        <div class="readout"><div class="k">마찰 감속</div><div class="v b" id="ro_dec">—</div></div>
+        <div class="readout"><div class="k">예상 도달 거리</div><div class="v s" id="ro_pred">—</div></div>
+        <div class="readout"><div class="k">실제 간 거리</div><div class="v g" id="ro_dist">—</div></div>
+        <div class="readout"><div class="k">걸린 시간</div><div class="v b" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">판정</div><div class="v a" id="ro_res">—</div></div>
+      </div>
+
+      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰이 속도를 깎는다)</span></h3>
+      <canvas class="graph" id="gr" height="150"></canvas>
+    </div>
+  </section>
+
+  <section id="theory">
+    <div class="theory-box">
+      <h2>🏒 원리 카드 — 밀기 힘과 마찰</h2>
+      <div class="card">
+        스틱으로 퍽을 <b>탁!</b> 치는 게 바로 <b style="color:var(--accent)">미는 힘</b>이야.<br>
+        세게 밀수록 퍽은 빨라지고, 더 멀리 가!
+      </div>
+      <div class="card">
+        그런데 퍽은 왜 점점 느려질까? 바닥이 퍽을 붙잡는 힘, <b style="color:var(--orange)">마찰</b> 때문이야.<br>
+        🧊 <b>빙판</b>은 미끌미끌 → 마찰이 작아서 <b>쭉~</b> 미끄러져.<br>
+        🟫 <b>거친 바닥</b>은 까끌까끌 → 마찰이 커서 <b>금방 멈춰</b> 버려.
+      </div>
+      <div class="card" style="border-color:rgba(46,224,111,.4)">
+        ⭐ 그래서 규칙은 이거야!<br>
+        <b>힘이 셀수록, 마찰이 작을수록 → 퍽은 더 멀리 간다!</b><br>
+        거친 바닥에서 골을 넣고 싶으면? 훨씬 <b>더 세게</b> 쳐야 해.
+      </div>
+      <div class="card">
+        🧤 골키퍼는 좌우로 왔다갔다 해. 키퍼가 <b>반대쪽으로 갈 때</b>를 노려서
+        빈 곳으로 슛! — 힘 조절 + 방향 조절 + 타이밍, 세 가지가 다 필요해.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — "예측 모드"를 켜고, 슛 전에 "이 세기면 골대까지 갈까?" 손들기</li>
+        <li><b>② 슛!</b> — 퍽이 미끄러지다 느려지는 모습 관찰. 예측과 비교</li>
+        <li><b>③ 바닥 바꾸기</b> — 같은 세기로 빙판 → 거친 바닥. "왜 금방 멈추지?" (마찰!)</li>
+        <li><b>④ 자동 실험</b> — 세기 1~8 거리를 표로 채우고, 몇부터 골대에 닿는지 찾기</li>
+        <li><b>⑤ 골키퍼 대결</b> — 골키퍼를 켜고, 타이밍·방향을 읽어 3골 넣기 미션</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 레고 실험 팁</b><br>
+        · 실물 BricQ 하키 모델도 똑같다 — 고무줄을 많이 감을수록(=세기↑) 퍽이 멀리 간다<br>
+        · 책상 위(매끈)와 카펫 위(거침)에서 같은 세기로 쏘아 거리 비교 — 시뮬 표와 맞춰보기<br>
+        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → "왜 다르지?" 이야기
+      </div>
+
+      <details style="margin-top:18px">
+        <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div class="inner" style="padding:12px 16px; line-height:2">
+          마찰 감속: <span class="eq">a = μg</span> — 퍽 속도가 일정하게 줄어듭니다 (그래프가 직선인 이유).<br>
+          도달 거리: <span class="eq">d = v₀² / (2μg)</span> — 속도의 <b>제곱</b>에 비례해, 세기 2배면 거리는 4배.<br>
+          시뮬 값: 빙판 μ=0.05, 거친 바닥 μ=0.20 (4배) → 같은 세기의 거리도 ¼로 줄어듭니다.<br>
+          <span style="color:var(--dim)">이 차시는 레고에듀케이션 공식 레슨 Hockey Practice(밀기·당기기 힘, K-2 NGSS K-PS2-1)와 같은 원리입니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from '../vendor/OrbitControls.js';
+
+const G = 9.8;
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let activeTab = 'exp';
+
+/* ── 눈금 → 물리량 (미터·초) : 빙판은 세기 3부터, 거친 바닥은 7부터 골대(6 m) 도달 ── */
+const MU_ICE = 0.05, MU_ROUGH = 0.20;
+const V0_OF = pw => 1.0 + pw * 0.58;               // 슛 세기 1~8 → 퍽 초기 속도
+const ANG_OF = a => a * 3 * Math.PI / 180;         // 방향 -3~3 → ±9° (±2까지 골 가능, ±3은 빗나감)
+const START_X = 0.35, GOAL_X = 6.35, NEED = 6.0;   // 퍽 출발점 → 골라인 6 m
+const GOAL_HALF = 0.8, GOAL_H = 0.62;
+const KEEPER_X = 5.85, KEEP_HALF = 0.34, PUCK_R = 0.07;
+const RINK_HALF = 1.9, BACK_X = 7.35;
+const muOf = () => cfg.rough ? MU_ROUGH : MU_ICE;
+const reachOf = (pw, rough) => { const v = V0_OF(pw); return v * v / (2 * (rough ? MU_ROUGH : MU_ICE) * G); };
+const angLabel = a => a === 0 ? '중앙' : (a < 0 ? '좌 ' + (-a) : '우 ' + a);
+
+/* ── 탭 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('exp').classList.toggle('on', b.dataset.tab === 'exp');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  activeTab = b.dataset.tab;
+});
+
+/* ── 2D 그래프 ── */
+function fit2d(cv) {
+  if (!cv.dataset.h) cv.dataset.h = cv.getAttribute('height');
+  const w = cv.clientWidth, h = +cv.dataset.h;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR); cv.style.height = h + 'px';
+  }
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0); return { c, W: w, H: h };
+}
+function niceStep(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p; return 10 * p; }
+function drawVTGraph(pts, tMax, vMax) {
+  const { c, W, H } = fit2d($('gr'));
+  const L = 40, R = 12, T = 14, B = 26;
+  c.clearRect(0, 0, W, H);
+  tMax = Math.max(tMax, 0.5); vMax = Math.max(vMax, 0.5);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = '10px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#77839a'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + 12); }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) { c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke(); c.textAlign = 'right'; c.fillText(v.toFixed(1), L - 5, py(v) + 3.5); }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#8b98ad'; c.textAlign = 'center'; c.fillText('시간 (s)', (L + W - R) / 2, H - 3);
+  if (pts.length > 1) {
+    c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 6; c.strokeStyle = '#4da3ff'; c.lineWidth = 2.2; c.beginPath();
+    pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke(); c.restore();
+  }
+}
+
+/* ── 3D 헬퍼 ── */
+function makeRenderer(cv) {
+  const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  r.setPixelRatio(DPR); r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.outputColorSpace = THREE.SRGBColorSpace;
+  return r;
+}
+function textSprite(text, opts = {}) {
+  const size = opts.size || 42, color = opts.color || '#ffffff';
+  const cv = document.createElement('canvas'), c = cv.getContext('2d');
+  c.font = `bold ${size}px 'Malgun Gothic', sans-serif`;
+  const w = Math.ceil(c.measureText(text).width) + 24, h = size + 22;
+  cv.width = w; cv.height = h;
+  c.font = `bold ${size}px 'Malgun Gothic', sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (opts.bg) { c.fillStyle = opts.bg; c.beginPath(); c.roundRect(0, 0, w, h, 12); c.fill(); }
+  c.fillStyle = color; c.fillText(text, w / 2, h / 2 + 2);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const k = opts.scale || 0.0045;
+  if (opts.plane) {
+    // 벽·전광판 부착 텍스트 — billboard 회전 시 뒤 박스에 파고들어 잘리는 문제 방지
+    return new THREE.Mesh(new THREE.PlaneGeometry(w * k, h * k),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sp.scale.set(w * k, h * k, 1);
+  return sp;
+}
+
+/* ═════════ 3D 하키 링크 ═════════ */
+const cv = $('cv'), stage = $('stage');
+const renderer = makeRenderer(cv);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x131a2a);
+scene.fog = new THREE.Fog(0x131a2a, 14, 40);
+const camera = new THREE.PerspectiveCamera(46, 2, 0.05, 120);
+const controls = new OrbitControls(camera, cv);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.4; controls.minDistance = 1.5; controls.maxDistance = 30;
+
+// 조명
+scene.add(new THREE.HemisphereLight(0xd8e8ff, 0x2a3550, 0.9));
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+const sun = new THREE.DirectionalLight(0xf2f6ff, 1.4);
+sun.position.set(-3, 8, 5); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -6; sun.shadow.camera.right = 9; sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -3;
+scene.add(sun);
+
+// ── 바닥 (빙판 ↔ 거친 바닥 토글) ──
+const iceMat = new THREE.MeshStandardMaterial({ color: 0xd8eefb, roughness: 0.12, metalness: 0.05 });
+const roughMat = new THREE.MeshStandardMaterial({ color: 0x8a6b4a, roughness: 0.95 });
+const floor = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.2, RINK_HALF * 2 + 0.4), iceMat);
+floor.position.set(3.2, -0.1, 0); floor.receiveShadow = true; scene.add(floor);
+// 빙판 코트 라인
+const iceLines = new THREE.Group(); scene.add(iceLines);
+{
+  const red = new THREE.MeshBasicMaterial({ color: 0xe25555 });
+  const blue = new THREE.MeshBasicMaterial({ color: 0x4d7fd4 });
+  const center = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.012, RINK_HALF * 2), red);
+  center.position.set(3.2, 0.006, 0); iceLines.add(center);
+  [1.6, 4.8].forEach(x => {
+    const bl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, RINK_HALF * 2), blue);
+    bl.position.set(x, 0.006, 0); iceLines.add(bl);
+  });
+  const circle = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.02, 6, 40), red);
+  circle.rotation.x = Math.PI / 2; circle.position.set(3.2, 0.008, 0); iceLines.add(circle);
+  const crease = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.022, 6, 40, Math.PI), blue);
+  crease.rotation.x = Math.PI / 2; crease.rotation.z = Math.PI / 2; crease.position.set(GOAL_X, 0.008, 0); iceLines.add(crease);
+}
+// 거친 바닥 자갈 점
+const roughDots = new THREE.Group(); roughDots.visible = false; scene.add(roughDots);
+{
+  const dotMat = new THREE.MeshStandardMaterial({ color: 0x6e5238, roughness: 1 });
+  for (let i = 0; i < 90; i++) {
+    const d = new THREE.Mesh(new THREE.BoxGeometry(0.05 + Math.random() * 0.07, 0.014, 0.05 + Math.random() * 0.07), dotMat);
+    d.position.set(-1.4 + Math.random() * 9.4, 0.007, (Math.random() - 0.5) * RINK_HALF * 1.9);
+    d.rotation.y = Math.random() * Math.PI; roughDots.add(d);
+  }
+}
+// 거리 눈금 (1~6 m, 퍽 출발점 기준)
+for (let d = 1; d <= 6; d++) {
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshStandardMaterial({ color: 0x5b6c8c }));
+  post.position.set(START_X + d, 0.07, -RINK_HALF + 0.35); scene.add(post);
+  const lab = textSprite(d + 'm', { size: 30, color: '#e8eef8', scale: 0.0038 });
+  lab.position.set(START_X + d, 0.26, -RINK_HALF + 0.35); scene.add(lab);
+}
+
+// ── 보드(펜스)·뒷벽·전광판·배너 ──
+{
+  const boardMat = new THREE.MeshStandardMaterial({ color: 0xf2f4f8, roughness: 0.6 });
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xd44a4a, roughness: 0.5 });
+  [-1, 1].forEach(s => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.5, 0.09), boardMat);
+    b.position.set(3.2, 0.25, s * (RINK_HALF + 0.15)); b.receiveShadow = true; scene.add(b);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.06, 0.11), capMat);
+    cap.position.set(3.2, 0.53, s * (RINK_HALF + 0.15)); scene.add(cap);
+  });
+  const backB = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.5, RINK_HALF * 2 + 0.4), boardMat);
+  backB.position.set(BACK_X + 0.1, 0.25, 0); scene.add(backB);
+  const backCap = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, RINK_HALF * 2 + 0.4), capMat);
+  backCap.position.set(BACK_X + 0.1, 0.53, 0); scene.add(backCap);
+  const frontB = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.5, RINK_HALF * 2 + 0.4), boardMat);
+  frontB.position.set(-1.5, 0.25, 0); scene.add(frontB);
+  // 경기장 뒷벽 (골대 뒤 x+)
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a3550, roughness: 0.9 });
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.4, RINK_HALF * 2 + 2), wallMat);
+  wall.position.set(8.6, 1.7, 0); wall.receiveShadow = true; scene.add(wall);
+  // 옆 뒷벽 (z-)
+  const sideWall = new THREE.Mesh(new THREE.BoxGeometry(11, 3.4, 0.15), wallMat);
+  sideWall.position.set(3.2, 1.7, -RINK_HALF - 1.6); scene.add(sideWall);
+  // 배너 (옆벽)
+  const banner = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.6, 0.06), new THREE.MeshStandardMaterial({ color: 0x2f6fd4 }));
+  banner.position.set(2.4, 2.7, -RINK_HALF - 1.5); scene.add(banner);
+  const bannerLab = textSprite('🏒 코딩더메이커 하키 교실', { size: 46, color: '#ffffff', scale: 0.0088, plane: true });
+  bannerLab.position.set(2.4, 2.7, -RINK_HALF - 1.44); scene.add(bannerLab);
+  // 전광판 (골대 뒷벽, -x 방향으로 향함)
+  const board = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.0, 2.4), new THREE.MeshStandardMaterial({ color: 0x10141f, roughness: 0.4 }));
+  board.position.set(8.5, 2.4, 0); scene.add(board);
+  // 천장 조명
+  [0.5, 3.2, 5.9].forEach(x => {
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.5), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xeef4ff, emissiveIntensity: 0.9 }));
+    lamp.position.set(x, 3.5, -0.8); scene.add(lamp);
+  });
+}
+// 전광판 점수 (plane 텍스트, 슛마다 갱신)
+let scoreSprite = null, shots = 0, goals = 0, cheerT = 0;
+function updateScore() {
+  if (scoreSprite) { scene.remove(scoreSprite); scoreSprite.geometry.dispose(); scoreSprite.material.map.dispose(); scoreSprite.material.dispose(); }
+  scoreSprite = textSprite(`골 ${goals}  ·  시도 ${shots}`, { size: 44, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007, plane: true });
+  scoreSprite.rotation.y = -Math.PI / 2;
+  scoreSprite.position.set(8.43, 2.4, 0); scene.add(scoreSprite);
+}
+// 응원 관중 (옆 보드 뒤 벤치 — 골이면 점프)
+const crowd = [];
+{
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x7a5c3a, roughness: 0.8 }));
+  bench.position.set(2.6, 0.26, -RINK_HALF - 0.85); scene.add(bench);
+  [-1, 1].forEach(s => { const legB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.26, 0.4), new THREE.MeshStandardMaterial({ color: 0x5d4428 })); legB.position.set(2.6 + s * 2.1, 0.13, -RINK_HALF - 0.85); scene.add(legB); });
+  const colors = [0x3d8bff, 0x2ee06f, 0xc792ea, 0xffb02e, 0xff5a52];
+  colors.forEach((col, i) => {
+    const fig = new THREE.Group();
+    const shirt = new THREE.MeshStandardMaterial({ color: col, roughness: 0.55 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
+    const legs = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.16), new THREE.MeshStandardMaterial({ color: 0x2a3550 }));
+    legs.position.y = 0.05; fig.add(legs);
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.085, 0.18, 4), shirt);
+    torso.rotation.y = Math.PI / 4; torso.scale.z = 0.72; torso.position.y = 0.2; fig.add(torso);
+    [-0.09, 0.09].forEach(z => { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.13, 0.04), shirt); arm.position.set(0, 0.24, z); arm.rotation.x = z > 0 ? -2.6 : 2.6; fig.add(arm); });
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.085, 16), skin);
+    head.position.y = 0.36; fig.add(head);
+    fig.position.set(0.75 + i * 0.92, 0.32, -RINK_HALF - 0.8);
+    fig.userData.baseY = 0.32;
+    scene.add(fig); crowd.push(fig);
+  });
+}
+
+// ── 골대 (빨간 프레임 + 흰 그물) ──
+{
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0xe23c3c, roughness: 0.4 });
+  const netMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, side: THREE.DoubleSide });
+  const goal = new THREE.Group(); goal.position.set(GOAL_X, 0, 0); scene.add(goal);
+  [-GOAL_HALF, GOAL_HALF].forEach(z => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, GOAL_H, 12), frameMat);
+    post.position.set(0, GOAL_H / 2, z); post.castShadow = true; goal.add(post);
+  });
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, GOAL_HALF * 2, 12), frameMat);
+  bar.rotation.x = Math.PI / 2; bar.position.set(0, GOAL_H, 0); goal.add(bar);
+  // 그물 (뒤·위·옆)
+  const backNet = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_HALF * 2, GOAL_H), netMat);
+  backNet.rotation.y = Math.PI / 2; backNet.position.set(0.45, GOAL_H / 2, 0); goal.add(backNet);
+  const topNet = new THREE.Mesh(new THREE.PlaneGeometry(0.45, GOAL_HALF * 2), netMat);
+  topNet.rotation.x = -Math.PI / 2;
+  topNet.position.set(0.225, GOAL_H, 0); goal.add(topNet);
+  [-GOAL_HALF, GOAL_HALF].forEach(z => {
+    const sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.45, GOAL_H), netMat);
+    sideNet.position.set(0.225, GOAL_H / 2, z); goal.add(sideNet);
+  });
+  // 그물 세로줄 몇 개 (뒤판)
+  for (let i = 0; i < 9; i++) {
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, GOAL_H, 4), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+    s.position.set(0.45, GOAL_H / 2, -GOAL_HALF + i * GOAL_HALF * 2 / 8); goal.add(s);
+  }
+  const goalLab = textSprite('골대', { size: 30, color: '#ffffff', bg: 'rgba(10,16,30,.7)', scale: 0.0026 });
+  goalLab.position.set(0, GOAL_H + 0.28, 0); goal.add(goalLab);
+}
+
+// ── 하키 선수 (미니피겨 + 스틱 스윙) ──
+function makeShooter() {
+  const gp = new THREE.Group();
+  const jersey = new THREE.MeshStandardMaterial({ color: 0x2f6fd4, roughness: 0.5 });
+  const jerseyDark = new THREE.MeshStandardMaterial({ color: 0x1e4d99, roughness: 0.55 });
+  const pants = new THREE.MeshStandardMaterial({ color: 0x22304c, roughness: 0.6 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.5 });
+  // 스케이트 + 다리
+  [-0.075, 0.075].forEach(z => {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.02), new THREE.MeshStandardMaterial({ color: 0xb9c4d6, metalness: 0.6, roughness: 0.3 }));
+    blade.position.set(0.02, 0.012, z); gp.add(blade);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.09), new THREE.MeshStandardMaterial({ color: 0x1a1f2e }));
+    boot.position.set(0.02, 0.06, z); boot.castShadow = true; gp.add(boot);
+    const shin = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.16, 0.09), white);   // 다리 패드
+    shin.position.set(0, 0.18, z); shin.castShadow = true; gp.add(shin);
+    const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.1, 0.105), pants);
+    thigh.position.set(0, 0.3, z); gp.add(thigh);
+  });
+  const body = new THREE.Group(); body.position.y = 0.35; gp.add(body);
+  const hip = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.09, 0.2), pants);
+  hip.position.y = 0.03; body.add(hip);
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.11, 0.26, 4, 1), jersey);
+  torso.rotation.y = Math.PI / 4; torso.scale.z = 0.74; torso.position.y = 0.2; torso.castShadow = true; body.add(torso);
+  const trim = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.088, 0.03, 4, 1), jerseyDark);
+  trim.rotation.y = Math.PI / 4; trim.scale.z = 0.74; trim.position.y = 0.33; body.add(trim);
+  const numLab = textSprite('9', { size: 44, color: '#ffffff', scale: 0.0022 });
+  numLab.position.set(0.11, 0.21, 0); body.add(numLab);
+  // 머리 + 헬멧
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.1, 20), skin);
+  head.position.y = 0.42; head.castShadow = true; body.add(head);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  [-0.027, 0.027].forEach(z => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.0095, 8, 8), eyeMat); e.position.set(0.058, 0.43, z); body.add(e); });
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0xd44a4a, roughness: 0.4 }));
+  helmet.position.y = 0.47; body.add(helmet);
+  // 팔 (앞으로 뻗어 스틱을 잡음)
+  [-0.14, 0.1].forEach((z, i) => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.2, 0.055), jersey);
+    arm.position.set(0.09, 0.2 - i * 0.05, z); arm.rotation.z = -0.9; arm.rotation.x = z < 0 ? 0.35 : -0.15; body.add(arm);
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10), new THREE.MeshStandardMaterial({ color: 0x1a1f2e }));
+    glove.position.set(0.18, 0.13 - i * 0.05, z * 0.55); body.add(glove);
+  });
+  // 스틱 (피벗에서 y축 스윙)
+  const stickPivot = new THREE.Object3D(); stickPivot.position.set(0.16, 0.45, 0.05); gp.add(stickPivot);
+  const stickMat = new THREE.MeshStandardMaterial({ color: 0xb08a4e, roughness: 0.6 });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.62, 8), stickMat);
+  shaft.rotation.z = -0.5; shaft.position.set(0.13, -0.23, 0); shaft.castShadow = true; stickPivot.add(shaft);
+  const bladeSt = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.035), new THREE.MeshStandardMaterial({ color: 0x1a1f2e }));
+  bladeSt.position.set(0.36, -0.5, 0); stickPivot.add(bladeSt);
+  gp.userData = { stickPivot };
+  return gp;
+}
+const shooter = makeShooter();
+shooter.position.set(-0.05, 0, 0.22);
+scene.add(shooter);
+const stickPivot = shooter.userData.stickPivot;
+const STICK_READY = 0.85, STICK_HIT = -0.5;   // 백스윙 → 임팩트 (y축 스윙)
+
+// ── 골키퍼 (패드 낀 미니피겨 — 좌우 왕복) ──
+const keeperGrp = new THREE.Group(); scene.add(keeperGrp);
+{
+  const padMat = new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.6 });
+  const jersey = new THREE.MeshStandardMaterial({ color: 0xd44a4a, roughness: 0.5 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
+  [-0.09, 0.09].forEach(z => {
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.13), padMat);   // 큰 다리 패드
+    pad.position.set(0, 0.17, z); pad.castShadow = true; keeperGrp.add(pad);
+  });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.125, 0.26, 4, 1), jersey);
+  torso.rotation.y = Math.PI / 4; torso.scale.z = 0.8; torso.position.y = 0.48; torso.castShadow = true; keeperGrp.add(torso);
+  // 블로커 + 글러브
+  [-0.16, 0.16].forEach(z => {
+    const glove = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.07), padMat);
+    glove.position.set(-0.04, 0.42, z); keeperGrp.add(glove);
+  });
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.095, 20), skin);
+  head.position.y = 0.7; keeperGrp.add(head);
+  const mask = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), new THREE.MeshStandardMaterial({ color: 0x2f6fd4, roughness: 0.4 }));
+  mask.position.y = 0.73; keeperGrp.add(mask);
+  const grill = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 0.08), new THREE.MeshStandardMaterial({ color: 0xb9c4d6, metalness: 0.5 }));
+  grill.position.set(-0.06, 0.7, 0); keeperGrp.add(grill);
+  // 키퍼 스틱
+  const kstick = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.4, 0.05), new THREE.MeshStandardMaterial({ color: 0xb08a4e }));
+  kstick.position.set(-0.1, 0.22, 0.2); kstick.rotation.x = 0.15; keeperGrp.add(kstick);
+}
+keeperGrp.position.set(KEEPER_X, 0, 0);
+let keeperClock = 0;
+const keeperZ = () => 0.52 * Math.sin(1.3 * keeperClock);
+
+// ── 퍽 ──
+const puck = new THREE.Mesh(new THREE.CylinderGeometry(PUCK_R, PUCK_R, 0.035, 24), new THREE.MeshStandardMaterial({ color: 0x14171f, roughness: 0.45 }));
+puck.castShadow = true; scene.add(puck);
+const puckTop = new THREE.Mesh(new THREE.CylinderGeometry(PUCK_R * 0.7, PUCK_R * 0.7, 0.004, 24), new THREE.MeshBasicMaterial({ color: 0x3a4661 }));
+puckTop.position.y = 0.019; puck.add(puckTop);
+
+// ── 궤적 히스토리 (이전 슛 자국이 흐리게 남음) ──
+const trajGroup = new THREE.Group(); scene.add(trajGroup);
+function addTraj(pts, color) {
+  trajGroup.children.forEach(l => { l.material.transparent = true; l.material.opacity = Math.max(0.14, l.material.opacity * 0.55); });
+  const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], 0.03, p[1])));
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1 }));
+  trajGroup.add(line);
+  while (trajGroup.children.length > 10) dropTraj(trajGroup.children[0]);
+}
+function dropTraj(l) { trajGroup.remove(l); l.geometry.dispose(); l.material.dispose(); }
+function clearTraj() { while (trajGroup.children.length) dropTraj(trajGroup.children[0]); }
+
+// ── 골 이펙트 스프레이 ──
+const SPRAY_N = 120;
+const sprayGeo = new THREE.BufferGeometry(); const sprayPos = new Float32Array(SPRAY_N * 3);
+sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPos, 3));
+const spray = new THREE.Points(sprayGeo, new THREE.PointsMaterial({ color: 0x2ee06f, size: 0.05, transparent: true, opacity: 0.9 }));
+scene.add(spray);
+const sprayV = [];
+for (let i = 0; i < SPRAY_N; i++) { sprayPos[i * 3 + 1] = -10; sprayV.push({ vx: 0, vy: 0, vz: 0, life: 0 }); }
+function burst(x, z) {
+  for (let i = 0; i < SPRAY_N; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 0.6 + Math.random() * 1.4;
+    sprayPos[i * 3] = x; sprayPos[i * 3 + 1] = 0.3; sprayPos[i * 3 + 2] = z;
+    sprayV[i] = { vx: Math.cos(a) * sp * 0.6, vy: Math.abs(Math.sin(a)) * sp * 0.7 + 0.5, vz: Math.sin(a) * sp * 0.6, life: 0.7 };
+  }
+}
+function stepSpray(dt) {
+  for (let i = 0; i < SPRAY_N; i++) {
+    const p = sprayV[i]; if (p.life <= 0) continue;
+    p.life -= dt; sprayPos[i * 3] += p.vx * dt; sprayPos[i * 3 + 1] += p.vy * dt; sprayPos[i * 3 + 2] += p.vz * dt; p.vy -= 3 * dt;
+    if (p.life <= 0) sprayPos[i * 3 + 1] = -10;
+  }
+  spray.geometry.attributes.position.needsUpdate = true;
+}
+
+/* ── 상태 ── */
+let cfg = { pw: 4, ang: 0, rough: false };
+// state: ready → swing → sliding → done
+let state = 'ready', swingA = STICK_READY;
+let P = null;                 // 진행 중 슛 데이터
+const results = {};           // '0|pw' (빙판) / '1|pw' (거친) → 도달 거리
+let pendingChoice = null;     // 예측 모드 답 ('go'|'no')
+
+function applySurface() {
+  floor.material = cfg.rough ? roughMat : iceMat;
+  iceLines.visible = !cfg.rough; roughDots.visible = cfg.rough;
+  $('sfIce').classList.toggle('on', !cfg.rough);
+  $('sfRough').classList.toggle('on', cfg.rough);
+  $('sfRough').classList.toggle('rough', cfg.rough);
+  $('hud_sf').textContent = cfg.rough ? '🟫 거친' : '🧊 빙판';
+  $('predSurf').textContent = cfg.rough ? '거친 바닥' : '빙판';
+}
+
+function aimLineUpdate() {
+  $('hud_pw').textContent = cfg.pw;
+  $('hud_ang').textContent = angLabel(cfg.ang);
+}
+
+function resetPuck() {
+  state = 'ready'; swingA = STICK_READY; stickPivot.rotation.y = swingA; P = null;
+  puck.position.set(START_X, 0.018, 0);
+  $('bd').className = 'badge';
+  ['ro_v0', 'ro_dec', 'ro_pred', 'ro_dist', 'ro_time', 'ro_res'].forEach(id => $(id).textContent = '—');
+  drawVTGraph([], 1, 1);
+  aimLineUpdate();
+  setSt('ready');
+  $('fire').disabled = false;
+}
+
+function beginSlide() {
+  const v0 = V0_OF(cfg.pw), a = ANG_OF(cfg.ang);
+  P = {
+    x: START_X, z: 0, vx: v0 * Math.cos(a), vz: v0 * Math.sin(a),
+    v0, mu: muOf(), t: 0, dist: 0, samples: [[0, v0]], trail: [[START_X, 0]],
+    blocked: false, goal: false, crossedGoal: false,
+    reach: reachOf(cfg.pw, cfg.rough)
+  };
+  $('ro_v0').textContent = v0.toFixed(1) + ' m/s';
+  $('ro_dec').textContent = (P.mu * G).toFixed(2) + ' m/s²';
+  $('ro_pred').textContent = P.reach.toFixed(1) + ' m';
+  state = 'sliding';
+}
+
+function stepPuck(dt) {
+  const p = P;
+  let v = Math.hypot(p.vx, p.vz);
+  const dec = p.mu * G * dt;
+  const nv = Math.max(0, v - dec);
+  if (v > 1e-6) { p.vx *= nv / v; p.vz *= nv / v; }
+  v = nv;
+  const px = p.x, pz = p.z;
+  p.x += p.vx * dt; p.z += p.vz * dt; p.t += dt;
+  p.dist += v * dt;
+  // 옆 보드 반사
+  if (Math.abs(p.z) > RINK_HALF - PUCK_R) { p.z = Math.sign(p.z) * (RINK_HALF - PUCK_R); p.vz = -p.vz * 0.45; }
+  // 골키퍼 판정 (골라인 앞 평면 통과 시)
+  if (!p.blocked && !p.crossedGoal && $('keeper').checked && px < KEEPER_X && p.x >= KEEPER_X && p.vx > 0) {
+    const f = (KEEPER_X - px) / (p.x - px);
+    const cz = pz + (p.z - pz) * f;
+    if (Math.abs(cz - keeperZ()) < KEEP_HALF + PUCK_R) {
+      p.blocked = true;
+      p.x = KEEPER_X - 0.02; p.vx = -p.vx * 0.28; p.vz *= 0.5;   // 퍽 튕겨나감
+    }
+  }
+  // 골라인 통과 판정
+  if (!p.blocked && !p.crossedGoal && px < GOAL_X && p.x >= GOAL_X && p.vx > 0) {
+    p.crossedGoal = true;
+    const f = (GOAL_X - px) / (p.x - px);
+    const cz = pz + (p.z - pz) * f;
+    if (Math.abs(cz) <= GOAL_HALF - PUCK_R) p.goal = true;
+  }
+  // 골이면 그물에 걸림, 아니면 뒷보드에서 정지
+  if (p.goal && p.x > GOAL_X + 0.38) { p.x = GOAL_X + 0.38; p.vx = 0; p.vz = 0; }
+  if (!p.goal && p.x > BACK_X - PUCK_R) { p.x = BACK_X - PUCK_R; p.vx = -p.vx * 0.3; }
+  puck.position.set(p.x, 0.018, p.z);
+  puck.rotation.y += v * dt * 6;
+  p.trail.push([p.x, p.z]);
+  p.samples.push([p.t, v]);
+  if (v < 0.02 || p.t > 20) finishShot();
+}
+
+function finishShot() {
+  const p = P; state = 'done';
+  shots++;
+  let cls, txt, res;
+  if (p.goal) { goals++; cheerT = 1.4; burst(GOAL_X, 0); cls = 'in'; txt = '🚨 골!!!'; res = '골!'; setSt('done', '골! — 세기·방향·타이밍 모두 성공'); }
+  else if (p.blocked) { cls = 'blk'; txt = '🧤 골키퍼가 막았다!'; res = '막힘'; setSt('done', '막힘 — 키퍼가 없는 쪽을 노려보자'); }
+  else if (p.crossedGoal) { cls = 'out'; txt = '✗ 옆으로 빗나감'; res = '빗나감'; setSt('done', '빗나감 — 방향을 가운데로 돌려보자'); }
+  else { cls = 'out'; txt = '✗ 골대까지 못 갔어 (마찰!)'; res = '못 미침'; setSt('done', '마찰 때문에 멈췄다 — 더 세게 쳐보자'); }
+  updateScore();
+  // 예측 모드 비교 (질문: 골대까지 갈까? = 도달 거리 기준)
+  if (pendingChoice != null) {
+    const reached = p.crossedGoal || p.blocked;   // 배지 판정과 동일 기준 (골라인·키퍼 도달)
+    const correct = (pendingChoice === 'go') === reached;
+    txt += correct ? '  ·  🙋 예측 성공!' : '  ·  예측과 달랐네?';
+  }
+  pendingChoice = null;
+  const bd = $('bd'); bd.className = 'badge ' + cls; bd.textContent = txt;
+  addTraj(p.trail, p.goal ? 0x2ee06f : p.blocked ? 0xff5a52 : 0xffb02e);
+  $('ro_dist').textContent = p.dist.toFixed(1) + ' m';
+  $('ro_time').textContent = p.t.toFixed(1) + ' s';
+  $('ro_res').textContent = res;
+  // 결과표: 이 세기×바닥의 자유 도달 거리(장애물 없다고 칠 때) 기록
+  results[(cfg.rough ? 1 : 0) + '|' + cfg.pw] = p.reach;
+  drawMatrix();
+  $('fire').disabled = false;
+}
+
+function drawMatrix() {
+  const pws = [1, 2, 3, 4, 5, 6, 7, 8];
+  let html = '<tr><th style="font-size:9px">바닥＼세기</th>' + pws.map(p => `<th>${p}</th>`).join('') + '</tr>';
+  [['🧊 빙판', 0], ['🟫 거친', 1]].forEach(([lab, s]) => {
+    html += `<tr><td class="lab">${lab}</td>` + pws.map(p => {
+      const r = results[s + '|' + p];
+      const cur = (p === cfg.pw && s === (cfg.rough ? 1 : 0)) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
+      if (r == null) return '<td class="empty"' + cur + '></td>';
+      const v = r < 10 ? r.toFixed(1) : Math.round(r) + '';
+      return `<td class="${r >= NEED ? 'hit' : 'miss'}"${cur}>${v}</td>`;
+    }).join('') + '</tr>';
+  });
+  $('matrix').innerHTML = html;
+}
+
+/* ── 상태 UI ── */
+function setSt(mode, txt) {
+  $('led').className = 'led ' + (mode === 'run' ? 'run' : mode === 'done' ? 'done' : '');
+  $('st').textContent = txt || (mode === 'run' ? '실행 중' : mode === 'done' ? '완료' : '준비');
+}
+
+/* ── 슬라이더 ── */
+$('pw').addEventListener('input', () => { cfg.pw = +$('pw').value; $('v_pw').textContent = cfg.pw; if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate(); drawMatrix(); });
+$('ang').addEventListener('input', () => { cfg.ang = +$('ang').value; $('v_ang').textContent = angLabel(cfg.ang); if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate(); });
+document.querySelectorAll('.step').forEach(b => b.onclick = () => {
+  const el = $(b.dataset.t);
+  el.value = Math.min(+el.max, Math.max(+el.min, +el.value + +b.dataset.s));
+  el.dispatchEvent(new Event('input'));
+});
+$('sfIce').onclick = () => { cfg.rough = false; applySurface(); if (state !== 'sliding') resetPuck(); drawMatrix(); };
+$('sfRough').onclick = () => { cfg.rough = true; applySurface(); if (state !== 'sliding') resetPuck(); drawMatrix(); };
+$('keeper').addEventListener('input', () => { keeperGrp.visible = $('keeper').checked; });
+
+/* ── 발사 흐름 (예측 모드 포함) ── */
+function startFire() {
+  if (state === 'sliding' || state === 'swing' || scanTimer) return;
+  if (state === 'done') resetPuck();
+  if ($('predictMode').checked) {
+    $('predict').classList.add('on');
+    return;
+  }
+  launch();
+}
+function launch() {
+  state = 'swing'; swingA = STICK_READY; stickPivot.rotation.y = swingA;
+  $('fire').disabled = true; setSt('run', '슛 하는 중…');
+}
+$('fire').onclick = startFire;
+$('reset').onclick = () => { clearTraj(); $('analysis').classList.remove('on'); $('predict').classList.remove('on'); pendingChoice = null; resetPuck(); };
+$('predIn').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'go'; launch(); };
+$('predOut').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'no'; launch(); };
+
+/* ── ⚡ 자동 실험 — 세기 1~8 × 두 바닥 도달 거리 표 채우기 ── */
+let scanTimer = null;
+$('autoScan').onclick = () => {
+  if (state === 'sliding' || state === 'swing' || scanTimer) return;
+  const combos = [];
+  for (let s = 0; s <= 1; s++) for (let p = 1; p <= 8; p++) combos.push([s, p]);
+  $('analysis').classList.remove('on'); $('bd').className = 'badge';
+  let i = 0;
+  setSt('run', '자동 실험 중… (세기 1~8 거리 재기)');
+  scanTimer = setInterval(() => {
+    if (i >= combos.length) {
+      clearInterval(scanTimer); scanTimer = null;
+      drawMatrix(); setSt('done', '자동 실험 완료');
+      showAnalysis();
+      return;
+    }
+    const [s, p] = combos[i++];
+    results[s + '|' + p] = reachOf(p, s === 1);
+    drawMatrix();
+  }, 130);
+};
+$('clearMx').onclick = () => {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  for (const k in results) delete results[k];
+  $('analysis').classList.remove('on');
+  clearTraj();
+  drawMatrix(); setSt('ready');
+};
+
+// 표에서 규칙 계산해 분석 카드 표시 (전부 계산값)
+function showAnalysis() {
+  const minPw = s => { for (let p = 1; p <= 8; p++) { const r = results[s + '|' + p]; if (r != null && r >= NEED) return p; } return null; };
+  const mi = minPw(0), mr = minPw(1);
+  const el = $('anBody');
+  el.innerHTML = `<div class="big">퍽 도달 거리 표 완성!</div>
+    <div class="row">🧊 빙판: 세기 <b>${mi ?? '—'}</b>부터 골대(6 m)까지 간다</div>
+    <div class="row">🟫 거친 바닥: 세기 <b>${mr ?? '8로도 안 됨'}</b>${mr ? '부터 골대까지 간다' : ''}</div>
+    <div class="row">같은 세기라도 거친 바닥에선 거리가 <b>약 ¼</b>로 줄어든다 — 마찰이 4배라서!</div>
+    <div class="why">왜? 마찰은 퍽 속도를 계속 깎아먹는 브레이크야. 마찰이 크면 브레이크가 세져서 금방 멈춰. 그래서 <b>힘이 셀수록, 마찰이 작을수록 멀리 간다!</b></div>`;
+  $('analysis').classList.add('on');
+}
+
+/* ── 속도 ── */
+let speed = 1;
+[['spa', 1], ['spb', 0.5], ['spc', 0.25]].forEach(([id, v]) => $(id).onclick = () => {
+  speed = v; ['spa', 'spb', 'spc'].forEach(x => $(x).classList.toggle('on', x === id));
+});
+
+/* ── 카메라 프리셋 ── */
+const CAM_BTNS = ['camSide', 'camDiag', 'camTop', 'camBack'];
+const camGoal = { active: false, pos: new THREE.Vector3(), tgt: new THREE.Vector3() };
+function flyTo(px, py, pz, tx, ty, tz, btn) {
+  camGoal.pos.set(px, py, pz); camGoal.tgt.set(tx, ty, tz); camGoal.active = true;
+  CAM_BTNS.forEach(b => $(b).classList.toggle('on', b === btn));
+}
+function camSide() { flyTo(3.2, 2.6, 8.6, 3.2, 0.3, 0, 'camSide'); }
+function camDiag() { flyTo(-2.6, 3.2, 5.4, 3.2, 0.25, 0, 'camDiag'); }
+function camTop() { flyTo(3.2, 9.5, 0.6, 3.2, 0, 0, 'camTop'); }
+function camBack() { flyTo(GOAL_X + 1.8, 1.5, 0, START_X, 0.25, 0, 'camBack'); }
+$('camSide').onclick = camSide; $('camDiag').onclick = camDiag; $('camTop').onclick = camTop; $('camBack').onclick = camBack;
+controls.addEventListener('start', () => { camGoal.active = false; CAM_BTNS.forEach(b => $(b).classList.remove('on')); });
+
+/* ── 루프 ── */
+let lastTs = null;
+function frame(ts) {
+  if (lastTs == null) lastTs = ts;
+  const real = Math.min((ts - lastTs) / 1000, 0.05); lastTs = ts;
+  if (activeTab !== 'exp') { lastTs = null; requestAnimationFrame(frame); return; }
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (w && h && (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR))) {
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  const dt = real * speed;
+  // 골키퍼는 항상 왕복 — 타이밍을 읽고 쏘는 게 게임
+  keeperClock += dt;
+  keeperGrp.position.z = keeperZ();
+  keeperGrp.rotation.y = Math.cos(1.3 * keeperClock) * 0.12;   // 마스크(-x)가 슈터를 향한 채 좌우 셔플
+  // 스틱 스윙 → 임팩트 순간 퍽 발사
+  if (state === 'swing') {
+    swingA -= real * 11;
+    if (swingA <= STICK_HIT) { swingA = STICK_HIT; beginSlide(); }
+    stickPivot.rotation.y = swingA;
+  } else if (state === 'sliding') {
+    stepPuck(dt);
+    if (P) {
+      $('ro_dist').textContent = P.dist.toFixed(1) + ' m';
+      $('ro_time').textContent = P.t.toFixed(1) + ' s';
+      drawVTGraph(P.samples, Math.max(P.t, P.v0 / (P.mu * G)) * 1.05, P.v0 * 1.1);
+    }
+  } else if (state === 'ready') {
+    // 대기 중 스틱 살짝 흔들며 준비
+    stickPivot.rotation.y = STICK_READY + Math.sin(ts / 500) * 0.04;
+  }
+  stepSpray(real);
+  if (cheerT > 0) {
+    cheerT -= real;
+    crowd.forEach((f, i) => { f.position.y = f.userData.baseY + Math.abs(Math.sin(cheerT * 9 + i * 1.3)) * 0.09; });
+    if (cheerT <= 0) crowd.forEach(f => f.position.y = f.userData.baseY);
+  }
+  if (camGoal.active) {
+    camera.position.lerp(camGoal.pos, 0.09); controls.target.lerp(camGoal.tgt, 0.09);
+    if (camera.position.distanceTo(camGoal.pos) < 0.05) camGoal.active = false;
+  }
+  controls.update();
+  // keep orbit camera inside the room (back wall x=8.6, side wall z=-3.5)
+  if (camera.position.x > 8.2) camera.position.x = 8.2;
+  if (camera.position.z < -3.0) camera.position.z = -3.0;
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+applySurface();
+keeperGrp.visible = $('keeper').checked;   // 브라우저 폼 복원 대비 동기화
+updateScore();
+camDiag(); resetPuck(); drawMatrix();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
