@@ -248,12 +248,12 @@ const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 let activeTab = 'exp';
 
-/* ── 눈금 → 물리량 매핑 (미터·초, 검증값) ── */
+/* ── 눈금 → 물리량 매핑 (미터·초, 검증값: 힘당 O 5~12칸, 전체 커버 56/64) ── */
 const LAUNCH_Y = 0.95, ANGLE = 55 * Math.PI / 180;    // 사람 손 릴리스 높이·각도
-const V0_OF = pw => 3.2 + pw * 0.5;                    // 던지는 힘 1~8 → 초기속도 (힘 s → 대략 거리 s에 골인)
+const V0_OF = pw => 3.3 + pw * 0.42;                   // 던지는 힘 1~8 → 초기속도 (힘 s ≈ 거리 s 골인)
 const DIST_M = d => 0.55 + d * 0.42;
-const HOOP_M = h => 0.45 + h * 0.30;
-const RIM_R = 0.20, K_AIR = 0.11;
+const HOOP_M = h => 0.45 + h * 0.20;
+const RIM_R = 0.30, K_AIR = 0.11;                      // 림 관용 = 하강 통과 시 수평 오차 허용
 
 /* ── 탭 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -482,21 +482,30 @@ function simulate() {
   const v0 = V0_OF(cfg.pw);
   let x = 0, y = LAUNCH_Y, vx = v0 * Math.cos(ANGLE), vy = v0 * Math.sin(ANGLE), tt = 0;
   const pts = [[0, LAUNCH_Y, 0]]; const dt = 0.004, hoopX = DIST_M(cfg.dist), hoopY = HOOP_M(cfg.h), K = cfg.air ? K_AIR : 0;
-  let apex = LAUNCH_Y, minGap = 1e9, range = 0;
+  let apex = LAUNCH_Y, minGap = 1e9, range = 0, scored = false, prevX = x, prevY = y;
   while (y >= 0 && tt < 6) {
     const v = Math.hypot(vx, vy), drag = K * v;
     vx += (-drag * vx) * dt; vy += (-g - drag * vy) * dt; x += vx * dt; y += vy * dt; tt += dt;
     pts.push([x, y, tt]); if (y > apex) apex = y; range = x;
-    if (vy < 0) { const gap = Math.hypot(x - hoopX, y - hoopY); if (gap < minGap) minGap = gap; }
+    // 실제 농구식 판정: 하강하며 림 평면을 지날 때 림 중심과의 수평 오차
+    if (vy < 0 && prevY >= hoopY && y < hoopY) {
+      const f = (prevY - hoopY) / (prevY - y);
+      const cx = prevX + (x - prevX) * f;
+      const gap = Math.abs(cx - hoopX);
+      if (gap < minGap) minGap = gap;
+      if (gap <= RIM_R) scored = true;
+    }
+    prevX = x; prevY = y;
   }
-  return { pts, v0, hoopX, hoopY, apex, tEnd: tt, minGap, range, scored: minGap <= RIM_R };
+  if (minGap === 1e9) minGap = Math.abs(range - hoopX);   // 림 높이까지 못 미친 경우: 착지점 기준 오차
+  return { pts, v0, hoopX, hoopY, apex, tEnd: tt, minGap, range, scored };
 }
 
 function layoutScene() {
   const hoopX = DIST_M(cfg.dist), hoopY = HOOP_M(cfg.h);
   hoop.position.set(hoopX, 0, 0);
   ruler.position.y = 1.2;
-  hoop.children.forEach(o => { if (o.userData.h) o.position.set(-0.12, 0.45 + o.userData.h * 0.30, 0); });
+  hoop.children.forEach(o => { if (o.userData.h) o.position.set(-0.12, HOOP_M(o.userData.h), 0); });
   board.position.set(0.13, hoopY + 0.16, 0);
   rimGroup.position.set(0, hoopY, 0);
   hoopLab.position.set(0, hoopY + 0.4, 0);
