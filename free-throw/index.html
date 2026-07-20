@@ -323,8 +323,14 @@ function textSprite(text, opts = {}) {
   if (opts.bg) { c.fillStyle = opts.bg; c.beginPath(); c.roundRect(0, 0, w, h, 12); c.fill(); }
   c.fillStyle = color; c.fillText(text, w / 2, h / 2 + 2);
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const k = opts.scale || 0.0045;
+  if (opts.plane) {
+    // 벽 부착 텍스트 — billboard 회전 시 뒤 박스에 파고들어 잘리는 문제 방지
+    return new THREE.Mesh(new THREE.PlaneGeometry(w * k, h * k),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  const k = opts.scale || 0.0045; sp.scale.set(w * k, h * k, 1);
+  sp.scale.set(w * k, h * k, 1);
   return sp;
 }
 
@@ -390,7 +396,7 @@ for (let d = 1; d <= 8; d++) {
   // 배너 + 전광판 (뒷벽)
   const banner = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.62, 0.06), new THREE.MeshStandardMaterial({ color: 0xc23c3c }));
   banner.position.set(1.6, 2.9, -3.8); scene.add(banner);
-  const bannerLab = textSprite('🏀 코딩더메이커 농구 교실', { size: 46, color: '#ffffff', scale: 0.009 });
+  const bannerLab = textSprite('🏀 코딩더메이커 농구 교실', { size: 46, color: '#ffffff', scale: 0.009, plane: true });
   bannerLab.position.set(1.6, 2.9, -3.72); scene.add(bannerLab);
   const board = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.0, 0.1), new THREE.MeshStandardMaterial({ color: 0x10141f, roughness: 0.4 }));
   board.position.set(5.4, 2.6, -3.8); scene.add(board);
@@ -404,7 +410,7 @@ for (let d = 1; d <= 8; d++) {
 let scoreSprite = null, shots = 0, goals = 0, cheerT = 0;
 function updateScore() {
   if (scoreSprite) scene.remove(scoreSprite);
-  scoreSprite = textSprite(`골인 ${goals}  ·  시도 ${shots}`, { size: 44, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007 });
+  scoreSprite = textSprite(`골인 ${goals}  ·  시도 ${shots}`, { size: 44, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007, plane: true });
   scoreSprite.position.set(5.4, 2.6, -3.72); scene.add(scoreSprite);
 }
 // 응원 관중 (벤치 위 미니피겨들 — 골인하면 점프)
