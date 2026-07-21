@@ -36,7 +36,7 @@
   .badge.warn { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
   .badge.bad  { display: inline-flex; background: rgba(70,18,14,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
 
-  .side { width: 340px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side { width: 360px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
   .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
   button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
@@ -55,6 +55,10 @@
   .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .gauge-wrap { margin: 7px 0 2px; }
+  .gauge { position: relative; height: 28px; background: #0c1220; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .gauge-fill { position: absolute; inset: 0; background: linear-gradient(90deg, #2ee06f 0%, #ffd02e 55%, #ff5a52 100%); clip-path: inset(0 100% 0 0); transition: clip-path .18s ease; }
+  .gauge-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
   .pick { display: flex; gap: 6px; }
   .pick button { flex: 1; padding: 7px 0; font-size: 12.5px; border-radius: 8px; }
   .pick button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); font-weight: 700; }
@@ -76,8 +80,8 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -135,7 +139,8 @@
       </div>
       <h3>점프 조절</h3>
       <div class="param"><label>고무줄 당김 (탄성 에너지) <b id="v_pull">5</b></label>
-        <input type="range" id="pull" min="1" max="10" value="5" step="1"></div>
+        <input type="range" id="pull" min="1" max="10" value="5" step="1">
+        <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="gaugeFill"></div><span class="gauge-txt" id="gaugeTxt">—</span></div></div></div>
       <div class="param"><label>점프 각도 <b id="v_ang">45°</b></label>
         <input type="range" id="ang" min="20" max="70" value="45" step="1"></div>
       <div class="param"><label>개구리 무게 <b id="v_wt">가벼움</b></label>
@@ -262,6 +267,9 @@ function refreshReadouts() {
   $('v_ang').textContent = p.angDeg + '°';
   $('ro_e').textContent = p.E.toFixed(2) + ' J';
   $('ro_v').textContent = (p.v / 100).toFixed(1) + ' m/s';
+  const pct = Math.round(100 * p.E / (K_E * 100));
+  $('gaugeFill').style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+  $('gaugeTxt').textContent = '⚡ ' + p.E.toFixed(2) + ' J (' + pct + '%)';
 }
 
 /* ── 상태 표시 ── */
@@ -398,49 +406,121 @@ function mapper(W, H) {
 }
 
 /* ── 그리기 ── */
-function drawFrog(c, px, py, size, phase, heavy, angRad) {
-  // phase: 'sit' | 'fly'
+function drawFrog(c, px, py, size, phase, heavy, angRad, pullT) {
+  // phase: 'sit' | 'fly' — pullT(0..1)만큼 링키지 다리가 접히며 웅크림
+  pullT = pullT || 0;
   c.save(); c.translate(px, py);
   if (phase === 'fly') c.rotate(-angRad * 0.5);
   const s = size;
-  // 뒷다리 (링키지)
-  c.strokeStyle = '#1f9e54'; c.lineWidth = s * 0.22; c.lineCap = 'round';
-  c.beginPath();
-  if (phase === 'sit') {
-    c.moveTo(-s * 0.3, s * 0.15); c.lineTo(-s * 0.75, s * 0.45); c.lineTo(-s * 0.25, s * 0.62);
+  const crouch = phase === 'sit' ? pullT : 0;
+  c.translate(0, crouch * s * 0.16);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // 물갈퀴 발
+  const drawFoot = (x, y, dir) => {
+    c.save(); c.translate(x, y); c.rotate(dir);
+    const fl = s * 0.36;
+    c.fillStyle = 'rgba(80,214,128,.92)'; c.strokeStyle = '#157a3e'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0, 0);
+    c.lineTo(Math.cos(-0.55) * fl, Math.sin(-0.55) * fl);
+    c.quadraticCurveTo(fl * 0.55, -fl * 0.1, Math.cos(0) * fl * 1.05, 0);
+    c.quadraticCurveTo(fl * 0.55, fl * 0.1, Math.cos(0.55) * fl, Math.sin(0.55) * fl);
+    c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#2fbb63';
+    for (const a of [-0.55, 0, 0.55]) {
+      c.beginPath(); c.arc(Math.cos(a) * fl * (a ? 1 : 1.05), Math.sin(a) * fl, s * 0.05, 0, 7); c.fill();
+    }
+    c.restore();
+  };
+  // 링키지 빔 (테크닉 느낌: 두꺼운 빔 + 안쪽 라이트 + 핀 구멍)
+  const beam = (x1, y1, x2, y2) => {
+    c.strokeStyle = '#1a8a49'; c.lineWidth = s * 0.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = 'rgba(160,255,190,.35)'; c.lineWidth = s * 0.07;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  };
+  const pin = (x, y) => {
+    c.fillStyle = '#0e3f22'; c.beginPath(); c.arc(x, y, s * 0.085, 0, 7); c.fill();
+    c.fillStyle = '#57d689'; c.beginPath(); c.arc(x, y, s * 0.035, 0, 7); c.fill();
+  };
+
+  // 뒷다리 링키지 — 당길수록 접히고, 비행 중엔 쭉 뻗음
+  const hip = [-s * 0.25, s * 0.15];
+  let knee, ankle, footDir;
+  if (phase === 'fly') {
+    knee = [-s * 0.95, s * 0.35]; ankle = [-s * 1.5, s * 0.62]; footDir = Math.PI + 0.45;
   } else {
-    c.moveTo(-s * 0.3, s * 0.15); c.lineTo(-s * 1.0, s * 0.5); c.lineTo(-s * 1.5, s * 0.7);
+    knee = [lerp(-s * 0.62, -s * 0.78, pullT), lerp(s * 0.26, -s * 0.08, pullT)];
+    ankle = [lerp(-s * 0.18, -s * 0.34, pullT), lerp(s * 0.5, s * 0.46, pullT)];
+    footDir = Math.PI * 0.94;
   }
-  c.stroke();
-  // 몸통
+  drawFoot(ankle[0], ankle[1], footDir);
+  beam(hip[0], hip[1], knee[0], knee[1]);
+  beam(knee[0], knee[1], ankle[0], ankle[1]);
+  pin(knee[0], knee[1]); pin(ankle[0], ankle[1]);
+
+  // 몸통 (웅크릴수록 납작)
+  const squash = 1 - crouch * 0.14;
   const g = c.createRadialGradient(-s * 0.2, -s * 0.35, s * 0.1, 0, 0, s);
   g.addColorStop(0, '#6fe89b'); g.addColorStop(1, '#26b45c');
   c.fillStyle = g;
-  c.beginPath(); c.ellipse(0, 0, s * 0.85, s * 0.6, 0, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(0, s * 0.6 * (1 - squash), s * 0.85, s * 0.6 * squash, -crouch * 0.12, 0, 7); c.fill();
   c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  // 등 반점
+  c.fillStyle = 'rgba(20,110,60,.4)';
+  for (const [sx, sy, sr] of [[-0.35, -0.25, 0.09], [-0.05, -0.42, 0.07], [-0.55, 0.0, 0.06]]) {
+    c.beginPath(); c.ellipse(s * sx, s * sy, s * sr, s * sr * 0.7, 0.3, 0, 7); c.fill();
+  }
   // 배
   c.fillStyle = 'rgba(230,255,235,.5)';
-  c.beginPath(); c.ellipse(s * 0.05, s * 0.22, s * 0.5, s * 0.3, 0, 0, 7); c.fill();
-  // 눈
-  for (const ex of [s * 0.3, s * 0.62]) {
-    c.fillStyle = '#e8fff0';
-    c.beginPath(); c.arc(ex, -s * 0.5, s * 0.22, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.25)'; c.stroke();
-    c.fillStyle = '#0b0f18';
-    c.beginPath(); c.arc(ex + s * 0.06, -s * 0.5, s * 0.1, 0, 7); c.fill();
-  }
-  // 앞다리
-  c.strokeStyle = '#1f9e54'; c.lineWidth = s * 0.16;
-  c.beginPath(); c.moveTo(s * 0.45, s * 0.25); c.lineTo(s * 0.6, s * 0.6); c.stroke();
-  // 무거움: 등에 브릭
+  c.beginPath(); c.ellipse(s * 0.05, s * 0.24, s * 0.5, s * 0.28 * squash, 0, 0, 7); c.fill();
+  pin(hip[0], hip[1]);
+
+  // 앞다리 + 물갈퀴 발
+  drawFoot(s * 0.6, s * 0.58, Math.PI * 0.28);
+  c.strokeStyle = '#1f9e54'; c.lineWidth = s * 0.14; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(s * 0.45, s * 0.25); c.lineTo(s * 0.6, s * 0.58); c.stroke();
+
+  // 무거움: 등에 브릭 배낭 (2단 + 스터드 + 끈)
   if (heavy) {
-    c.fillStyle = '#e04a3f';
-    c.fillRect(-s * 0.55, -s * 0.95, s * 0.9, s * 0.42);
-    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1;
-    c.strokeRect(-s * 0.55, -s * 0.95, s * 0.9, s * 0.42);
-    c.fillStyle = '#f0685e';
-    for (const bx of [-s * 0.38, -s * 0.02]) { c.beginPath(); c.arc(bx + s * 0.09, -s * 0.98, s * 0.09, 0, 7); c.fill(); }
+    c.save(); c.translate(-s * 0.08, -s * 0.5); c.rotate(-0.1);
+    const bw = s * 0.92, bh = s * 0.3;
+    const cols = [['#e04a3f', '#f0685e'], ['#ffd02e', '#ffe37a']];
+    for (let r = 0; r < 2; r++) {
+      const by = -r * bh;
+      c.fillStyle = cols[r][0];
+      c.fillRect(-bw / 2, by - bh, bw, bh);
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1;
+      c.strokeRect(-bw / 2, by - bh, bw, bh);
+      c.fillStyle = cols[r][1];
+      for (let i = 0; i < 3; i++) {
+        const sx = -bw / 2 + bw * (i + 0.5) / 3;
+        c.fillRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
+        c.strokeRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
+      }
+    }
+    c.restore();
+    c.strokeStyle = 'rgba(25,30,45,.65)'; c.lineWidth = s * 0.06;
+    c.beginPath(); c.moveTo(-s * 0.3, -s * 0.5); c.quadraticCurveTo(s * 0.05, -s * 0.15, s * 0.3, -s * 0.4); c.stroke();
   }
+
+  // 왕눈 (큰 흰자 + 금색 홍채 + 하이라이트)
+  for (const ex of [s * 0.28, s * 0.64]) {
+    c.fillStyle = '#f2fff5';
+    c.beginPath(); c.arc(ex, -s * 0.52, s * 0.27, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+    c.fillStyle = '#d9a520';
+    c.beginPath(); c.arc(ex + s * 0.06, -s * 0.5, s * 0.16, 0, 7); c.fill();
+    c.fillStyle = '#0b0f18';
+    c.beginPath(); c.arc(ex + s * 0.08, -s * 0.5, s * 0.09, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.9)';
+    c.beginPath(); c.arc(ex + s * 0.02, -s * 0.57, s * 0.045, 0, 7); c.fill();
+  }
+  // 콧구멍 + 입
+  c.fillStyle = 'rgba(10,40,20,.6)';
+  c.beginPath(); c.arc(s * 0.72, -s * 0.24, s * 0.025, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(10,40,20,.55)'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(s * 0.42, -s * 0.12, s * 0.32, 0.25, 1.05); c.stroke();
   c.restore();
 }
 function drawPad(c, M, cx, isGoalDone) {
@@ -454,10 +534,63 @@ function drawPad(c, M, cx, isGoalDone) {
   c.fillStyle = g;
   c.beginPath(); c.ellipse(px, py, rw, rh, 0, 0, 7); c.fill();
   c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 1.5; c.stroke();
-  // 잎 홈
-  c.strokeStyle = 'rgba(10,40,20,.5)'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(px, py); c.lineTo(px + rw * 0.85, py - rh * 0.55); c.stroke();
+  // 잎맥 — 중심에서 방사형
+  c.strokeStyle = 'rgba(12,55,28,.5)'; c.lineWidth = 1;
+  const vcx = px - rw * 0.12, vcy = py;
+  for (let i = 0; i < 8; i++) {
+    const a = Math.PI * 2 * i / 8 + 0.35;
+    c.beginPath(); c.moveTo(vcx, vcy);
+    c.quadraticCurveTo(vcx + Math.cos(a) * rw * 0.45, vcy + Math.sin(a) * rh * 0.5,
+      vcx + Math.cos(a) * rw * 0.82, vcy + Math.sin(a) * rh * 0.8);
+    c.stroke();
+  }
+  // 잎 홈 (V자 절개)
+  c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.9, py - rh * 0.5); c.stroke();
+  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.95, py - rh * 0.1); c.stroke();
+  // 물결 반사 (수면 아래 일렁임)
+  const wob = Math.sin(clock * 1.6 + cx * 0.05) * 2.5;
+  c.fillStyle = 'rgba(63,174,94,.13)';
+  c.beginPath(); c.ellipse(px + wob, py + rh * 2.4 + 4, rw * 0.85, rh * 0.65, 0, 0, 7); c.fill();
+  c.fillStyle = 'rgba(120,220,150,.07)';
+  c.beginPath(); c.ellipse(px - wob, py + rh * 3.6 + 6, rw * 0.6, rh * 0.4, 0, 0, 7); c.fill();
   if (isGoalDone) { c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillText('✓', px, py - 8); }
+  c.restore();
+}
+/* ── 배경 디테일 ── */
+function drawCattail(c, x, baseY, h, ph) {
+  // 부들 — 줄기 + 갈색 이삭 + 잎, 바람에 살랑
+  c.save(); c.translate(x, baseY);
+  const tip = Math.sin(clock * 0.9 + ph) * 4;
+  c.strokeStyle = '#3f6d35'; c.lineWidth = 2.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(tip * 0.4, -h * 0.55, tip, -h); c.stroke();
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(2, 0); c.quadraticCurveTo(-10, -h * 0.42, -15 + tip * 0.4, -h * 0.66); c.stroke();
+  c.beginPath(); c.moveTo(-2, 0); c.quadraticCurveTo(12, -h * 0.3, 15 + tip * 0.4, -h * 0.5); c.stroke();
+  c.fillStyle = '#7a4a2b';
+  c.beginPath(); c.roundRect(tip - 3.5, -h, 7, h * 0.3, 4); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#c9a86a';
+  c.fillRect(tip - 1, -h - 6, 2, 6);
+  c.restore();
+}
+function drawDragonfly(c, W, H) {
+  const x = W * (0.4 + 0.22 * Math.sin(clock * 0.21));
+  const y = H * 0.2 + Math.sin(clock * 0.85) * 16;
+  const dir = Math.cos(clock * 0.21) >= 0 ? 1 : -1;
+  c.save(); c.translate(x, y); c.scale(dir, 1);
+  const flap = Math.sin(clock * 26);
+  c.fillStyle = 'rgba(190,230,255,.3)';
+  for (const wd of [-1, 1]) {
+    c.save(); c.rotate(wd * (0.55 + flap * 0.4));
+    c.beginPath(); c.ellipse(-8, -1, 10, 2.8, 0, 0, 7); c.fill(); c.restore();
+  }
+  c.strokeStyle = '#5ad0e0'; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-12, 0); c.lineTo(3, 0); c.stroke();
+  c.fillStyle = '#2fa8c0';
+  c.beginPath(); c.arc(5.5, 0, 2.8, 0, 7); c.fill();
+  c.fillStyle = '#0b2a33';
+  c.beginPath(); c.arc(6.5, -1, 1.1, 0, 7); c.fill();
   c.restore();
 }
 function draw() {
@@ -486,6 +619,15 @@ function draw() {
   c.fillStyle = wat; c.fillRect(0, M.waterY, W, H - M.waterY);
   c.strokeStyle = 'rgba(120,190,255,.25)'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(0, M.waterY); c.lineTo(W, M.waterY); c.stroke();
+  // 달 물비침
+  const mx = W * 0.86;
+  for (let i = 0; i < 8; i++) {
+    const yy = M.waterY + 10 + i * 10;
+    if (yy > H - 4) break;
+    const wb = Math.sin(clock * 1.7 + i * 1.3) * 7;
+    c.fillStyle = `rgba(245,233,200,${0.11 - i * 0.012})`;
+    c.fillRect(mx - 14 + wb, yy, 28 - i * 2.4, 2.5);
+  }
   // 잔물결
   c.strokeStyle = 'rgba(120,190,255,.1)';
   for (let i = 0; i < 5; i++) {
@@ -516,6 +658,13 @@ function draw() {
     c.fillStyle = 'rgba(200,230,210,.55)'; c.font = 'bold 11px sans-serif';
     c.fillText(label, (px0 + px1) / 2, M.waterY + 8);
   }
+  // 부들 (양쪽 둑)
+  drawCattail(c, M.x(-52), M.waterY - 8, 62, 0);
+  drawCattail(c, M.x(-38), M.waterY - 6, 46, 1.7);
+  drawCattail(c, M.x(448), M.waterY - 8, 58, 3.1);
+  drawCattail(c, M.x(468), M.waterY - 5, 44, 4.6);
+  // 잠자리
+  drawDragonfly(c, W, H);
   // 연잎
   PADS.forEach((p, i) => drawPad(c, M, p, i < padsCrossed && posX >= p));
   // 지난 궤적 (흐리게)
@@ -560,34 +709,51 @@ function draw() {
   const frogSize = Math.max(12, 9 * M.s);
   if (state === 'fly' && flight) {
     const last = flight.pts[flight.pts.length - 1];
-    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx));
+    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx), 0);
   } else if (state !== 'splash') {
-    drawFrog(c, M.x(posX), M.waterY - frogSize * 0.5 - 2, frogSize, 'sit', weight === 2, 0);
-    // 조준 화살표 + 고무줄
+    const pNow = params();
+    const pullT = (pNow.pull - 1) / 9;
+    const fx = M.x(posX), fyBase = M.waterY - frogSize * 0.5 - 2;
+    // 고무줄 — 늘어날수록 팽팽(직선)·가늘어지고 색이 진해짐
     if (state === 'ready' && !cleared) {
-      const p = params();
-      const rad = p.angDeg * Math.PI / 180;
-      const len = 26 + p.pull * 7;
-      const fx = M.x(posX), fy = M.waterY - frogSize * 0.6;
-      const tx = fx + Math.cos(rad) * len, ty = fy - Math.sin(rad) * len;
-      // 고무줄 (당김만큼 뒤로 늘어남)
-      c.strokeStyle = '#ff5a52'; c.lineWidth = 3; c.lineCap = 'round';
-      c.beginPath();
-      c.moveTo(fx - frogSize * 0.9 - p.pull * 2.2, fy + frogSize * 0.5);
-      c.lineTo(fx - frogSize * 0.2, fy + frogSize * 0.2);
+      const ax = fx - frogSize * (1.05 + pullT * 1.1), ay = M.waterY - 3;
+      const hx = fx - frogSize * 0.28, hy = fyBase + frogSize * 0.42;
+      const sag = (1 - pullT) * frogSize * 0.55;              // 느슨하면 축 처짐
+      const rC = Math.round(255), gC = Math.round(150 - pullT * 110), bC = Math.round(140 - pullT * 110);
+      c.strokeStyle = `rgb(${rC},${gC},${bC})`;
+      c.lineWidth = 4.2 - pullT * 2.2; c.lineCap = 'round';
+      if (pullT > 0.6) { c.save(); c.shadowColor = '#ff2a1e'; c.shadowBlur = 8 * (pullT - 0.6) / 0.4; }
+      c.beginPath(); c.moveTo(ax, ay);
+      c.quadraticCurveTo((ax + hx) / 2, (ay + hy) / 2 + sag, hx, hy);
       c.stroke();
-      // 화살표
-      c.strokeStyle = 'rgba(255,176,46,.85)'; c.lineWidth = 2.5;
+      if (pullT > 0.6) c.restore();
+      // 고정 말뚝 (테크닉 핀)
+      c.fillStyle = '#8a6a3c';
+      c.fillRect(ax - 2.5, ay - 6, 5, 12);
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.strokeRect(ax - 2.5, ay - 6, 5, 12);
+    }
+    drawFrog(c, fx, fyBase, frogSize, 'sit', weight === 2, 0, pullT);
+    // 조준 화살표 + 각도 호 (확대)
+    if (state === 'ready' && !cleared) {
+      const rad = pNow.angDeg * Math.PI / 180;
+      const len = 40 + pNow.pull * 9;
+      const fy = M.waterY - frogSize * 0.6;
+      const tx = fx + Math.cos(rad) * len, ty = fy - Math.sin(rad) * len;
+      c.strokeStyle = 'rgba(255,176,46,.4)'; c.lineWidth = 1.5; c.setLineDash([3, 4]);
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + 46, fy); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = 'rgba(255,176,46,.7)'; c.lineWidth = 2;
+      c.beginPath(); c.arc(fx, fy, 32, -rad, 0); c.stroke();
+      c.strokeStyle = 'rgba(255,176,46,.9)'; c.lineWidth = 3.5;
       c.beginPath(); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke();
-      c.fillStyle = 'rgba(255,176,46,.85)';
+      c.fillStyle = 'rgba(255,176,46,.9)';
       const ha = Math.atan2(fy - ty, tx - fx);
       c.beginPath();
       c.moveTo(tx, ty);
-      c.lineTo(tx - Math.cos(ha - 0.4) * 10, ty + Math.sin(ha - 0.4) * 10);
-      c.lineTo(tx - Math.cos(ha + 0.4) * 10, ty + Math.sin(ha + 0.4) * 10);
+      c.lineTo(tx - Math.cos(ha - 0.4) * 13, ty + Math.sin(ha - 0.4) * 13);
+      c.lineTo(tx - Math.cos(ha + 0.4) * 13, ty + Math.sin(ha + 0.4) * 13);
       c.fill();
-      c.font = 'bold 11px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#ffb02e';
-      c.fillText(p.angDeg + '°', tx + 6, ty);
+      c.font = 'bold 15px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#ffb02e';
+      c.fillText(pNow.angDeg + '°', tx + 8, ty + 2);
     }
   }
   // 첨벙

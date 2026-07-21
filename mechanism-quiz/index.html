@@ -28,21 +28,21 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 10px; padding: 7px 16px; font-family: var(--mono); font-size: 16.5px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; }
-  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 26px; padding: 11px 24px; font-size: 16.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.ok { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
   .badge.no { display: inline-flex; background: rgba(70,30,25,.78); color: #ff9a94; border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.22); }
 
-  .side { width: 356px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+  .side { width: 340px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 2px 0 0; }
   .prog-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-  .dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: #0c1220; color: var(--dim); font-size: 11px; font-family: var(--mono); display: flex; align-items: center; justify-content: center; }
+  .dot { width: 27px; height: 27px; border-radius: 50%; border: 1.5px solid var(--border); background: #0c1220; color: var(--dim); font-size: 13px; font-weight: 700; font-family: var(--mono); display: flex; align-items: center; justify-content: center; }
   .dot.cur { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.5); }
   .dot.ok { background: rgba(46,224,111,.15); border-color: var(--green); color: var(--green); }
   .dot.bad { background: rgba(255,90,82,.12); border-color: var(--red); color: var(--red); }
-  .score-chip { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--green); background: #0c1220; border: 1px solid var(--border); border-radius: 9px; padding: 4px 11px; }
+  .score-chip { margin-left: auto; font-family: var(--mono); font-size: 15.5px; font-weight: 700; color: var(--green); background: #0c1220; border: 1px solid var(--border); border-radius: 9px; padding: 5px 13px; }
 
   .qcard { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; }
   .qcard .qnum { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
@@ -78,17 +78,20 @@
   /* 결과 화면 */
   #result { display: none; flex: 1; overflow-y: auto; padding: 30px 18px; }
   #result.on { display: block; }
-  .result-box { max-width: 520px; margin: 0 auto; text-align: center; }
-  .medal { font-size: 74px; line-height: 1.1; }
-  .grade { font-size: 22px; font-weight: 800; margin: 8px 0 2px; }
-  .final-score { font-family: var(--mono); font-size: 17px; color: var(--accent); margin-bottom: 20px; }
-  .result-list { text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-  .result-item { display: flex; align-items: center; gap: 10px; padding: 9px 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .result-item:last-child { border-bottom: none; }
-  .result-item .rmark { font-weight: 800; width: 20px; flex: none; }
+  .result-box { max-width: 860px; margin: 0 auto; text-align: center; }
+  .medal { font-size: 92px; line-height: 1.1; }
+  .grade { font-size: 28px; font-weight: 800; margin: 10px 0 4px; }
+  .final-score { font-family: var(--mono); font-size: 20px; color: var(--accent); margin-bottom: 24px; }
+  .result-list { text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 24px; display: grid; grid-template-columns: 1fr; }
+  .result-item { display: flex; align-items: center; gap: 13px; padding: 13px 19px; border-bottom: 1px solid var(--border); font-size: 15px; }
+  .result-item .rmark { font-weight: 800; font-size: 19px; width: 26px; flex: none; text-align: center; }
   .result-item .rmark.o { color: var(--green); } .result-item .rmark.x { color: var(--red); }
-  .result-item .rq { color: #c6d2e6; flex: 1; }
-  .result-item .rex { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .result-item .rq { color: #c6d2e6; flex: 1; font-weight: 600; }
+  .result-item .rex { display: block; font-size: 13px; color: var(--dim); margin-top: 3px; font-weight: 400; }
+  @media (min-width: 860px) {
+    .result-list { grid-template-columns: 1fr 1fr; }
+    .result-item:nth-child(odd) { border-right: 1px solid var(--border); }
+  }
 
   /* 원리 */
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
@@ -263,13 +266,25 @@ function drawGear(c, x, y, teeth, ang, color, opts = {}) {
   body.addColorStop(0, opts.light); body.addColorStop(1, color);
   c.fillStyle = body; c.fill();
   c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.1)'; c.lineWidth = Math.max(1.5, R * 0.045);
+  c.beginPath(); c.arc(0, 0, rIn - Math.max(2.5, R * 0.06), 0, 7); c.stroke();
   if (R > 34) {
-    c.fillStyle = 'rgba(0,0,0,.28)';
     for (let k = 0; k < 4; k++) {
       const a = k * Math.PI / 2 + Math.PI / 4;
-      c.beginPath(); c.arc(Math.cos(a) * R * 0.55, Math.sin(a) * R * 0.55, R * 0.17, 0, 7); c.fill();
+      const hx = Math.cos(a) * R * 0.55, hy = Math.sin(a) * R * 0.55;
+      c.fillStyle = 'rgba(0,0,0,.4)';
+      c.beginPath(); c.arc(hx, hy, R * 0.16, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.2)'; c.lineWidth = 2;
+      c.beginPath(); c.arc(hx, hy, R * 0.16, 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5;
+      c.beginPath(); c.arc(hx, hy, R * 0.095, 0, 7); c.stroke();
     }
   }
+  const hubR = Math.max(13, R * 0.3);
+  const hg = c.createRadialGradient(-hubR * 0.35, -hubR * 0.35, hubR * 0.15, 0, 0, hubR);
+  hg.addColorStop(0, 'rgba(255,255,255,.22)'); hg.addColorStop(1, 'rgba(0,0,0,.28)');
+  c.fillStyle = hg; c.beginPath(); c.arc(0, 0, hubR, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5; c.stroke();
   c.fillStyle = '#0b0f18';
   c.beginPath(); c.arc(0, 0, Math.max(9, R * 0.2), 0, 7); c.fill();
   const s = Math.max(4.5, R * 0.1);
@@ -277,12 +292,12 @@ function drawGear(c, x, y, teeth, ang, color, opts = {}) {
   c.fillRect(-s / 2, -s * 1.5, s, s * 3);
   c.fillRect(-s * 1.5, -s / 2, s * 3, s);
   c.fillStyle = '#ffffff';
-  c.beginPath(); c.arc(rIn - Math.max(5, R * 0.1), 0, Math.max(3, R * 0.05), 0, 7); c.fill();
+  c.beginPath(); c.arc(rIn - Math.max(5, R * 0.1), 0, Math.max(3.5, R * 0.055), 0, 7); c.fill();
   c.restore();
 }
 function dirArrow(c, x, y, r, cw, color) {
   c.save(); c.translate(x, y);
-  c.strokeStyle = color; c.lineWidth = 2.5; c.lineCap = 'round';
+  c.strokeStyle = color; c.lineWidth = 3.5; c.lineCap = 'round';
   c.beginPath();
   if (cw) c.arc(0, 0, r, -2.2, -0.9);
   else c.arc(0, 0, r, -2.2, -1.0, true);
@@ -292,13 +307,13 @@ function dirArrow(c, x, y, r, cw, color) {
   const tang = tip + (cw ? Math.PI / 2 : -Math.PI / 2);
   c.fillStyle = color;
   c.beginPath();
-  c.moveTo(tx + Math.cos(tang) * 9, ty + Math.sin(tang) * 9);
-  c.lineTo(tx + Math.cos(tang + 2.5) * 7, ty + Math.sin(tang + 2.5) * 7);
-  c.lineTo(tx + Math.cos(tang - 2.5) * 7, ty + Math.sin(tang - 2.5) * 7);
+  c.moveTo(tx + Math.cos(tang) * 11, ty + Math.sin(tang) * 11);
+  c.lineTo(tx + Math.cos(tang + 2.5) * 8.5, ty + Math.sin(tang + 2.5) * 8.5);
+  c.lineTo(tx + Math.cos(tang - 2.5) * 8.5, ty + Math.sin(tang - 2.5) * 8.5);
   c.fill();
   c.restore();
 }
-function qMark(c, x, y, size = 26) {
+function qMark(c, x, y, size = 30) {
   c.save();
   c.fillStyle = 'rgba(255,176,46,.14)';
   c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2;
@@ -308,12 +323,18 @@ function qMark(c, x, y, size = 26) {
   c.fillText('?', x, y + 2);
   c.restore(); c.textBaseline = 'alphabetic';
 }
-function label(c, x, y, txt, color = '#c6d2e6', size = 12.5, bold = true) {
+function label(c, x, y, txt, color = '#c6d2e6', size = 14, bold = true) {
   c.font = `${bold ? 'bold ' : ''}${size}px sans-serif`;
   c.textAlign = 'center'; c.fillStyle = color;
   c.fillText(txt, x, y);
 }
 function crate(c, x, y, w, h, txt) {
+  const n = Math.max(2, Math.round(w / 24)), cw = w / n;
+  c.fillStyle = '#c08a48'; c.strokeStyle = '#5a3c18'; c.lineWidth = 1.2;
+  for (let i = 0; i < n; i++) {
+    const sw = cw * 0.52;
+    c.beginPath(); c.roundRect(x + i * cw + (cw - sw) / 2, y - 5, sw, 6, 2); c.fill(); c.stroke();
+  }
   const g = c.createLinearGradient(x, y, x, y + h);
   g.addColorStop(0, '#b07a3c'); g.addColorStop(1, '#7d5426');
   c.fillStyle = g;
@@ -322,22 +343,47 @@ function crate(c, x, y, w, h, txt) {
   c.strokeStyle = 'rgba(90,60,24,.7)'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(x, y + h / 2); c.lineTo(x + w, y + h / 2);
   c.moveTo(x + w / 2, y); c.lineTo(x + w / 2, y + h); c.stroke();
-  if (txt) label(c, x + w / 2, y + h / 2 + 4, txt, '#3c2810', 12);
+  c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(x + 4, y + 3.5); c.lineTo(x + w - 4, y + 3.5); c.stroke();
+  if (txt) {
+    const pw = txt.length * 13 + 12;
+    c.fillStyle = 'rgba(255,238,206,.88)'; c.strokeStyle = '#5a3c18'; c.lineWidth = 1;
+    c.beginPath(); c.roundRect(x + w / 2 - pw / 2, y + h / 2 - 10, pw, 20, 4); c.fill(); c.stroke();
+    label(c, x + w / 2, y + h / 2 + 4.5, txt, '#3c2810', 12.5);
+  }
 }
 function pulleyWheel(c, x, y, r, rot) {
-  c.save(); c.translate(x, y); c.rotate(rot);
+  c.save(); c.translate(x, y);
   const g = c.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
-  g.addColorStop(0, '#7a8db0'); g.addColorStop(1, '#3c4a68');
+  g.addColorStop(0, '#8ba0c6'); g.addColorStop(1, '#3c4a68');
   c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
   c.strokeStyle = '#202c44'; c.lineWidth = 2; c.stroke();
-  c.strokeStyle = 'rgba(20,28,46,.8)'; c.lineWidth = r * 0.28;
-  c.beginPath(); c.arc(0, 0, r * 0.82, 0, 7); c.stroke();
-  c.strokeStyle = '#28344e'; c.lineWidth = 3;
-  for (let k = 0; k < 3; k++) {
-    const a = k * TAU / 3;
+  c.strokeStyle = '#141c2e'; c.lineWidth = r * 0.3;
+  c.beginPath(); c.arc(0, 0, r * 0.85, 0, 7); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(0, 0, r * 0.97, 0, 7); c.stroke();
+  c.rotate(rot);
+  c.strokeStyle = '#28344e'; c.lineWidth = Math.max(3, r * 0.14); c.lineCap = 'round';
+  for (let k = 0; k < 4; k++) {
+    const a = k * TAU / 4 + Math.PI / 4;
     c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62); c.stroke();
   }
-  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.18, 0, 7); c.fill();
+  const hub = c.createRadialGradient(-r * 0.1, -r * 0.1, r * 0.05, 0, 0, r * 0.34);
+  hub.addColorStop(0, '#8496ba'); hub.addColorStop(1, '#46557a');
+  c.fillStyle = hub; c.beginPath(); c.arc(0, 0, r * 0.34, 0, 7); c.fill();
+  c.strokeStyle = '#202c44'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.15, 0, 7); c.fill();
+  c.fillStyle = '#ffd27d'; c.beginPath(); c.arc(r * 0.47, 0, Math.max(2.5, r * 0.07), 0, 7); c.fill();
+  c.restore();
+}
+function hookJoin(c, x, ropeEndY, crateTopY) {
+  c.save(); c.lineCap = 'round';
+  c.fillStyle = '#55617a'; c.strokeStyle = '#2c3852'; c.lineWidth = 1.2;
+  c.beginPath(); c.roundRect(x - 7, crateTopY - 7, 14, 8, 2.5); c.fill(); c.stroke();
+  c.strokeStyle = '#aab8d4'; c.lineWidth = 3;
+  c.beginPath(); c.arc(x, ropeEndY + 5, 4.5, 0, 7); c.stroke();
+  c.beginPath(); c.moveTo(x, ropeEndY + 9.5); c.lineTo(x, crateTopY - 10); c.stroke();
+  c.beginPath(); c.arc(x + 3.5, crateTopY - 9, 4.5, Math.PI * 0.85, Math.PI * 2.1); c.stroke();
   c.restore();
 }
 function ceiling(c, W, y = 42) {
@@ -365,9 +411,9 @@ function rope(c, pts, width = 3) {
   c.stroke();
 }
 function hand(c, x, y, txt) {
-  c.font = '26px sans-serif'; c.textAlign = 'center';
+  c.font = '32px sans-serif'; c.textAlign = 'center';
   c.fillText('✊', x, y);
-  if (txt) label(c, x, y + 22, txt, '#ffb02e', 12);
+  if (txt) label(c, x, y + 26, txt, '#ffb02e', 13.5);
 }
 function railAxis(c, W, y) {
   c.strokeStyle = 'rgba(90,110,150,.25)'; c.lineWidth = 3;
@@ -387,7 +433,7 @@ const QUESTIONS = [
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
       const y = H * 0.5; railAxis(c, W, y);
-      const r = Math.min(W * 0.16, H * 0.24);
+      const r = Math.min(W * 0.2, H * 0.3);
       const xA = W / 2 - r - 2, xB = W / 2 + r + 2;
       const ang = TAU * 0.45 * ts;
       drawGear(c, xA, y, 24, ang, '#2563eb', { r, light: '#7db4ff' });
@@ -409,7 +455,7 @@ const QUESTIONS = [
       drawBg(c, W, H);
       const y = H * 0.5; railAxis(c, W, y);
       const teeth = [24, 16, 24];
-      const unit = Math.min(W * 0.6 / 64, H * 0.42 / 24);
+      const unit = Math.min(W * 0.74 / 64, H * 0.5 / 24);
       const r = teeth.map(n => n * unit / 2);
       const x0 = W / 2 - (r[0] + r[1] * 2 + r[2]) / 2;
       const cx = [x0, x0 + r[0] + r[1], x0 + r[0] + 2 * r[1] + r[2]];
@@ -438,16 +484,18 @@ const QUESTIONS = [
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
       const y = H * 0.5; railAxis(c, W, y);
-      const unit = Math.min(W * 0.55 / 48, H * 0.38 / 40 * 2);
+      const unit = Math.min(W * 0.62 / 48, H * 0.4 / 40 * 2);
       const rA = 8 * unit / 2, rB = 40 * unit / 2;
       const xA = W / 2 - rB * 0.85 - rA, xB = xA + rA + rB;
       const ang = TAU * 1.5 * ts;
       drawGear(c, xA, y, 8, ang, '#2563eb', { r: rA, light: '#7db4ff' });
       drawGear(c, xB, y, 40, -ang / 5 + Math.PI / 40, '#c2410c', { r: rB, light: '#ffb27d' });
       c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
-      const mw = 62;
-      c.beginPath(); c.roundRect(xA - rA - mw - 22, y - 28, mw, 56, 9); c.fill(); c.stroke();
-      label(c, xA - rA - mw / 2 - 22, y + 4, '모터', '#8b98ad', 11, false);
+      const mw = 74;
+      c.beginPath(); c.roundRect(xA - rA - mw - 22, y - 33, mw, 66, 10); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(120,145,190,.14)';
+      c.fillRect(xA - rA - mw - 14, y - 25, mw - 16, 12);
+      label(c, xA - rA - mw / 2 - 22, y + 8, '모터', '#8b98ad', 12.5, false);
       c.strokeStyle = '#39445c'; c.lineWidth = 5;
       c.beginPath(); c.moveTo(xA - rA - 22, y); c.lineTo(xA, y); c.stroke();
       label(c, xA, y - rA - 24, '8T', '#4da3ff');
@@ -469,9 +517,9 @@ const QUESTIONS = [
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
       const y = H * 0.5; railAxis(c, W, y);
-      const unit = Math.min(W * 0.55 / 48, H * 0.38 / 40 * 2);
+      const unit = Math.min(W * 0.62 / 48, H * 0.4 / 40 * 2);
       const rA = 40 * unit / 2, rB = 8 * unit / 2;
-      const xA = W / 2 - rB * 2 - rA * 0.55, xB = xA + rA + rB;
+      const xA = (W - 2 * (rA + rB)) / 2 + rA, xB = xA + rA + rB;
       const ang = TAU * 0.4 * ts;
       drawGear(c, xA, y, 40, ang, '#2563eb', { r: rA, light: '#7db4ff' });
       drawGear(c, xB, y, 8, -ang * 5 + Math.PI / 8, '#c2410c', { r: rB, light: '#ffb27d' });
@@ -494,17 +542,19 @@ const QUESTIONS = [
     okMsg: '아래로 당기면 짐은 위로!',
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H); ceiling(c, W);
-      const px = W / 2, py = 118, pr = Math.min(36, H * 0.07);
-      const lift = Math.min(H * 0.26, 150) * ease(ts / 2.5);
-      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      const px = W / 2, py = 122, pr = Math.min(46, H * 0.085);
+      const lift = Math.min(H * 0.24, 135) * ease(ts / 2.5);
+      c.strokeStyle = '#55617a'; c.lineWidth = 6;
       c.beginPath(); c.moveTo(px, 42); c.lineTo(px, py); c.stroke();
-      const bw = 66, bh = Math.min(60, H * 0.11);
+      c.fillStyle = '#39445c'; c.fillRect(px - 9, 42, 18, 13);
+      const bw = 84, bh = Math.min(70, H * 0.13);
       const boxTop = H * 0.58 - lift;
-      rope(c, [[px - pr, py], [px - pr, boxTop]]);
+      rope(c, [[px - pr, py], [px - pr, boxTop - 22]]);
       const handY = H * 0.42 + lift;
       rope(c, [[px + pr, py], [px + pr, handY]]);
       pulleyWheel(c, px, py, pr, lift / pr);
       crate(c, px - pr - bw / 2, boxTop, bw, bh, '짐');
+      hookJoin(c, px - pr, boxTop - 22, boxTop);
       hand(c, px + pr, handY + 12, '아래로 당긴다!');
       c.strokeStyle = '#ffb02e'; c.lineWidth = 3;
       c.beginPath(); c.moveTo(px + pr + 34, handY - 18); c.lineTo(px + pr + 34, handY + 16); c.stroke();
@@ -531,13 +581,14 @@ const QUESTIONS = [
       drawBg(c, W, H); ceiling(c, W);
       const u = ease(ts / 3);
       const d = Math.min(H * 0.16, 85) * u;
-      const mx = W / 2 - 45, fx = W / 2 + 65, fy = 112, fr = 26;
-      const mr = 30, my = H * 0.5 - d;
+      const mx = W / 2 - 60, fx = W / 2 + 85, fy = 116, fr = 34;
+      const mr = 40, my = H * 0.5 - d;
       const ax = mx - mr;
-      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      c.strokeStyle = '#55617a'; c.lineWidth = 6;
       c.beginPath(); c.moveTo(fx, 42); c.lineTo(fx, fy); c.stroke();
-      c.fillStyle = '#39445c'; c.fillRect(ax - 7, 42, 14, 12);
-      rope(c, [[ax, 48], [ax, my]]);
+      c.fillStyle = '#39445c'; c.fillRect(fx - 9, 42, 18, 13);
+      c.fillStyle = '#39445c'; c.fillRect(ax - 8, 42, 16, 13);
+      rope(c, [[ax, 50], [ax, my]]);
       c.strokeStyle = '#d9b88a'; c.lineWidth = 3;
       c.beginPath(); c.arc(mx, my, mr, Math.PI, 0, true); c.stroke();
       rope(c, [[mx + mr, my], [mx + mr, fy + 4], [fx - fr, fy]]);
@@ -545,17 +596,18 @@ const QUESTIONS = [
       rope(c, [[fx + fr, fy], [fx + fr, handY]]);
       pulleyWheel(c, fx, fy, fr, d * 2 / fr);
       pulleyWheel(c, mx, my, mr, -d / mr);
-      const bw = 74, bh = Math.min(58, H * 0.11);
+      const bw = 92, bh = Math.min(68, H * 0.13);
       c.strokeStyle = '#55617a'; c.lineWidth = 4;
-      c.beginPath(); c.moveTo(mx, my); c.lineTo(mx, my + mr + 14); c.stroke();
-      crate(c, mx - bw / 2, my + mr + 14, bw, bh, '짐 10');
+      c.beginPath(); c.moveTo(mx, my); c.lineTo(mx, my + mr + 2); c.stroke();
+      crate(c, mx - bw / 2, my + mr + 26, bw, bh, '짐 10');
+      hookJoin(c, mx, my + mr + 2, my + mr + 26);
       hand(c, fx + fr, handY + 14, '');
       label(c, fx + fr, handY + 36, rev || ts > 0 ? '힘 5만큼만!' : '얼마나 힘들까?', '#ffb02e');
       label(c, ax - 26, H * 0.42, '줄 ①', '#8b98ad', 11.5);
       label(c, mx + mr + 24, H * 0.42, '줄 ②', '#8b98ad', 11.5);
       if (ts === 0 && !rev) qMark(c, fx + fr + 52, handY - 10);
       if (rev || ts > 0) {
-        label(c, W / 2, H - 34, `내가 당긴 줄 ${Math.round(d * 2)}  →  짐이 올라간 높이 ${Math.round(d)} (절반!)`, '#2ee06f', 13);
+        label(c, W / 2, H - 84, `내가 당긴 줄 ${Math.round(d * 2)}  →  짐이 올라간 높이 ${Math.round(d)} (절반!)`, '#2ee06f', 14.5);
       }
     }
   },
@@ -568,24 +620,36 @@ const QUESTIONS = [
     okMsg: '받침은 짐 가까이 — 작은 힘으로 번쩍!',
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
-      const gy = H - 64; ground(c, W, H, gy);
+      const gy = Math.min(H - 64, H * 0.8); ground(c, W, H, gy);
       const u = ease(ts / 2.5);
-      const fx = W * 0.36, fy = gy - 52;
+      const fx = W * 0.36, fy = gy - 58;
       const th = u * 0.13;
       c.fillStyle = '#39445c'; c.strokeStyle = '#202c44'; c.lineWidth = 2;
-      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx - 30, gy); c.lineTo(fx + 30, gy); c.closePath(); c.fill(); c.stroke();
-      const xL = W * 0.16, xR = W * 0.88;
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx - 36, gy); c.lineTo(fx + 36, gy); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#2c3852';
+      c.beginPath(); c.roundRect(fx - 48, gy - 2, 96, 8, 3); c.fill();
+      const xL = W * 0.14, xR = W * 0.9;
       c.save(); c.translate(fx, fy); c.rotate(th);
-      c.fillStyle = '#8a6a3a'; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
-      c.beginPath(); c.roundRect(xL - fx, -8, xR - xL, 14, 5); c.fill(); c.stroke();
-      const rockX = xL - fx + 26;
-      c.fillStyle = '#6d7a94'; c.strokeStyle = '#39445c';
+      const bg7 = c.createLinearGradient(0, -9, 0, 9);
+      bg7.addColorStop(0, '#a07c46'); bg7.addColorStop(1, '#6e502a');
+      c.fillStyle = bg7; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(xL - fx, -9, xR - xL, 18, 8); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(40,26,8,.5)';
+      for (let hx = xL - fx + 18; hx < xR - fx - 10; hx += 26) {
+        c.beginPath(); c.arc(hx, 0, 5, 0, 7); c.fill();
+      }
+      const rockX = xL - fx + 36;
+      c.fillStyle = '#6d7a94'; c.strokeStyle = '#39445c'; c.lineWidth = 2;
       c.beginPath();
-      c.ellipse(rockX, -34, 30, 26, 0.2, 0, 7); c.fill(); c.stroke();
-      label(c, rockX, -30, '돌', '#1c2436', 13);
-      c.font = '24px sans-serif'; c.textAlign = 'center';
-      c.fillText('✊', xR - fx - 12, -16);
+      c.ellipse(rockX, -40, 37, 32, 0.2, 0, 7); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,.2)'; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(rockX - 8, -50, 16, Math.PI * 1.05, Math.PI * 1.65); c.stroke();
+      label(c, rockX, -34, '돌', '#1c2436', 14);
+      c.font = '30px sans-serif'; c.textAlign = 'center';
+      c.fillText('✊', xR - fx - 14, -18);
       c.restore();
+      c.fillStyle = '#0b0f18'; c.strokeStyle = '#7a8db0'; c.lineWidth = 2;
+      c.beginPath(); c.arc(fx, fy, 5.5, 0, 7); c.fill(); c.stroke();
       label(c, fx, gy + 26, '받침대 (돌 가까이)', '#ffb02e', 12.5);
       c.strokeStyle = 'rgba(77,163,255,.5)'; c.lineWidth = 2; c.setLineDash([4, 4]);
       c.beginPath(); c.moveTo(xL + 20, gy + 44); c.lineTo(fx, gy + 44); c.stroke();
@@ -605,27 +669,39 @@ const QUESTIONS = [
     okMsg: '왼쪽 2×2=4 > 오른쪽 1×3=3',
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
-      const gy = H - 70; ground(c, W, H, gy);
-      const cx = W / 2, cy = gy - 64;
+      const gy = Math.min(H - 70, H * 0.8); ground(c, W, H, gy);
+      const cx = W / 2, cy = gy - 70;
       const th = -ease(ts / 2.5) * 0.13;
       c.fillStyle = '#39445c'; c.strokeStyle = '#202c44'; c.lineWidth = 2;
-      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx - 34, gy); c.lineTo(cx + 34, gy); c.closePath(); c.fill(); c.stroke();
-      const half = Math.min(W * 0.36, 300), unit = half / 3.6;
+      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx - 40, gy); c.lineTo(cx + 40, gy); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#2c3852';
+      c.beginPath(); c.roundRect(cx - 52, gy - 2, 104, 8, 3); c.fill();
+      const half = Math.min(W * 0.42, 370), unit = half / 3.6;
       c.save(); c.translate(cx, cy); c.rotate(th);
-      c.fillStyle = '#8a6a3a'; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
-      c.beginPath(); c.roundRect(-half, -7, half * 2, 13, 5); c.fill(); c.stroke();
-      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5;
+      const bg8 = c.createLinearGradient(0, -8, 0, 8);
+      bg8.addColorStop(0, '#a07c46'); bg8.addColorStop(1, '#6e502a');
+      c.fillStyle = bg8; c.strokeStyle = '#5a3c18'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(-half, -8, half * 2, 16, 7); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(40,26,8,.5)';
       for (let k = -3; k <= 3; k++) {
         if (k === 0) continue;
-        c.beginPath(); c.moveTo(k * unit, -7); c.lineTo(k * unit, 6); c.stroke();
+        c.beginPath(); c.arc(k * unit, 0, 4.5, 0, 7); c.fill();
       }
-      const bs = 30;
+      const bs = 38, stud = (bx, by) => {
+        c.fillStyle = 'rgba(255,255,255,.22)';
+        c.beginPath(); c.roundRect(bx - bs / 2 + 6, by - 4, 9, 4, 1.5); c.fill();
+        c.beginPath(); c.roundRect(bx + bs / 2 - 15, by - 4, 9, 4, 1.5); c.fill();
+      };
       c.fillStyle = '#c2410c'; c.strokeStyle = '#7a2708'; c.lineWidth = 2;
-      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -7 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
-      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -7 - bs * 2, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -8 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(-2 * unit - bs / 2, -8 - bs * 2, bs, bs - 2, 4); c.fill(); c.stroke();
+      stud(-2 * unit, -8 - bs); stud(-2 * unit, -8 - bs * 2);
       c.fillStyle = '#2563eb'; c.strokeStyle = '#173a8a';
-      c.beginPath(); c.roundRect(3 * unit - bs / 2, -7 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(3 * unit - bs / 2, -8 - bs, bs, bs - 2, 4); c.fill(); c.stroke();
+      stud(3 * unit, -8 - bs);
       c.restore();
+      c.fillStyle = '#0b0f18'; c.strokeStyle = '#7a8db0'; c.lineWidth = 2;
+      c.beginPath(); c.arc(cx, cy, 5.5, 0, 7); c.fill(); c.stroke();
       label(c, cx - 2 * unit, cy + 42, '2칸 · 블록 2개', '#ff9046');
       label(c, cx + 3 * unit, cy + 42, '3칸 · 블록 1개', '#4da3ff');
       if (ts === 0 && !rev) qMark(c, cx, cy - 84);
@@ -642,30 +718,46 @@ const QUESTIONS = [
     draw(c, W, H, ts, rev) {
       drawBg(c, W, H);
       const y = H * 0.52;
-      const cxC = W * 0.28, R = Math.min(56, W * 0.09, H * 0.13);
+      const cxC = W * 0.28, R = Math.min(96, W * 0.11, H * 0.16);
       const L = R * 3;
       const ang = TAU * (2 / 3) * ts * 1.5 - Math.PI / 2;
       const pinX = cxC + R * Math.cos(ang), pinY = y + R * Math.sin(ang);
       const sx = cxC + R * Math.cos(ang) + Math.sqrt(L * L - Math.pow(R * Math.sin(ang), 2));
+      const mbx = Math.max(8, cxC - R - 100);
       c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
-      c.beginPath(); c.roundRect(cxC - R - 84, y - 28, 64, 56, 9); c.fill(); c.stroke();
-      label(c, cxC - R - 52, y + 4, '모터', '#8b98ad', 11, false);
+      c.beginPath(); c.roundRect(mbx, y - 33, 76, 66, 10); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(120,145,190,.14)';
+      c.fillRect(mbx + 8, y - 25, 60, 12);
+      label(c, mbx + 38, y + 8, '모터', '#8b98ad', 12.5, false);
       c.strokeStyle = '#39445c'; c.lineWidth = 5;
-      c.beginPath(); c.moveTo(cxC - R - 20, y); c.lineTo(cxC, y); c.stroke();
-      c.strokeStyle = 'rgba(90,110,150,.4)'; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(cxC + L - R - 6, y - 15); c.lineTo(W * 0.92, y - 15); c.stroke();
-      c.beginPath(); c.moveTo(cxC + L - R - 6, y + 15); c.lineTo(W * 0.92, y + 15); c.stroke();
+      c.beginPath(); c.moveTo(cxC - R - 24, y); c.lineTo(cxC, y); c.stroke();
+      c.strokeStyle = 'rgba(90,110,150,.45)'; c.lineWidth = 4;
+      c.beginPath(); c.moveTo(cxC + L - R - 6, y - 17); c.lineTo(W * 0.92, y - 17); c.stroke();
+      c.beginPath(); c.moveTo(cxC + L - R - 6, y + 17); c.lineTo(W * 0.92, y + 17); c.stroke();
+      c.beginPath(); c.moveTo(W * 0.92, y - 24); c.lineTo(W * 0.92, y + 24); c.stroke();
       const g = c.createRadialGradient(cxC - R * 0.3, y - R * 0.3, R * 0.2, cxC, y, R);
       g.addColorStop(0, '#ffb27d'); g.addColorStop(1, '#c2410c');
-      c.fillStyle = g; c.strokeStyle = '#7a2708'; c.lineWidth = 2;
+      c.fillStyle = g; c.strokeStyle = '#7a2708'; c.lineWidth = 2.5;
       c.beginPath(); c.arc(cxC, y, R, 0, 7); c.fill(); c.stroke();
-      c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(cxC, y, 7, 0, 7); c.fill();
-      c.strokeStyle = '#5a708f'; c.lineWidth = 8; c.lineCap = 'round';
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2;
+      c.beginPath(); c.arc(cxC, y, R * 0.72, 0, 7); c.stroke();
+      c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(cxC, y, 8, 0, 7); c.fill();
+      c.fillStyle = '#39445c'; c.fillRect(cxC - 2.5, y - 7, 5, 14); c.fillRect(cxC - 7, y - 2.5, 14, 5);
+      c.strokeStyle = '#5a708f'; c.lineWidth = 9; c.lineCap = 'round';
       c.beginPath(); c.moveTo(pinX, pinY); c.lineTo(sx, y); c.stroke();
-      c.fillStyle = '#e8eef7'; c.beginPath(); c.arc(pinX, pinY, 6, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(pinX, pinY); c.lineTo(sx, y); c.stroke();
       c.fillStyle = '#2563eb'; c.strokeStyle = '#173a8a'; c.lineWidth = 2;
-      c.beginPath(); c.roundRect(sx - 6, y - 13, 46, 26, 5); c.fill(); c.stroke();
-      dirArrow(c, cxC, y, R + 16, true, '#ff9046');
+      c.beginPath(); c.roundRect(sx - 8, y - 15, 54, 30, 6); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.2)';
+      c.beginPath(); c.roundRect(sx - 3, y - 11, 44, 5, 2); c.fill();
+      c.fillStyle = '#e8eef7'; c.strokeStyle = '#39445c'; c.lineWidth = 2;
+      c.beginPath(); c.arc(pinX, pinY, 6.5, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(0,0,0,.5)';
+      c.beginPath(); c.arc(pinX, pinY, 2.5, 0, 7); c.fill();
+      c.fillStyle = '#e8eef7'; c.strokeStyle = '#173a8a'; c.lineWidth = 2;
+      c.beginPath(); c.arc(sx, y, 5.5, 0, 7); c.fill(); c.stroke();
+      dirArrow(c, cxC, y, R + 18, true, '#ff9046');
       label(c, cxC, y - R - 26, '크랭크 · 빙글빙글', '#ff9046');
       if (ts === 0 && !rev) qMark(c, sx + 60, y - 44);
       else {
@@ -684,36 +776,43 @@ const QUESTIONS = [
       drawBg(c, W, H); ceiling(c, W);
       const u = ts / 3;
       const gy = H * 0.68;
-      const unit = Math.min(W * 0.34 / 48, H * 0.3 / 40 * 2);
+      const unit = Math.min(W * 0.38 / 48, H * 0.3 / 40 * 2);
       const r8 = 8 * unit / 2, r40 = 40 * unit / 2;
       const xA = W * 0.16, xB = xA + r8 + r40;
       const rD = r40 * 0.42;
       const motorAng = TAU * 2.4 * u;
       const angB = -motorAng / 5;
-      const px = W * 0.72, py = 116, pr = 28;
+      const px = W * 0.72, py = 118, pr = 34;
       const lift = Math.abs(angB) * rD * 0.55;
-      c.strokeStyle = '#55617a'; c.lineWidth = 5;
+      c.strokeStyle = '#55617a'; c.lineWidth = 6;
       c.beginPath(); c.moveTo(px, 42); c.lineTo(px, py); c.stroke();
-      const bw = 64, bh = Math.min(56, H * 0.1);
+      c.fillStyle = '#39445c'; c.fillRect(px - 9, 42, 18, 13);
+      const bw = 78, bh = Math.min(64, H * 0.12);
       const boxTop = H * 0.56 - lift;
       c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
-      c.beginPath(); c.roundRect(xA - r8 - 74, gy - 26, 56, 52, 9); c.fill(); c.stroke();
-      label(c, xA - r8 - 46, gy + 4, '모터', '#8b98ad', 11, false);
+      c.beginPath(); c.roundRect(xA - r8 - 88, gy - 30, 66, 60, 10); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(120,145,190,.14)';
+      c.fillRect(xA - r8 - 80, gy - 22, 50, 11);
+      label(c, xA - r8 - 55, gy + 8, '모터', '#8b98ad', 12.5, false);
       c.strokeStyle = '#39445c'; c.lineWidth = 5;
-      c.beginPath(); c.moveTo(xA - r8 - 18, gy); c.lineTo(xA, gy); c.stroke();
+      c.beginPath(); c.moveTo(xA - r8 - 22, gy); c.lineTo(xA, gy); c.stroke();
       drawGear(c, xB, gy, 40, angB + Math.PI / 40, '#c2410c', { r: r40, light: '#ffb27d' });
       c.save(); c.translate(xB, gy); c.rotate(angB);
       const dg = c.createRadialGradient(-rD * 0.3, -rD * 0.3, rD * 0.2, 0, 0, rD);
       dg.addColorStop(0, '#9aa8c4'); dg.addColorStop(1, '#4a5878');
       c.fillStyle = dg; c.strokeStyle = '#202c44'; c.lineWidth = 2;
       c.beginPath(); c.arc(0, 0, rD, 0, 7); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(217,184,138,.75)'; c.lineWidth = 3;
+      c.beginPath(); c.arc(0, 0, rD - 4, 0, 7); c.stroke();
+      c.beginPath(); c.arc(0, 0, rD - 9, 0, 7); c.stroke();
       c.fillStyle = '#d9b88a';
-      c.beginPath(); c.arc(rD * 0.7, 0, 4, 0, 7); c.fill();
+      c.beginPath(); c.arc(rD * 0.55, 0, 4.5, 0, 7); c.fill();
       c.restore();
       rope(c, [[xB, gy - rD], [xB, py + 6], [px - pr, py]]);
-      rope(c, [[px + pr, py], [px + pr, boxTop]]);
+      rope(c, [[px + pr, py], [px + pr, boxTop - 22]]);
       pulleyWheel(c, px, py, pr, -lift / pr);
       crate(c, px + pr - bw / 2, boxTop, bw, bh, '짐');
+      hookJoin(c, px + pr, boxTop - 22, boxTop);
       drawGear(c, xA, gy, 8, motorAng, '#2563eb', { r: r8, light: '#7db4ff' });
       dirArrow(c, xA, gy, r8 + 14, true, '#4da3ff');
       label(c, xA, gy - r8 - 24, '8T', '#4da3ff');

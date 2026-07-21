@@ -62,24 +62,26 @@
   #reelBtn:disabled { box-shadow: none; }
   #reelBtn.holding { transform: scale(0.97); box-shadow: 0 0 22px rgba(255,144,70,.5); }
   canvas.gearview { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; margin-bottom: 12px; }
-  .bars { margin: 4px 0 12px; }
-  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
-  .bar-row .lab { width: 72px; flex: none; }
-  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 6px; transition: width .12s; }
-  .bar-row .val { width: 44px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .bars { margin: 4px 0 14px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 13px; color: #c6d2e6; }
+  .bar-row .lab { width: 84px; flex: none; font-weight: 700; }
+  .bar-track { flex: 1; height: 30px; background: #0c1220; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
+  .bar-track::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent calc(12.5% - 1px), rgba(140,170,220,.30) calc(12.5% - 1px), rgba(140,170,220,.30) 12.5%); }
+  .bar-fill { height: 100%; border-radius: 7px; transition: width .12s; box-shadow: inset 0 0 14px rgba(255,255,255,.18); }
+  .bar-row .val { width: 54px; text-align: right; font-family: var(--mono); font-size: 18px; font-weight: 800; }
+  .bar-scale { display: flex; justify-content: space-between; margin: 2px 62px 0 92px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
   .tank { display: flex; gap: 8px; margin-bottom: 12px; }
-  .slot { flex: 1; background: #0c1526; border: 1px solid var(--border); border-radius: 10px; padding: 9px 4px 7px; text-align: center; }
-  .slot .icon { font-size: 22px; filter: grayscale(1) brightness(0.45); transition: filter .4s; }
+  .slot { flex: 1; background: #0c1526; border: 1px solid var(--border); border-radius: 10px; padding: 6px 6px 7px; text-align: center; }
+  .slot canvas { display: block; width: 100%; border-radius: 7px; background: #0a1c30; }
   .slot.got { border-color: rgba(46,224,111,.5); box-shadow: 0 0 12px rgba(46,224,111,.15); }
-  .slot.got .icon { filter: none; }
-  .slot .nm { font-size: 10.5px; color: var(--dim); margin-top: 3px; }
+  .slot .nm { font-size: 11px; color: var(--dim); margin-top: 4px; }
   .slot.got .nm { color: var(--green); font-weight: 700; }
   details { margin-top: 4px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -137,9 +139,9 @@
       </div>
       <h3>2️⃣ 물고기 고르기</h3>
       <div class="pick3" id="pickFish">
-        <button data-f="small" class="on">🐟 소형<small>얕고 가벼움</small></button>
-        <button data-f="mid">🐠 중형<small>제법 무거움</small></button>
-        <button data-f="big">🐡 대형<small>깊고 아주 무거움</small></button>
+        <button data-f="small" class="on">🐟 소형<small>붕어 · 얕고 가벼움</small></button>
+        <button data-f="mid">🐠 중형<small>잉어 · 제법 무거움</small></button>
+        <button data-f="big">🐡 대형<small>메기 · 아주 무거움</small></button>
       </div>
       <div class="quiz" id="quizBox">
         <div class="q" id="quizQ">❓ 예측! 소형 물고기엔 어떤 기어가 좋을까?</div>
@@ -156,17 +158,18 @@
       </div>
       <button id="reelBtn" disabled>🌀 릴 감기 — 꾹 누르거나 연타!</button>
       <h3>릴 기어 돌아가는 모습</h3>
-      <canvas class="gearview" id="gearCv" height="130"></canvas>
+      <canvas class="gearview" id="gearCv" height="190"></canvas>
       <h3>힘 대결 — 내 당김 힘 vs 물고기 저항</h3>
       <div class="bars">
         <div class="bar-row"><span class="lab">내 당김 힘</span><div class="bar-track"><div class="bar-fill" id="barPull" style="background:linear-gradient(90deg,#166534,#2ee06f);width:0%"></div></div><span class="val" id="valPull">—</span></div>
         <div class="bar-row"><span class="lab">물고기 저항</span><div class="bar-track"><div class="bar-fill" id="barRes" style="background:linear-gradient(90deg,#7f1d1d,#ff5a52);width:0%"></div></div><span class="val" id="valRes">—</span></div>
+        <div class="bar-scale"><span>0</span><span>8</span><span>16</span><span>24</span><span>32</span></div>
       </div>
       <h3>🏆 미션 — 세 마리를 모두 어항에 모으자!</h3>
       <div class="tank">
-        <div class="slot" id="slot_small"><div class="icon">🐟</div><div class="nm">소형</div></div>
-        <div class="slot" id="slot_mid"><div class="icon">🐠</div><div class="nm">중형</div></div>
-        <div class="slot" id="slot_big"><div class="icon">🐡</div><div class="nm">대형</div></div>
+        <div class="slot" id="slot_small"><canvas class="tankCv" id="tankCv_small" height="48"></canvas><div class="nm">🐟 소형 · 붕어</div></div>
+        <div class="slot" id="slot_mid"><canvas class="tankCv" id="tankCv_mid" height="48"></canvas><div class="nm">🐠 중형 · 잉어</div></div>
+        <div class="slot" id="slot_big"><canvas class="tankCv" id="tankCv_big" height="48"></canvas><div class="nm">🐡 대형 · 메기</div></div>
       </div>
       <details open>
         <summary>📋 낚시 기록 (최근 8회)</summary>
@@ -248,11 +251,11 @@ const GEARS = {
   power: { name: '💪 힘형',  short: '힘형',  label: '3:1', drvT: 8,  flwT: 24, spd: 1/3, frc: 3 },
 };
 const FISH = {
-  small: { name: '소형', icon: '🐟', depth: 3.2, res: 2,  size: 15, color: '#2ee06f', light: '#a8f5c8', best: 'speed',
+  small: { name: '소형', icon: '🐟', species: 'crucian', depth: 3.2, res: 2,  size: 15, color: '#2ee06f', light: '#a8f5c8', best: 'speed',
            bestWhy: '가벼우니까 힘은 조금만 있어도 돼 — 빠른 속도형이 최고!' },
-  mid:   { name: '중형', icon: '🐠', depth: 4.2, res: 8,  size: 23, color: '#ffb02e', light: '#ffd98a', best: 'even',
+  mid:   { name: '중형', icon: '🐠', species: 'carp', depth: 4.2, res: 8,  size: 23, color: '#ffb02e', light: '#ffd98a', best: 'even',
            bestWhy: '속도형(힘 3.3)으론 못 당겨 — 균형 1:1이면 힘도 되고 속도도 적당해!' },
-  big:   { name: '대형', icon: '🐡', depth: 5.2, res: 20, size: 33, color: '#ff5a52', light: '#ffb0a8', best: 'power',
+  big:   { name: '대형', icon: '🐡', species: 'catfish', depth: 5.2, res: 20, size: 33, color: '#ff5a52', light: '#ffb0a8', best: 'power',
            bestWhy: '저항 20을 이기려면 힘 30이 필요해 — 힘 3배 힘형만 가능!' },
 };
 
@@ -263,7 +266,7 @@ let t = 0, depth = 0, crankAng = 0, boost = 0, holdingPtr = false, holdingKey = 
 let lineSpeed = 0, stalled = false, struggling = false, hintShown = false;
 let prediction = null, runCount = 0;
 const caught = { small: false, mid: false, big: false };
-const bubbles = [];
+const bubbles = [], ambBubbles = [];
 let wave = 0, lastTs = null, caughtFishAnim = 0;
 
 const holding = () => holdingPtr || holdingKey;
@@ -436,31 +439,105 @@ function spawnBubble() {
 }
 function roundedRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
 
-function drawFishShape(c, x, y, size, color, light, ang, mouthUp) {
+function drawFishShape(c, x, y, size, f, ang, mouthUp, flip) {
   c.save(); c.translate(x, y); c.rotate(ang);
-  const L = size * 2.1, Hh = size * 1.15;
-  // 꼬리
+  if (flip) c.scale(-1, 1);
+  const sp = f.species, color = f.color, light = f.light;
+  const cat = sp === 'catfish';
+  const L = size * (cat ? 2.5 : 2.1);
+  const Hh = size * (cat ? 0.9 : sp === 'carp' ? 1.3 : 1.15);
+  // 꼬리 — 붕어/잉어는 갈라진 꼬리, 메기는 둥근 꼬리
   c.fillStyle = color;
   c.beginPath();
-  c.moveTo(L * 0.42, 0);
-  c.lineTo(L * 0.62, -Hh * 0.55);
-  c.lineTo(L * 0.62, Hh * 0.55);
+  if (cat) {
+    c.moveTo(L * 0.38, 0);
+    c.quadraticCurveTo(L * 0.64, -Hh * 0.55, L * 0.60, 0);
+    c.quadraticCurveTo(L * 0.64, Hh * 0.55, L * 0.38, 0);
+  } else {
+    c.moveTo(L * 0.40, 0);
+    c.lineTo(L * 0.62, -Hh * 0.55);
+    c.lineTo(L * 0.54, 0);
+    c.lineTo(L * 0.62, Hh * 0.55);
+  }
+  c.closePath(); c.fill();
+  // 등지느러미 — 잉어는 높고 길게, 붕어는 봉긋, 메기는 작게
+  c.fillStyle = color;
+  c.beginPath();
+  if (sp === 'carp') {
+    c.moveTo(-L * 0.12, -Hh * 0.40);
+    c.quadraticCurveTo(L * 0.02, -Hh * 0.95, L * 0.30, -Hh * 0.38);
+  } else if (cat) {
+    c.moveTo(-L * 0.06, -Hh * 0.42);
+    c.quadraticCurveTo(0, -Hh * 0.72, L * 0.10, -Hh * 0.42);
+  } else {
+    c.moveTo(-L * 0.08, -Hh * 0.44);
+    c.quadraticCurveTo(L * 0.06, -Hh * 0.80, L * 0.26, -Hh * 0.42);
+  }
   c.closePath(); c.fill();
   // 몸통
   const bg = c.createLinearGradient(0, -Hh / 2, 0, Hh / 2);
   bg.addColorStop(0, light); bg.addColorStop(1, color);
   c.fillStyle = bg;
-  c.beginPath(); c.ellipse(0, 0, L / 2, Hh / 2, 0, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
-  // 지느러미
+  if (cat) {
+    c.beginPath(); c.ellipse(L * 0.05, 0, L * 0.42, Hh * 0.42, 0, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(-L * 0.30, 0, L * 0.20, Hh * 0.50, 0, 0, 7); c.fill(); // 넓적한 머리
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1;
+    c.beginPath(); c.ellipse(L * 0.05, 0, L * 0.42, Hh * 0.42, 0, 0, 7); c.stroke();
+  } else {
+    c.beginPath(); c.ellipse(0, 0, L / 2, Hh / 2, 0, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  }
+  // 비늘 — 붕어 잔비늘 / 잉어 굵은 비늘 / 메기는 매끈 + 광택
+  if (!cat) {
+    c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = sp === 'carp' ? 1.3 : 1;
+    const rows = sp === 'carp' ? 3 : 2;
+    const sr = size * (sp === 'carp' ? 0.17 : 0.11);
+    for (let r = 0; r < rows; r++) for (let q = 0; q < 4; q++) {
+      const sxp = -L * 0.20 + q * L * 0.13 + (r % 2) * L * 0.06;
+      const syp = -Hh * 0.16 + r * Hh * 0.17;
+      c.beginPath(); c.arc(sxp, syp, sr, 0.35, Math.PI - 0.35); c.stroke();
+    }
+  } else {
+    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(-L * 0.36, -Hh * 0.2); c.quadraticCurveTo(0, -Hh * 0.34, L * 0.34, -Hh * 0.15); c.stroke();
+  }
+  // 가슴지느러미
   c.fillStyle = 'rgba(0,0,0,.18)';
-  c.beginPath(); c.ellipse(L * 0.05, Hh * 0.1, L * 0.13, Hh * 0.22, 0.6, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(-L * 0.02, Hh * 0.14, L * 0.13, Hh * 0.22, 0.6, 0, 7); c.fill();
+  // 메기 긴 뒷지느러미
+  if (cat) {
+    c.fillStyle = 'rgba(0,0,0,.2)';
+    c.beginPath(); c.moveTo(-L * 0.05, Hh * 0.34);
+    c.quadraticCurveTo(L * 0.16, Hh * 0.60, L * 0.36, Hh * 0.28);
+    c.closePath(); c.fill();
+  }
   // 눈
-  c.fillStyle = '#fff'; c.beginPath(); c.arc(-L * 0.28, -Hh * 0.12, size * 0.14, 0, 7); c.fill();
-  c.fillStyle = '#111'; c.beginPath(); c.arc(-L * 0.28, -Hh * 0.12, size * 0.07, 0, 7); c.fill();
-  // 입
-  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.4;
-  c.beginPath(); c.arc(-L * 0.42, mouthUp ? -Hh * 0.05 : Hh * 0.05, size * 0.12, 0.4, 2.2); c.stroke();
+  const ex = cat ? -L * 0.36 : -L * 0.28, ey = -Hh * (cat ? 0.18 : 0.12);
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, size * 0.14, 0, 7); c.fill();
+  c.fillStyle = '#111'; c.beginPath(); c.arc(ex, ey, size * 0.07, 0, 7); c.fill();
+  // 입 — 메기는 넓은 입
+  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.4; c.lineCap = 'round';
+  if (cat) {
+    c.beginPath(); c.moveTo(-L * 0.48, Hh * 0.04);
+    c.quadraticCurveTo(-L * 0.40, Hh * 0.14, -L * 0.28, Hh * 0.08); c.stroke();
+  } else {
+    c.beginPath(); c.arc(-L * 0.42, mouthUp ? -Hh * 0.05 : Hh * 0.05, size * 0.12, 0.4, 2.2); c.stroke();
+  }
+  // 수염 — 메기 4가닥 길게, 잉어 2가닥 짧게
+  if (cat) {
+    c.strokeStyle = 'rgba(255,205,185,.85)'; c.lineWidth = 1.3;
+    const wob = Math.sin(wave * 3) * size * 0.1;
+    [[-0.50, -0.14, -0.78, -0.34], [-0.51, -0.04, -0.82, -0.06],
+     [-0.49, 0.08, -0.74, 0.28], [-0.47, 0.16, -0.62, 0.42]].forEach(w => {
+      c.beginPath(); c.moveTo(L * w[0], Hh * w[1]);
+      c.quadraticCurveTo(L * (w[0] + w[2]) / 2, Hh * w[3] + wob * 0.5, L * w[2], Hh * w[3] + wob);
+      c.stroke();
+    });
+  } else if (sp === 'carp') {
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.1;
+    c.beginPath(); c.moveTo(-L * 0.44, Hh * 0.10); c.lineTo(-L * 0.50, Hh * 0.24); c.stroke();
+    c.beginPath(); c.moveTo(-L * 0.39, Hh * 0.14); c.lineTo(-L * 0.43, Hh * 0.30); c.stroke();
+  }
   c.restore();
 }
 
@@ -506,16 +583,40 @@ function drawScene(dt) {
   }
   c.stroke();
 
-  // 바닥 + 수초
+  // 바닥
   c.fillStyle = '#0c1a2e'; c.beginPath();
   c.moveTo(0, H); c.lineTo(0, H - 16);
   for (let x = 0; x <= W; x += 40) c.lineTo(x, H - 16 - Math.sin(x * 0.02) * 6);
   c.lineTo(W, H); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(46,150,110,.5)'; c.lineWidth = 2.5; c.lineCap = 'round';
+  // 자갈 (고정 배치 — 깜빡임 없음)
+  for (let i = 0; i * 16 < W; i++) {
+    const gx = i * 16 + ((i * 37) % 11), gy = H - 6 - ((i * 29) % 7), gr = 2.5 + ((i * 53) % 4);
+    c.fillStyle = ['#22314a', '#2c3d58', '#1a2740'][i % 3];
+    c.beginPath(); c.ellipse(gx, gy, gr, gr * 0.65, 0, 0, 7); c.fill();
+  }
+  // 수초 — 줄기 + 양옆 잎
+  c.lineCap = 'round';
   for (let i = 0; i < 6; i++) {
     const bx = W * (0.12 + i * 0.16), sw = Math.sin(wave * 1.4 + i) * 6;
+    c.strokeStyle = 'rgba(46,150,110,.5)'; c.lineWidth = 2.5;
     c.beginPath(); c.moveTo(bx, H - 14);
     c.quadraticCurveTo(bx + sw, H - 34, bx + sw * 1.8, H - 52 - (i % 3) * 8);
+    c.stroke();
+    c.strokeStyle = 'rgba(46,175,120,.38)'; c.lineWidth = 1.8;
+    c.beginPath(); c.moveTo(bx, H - 16);
+    c.quadraticCurveTo(bx - 8 + sw * 0.4, H - 26, bx - 12 + sw * 0.7, H - 36 - (i % 2) * 6); c.stroke();
+    c.beginPath(); c.moveTo(bx, H - 15);
+    c.quadraticCurveTo(bx + 9 + sw * 0.4, H - 24, bx + 13 + sw * 0.6, H - 32 + (i % 2) * 4); c.stroke();
+  }
+  // 물속 상승 기포
+  if (Math.random() < dt * 2 && ambBubbles.length < 24)
+    ambBubbles.push({ x: Math.random(), y: 1, r: 1 + Math.random() * 2, vy: 0.09 + Math.random() * 0.08, wob: Math.random() * 6 });
+  for (let i = ambBubbles.length - 1; i >= 0; i--) {
+    const b = ambBubbles[i]; b.y -= b.vy * dt;
+    if (b.y <= 0.03) { ambBubbles.splice(i, 1); continue; }
+    c.strokeStyle = 'rgba(180,220,255,.3)'; c.lineWidth = 1;
+    c.beginPath();
+    c.arc(b.x * W + Math.sin(wave * 2 + b.wob) * 4, waterY + b.y * (H - waterY - 16), b.r, 0, 7);
     c.stroke();
   }
 
@@ -539,32 +640,88 @@ function drawScene(dt) {
   c.fillRect(dockW * 0.25, dockY + 12, 8, waterY - dockY + 6);
   c.fillRect(dockW * 0.75, dockY + 12, 8, waterY - dockY + 6);
 
-  // 아이 (간단한 미니피겨)
+  // 아이 미니피겨 — 모자·낚시조끼·주머니
   const kidX = dockW * 0.45, kidY = dockY;
-  c.fillStyle = '#ffcf6b'; c.beginPath(); c.arc(kidX, kidY - 44, 9, 0, 7); c.fill();  // 머리
-  c.fillStyle = '#e34b40'; roundedRect(c, kidX - 8, kidY - 35, 16, 21, 4); c.fill();  // 몸
-  c.fillStyle = '#2f5fd0'; c.fillRect(kidX - 8, kidY - 15, 6, 15); c.fillRect(kidX + 2, kidY - 15, 6, 15); // 다리
-  // 팔
-  c.strokeStyle = '#e34b40'; c.lineWidth = 5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(kidX + 5, kidY - 30); c.lineTo(kidX + 17, kidY - 24); c.stroke();
+  // 다리 + 신발
+  c.fillStyle = '#2f5fd0'; c.fillRect(kidX - 8, kidY - 15, 6, 15); c.fillRect(kidX + 2, kidY - 15, 6, 15);
+  c.fillStyle = '#243f8a'; c.fillRect(kidX - 9, kidY - 3, 8, 3); c.fillRect(kidX + 1, kidY - 3, 8, 3);
+  // 몸통(셔츠)
+  c.fillStyle = '#e34b40'; roundedRect(c, kidX - 8, kidY - 35, 16, 21, 4); c.fill();
+  // 낚시조끼 양쪽 패널
+  c.fillStyle = '#b8862f';
+  roundedRect(c, kidX - 8.5, kidY - 35, 6, 20, 2); c.fill();
+  roundedRect(c, kidX + 2.5, kidY - 35, 6, 20, 2); c.fill();
+  // 조끼 주머니 2개 + 덮개
+  c.fillStyle = '#96691f';
+  c.fillRect(kidX - 7.5, kidY - 24, 4.5, 5.5); c.fillRect(kidX + 3.2, kidY - 24, 4.5, 5.5);
+  c.strokeStyle = '#6b4a12'; c.lineWidth = 1;
+  c.strokeRect(kidX - 7.5, kidY - 24, 4.5, 5.5); c.strokeRect(kidX + 3.2, kidY - 24, 4.5, 5.5);
+  c.fillStyle = '#6b4a12';
+  c.fillRect(kidX - 7.5, kidY - 24, 4.5, 1.8); c.fillRect(kidX + 3.2, kidY - 24, 4.5, 1.8);
+  // 머리 + 얼굴 (오른쪽 물 방향 봄)
+  c.fillStyle = '#ffcf6b'; c.beginPath(); c.arc(kidX, kidY - 44, 9, 0, 7); c.fill();
+  c.fillStyle = '#3a2b16'; c.beginPath(); c.arc(kidX + 4, kidY - 45, 1.3, 0, 7); c.fill();
+  c.strokeStyle = '#3a2b16'; c.lineWidth = 1.1; c.lineCap = 'round';
+  c.beginPath(); c.arc(kidX + 3.5, kidY - 42, 2.5, 0.3, 1.4); c.stroke();
+  // 챙 달린 캡모자
+  c.fillStyle = '#1f7a48';
+  c.beginPath(); c.arc(kidX, kidY - 46, 9.4, Math.PI, 0); c.closePath(); c.fill();
+  roundedRect(c, kidX + 3, kidY - 48.5, 12, 3.2, 1.6); c.fill();
+  c.fillStyle = '#175c36'; c.beginPath(); c.arc(kidX, kidY - 55, 2, 0, 7); c.fill();
 
   // 낚싯대 — 긴장도에 따라 휘어짐
   const tension = mode === 'fight' ? (stalled ? 1 : 0.55) : 0.12;
   const baseX = kidX + 16, baseY = kidY - 25;
   const tipX = Math.min(W * 0.46, baseX + W * 0.26);
   const tipY = waterY - H * 0.2 + tension * 26;
-  c.strokeStyle = '#c9a15a'; c.lineWidth = 3.5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(baseX, baseY);
-  c.quadraticCurveTo(baseX + (tipX - baseX) * 0.6, baseY - (baseY - tipY) * 1.15, tipX, tipY);
-  c.stroke();
-  // 릴 (막대 밑) — 크랭크 회전 표시
+  const cpx = baseX + (tipX - baseX) * 0.6, cpy = baseY - (baseY - tipY) * 1.15;
+  const qp = tq => ({ x: (1 - tq) * (1 - tq) * baseX + 2 * (1 - tq) * tq * cpx + tq * tq * tipX,
+                      y: (1 - tq) * (1 - tq) * baseY + 2 * (1 - tq) * tq * cpy + tq * tq * tipY });
   const reelX = baseX + 14, reelY = baseY + 10;
-  c.fillStyle = '#39445c'; c.beginPath(); c.arc(reelX, reelY, 8, 0, 7); c.fill();
+  // 손잡이 그립(코르크)
+  const g1 = qp(0.1);
+  c.strokeStyle = '#5a3d22'; c.lineWidth = 6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(baseX - (g1.x - baseX) * 0.5, baseY - (g1.y - baseY) * 0.5); c.lineTo(g1.x, g1.y); c.stroke();
+  // 로드 블랭크 + 하이라이트
+  c.strokeStyle = '#c9a15a'; c.lineWidth = 3.5;
+  c.beginPath(); c.moveTo(baseX, baseY); c.quadraticCurveTo(cpx, cpy, tipX, tipY); c.stroke();
+  c.strokeStyle = 'rgba(255,240,200,.35)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(baseX, baseY - 1); c.quadraticCurveTo(cpx, cpy - 1, tipX, tipY - 0.5); c.stroke();
+  // 가이드 링 4개 (끝으로 갈수록 작게)
+  const rings = [0.3, 0.55, 0.78, 0.96].map((tq, i) => {
+    const p = qp(tq), rr = 4 - i * 0.7;
+    return { x: p.x, y: p.y + rr + 3, r: rr, top: p };
+  });
+  c.strokeStyle = '#d8e4f5'; c.lineWidth = 1.4;
+  rings.forEach(rg => {
+    c.beginPath(); c.moveTo(rg.top.x, rg.top.y); c.lineTo(rg.x, rg.y - rg.r); c.stroke();
+    c.beginPath(); c.arc(rg.x, rg.y, rg.r, 0, 7); c.stroke();
+  });
+  // 릴 스풀 → 가이드 링 통과 → 초릿대 원줄
+  c.strokeStyle = 'rgba(230,240,255,.35)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(reelX, reelY - 5);
+  rings.forEach(rg => c.lineTo(rg.x, rg.y));
+  c.lineTo(tipX, tipY); c.stroke();
+  // 릴 — 시트·몸체·스풀·감긴 줄·크랭크
+  c.strokeStyle = '#4a5872'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(baseX + 9, baseY + 1); c.lineTo(reelX, reelY - 6); c.stroke();
+  c.fillStyle = '#39445c'; c.beginPath(); c.arc(reelX, reelY, 9, 0, 7); c.fill();
+  c.strokeStyle = '#202a3e'; c.lineWidth = 1.2; c.stroke();
+  c.fillStyle = '#202a3e'; c.beginPath(); c.arc(reelX, reelY, 5.5, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(220,235,255,.55)'; c.lineWidth = 1;
+  for (let rr = 3; rr <= 5; rr++) { c.beginPath(); c.arc(reelX, reelY, rr, 0, 7); c.stroke(); }
+  const hx = reelX + Math.cos(crankAng) * 10, hy = reelY + Math.sin(crankAng) * 10;
   c.strokeStyle = '#8b98ad'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(reelX, reelY);
-  c.lineTo(reelX + Math.cos(crankAng) * 10, reelY + Math.sin(crankAng) * 10); c.stroke();
-  c.fillStyle = '#ffb02e';
-  c.beginPath(); c.arc(reelX + Math.cos(crankAng) * 10, reelY + Math.sin(crankAng) * 10, 3, 0, 7); c.fill();
+  c.beginPath(); c.moveTo(reelX, reelY); c.lineTo(hx, hy); c.stroke();
+  c.fillStyle = '#ffb02e'; c.beginPath(); c.arc(hx, hy, 3, 0, 7); c.fill();
+  // 팔 — 한 손은 로드 그립, 한 손은 릴 크랭크 (크랭크 따라 도는 손)
+  c.strokeStyle = '#e34b40'; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(kidX + 5, kidY - 31); c.lineTo(baseX, baseY - 1); c.stroke();
+  c.strokeStyle = '#c93c32'; c.lineWidth = 4.5;
+  c.beginPath(); c.moveTo(kidX + 6, kidY - 26); c.lineTo(hx, hy); c.stroke();
+  c.fillStyle = '#ffcf6b';
+  c.beginPath(); c.arc(baseX, baseY - 1, 3, 0, 7); c.fill();
+  c.beginPath(); c.arc(hx, hy, 3.2, 0, 7); c.fill();
 
   // 물고기 위치
   let fx = tipX, fy;
@@ -583,7 +740,7 @@ function drawScene(dt) {
     c.stroke();
     // 물고기
     const wig = Math.sin(t * (struggling ? 18 : 6)) * 0.22;
-    drawFishShape(c, fx, fy, f.size, f.color, f.light, -Math.PI / 2 + wig, true);
+    drawFishShape(c, fx, fy, f.size, f, -Math.PI / 2 + wig, true);
     if (struggling) {
       c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ff5a52';
       c.fillText('💢 버티는 중!', fx, fy + f.size * 1.9);
@@ -606,7 +763,7 @@ function drawScene(dt) {
     // 목표 물고기 미리보기 (물속에서 유영)
     const px = W * 0.62 + Math.sin(wave * 0.7) * 26;
     const py = waterY + f.depth * pxPerM + Math.sin(wave * 1.6) * 6;
-    drawFishShape(c, px, py, f.size, f.color, f.light, Math.sin(wave * 0.9) * 0.1, false);
+    drawFishShape(c, px, py, f.size, f, Math.sin(wave * 0.9) * 0.1, false);
     c.font = '11.5px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(210,225,250,.75)';
     c.fillText(`${f.name} · 깊이 ${f.depth} m · 저항 ${f.res}`, px, py - f.size * 1.5);
   }
@@ -616,7 +773,7 @@ function drawScene(dt) {
     caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.6);
     const k = 1 - caughtFishAnim;
     const ay = waterY - 30 - k * 40;
-    drawFishShape(c, tipX, ay, f.size * (0.7 + caughtFishAnim * 0.3), f.color, f.light, -0.4 + Math.sin(wave * 12) * 0.15, true);
+    drawFishShape(c, tipX, ay, f.size * (0.7 + caughtFishAnim * 0.3), f, -0.4 + Math.sin(wave * 12) * 0.15, true);
     c.globalAlpha = caughtFishAnim;
     c.font = 'bold 17px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#2ee06f';
     c.fillText('낚았다!', tipX, ay - f.size * 1.6);
@@ -683,13 +840,50 @@ function drawGearInset() {
   drawGearShape(c, cxF, cy, g.flwT, flwAng + Math.PI / g.flwT, '#c2410c', '#ffb27d', rF);
   dirArrow(c, cxD, cy, rD + 11, true, '#4da3ff');
   dirArrow(c, cxF, cy, rF + 11, false, '#ff9046');
-  c.font = 'bold 10.5px sans-serif'; c.textAlign = 'center';
-  c.fillStyle = '#4da3ff'; c.fillText(`크랭크 ${g.drvT}T (내 손)`, cxD, 13);
-  c.fillStyle = '#ff9046'; c.fillText(`줄감개 ${g.flwT}T`, cxF, H - 5);
-  c.fillStyle = '#c792ea'; c.textAlign = 'left'; c.font = '10px sans-serif';
-  c.fillText(`${g.label}`, 6, H - 6);
-  c.fillText(`힘 ×${g.frc >= 1 ? g.frc.toFixed(0) : '⅓'}`, 6, 14);
-  c.fillText(`속도 ×${g.spd >= 1 ? g.spd.toFixed(0) : '⅓'}`, 6, 26);
+  c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
+  c.fillStyle = '#4da3ff'; c.fillText(`크랭크 ${g.drvT}T (내 손)`, cxD, 17);
+  c.fillStyle = '#ff9046'; c.fillText(`줄감개 ${g.flwT}T`, cxF, H - 7);
+  c.fillStyle = '#c792ea'; c.textAlign = 'left'; c.font = 'bold 12px sans-serif';
+  c.fillText(`${g.label}`, 7, H - 8);
+  c.fillText(`힘 ×${g.frc >= 1 ? g.frc.toFixed(0) : '⅓'}`, 7, 18);
+  c.fillText(`속도 ×${g.spd >= 1 ? g.spd.toFixed(0) : '⅓'}`, 7, 34);
+}
+
+/* ── 그리기: 어항 (잡은 물고기 유영) ── */
+function drawTanks() {
+  ['small', 'mid', 'big'].forEach((k, idx) => {
+    const cvT = $('tankCv_' + k); if (!cvT) return;
+    const { c, W, H } = fit(cvT);
+    const f = FISH[k];
+    const wg = c.createLinearGradient(0, 0, 0, H);
+    wg.addColorStop(0, '#123a5e'); wg.addColorStop(1, '#0a2038');
+    c.fillStyle = wg; c.fillRect(0, 0, W, H);
+    for (let i = 0; i * 8 < W; i++) {
+      c.fillStyle = i % 2 ? '#233246' : '#2c3d55';
+      c.beginPath(); c.ellipse(i * 8 + 4, H - 2.5, 4, 2.5, 0, 0, 7); c.fill();
+    }
+    c.strokeStyle = 'rgba(46,180,120,.6)'; c.lineWidth = 1.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(W * 0.85, H - 3);
+    c.quadraticCurveTo(W * 0.85 + Math.sin(wave * 1.5 + idx) * 3, H - 10, W * 0.85 + Math.sin(wave * 1.5 + idx) * 5, H - 17);
+    c.stroke();
+    if (caught[k]) {
+      const ph = wave * (0.8 + idx * 0.15) + idx * 2.1;
+      const fx2 = W / 2 + Math.sin(ph) * W * 0.24;
+      const fy2 = H * 0.45 + Math.sin(ph * 2.3) * H * 0.10;
+      const flip = Math.cos(ph) > 0;
+      drawFishShape(c, fx2, fy2, Math.min(10, f.size * 0.42), f, Math.sin(ph * 2) * 0.08, false, flip);
+      const bh = (wave * 16 + idx * 23) % (H + 8);
+      c.strokeStyle = 'rgba(180,220,255,.4)'; c.lineWidth = 1;
+      c.beginPath(); c.arc(fx2 + (flip ? 8 : -8), H - bh, 1.5, 0, 7); c.stroke();
+    } else {
+      c.globalAlpha = 0.35;
+      drawFishShape(c, W / 2, H * 0.48, Math.min(9, f.size * 0.4),
+        { species: f.species, color: '#39445c', light: '#4a5872' }, 0, false, false);
+      c.globalAlpha = 1;
+      c.font = 'bold 11px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(160,185,225,.6)';
+      c.fillText('?', W / 2, H * 0.32);
+    }
+  });
 }
 
 /* ── 메인 루프 ── */
@@ -699,7 +893,7 @@ function loop(ts) {
   lastTs = ts;
   if (mode === 'fight') step(dt);
   else if (!holding()) crankAng += dt * 0.4;   // 대기 중 천천히 회전 (구조 보여주기)
-  if ($('game').classList.contains('on')) { drawScene(dt); drawGearInset(); }
+  if ($('game').classList.contains('on')) { drawScene(dt); drawGearInset(); drawTanks(); }
   requestAnimationFrame(loop);
 }
 refreshQuiz();

@@ -36,8 +36,8 @@
   .badge.diff { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
   .badge.fail { display: inline-flex; background: rgba(70,18,14,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
 
-  .side { width: 350px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
-  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 10px 0 8px; }
+  .side { width: 372px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 12.5px; color: var(--dim); letter-spacing: 0.6px; margin: 12px 0 8px; }
   button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; touch-action: manipulation; }
   button:hover { border-color: var(--accent); }
   button:active { transform: scale(0.97); }
@@ -64,17 +64,17 @@
   .downrow .drop { border-color: rgba(255,90,82,.5); color: var(--red); }
   .downrow .rst { flex: 0 0 52px; }
 
-  .gauge { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; }
-  .gauge .g-head { display: flex; justify-content: space-between; font-size: 11.5px; color: #c6d2e6; margin-bottom: 6px; }
-  .gauge .g-head b { font-family: var(--mono); font-weight: 600; }
-  .g-track { position: relative; height: 16px; background: #070c16; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .g-fill { height: 100%; border-radius: 7px; width: 0%; transition: none; }
-  .g-mark { position: absolute; top: -2px; bottom: -2px; width: 2.5px; background: var(--red); box-shadow: 0 0 6px rgba(255,90,82,.8); }
-  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
-  .bar-row .lab { width: 72px; flex: none; }
-  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 6px; }
-  .bar-row .val { width: 56px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .gauge { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .gauge .g-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; color: #c6d2e6; margin-bottom: 8px; }
+  .gauge .g-head b { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+  .g-track { position: relative; height: 30px; background: #070c16; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .g-fill { height: 100%; border-radius: 9px; width: 0%; transition: none; }
+  .g-mark { position: absolute; top: -2px; bottom: -2px; width: 3.5px; background: var(--red); box-shadow: 0 0 8px rgba(255,90,82,.9); }
+  .bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; font-size: 13px; color: #c6d2e6; }
+  .bar-row .lab { width: 88px; flex: none; font-weight: 700; }
+  .bar-track { flex: 1; height: 24px; background: #0c1220; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 8px; }
+  .bar-row .val { width: 64px; text-align: right; font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
 
   .quiz { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
   .quiz .q { font-size: 12.5px; color: #c6d2e6; line-height: 1.55; margin-bottom: 8px; }
@@ -90,8 +90,8 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 10px 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-  th, td { border: 1px solid var(--border); padding: 4px 3px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 5px 3px; text-align: center; word-break: keep-all; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -444,39 +444,60 @@ function updatePanel() {
 /* ── 그리기 유틸 ── */
 function wheel(c, x, y, r, ang, color) {
   c.save(); c.translate(x, y); c.rotate(ang);
-  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r + 3, 0, 7); c.fill();
+  // 플랜지 (줄 이탈 방지 테두리)
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r + 3.5, 0, 7); c.fill();
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1; c.beginPath(); c.arc(0, 0, r + 3.5, 0, 7); c.stroke();
   const g = c.createRadialGradient(-r*0.3, -r*0.3, r*0.2, 0, 0, r);
   g.addColorStop(0, '#ffd97a'); g.addColorStop(1, color);
   c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-  c.fillStyle = 'rgba(0,0,0,.3)';
-  for (let k = 0; k < 4; k++) {
-    const a = k * Math.PI / 2;
-    c.beginPath(); c.arc(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.16, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1; c.stroke();
+  // 림 홈 (줄이 걸리는 V홈)
+  c.strokeStyle = 'rgba(45,28,6,.55)'; c.lineWidth = Math.max(2, r * 0.18);
+  c.beginPath(); c.arc(0, 0, r - Math.max(2, r * 0.18) * 0.7, 0, 7); c.stroke();
+  // 스포크 5개
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = Math.max(1.5, r * 0.14); c.lineCap = 'round';
+  for (let k = 0; k < 5; k++) {
+    const a = k * Math.PI * 2 / 5;
+    c.beginPath();
+    c.moveTo(Math.cos(a) * r * 0.26, Math.sin(a) * r * 0.26);
+    c.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
+    c.stroke();
   }
-  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.22, 0, 7); c.fill();
+  // 허브 + 축 볼트
+  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.26, 0, 7); c.fill();
+  c.fillStyle = '#4d5d84'; c.beginPath(); c.arc(0, 0, r * 0.12, 0, 7); c.fill();
   c.restore();
 }
-function rope(c, pts, width = 2.5) {
-  c.strokeStyle = '#d9b06a'; c.lineWidth = width; c.lineCap = 'round';
-  c.beginPath();
-  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
-  c.stroke();
-  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = width * 0.4;
-  c.beginPath();
-  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
-  c.stroke();
+function rope(c, pts, width = 3) {
+  const path = () => {
+    c.beginPath();
+    pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  };
+  c.lineCap = 'round';
+  c.strokeStyle = '#a97a3c'; c.lineWidth = width + 1.2; path(); c.stroke();  // 외곽 음영
+  c.strokeStyle = '#e2bc78'; c.lineWidth = width; path(); c.stroke();        // 본줄
+  c.save();                                                                  // 꼬임 질감 (당길수록 흐름)
+  c.strokeStyle = 'rgba(96,58,14,.55)'; c.lineWidth = width * 0.85;
+  c.setLineDash([width * 1.1, width * 1.5]); c.lineDashOffset = -S.rope * 15;
+  path(); c.stroke();
+  c.restore();
 }
 function lattice(c, x, y0, y1, w) {
-  c.strokeStyle = '#33415e'; c.lineWidth = 3;
+  c.strokeStyle = '#33415e'; c.lineWidth = 3.5;
   c.beginPath(); c.moveTo(x - w/2, y0); c.lineTo(x - w/2, y1); c.moveTo(x + w/2, y0); c.lineTo(x + w/2, y1); c.stroke();
   c.lineWidth = 1.6;
   const stepY = 26;
   for (let y = y0, i = 0; y < y1 - 4; y += stepY, i++) {
     c.beginPath();
+    c.moveTo(x - w/2, y); c.lineTo(x + w/2, y);                    // 수평재
     if (i % 2) { c.moveTo(x - w/2, y); c.lineTo(x + w/2, y + stepY); }
     else { c.moveTo(x + w/2, y); c.lineTo(x - w/2, y + stepY); }
     c.stroke();
+  }
+  c.fillStyle = '#4d5d84';                                         // 접합부 리벳
+  for (let y = y0; y < y1 - 2; y += stepY) {
+    c.beginPath(); c.arc(x - w/2, y, 2, 0, 7); c.fill();
+    c.beginPath(); c.arc(x + w/2, y, 2, 0, 7); c.fill();
   }
 }
 
@@ -512,6 +533,20 @@ function draw() {
     c.beginPath(); c.moveTo(x, groundY + 2); c.lineTo(x - 10, groundY + 14); c.stroke();
   }
 
+  // 멀리 보이는 건물 실루엣 (공사장 배경)
+  for (const [bx0, bw, bh] of [[W - 165, 92, 150], [W - 228, 56, 96], [14, 50, 74]]) {
+    c.fillStyle = 'rgba(26,36,62,.6)';
+    c.fillRect(bx0, groundY - bh, bw, bh);
+    c.fillStyle = 'rgba(255,213,110,.13)';
+    for (let wx = bx0 + 7; wx < bx0 + bw - 9; wx += 14)
+      for (let wy = groundY - bh + 8; wy < groundY - 12; wy += 16)
+        c.fillRect(wx, wy, 6, 8);
+  }
+  // 공사장 소품: 안전 고깔 + 줄무늬 바리케이드
+  drawCone(c, Math.max(px - 88, mastX + 128), groundY);
+  if (W - px > 210) drawBarrier(c, px + 152, groundY);
+  else if (mastX > 140) drawBarrier(c, mastX - 100, groundY);
+
   // 크레인 몸체
   lattice(c, mastX, jibY - 8, groundY, 30);                       // 기둥
   c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
@@ -537,6 +572,19 @@ function draw() {
   c.strokeStyle = '#33415e'; c.lineWidth = 2;
   c.beginPath(); c.moveTo(mastX - 24, jibY - 9); c.lineTo(px + 46, jibY - 9);
   c.moveTo(mastX - 24, jibY + 9); c.lineTo(px + 46, jibY + 9); c.stroke();
+  c.fillStyle = '#4d5d84';                                          // 지브 리벳
+  for (let x = mastX + 32, i = 0; x < px + 42; x += 24, i++) {
+    c.beginPath(); c.arc(x, jibY - 9, 1.8, 0, 7); c.fill();
+    c.beginPath(); c.arc(x, jibY + 9, 1.8, 0, 7); c.fill();
+  }
+  // 타워 꼭대기 + 타이 로드
+  c.strokeStyle = '#33415e'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(mastX + 4, jibY - 20); c.lineTo(mastX + 4, jibY - 52); c.stroke();
+  c.strokeStyle = '#46557a'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(mastX + 4, jibY - 52); c.lineTo(px + 34, jibY - 9);
+  c.moveTo(mastX + 4, jibY - 52); c.lineTo(mastX - 56, jibY - 24); c.stroke();
+  c.fillStyle = '#ff5a52';                                          // 항공 표시등
+  c.beginPath(); c.arc(mastX + 4, jibY - 54, 2.5 + Math.sin(S.t * 3) * 0.8, 0, 7); c.fill();
 
   // 화물 위치 계산
   const loadW = S.w === 10 ? 62 : S.w === 20 ? 96 : 84;
@@ -664,22 +712,50 @@ function drawLoad(c, cx, top, w, h, L) {
     c.quadraticCurveTo(cx, top + h + 4, cx - w/2, top + h*0.75);
     c.closePath(); c.fill();
     c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
-    c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(cx - w*0.15, top + h*0.25); c.lineTo(cx + w*0.05, top + h*0.55); c.stroke();
+    // 균열 (가지 친 금)
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(cx - w*0.15, top + h*0.22); c.lineTo(cx - w*0.02, top + h*0.48);
+    c.lineTo(cx + w*0.1, top + h*0.58); c.moveTo(cx - w*0.02, top + h*0.48); c.lineTo(cx - w*0.14, top + h*0.7); c.stroke();
+    c.beginPath(); c.moveTo(cx + w*0.24, top + h*0.16); c.lineTo(cx + w*0.3, top + h*0.42); c.lineTo(cx + w*0.2, top + h*0.62); c.stroke();
+    c.beginPath(); c.moveTo(cx - w*0.36, top + h*0.5); c.lineTo(cx - w*0.24, top + h*0.66); c.stroke();
+    // 얼룩 점
+    c.fillStyle = 'rgba(0,0,0,.16)';
+    for (const [sx, sy, sr] of [[-0.3, 0.32, 2.6], [0.08, 0.76, 3], [0.33, 0.3, 2], [-0.06, 0.62, 1.8]]) {
+      c.beginPath(); c.arc(cx + w*sx, top + h*sy, sr, 0, 7); c.fill();
+    }
+    c.fillStyle = 'rgba(255,255,255,.14)';
+    c.beginPath(); c.arc(cx - w*0.18, top + h*0.18, 3.4, 0, 7); c.fill();
   } else {
     const g = c.createLinearGradient(cx - w/2, top, cx + w/2, top + h);
     g.addColorStop(0, L.light); g.addColorStop(1, L.color);
     c.fillStyle = g;
     c.beginPath(); c.roundRect(cx - w/2, top, w, h, 5); c.fill();
     c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
-    if (S.w === 20) {                     // 컨테이너 세로 골
+    if (S.w === 20) {                     // 컨테이너: 골판 + 문 잠금봉 + 코너캐스팅
       c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2;
-      for (let x = cx - w/2 + 10; x < cx + w/2 - 5; x += 12) {
+      for (let x = cx - w/2 + 10; x < cx + w/2 - 22; x += 11) {
         c.beginPath(); c.moveTo(x, top + 5); c.lineTo(x, top + h - 5); c.stroke();
       }
-    } else {                              // 상자 테이프
+      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(cx + w/2 - 9, top + 4); c.lineTo(cx + w/2 - 9, top + h - 4);
+      c.moveTo(cx + w/2 - 16, top + 4); c.lineTo(cx + w/2 - 16, top + h - 4); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.45)';
+      c.fillRect(cx + w/2 - 11.5, top + h*0.44, 5, 3.5); c.fillRect(cx + w/2 - 18.5, top + h*0.44, 5, 3.5);
+      c.fillStyle = 'rgba(0,0,0,.4)';
+      for (const [ox, oy] of [[-w/2 + 2, 2], [w/2 - 7, 2], [-w/2 + 2, h - 7], [w/2 - 7, h - 7]]) c.fillRect(cx + ox, top + oy, 5, 5);
+    } else {                              // 상자: 십자 테이프 + 덮개 접힘선 + 송장 라벨
       c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 5;
       c.beginPath(); c.moveTo(cx, top + 2); c.lineTo(cx, top + h - 2); c.stroke();
+      c.strokeStyle = 'rgba(255,244,214,.4)'; c.lineWidth = 4;
+      c.beginPath(); c.moveTo(cx - w/2 + 2, top + 9); c.lineTo(cx + w/2 - 2, top + 9); c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(cx - w/2 + 3, top + 14); c.lineTo(cx + w/2 - 3, top + 14); c.stroke();
+      c.fillStyle = 'rgba(255,250,235,.85)';
+      c.fillRect(cx - w/2 + 6, top + h - 16, 16, 10);
+      c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1;
+      c.strokeRect(cx - w/2 + 6, top + h - 16, 16, 10);
+      c.beginPath(); c.moveTo(cx - w/2 + 8, top + h - 12); c.lineTo(cx - w/2 + 19, top + h - 12);
+      c.moveTo(cx - w/2 + 8, top + h - 9); c.lineTo(cx - w/2 + 16, top + h - 9); c.stroke();
     }
   }
   c.fillStyle = '#fff'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
@@ -692,27 +768,72 @@ function drawPuller(c, hx, hy, groundY, pulling) {
   c.fillStyle = '#c2410c';
   c.beginPath(); c.roundRect(hx - 14, hy - 6, 28, 12, 6); c.fill();
   c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-  // 사람 (막대)
-  const lean = pulling ? 10 : 0;
-  const bx = hx + 20 + lean, by = groundY;
-  c.strokeStyle = '#8fb6ea'; c.lineWidth = 4; c.lineCap = 'round';
+  // 미니피겨 인부 — 힘을 줄수록 뒤로 기울며 버티는 자세
+  const lean = Math.min(1, S.power / MAX_PULL) * 16;
+  const bx = hx + 24, by = groundY;
+  const hipX = bx + lean * 0.5, hipY = by - 26;
+  const shX = hipX + lean * 1.1, shY = hipY - 20 + lean * 0.25;
+  c.lineCap = 'round';
+  // 다리 (앞다리 버팀 + 뒷다리 뻗음)
+  c.strokeStyle = '#3b5b8f'; c.lineWidth = 6;
   c.beginPath();
-  c.moveTo(bx, by); c.lineTo(bx + 6 - lean * 0.5, by - 30);          // 다리
-  c.moveTo(bx + 12, by); c.lineTo(bx + 6 - lean * 0.5, by - 30);
-  c.lineTo(bx + 2 - lean, by - 52);                                  // 몸통
-  c.moveTo(bx + 2 - lean, by - 46); c.lineTo(hx + 8, hy + 2);        // 팔
+  c.moveTo(hipX, hipY); c.lineTo(bx - 9 - lean * 0.5, by - 3);
+  c.moveTo(hipX, hipY); c.lineTo(bx + 11 + lean * 0.4, by - 3);
   c.stroke();
-  c.fillStyle = '#8fb6ea';
-  c.beginPath(); c.arc(bx - lean, by - 62, 8, 0, 7); c.fill();       // 머리
+  // 안전화
+  c.fillStyle = '#26314a';
+  c.beginPath(); c.roundRect(bx - 16 - lean * 0.5, by - 6, 13, 6, 2); c.fill();
+  c.beginPath(); c.roundRect(bx + 6 + lean * 0.4, by - 6, 13, 6, 2); c.fill();
+  // 몸통 (형광 안전조끼)
+  c.strokeStyle = '#ff9046'; c.lineWidth = 9;
+  c.beginPath(); c.moveTo(hipX, hipY); c.lineTo(shX, shY); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2;    // 반사띠
+  const mx = (hipX + shX) / 2, my = (hipY + shY) / 2;
+  c.beginPath(); c.moveTo(mx - 4, my + 3); c.lineTo(mx + 4, my - 3); c.stroke();
+  // 양팔 → 손잡이
+  c.strokeStyle = '#e8b07a'; c.lineWidth = 4.5;
+  c.beginPath();
+  c.moveTo(shX, shY + 2); c.lineTo(hx + 9, hy);
+  c.moveTo(shX + 1, shY + 5); c.lineTo(hx + 12, hy + 4);
+  c.stroke();
+  c.fillStyle = '#f5d5a8';                                    // 장갑 낀 손
+  c.beginPath(); c.arc(hx + 10, hy + 2, 3.6, 0, 7); c.fill();
+  // 머리 + 노란 안전모 (손잡이 쪽을 바라봄)
+  const hdX = shX + lean * 0.2, hdY = shY - 12;
+  c.fillStyle = '#f0c49a'; c.beginPath(); c.arc(hdX, hdY, 7.5, 0, 7); c.fill();
+  c.fillStyle = '#ffd21e';
+  c.beginPath(); c.arc(hdX, hdY - 2, 8.2, Math.PI, 0); c.fill();
+  c.beginPath(); c.roundRect(hdX - 10, hdY - 3.5, 20, 3, 1.5); c.fill();
+  c.fillStyle = '#1a2234';
+  c.beginPath(); c.arc(hdX - 3.6, hdY + 2, 1.2, 0, 7); c.fill();   // 눈
   if (pulling) {
-    c.fillStyle = '#ffb02e'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
-    c.fillText('영차!', bx + 4, by - 78);
+    c.fillStyle = '#ffb02e'; c.font = 'bold 12.5px sans-serif'; c.textAlign = 'center';
+    c.fillText('영차!', hdX, hdY - 16);
     // 당기는 방향 화살
     c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
     c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, hy + 30); c.stroke();
     c.fillStyle = 'rgba(255,176,46,.8)';
     c.beginPath(); c.moveTo(hx, hy + 36); c.lineTo(hx - 5, hy + 28); c.lineTo(hx + 5, hy + 28); c.fill();
   }
+}
+function drawCone(c, x, gy) {
+  c.fillStyle = '#e8622d';
+  c.beginPath(); c.moveTo(x - 9, gy); c.lineTo(x - 3.2, gy - 20); c.lineTo(x + 3.2, gy - 20); c.lineTo(x + 9, gy); c.closePath(); c.fill();
+  c.fillStyle = '#f4f0e6';
+  c.beginPath(); c.moveTo(x - 6.6, gy - 8); c.lineTo(x - 5.2, gy - 13); c.lineTo(x + 5.2, gy - 13); c.lineTo(x + 6.6, gy - 8); c.closePath(); c.fill();
+  c.fillStyle = '#c24d1e'; c.fillRect(x - 12, gy - 2.5, 24, 3);
+}
+function drawBarrier(c, x, gy) {
+  c.strokeStyle = '#5a6b8c'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x - 20, gy); c.lineTo(x - 14, gy - 17); c.moveTo(x + 20, gy); c.lineTo(x + 14, gy - 17); c.stroke();
+  c.save();
+  c.beginPath(); c.roundRect(x - 26, gy - 26, 52, 10, 2); c.clip();
+  c.fillStyle = '#ffd21e'; c.fillRect(x - 26, gy - 26, 52, 10);
+  c.fillStyle = '#1a2234';
+  for (let s = -32; s < 30; s += 12) {
+    c.beginPath(); c.moveTo(x + s, gy - 16); c.lineTo(x + s + 6, gy - 26); c.lineTo(x + s + 12, gy - 26); c.lineTo(x + s + 6, gy - 16); c.closePath(); c.fill();
+  }
+  c.restore();
 }
 
 /* ── 메인 루프 ── */

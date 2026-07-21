@@ -29,8 +29,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 13px; font-family: var(--mono); font-size: 15px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
@@ -61,16 +61,24 @@
   .d-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; font-size: 12.5px; font-weight: 700; }
   .idler-btn { padding: 4px 10px; font-size: 11px; border-radius: 7px; color: var(--dim); }
   .idler-btn.on { border-color: var(--purple); color: var(--purple); background: rgba(199,146,234,.12); font-weight: 700; }
-  .d-read { display: grid; grid-template-columns: 52px 34px 1fr 1fr; align-items: center; gap: 6px; background: #0c1220; border: 1px solid var(--border); border-left-width: 4px; border-radius: 9px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px; }
-  .d-read .nm { font-weight: 700; }
-  .d-read .dir { font-size: 16px; text-align: center; }
-  .d-read .rpm, .d-read .rev { font-family: var(--mono); font-size: 12px; text-align: right; color: #c6d2e6; }
-  .mission { display: flex; gap: 9px; align-items: flex-start; background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.5; color: #c6d2e6; }
-  .mission .mk { font-size: 15px; flex: none; }
+  .d-read { background: #0c1220; border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; }
+  .d-read .top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+  .d-read .nm { font-weight: 700; font-size: 13.5px; }
+  .d-read .dir { font-size: 19px; line-height: 1; }
+  .d-read .rpm { font-family: var(--mono); font-size: 18px; font-weight: 700; margin-left: auto; color: var(--text); }
+  .d-read .rpm small { font-size: 12px; color: var(--dim); font-weight: 400; }
+  .meter { position: relative; height: 15px; background: #0a1122; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 8px; transition: width .12s linear; }
+  .meter .ref { position: absolute; top: -2px; bottom: -2px; width: 2px; background: rgba(232,238,247,.6); }
+  .d-read .bot { display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px; font-family: var(--mono); font-size: 13px; color: #c6d2e6; }
+  .d-read .bot .mlab { font-family: 'Malgun Gothic', sans-serif; font-size: 12px; color: var(--dim); }
+  .d-read .bot .mult { font-family: var(--mono); font-size: 13px; color: var(--pink); font-weight: 700; }
+  .mission { display: flex; gap: 9px; align-items: flex-start; background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 7px; font-size: 13px; line-height: 1.5; color: #c6d2e6; }
+  .mission .mk { font-size: 16px; flex: none; }
   .mission.done { border-color: rgba(46,224,111,.55); background: rgba(20,60,35,.28); }
   .mission.done .tx { color: var(--green); }
-  .mission .hint { display: block; font-size: 11px; color: var(--dim); }
-  .prog { font-family: var(--mono); color: var(--pink); }
+  .mission .hint { display: block; font-size: 11.5px; color: var(--dim); }
+  .prog { font-family: var(--mono); color: var(--pink); font-size: 13px; }
   .qbox { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
   .qbox b { color: var(--amber); }
   .ans-row { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
@@ -83,8 +91,8 @@
   .verdict.no { display: block; background: rgba(70,30,25,.4); border: 1px solid rgba(255,90,82,.5); color: #ffb3ae; }
   .score-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .score-box { flex: 1; background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
-  .score-box .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
-  .score-box .v { font-family: var(--mono); font-size: 16px; color: var(--amber); }
+  .score-box .k { font-size: 11px; color: var(--dim); margin-bottom: 3px; }
+  .score-box .v { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--amber); }
 
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   #theory.on { display: block; }
@@ -271,35 +279,59 @@ function dancerRatios(cfg) {
   return chainNodes(cfg).filter(n => n.type === 'dancer').map(n => n.ratio);
 }
 
-/* ── 레고풍 기어 (참조: gear-ratio) ── */
+/* ── 레고풍 기어: 인볼류트 느낌의 곡선 치형 + 림·스포크·허브 ── */
 function drawGear(c, x, y, teeth, ang, color, opts = {}) {
   const R = opts.r;
   const tooth = Math.max(5, R * 0.18);
   const rOut = R + tooth / 2, rIn = R - tooth / 2;
+  const rMid = R * 1.03;   // 볼록한 옆면(플랭크) 제어점 반경
   c.save(); c.translate(x, y); c.rotate(ang);
   c.beginPath();
-  const N = teeth;
+  const N = teeth, w = TAU / N;
   for (let i = 0; i < N; i++) {
-    const a0 = (i / N) * TAU, a1 = ((i + 0.25) / N) * TAU;
-    const a2 = ((i + 0.5) / N) * TAU, a3 = ((i + 0.75) / N) * TAU;
-    if (i === 0) c.moveTo(Math.cos(a0) * rOut, Math.sin(a0) * rOut);
-    c.arc(0, 0, rOut, a0, a1);
-    c.lineTo(Math.cos(a1 + 0.25 / N) * rIn, Math.sin(a1 + 0.25 / N) * rIn);
-    c.arc(0, 0, rIn, a2, a3);
-    c.lineTo(Math.cos(a3 + 0.25 / N) * rOut, Math.sin(a3 + 0.25 / N) * rOut);
+    const p = i * w;
+    const rootEnd = p + w * 0.30, tipStart = p + w * 0.42;
+    const tipEnd = p + w * 0.58, rootNext = p + w * 0.70;
+    if (i === 0) c.moveTo(Math.cos(p) * rIn, Math.sin(p) * rIn);
+    c.arc(0, 0, rIn, p, rootEnd);
+    c.quadraticCurveTo(Math.cos(rootEnd + w * 0.05) * rMid, Math.sin(rootEnd + w * 0.05) * rMid,
+      Math.cos(tipStart) * rOut, Math.sin(tipStart) * rOut);
+    c.arc(0, 0, rOut, tipStart, tipEnd);
+    c.quadraticCurveTo(Math.cos(rootNext - w * 0.05) * rMid, Math.sin(rootNext - w * 0.05) * rMid,
+      Math.cos(rootNext) * rIn, Math.sin(rootNext) * rIn);
+    c.arc(0, 0, rIn, rootNext, p + w);
   }
   c.closePath();
   const body = c.createRadialGradient(-R * 0.3, -R * 0.3, R * 0.2, 0, 0, rOut);
   body.addColorStop(0, opts.light); body.addColorStop(1, color);
   c.fillStyle = body; c.fill();
   c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
-  if (R > 32) {
+  // 림 라인 (톱니 뿌리 안쪽)
+  c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = Math.max(1.2, R * 0.045);
+  c.beginPath(); c.arc(0, 0, rIn - Math.max(2, R * 0.06), 0, 7); c.stroke();
+  if (R > 30) {
+    // 아크 창 4개 → 사이가 스포크로 보임
+    c.strokeStyle = 'rgba(6,10,18,.5)';
+    c.lineWidth = R * 0.3;
+    c.lineCap = 'round';
+    for (let k = 0; k < 4; k++) {
+      const g0 = k * Math.PI / 2 + 0.44, g1 = (k + 1) * Math.PI / 2 - 0.44;
+      c.beginPath(); c.arc(0, 0, R * 0.52, g0, g1); c.stroke();
+    }
+    c.lineCap = 'butt';
+  } else if (R > 17) {
     c.fillStyle = 'rgba(0,0,0,.28)';
     for (let k = 0; k < 4; k++) {
       const a = k * Math.PI / 2 + Math.PI / 4;
-      c.beginPath(); c.arc(Math.cos(a) * R * 0.55, Math.sin(a) * R * 0.55, R * 0.17, 0, 7); c.fill();
+      c.beginPath(); c.arc(Math.cos(a) * R * 0.55, Math.sin(a) * R * 0.55, R * 0.15, 0, 7); c.fill();
     }
   }
+  // 허브 + 십자 축 홀
+  const hubR = Math.max(9.5, R * 0.27);
+  c.fillStyle = 'rgba(255,255,255,.10)';
+  c.beginPath(); c.arc(0, 0, hubR, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.2;
+  c.beginPath(); c.arc(0, 0, hubR, 0, 7); c.stroke();
   c.fillStyle = '#0b0f18';
   c.beginPath(); c.arc(0, 0, Math.max(7, R * 0.2), 0, 7); c.fill();
   const s = Math.max(3.5, R * 0.1);
@@ -329,19 +361,41 @@ function dirArrow(c, x, y, r, cw, color) {
   c.restore();
 }
 
-/* ── 무대 배경: 커튼 + 미러볼 + 조명 ── */
+/* ── 무대 배경: 주름 커튼 + 회전 미러볼 + 디스코 타일 바닥 ── */
 function drawStageBG(c, W, H, t, active) {
   const bg = c.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#12081f'); bg.addColorStop(0.6, '#0a101f'); bg.addColorStop(1, '#101a30');
   c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  // 커튼 주름
-  c.fillStyle = 'rgba(120,20,60,.18)';
-  for (let x = 0; x < W; x += 46) {
+  // 커튼: 스캘럽 밑단 본체
+  const ch = Math.min(H * 0.2, 150), pw = 44;
+  const cg = c.createLinearGradient(0, 0, 0, ch + 16);
+  cg.addColorStop(0, '#4a1130'); cg.addColorStop(1, '#2a081b');
+  c.fillStyle = cg;
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(W, 0); c.lineTo(W, ch);
+  for (let x = W; x > -pw; x -= pw) c.quadraticCurveTo(x - pw / 2, ch + 17, x - pw, ch);
+  c.closePath(); c.fill();
+  // 주름 음영 · 하이라이트
+  for (let x = 0; x < W; x += pw) {
+    c.fillStyle = 'rgba(0,0,0,.28)';
     c.beginPath();
-    c.moveTo(x, 0); c.quadraticCurveTo(x + 23, H * 0.10, x, H * 0.22);
-    c.lineTo(x + 24, H * 0.22); c.quadraticCurveTo(x + 8, H * 0.10, x + 24, 0);
+    c.moveTo(x + pw * 0.6, 0);
+    c.quadraticCurveTo(x + pw * 0.84, ch * 0.5, x + pw * 0.68, ch + 9);
+    c.quadraticCurveTo(x + pw * 0.94, ch * 0.5, x + pw * 0.86, 0);
+    c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,130,175,.10)';
+    c.beginPath();
+    c.moveTo(x + pw * 0.08, 0);
+    c.quadraticCurveTo(x + pw * 0.0, ch * 0.5, x + pw * 0.16, ch + 11);
+    c.quadraticCurveTo(x + pw * 0.3, ch * 0.5, x + pw * 0.3, 0);
     c.closePath(); c.fill();
   }
+  // 금색 트림 + 태슬
+  c.strokeStyle = '#d8a63a'; c.lineWidth = 2.2;
+  c.beginPath();
+  for (let x = W; x > -pw; x -= pw) { c.moveTo(x, ch); c.quadraticCurveTo(x - pw / 2, ch + 17, x - pw, ch); }
+  c.stroke();
+  c.fillStyle = '#d8a63a';
+  for (let x = pw / 2; x < W; x += pw) { c.beginPath(); c.arc(x, ch + 14, 2.6, 0, 7); c.fill(); }
   // 스포트라이트 3개 (가동 중일 때 색이 돌아감)
   for (let i = 0; i < 3; i++) {
     const hue = active ? (t * 55 + i * 120) % 360 : 210;
@@ -354,18 +408,35 @@ function drawStageBG(c, W, H, t, active) {
     c.lineTo(sx + W * 0.09 + sway, H * 0.72);
     c.closePath(); c.fill();
   }
-  // 미러볼
-  const mx = W / 2, my = 26, mr = 15;
+  // 미러볼: 위도선 + 회전하는 경도선 + 반짝이
+  const mx = W / 2, my = 40, mr = 18;
   c.strokeStyle = '#39445c'; c.lineWidth = 2;
   c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, my - mr); c.stroke();
-  const mg = c.createRadialGradient(mx - 5, my - 5, 2, mx, my, mr);
-  mg.addColorStop(0, '#e8eef7'); mg.addColorStop(1, '#5a6a8c');
+  const mg = c.createRadialGradient(mx - 6, my - 6, 2, mx, my, mr);
+  mg.addColorStop(0, '#f2f6fd'); mg.addColorStop(0.55, '#93a4c6'); mg.addColorStop(1, '#4a5a7e');
   c.fillStyle = mg;
   c.beginPath(); c.arc(mx, my, mr, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(10,14,23,.5)'; c.lineWidth = 1;
+  c.save();
+  c.beginPath(); c.arc(mx, my, mr, 0, 7); c.clip();
+  c.strokeStyle = 'rgba(10,14,23,.45)'; c.lineWidth = 1;
   for (let k = -2; k <= 2; k++) {
     c.beginPath(); c.ellipse(mx, my, mr, Math.abs(k) * mr / 3 + 0.1, 0, 0, 7); c.stroke();
   }
+  const ph = active ? t * 1.2 : 0.6;
+  for (let k = 0; k < 6; k++) {
+    const f = Math.cos(ph + k * Math.PI / 6);
+    c.beginPath(); c.ellipse(mx, my, Math.max(0.1, Math.abs(f)) * mr, mr, 0, 0, 7); c.stroke();
+  }
+  if (active) {
+    c.fillStyle = 'rgba(255,255,255,.85)';
+    for (let k = 0; k < 5; k++) {
+      const a = t * 2 + k * 2.51;
+      c.beginPath();
+      c.arc(mx + Math.cos(a) * mr * 0.62, my + Math.sin(a * 1.3 + k) * mr * 0.62, 1.3, 0, 7);
+      c.fill();
+    }
+  }
+  c.restore();
   if (active) {
     for (let k = 0; k < 6; k++) {
       const a = t * 0.9 + k * TAU / 6;
@@ -375,59 +446,176 @@ function drawStageBG(c, W, H, t, active) {
       c.lineTo(mx + Math.cos(a) * 60, my + Math.sin(a) * 60); c.stroke();
     }
   }
-  // 바닥 타일
-  const fy = H * 0.9;
-  for (let x = 0; x < W; x += 40) {
-    const hue = active ? (x * 2 + t * 100) % 360 : 220;
-    c.fillStyle = `hsla(${hue}, 60%, 45%, ${active ? 0.12 : 0.05})`;
-    c.fillRect(x + 1, fy, 38, H - fy);
+  // 바닥: 원근 2열 디스코 타일 + 미러볼 반사광 + 광택
+  const fy = H * 0.86;
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, fy - 2, W, 2);
+  const rows = [
+    { y: fy, h: (H - fy) * 0.42, tw: 34, off: 9 },
+    { y: fy + (H - fy) * 0.42, h: (H - fy) * 0.58, tw: 46, off: 0 },
+  ];
+  rows.forEach((rw, ri) => {
+    for (let x = -rw.tw; x < W + rw.tw; x += rw.tw) {
+      const ci = Math.round(x / rw.tw) + ri;
+      const hue = active ? (ci * 47 + t * 90) % 360 : 220;
+      const lit = active ? (Math.sin(t * 3 + ci * 1.3) > 0.55 ? 0.3 : 0.13) : (ci % 2 ? 0.08 : 0.04);
+      c.fillStyle = `hsla(${hue}, 65%, 52%, ${lit})`;
+      c.fillRect(x + rw.off + 1, rw.y + 1, rw.tw - 2, rw.h - 2);
+    }
+  });
+  if (active) {
+    for (let k = 0; k < 9; k++) {
+      const a = t * 0.7 + k * TAU / 9;
+      c.fillStyle = `hsla(${(k * 40 + t * 60) % 360}, 80%, 78%, .12)`;
+      c.beginPath();
+      c.ellipse(mx + Math.cos(a) * W * (0.12 + 0.038 * k),
+        fy + (H - fy) * (0.5 + Math.sin(a * 1.7 + k) * 0.4), 15, 5, 0, 0, 7);
+      c.fill();
+    }
   }
+  const sheen = c.createLinearGradient(0, fy, 0, H);
+  sheen.addColorStop(0, 'rgba(255,255,255,.06)'); sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = sheen; c.fillRect(0, fy, W, H - fy);
 }
 
-/* ── 댄서 미니피겨 ── */
-function drawDancer(c, x, y, spin, color, t, moving) {
+/* ── 댄서 미니피겨: 헤어 4종 · 드레스/정장 프린트 · 속도 연동 팔 포즈 ── */
+const HAIR_COLORS = ['#23283a', '#6b3a1e', '#3a2a5e', '#8a2f2f'];
+function drawDancer(c, x, y, spin, color, t, moving, idx = 0, speed = 1) {
   const bounce = moving ? Math.abs(Math.sin(spin * 2)) * 4 : 0;
   const cosA = Math.cos(spin);
   const w = Math.max(0.22, Math.abs(cosA));
   const front = cosA >= 0;
+  const dress = idx % 2 === 1;                 // 댄서2·4 드레스, 댄서1·3 정장
+  const hairC = HAIR_COLORS[idx % 4];
+  const lift = Math.min(1, speed / 4);         // 빠를수록 팔이 위로
+  const wav = moving
+    ? Math.sin(t * (4 + Math.min(speed, 5) * 2.5) + idx * 1.9) * (0.35 + 0.4 * Math.min(1, speed / 3))
+    : 0.3;
   c.save();
   c.translate(x, y - bounce);
   c.scale(w, 1);
-  // 다리
-  c.fillStyle = '#233049';
+  // 다리 + 신발
+  c.fillStyle = dress ? '#2b3654' : '#233049';
   c.beginPath(); c.roundRect(-9, -22, 7.5, 22, 3); c.fill();
   c.beginPath(); c.roundRect(1.5, -22, 7.5, 22, 3); c.fill();
   c.beginPath(); c.roundRect(-10, -28, 20, 8, 3); c.fill();
-  // 팔 (춤 동작)
-  const wav = moving ? Math.sin(t * 7 + x * 0.05) * 0.7 : 0.35;
-  const drawArm = (ax, ay, ang) => {
+  c.fillStyle = '#11151f';
+  c.beginPath(); c.roundRect(-10, -4, 8.5, 4, 2); c.fill();
+  c.beginPath(); c.roundRect(1.5, -4, 8.5, 4, 2); c.fill();
+  // 팔 (속도에 따라 올라가고, 빠르게 흔들림)
+  const drawArm = (ax, ang) => {
     c.strokeStyle = color; c.lineWidth = 5; c.lineCap = 'round';
-    const hx = ax + Math.cos(ang) * 15, hy = ay + Math.sin(ang) * 15;
-    c.beginPath(); c.moveTo(ax, ay); c.lineTo(hx, hy); c.stroke();
+    const hx = ax + Math.cos(ang) * 15, hy = -48 + Math.sin(ang) * 15;
+    c.beginPath(); c.moveTo(ax, -48); c.lineTo(hx, hy); c.stroke();
     c.fillStyle = '#ffd23e';
     c.beginPath(); c.arc(hx, hy, 3.4, 0, 7); c.fill();
   };
-  drawArm(-8, -48, Math.PI + 0.9 + wav * 0.6);
-  drawArm(8, -48, -0.9 - wav * 0.6);
-  // 몸통
-  c.fillStyle = color;
-  c.beginPath();
-  c.moveTo(-8, -52); c.lineTo(8, -52); c.lineTo(11, -26); c.lineTo(-11, -26);
-  c.closePath(); c.fill();
-  if (!front) { c.fillStyle = 'rgba(0,0,0,.3)'; c.fill(); }
+  drawArm(-8, Math.PI + 0.9 + lift * 0.7 + wav * 0.6);
+  drawArm(8, -0.9 - lift * 0.7 - wav * 0.6);
+  // 몸통 + 의상
+  const bodyPath = () => {
+    c.beginPath();
+    if (dress) {
+      c.moveTo(-7, -52); c.lineTo(7, -52);
+      c.quadraticCurveTo(13, -38, 15, -25);
+      c.lineTo(-15, -25);
+      c.quadraticCurveTo(-13, -38, -7, -52);
+    } else {
+      c.moveTo(-8, -52); c.lineTo(8, -52); c.lineTo(11, -26); c.lineTo(-11, -26);
+    }
+    c.closePath();
+  };
+  c.fillStyle = color; bodyPath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = 1; c.stroke();
+  if (dress) {
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(-14.5, -25.5); c.quadraticCurveTo(0, -22, 14.5, -25.5); c.stroke();
+    if (idx === 1) {          // 도트 프린트
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      [[-5, -44], [4, -41], [-2, -34], [8, -30], [-9, -29]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 1.6, 0, 7); c.fill();
+      });
+    } else {                  // 줄무늬 프린트
+      c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.3;
+      [[-8, 8, -46], [-10.5, 10.5, -39], [-13, 13, -32]].forEach(([x0, x1, yy]) => {
+        c.beginPath(); c.moveTo(x0, yy); c.lineTo(x1, yy); c.stroke();
+      });
+    }
+  } else if (front) {
+    // 셔츠 V넥 + 라펠 + 넥타이/보타이 + 단추
+    c.fillStyle = '#f2f5fa';
+    c.beginPath(); c.moveTo(-5, -52); c.lineTo(5, -52); c.lineTo(0, -41); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(-5, -52); c.lineTo(-2.5, -44);
+    c.moveTo(5, -52); c.lineTo(2.5, -44);
+    c.stroke();
+    if (idx === 0) {          // 넥타이
+      c.fillStyle = '#d63a5e';
+      c.beginPath(); c.moveTo(0, -48); c.lineTo(2.4, -44); c.lineTo(0.8, -32); c.lineTo(-0.8, -32); c.lineTo(-2.4, -44);
+      c.closePath(); c.fill();
+    } else {                  // 보타이 + 단추
+      c.fillStyle = '#ffd23e';
+      c.beginPath(); c.moveTo(0, -47.5); c.lineTo(-5, -50.5); c.lineTo(-5, -44.5); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(0, -47.5); c.lineTo(5, -50.5); c.lineTo(5, -44.5); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.75)';
+      [-38, -33].forEach(yy => { c.beginPath(); c.arc(0, yy, 1.2, 0, 7); c.fill(); });
+    }
+  }
+  if (!front) { c.fillStyle = 'rgba(0,0,0,.3)'; bodyPath(); c.fill(); }
   // 머리
   c.fillStyle = '#ffd23e';
   c.beginPath(); c.arc(0, -61, 9, 0, 7); c.fill();
   c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.stroke();
+  // 헤어스타일 4종
+  c.fillStyle = hairC;
   if (front) {
+    if (idx === 0) {          // 단발 크롭
+      c.beginPath(); c.arc(0, -61, 9.5, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill();
+    } else if (idx === 1) {   // 포니테일 (흔들리는 꼬리)
+      c.beginPath(); c.arc(0, -61, 9.6, Math.PI * 0.95, Math.PI * 0.05); c.closePath(); c.fill();
+      c.beginPath(); c.arc(0, -71.5, 3.8, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(0.5, -71);
+      c.quadraticCurveTo(6 + wav * 5, -79, 9.5 + wav * 6, -67);
+      c.quadraticCurveTo(5, -70, 1, -68.5);
+      c.closePath(); c.fill();
+    } else if (idx === 2) {   // 스파이크
+      c.beginPath(); c.arc(0, -61, 9.4, Math.PI, 0); c.closePath(); c.fill();
+      for (let k = -2; k <= 2; k++) {
+        const a = -Math.PI / 2 + k * 0.42;
+        const bx = Math.cos(a) * 8.4, by = -61 + Math.sin(a) * 8.4;
+        c.beginPath();
+        c.moveTo(bx - 2.3, by + 1.4);
+        c.lineTo(Math.cos(a) * 14.5, -61 + Math.sin(a) * 14.5);
+        c.lineTo(bx + 2.3, by + 1.4);
+        c.closePath(); c.fill();
+      }
+    } else {                  // 양갈래 번
+      c.beginPath(); c.arc(0, -61, 9.5, Math.PI * 0.98, Math.PI * 0.02); c.closePath(); c.fill();
+      c.beginPath(); c.arc(-7.8, -68.5, 3.7, 0, 7); c.fill();
+      c.beginPath(); c.arc(7.8, -68.5, 3.7, 0, 7); c.fill();
+    }
+    // 얼굴
     c.fillStyle = '#1c2333';
-    c.beginPath(); c.arc(-3, -63, 1.3, 0, 7); c.fill();
-    c.beginPath(); c.arc(3, -63, 1.3, 0, 7); c.fill();
+    c.beginPath(); c.arc(-3, -62.5, 1.3, 0, 7); c.fill();
+    c.beginPath(); c.arc(3, -62.5, 1.3, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,120,120,.3)';
+    c.beginPath(); c.arc(-5.4, -59.5, 1.5, 0, 7); c.fill();
+    c.beginPath(); c.arc(5.4, -59.5, 1.5, 0, 7); c.fill();
     c.strokeStyle = '#1c2333'; c.lineWidth = 1.4;
-    c.beginPath(); c.arc(0, -60.5, 3.4, 0.4, Math.PI - 0.4); c.stroke();
+    c.beginPath(); c.arc(0, -60, 3.4, 0.4, Math.PI - 0.4); c.stroke();
   } else {
-    c.fillStyle = '#6b4326';
-    c.beginPath(); c.arc(0, -62.5, 8, 0, 7); c.fill();
+    // 뒷모습: 헤어 전체 + 스타일 포인트
+    c.beginPath(); c.arc(0, -61.5, 8.8, 0, 7); c.fill();
+    if (idx === 1) {
+      c.beginPath(); c.arc(0, -70.5, 3.8, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(-2.5, -69);
+      c.quadraticCurveTo(wav * 5, -57, 1.5, -47);
+      c.quadraticCurveTo(3.5, -58, 2.5, -69);
+      c.closePath(); c.fill();
+    } else if (idx === 3) {
+      c.beginPath(); c.arc(-7.8, -68.5, 3.7, 0, 7); c.fill();
+      c.beginPath(); c.arc(7.8, -68.5, 3.7, 0, 7); c.fill();
+    }
   }
   c.restore();
 }
@@ -521,15 +709,15 @@ function Stage(cv) {
           c.fillStyle = DCOLORS[n.idx]; c.font = 'bold 30px sans-serif'; c.textAlign = 'center';
           c.fillText('?', xs[i], py - 34);
         } else {
-          drawDancer(c, xs[i], py - 4, n.ratio * S.crankAng, DCOLORS[n.idx], S.t, active);
+          drawDancer(c, xs[i], py - 4, n.ratio * S.crankAng, DCOLORS[n.idx], S.t, active, n.idx, Math.abs(n.ratio));
         }
-        c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillStyle = DCOLORS[n.idx];
+        c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillStyle = DCOLORS[n.idx];
         c.fillText(`댄서${n.idx + 1} · ${n.teeth}T`, xs[i], yG + r[i] + 20);
-        c.fillStyle = '#8b98ad'; c.font = '11px ' + 'monospace';
-        c.fillText((Math.abs(n.ratio * S.crankAng) / TAU).toFixed(1) + '회전', xs[i], yG + r[i] + 35);
+        c.fillStyle = '#c6d2e6'; c.font = 'bold 13px ' + 'monospace';
+        c.fillText((Math.abs(n.ratio * S.crankAng) / TAU).toFixed(1) + '회전', xs[i], yG + r[i] + 37);
         if (active && Math.random() < dt * 2.2) S.burst(xs[i], py - 70, 1);
       } else {
-        c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillStyle = lit;
+        c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillStyle = lit;
         c.fillText(n.type === 'crank' ? `크랭크 ${n.teeth}T` : `아이들러 ${n.teeth}T`, xs[i], yG + r[i] + 20);
       }
       drawGear(c, xs[i], yG, n.teeth, ang, col, { r: r[i], light: lit });
@@ -659,10 +847,13 @@ function initStageMode(opts) {
   function updateReadouts() {
     const ratios = dancerRatios(sim.cfg);
     [...readBox.children].forEach((row, i) => {
-      const r = ratios[i];
-      row.querySelector('.dir').textContent = r > 0 ? '⟳' : '⟲';
-      row.querySelector('.dir').style.color = r > 0 ? 'var(--green)' : 'var(--amber)';
-      row.querySelector('.rpm').textContent = (Math.abs(r) * st.rpm).toFixed(0) + ' RPM';
+      const r = ratios[i], ar = Math.abs(r);
+      const dir = row.querySelector('.dir');
+      dir.textContent = r > 0 ? '⟳' : '⟲';
+      dir.style.color = r > 0 ? 'var(--green)' : 'var(--amber)';
+      row.querySelector('.rpm').innerHTML = (ar * st.rpm).toFixed(0) + ' <small>RPM</small>';
+      row.querySelector('.fill').style.width = Math.min(100, ar / 5 * 100) + '%';
+      row.querySelector('.mult').textContent = '×' + (ar % 1 ? ar.toFixed(2) : ar.toFixed(0));
       row.querySelector('.rev').textContent = (Math.abs(r * sim.crankAng) / TAU).toFixed(1) + '회전';
     });
   }
@@ -671,7 +862,10 @@ function initStageMode(opts) {
     for (let i = 0; i < st.count; i++) {
       const row = el('div', 'd-read');
       row.style.borderLeftColor = DCOLORS[i];
-      row.innerHTML = `<span class="nm" style="color:${DCOLORS[i]}">댄서${i + 1}</span><span class="dir">⟳</span><span class="rpm">—</span><span class="rev">—</span>`;
+      row.innerHTML =
+        `<div class="top"><span class="nm" style="color:${DCOLORS[i]}">댄서${i + 1}</span><span class="dir">⟳</span><span class="rpm">— <small>RPM</small></span></div>` +
+        `<div class="meter"><div class="fill" style="background:linear-gradient(90deg,${DCOLORS[i]}55,${DCOLORS[i]})"></div><div class="ref" style="left:20%" title="크랭크 속도(×1)"></div></div>` +
+        `<div class="bot"><span class="mlab">크랭크 대비 <span class="mult">×1</span></span><span class="rev">0.0회전</span></div>`;
       readBox.append(row);
     }
   }
@@ -679,7 +873,7 @@ function initStageMode(opts) {
   side.append(ledBox, ctl);
   side.append(el('h3', null, '크랭크'), pRpm, pCrank);
   side.append(el('h3', null, '무대 세팅'), pCount, dancerBox);
-  side.append(el('h3', null, '댄서 상태 — 방향 · 속도 · 회전수'), readBox);
+  side.append(el('h3', null, '댄서 RPM 미터 — 흰 눈금 = 크랭크 속도(×1)'), readBox);
 
   /* -- 미션 UI -- */
   let missionRows = [], progEl = null;

@@ -28,15 +28,15 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11.5px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
   .badge.diff { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
   .badge.bad  { display: inline-flex; background: rgba(70,18,14,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
 
-  .side { width: 348px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side { width: 400px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
   .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
   button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
@@ -60,14 +60,20 @@
   .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
   .pick button.on small { color: var(--accent); }
   .bars { margin: 4px 0 12px; }
-  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
-  .bar-row .lab { width: 58px; flex: none; }
-  .bar-track { flex: 1; height: 12px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
-  .bar-row .val { width: 52px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 13px; color: #c6d2e6; }
+  .bar-row .lab { width: 66px; flex: none; }
+  .bar-track { flex: 1; height: 15px; background: #0c1220; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 7px; transition: width .25s; }
+  .bar-row .val { width: 56px; text-align: right; font-family: var(--mono); font-size: 13px; }
+  .live-bars { margin: 4px 0 14px; }
+  .live-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13.5px; }
+  .live-row .lab { width: 104px; flex: none; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .live-row .track { flex: 1; height: 21px; background: #0c1220; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; }
+  .live-row .fill { height: 100%; border-radius: 10px; width: 0%; transition: width .12s linear; }
+  .live-row .val { width: 76px; text-align: right; font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
   .note { font-size: 11.5px; color: var(--dim); background: #0c1220; border: 1px dashed var(--border); border-radius: 9px; padding: 8px 11px; margin-bottom: 12px; line-height: 1.6; }
-  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-  th, td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 4px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -138,6 +144,11 @@
         <button id="btnFF" disabled>⏭ 빨리감기</button>
         <button id="btnRst">↺</button>
       </div>
+      <h3>📶 실시간 속도 (레인별)</h3>
+      <div class="live-bars">
+        <div class="live-row"><span class="lab" style="color:#4da3ff">😀 나</span><div class="track"><div class="fill" id="liveMe" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div></div><span class="val" id="liveMeV">0.0 m/s</span></div>
+        <div class="live-row"><span class="lab" style="color:#ff9046">🤖 AI</span><div class="track"><div class="fill" id="liveAi" style="background:linear-gradient(90deg,#c2410c,#ff9046)"></div></div><span class="val" id="liveAiV">0.0 m/s</span></div>
+      </div>
       <h3>내 러너 조립</h3>
       <div class="param"><label>기어비 (모터→크랭크) <b id="v_gear">균형형</b></label>
         <div class="pick" id="pickGear">
@@ -207,6 +218,8 @@
         <button class="primary" id="btnQGo" disabled>🏁 경주로 확인하기</button>
         <button id="btnQNext" disabled>다음 문제 ›</button>
       </div>
+      <h3>📶 실시간 속도 (레인별)</h3>
+      <div class="live-bars" id="liveQ"></div>
       <div class="note">💡 답을 고르면 세 러너가 똑같은 트랙에서 동시에 달려. 누가 1등인지 <b>눈으로 확인</b>해 보자!</div>
     </div>
   </section>
@@ -303,7 +316,24 @@ function calcRun(gearKey, L, trackKey) {
   };
 }
 
-/* ── 러너(레고 미니 로봇) 그리기 ── */
+/* ── 부품 헬퍼: 테크닉 빔(핀홀 있는 부품) · 핀 조인트 ── */
+function beamPart(c, x1, y1, x2, y2, w, fill) {
+  const a = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1);
+  c.save(); c.translate(x1, y1); c.rotate(a);
+  c.fillStyle = fill;
+  c.beginPath(); c.roundRect(-w / 2, -w / 2, len + w, w, w / 2); c.fill();
+  c.fillStyle = 'rgba(8,12,22,.5)';
+  c.beginPath(); c.arc(0, 0, w * 0.22, 0, 7); c.fill();
+  c.beginPath(); c.arc(len, 0, w * 0.22, 0, 7); c.fill();
+  if (len > w * 2.4) { c.beginPath(); c.arc(len / 2, 0, w * 0.18, 0, 7); c.fill(); }
+  c.restore();
+}
+function pinJoint(c, x, y, r) {
+  c.fillStyle = '#101828'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  c.fillStyle = '#68748f'; c.beginPath(); c.arc(x, y, r * 0.45, 0, 7); c.fill();
+}
+
+/* ── 러너(레고 미니피겨) 그리기 ── */
 function drawRunner(c, x, y, rot, ph, L, col, o = {}) {
   c.save(); c.translate(x, y); c.rotate(rot);
   const sc = o.scale || 1; c.scale(sc, sc);
@@ -336,44 +366,112 @@ function drawRunner(c, x, y, rot, ph, L, col, o = {}) {
   };
   const drawLeg = (phi, main) => {
     const p = legPt(phi);
-    c.strokeStyle = main ? col.leg : col.legDim;
-    c.lineWidth = 6.5; c.lineCap = 'round'; c.lineJoin = 'round';
-    c.beginPath(); c.moveTo(0, hipY); c.lineTo(p.kx, p.ky); c.lineTo(p.fx, p.fy); c.stroke();
+    const cl = main ? col.leg : col.legDim;
+    beamPart(c, 0, hipY, p.kx, p.ky, 7, cl);       // 허벅지 빔
+    beamPart(c, p.kx, p.ky, p.fx, p.fy, 6, cl);    // 정강이 빔
     c.fillStyle = main ? col.foot : col.footDim;
     c.beginPath(); c.roundRect(p.fx - 4, p.fy - 3.5, 13, 7, 2.5); c.fill();
+    pinJoint(c, p.kx, p.ky, 2.8);                  // 무릎 관절 핀
+    pinJoint(c, p.fx, p.fy, 2.2);                  // 발목 핀
   };
   const drawArm = (phi, main) => {
     const aLen = seg * 0.85;
     const a = 0.85 * Math.sin(phi) + 0.35;
-    const ex = shoulder.x + Math.sin(a) * aLen, ey = shoulder.y + Math.cos(a) * aLen;
-    c.strokeStyle = main ? col.arm : col.armDim;
-    c.lineWidth = 5.5; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(shoulder.x, shoulder.y); c.lineTo(ex, ey); c.stroke();
+    const uL = aLen * 0.55, fL = aLen * 0.5;
+    const ex = shoulder.x + Math.sin(a) * uL, ey = shoulder.y + Math.cos(a) * uL;
+    const a2 = a + 0.9;                            // 팔꿈치는 앞으로 굽힘
+    const hx2 = ex + Math.sin(a2) * fL, hy2 = ey + Math.cos(a2) * fL;
+    const ca = main ? col.arm : col.armDim;
+    beamPart(c, shoulder.x, shoulder.y, ex, ey, 5.5, ca);  // 위팔 빔
+    beamPart(c, ex, ey, hx2, hy2, 5, ca);                  // 아래팔 빔
+    pinJoint(c, ex, ey, 2.4);                              // 팔꿈치 관절 핀
+    c.fillStyle = main ? col.foot : col.footDim;
+    c.beginPath(); c.arc(hx2, hy2, 3, 0, 7); c.fill();     // 손
   };
 
   drawArm(ph, false);          // 뒤팔 (뒤다리와 같은 위상)
   drawLeg(ph + Math.PI, false); // 뒷다리
-  // 몸통(캡슐) + 스터드
+  // 몸통(캡슐) + 어깨 스터드
   c.strokeStyle = col.body; c.lineWidth = 15; c.lineCap = 'round';
   c.beginPath(); c.moveTo(0, hipY); c.lineTo(neck.x, neck.y); c.stroke();
   c.fillStyle = col.stud;
   c.beginPath(); c.roundRect(neck.x - 5.5, neck.y - torsoH * 0.18 - 8, 4.5, 4, 1.5); c.fill();
   c.beginPath(); c.roundRect(neck.x + 1, neck.y - torsoH * 0.18 - 8, 4.5, 4, 1.5); c.fill();
-  // 머리
+  // 러닝복 번호판(bib)
+  const bibX = neck.x - 0.5, bibY = hipY - torsoH * 0.42;
+  c.fillStyle = '#f4f7fd';
+  c.beginPath(); c.roundRect(bibX - 6.5, bibY - 6.5, 13, 12, 2); c.fill();
+  c.strokeStyle = 'rgba(8,12,22,.4)'; c.lineWidth = 1;
+  c.beginPath(); c.roundRect(bibX - 6.5, bibY - 6.5, 13, 12, 2); c.stroke();
+  c.fillStyle = '#16203a'; c.font = 'bold 8.5px sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(col.num || '1', bibX, bibY);
+  c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+  // 머리 (스타일별 구분)
   const hy = neck.y - 10;
-  c.fillStyle = col.head;
-  c.beginPath(); c.arc(neck.x + 2, hy, 8.5, 0, 7); c.fill();
-  c.fillStyle = '#0b0f18';
-  c.beginPath(); c.arc(neck.x + 5.5, hy - 1.5, 1.6, 0, 7); c.fill();
-  c.strokeStyle = '#0b0f18'; c.lineWidth = 1.4;
-  c.beginPath(); c.arc(neck.x + 3.5, hy + 1.5, 3.4, 0.25, 1.35); c.stroke();
-  c.fillStyle = col.stud;
-  c.beginPath(); c.roundRect(neck.x - 1, hy - 13, 6, 4, 1.5); c.fill();
-  // 크랭크 축
+  if (col.headType === 'bot') {
+    // AI 로봇 머리 (사각 + 안테나)
+    c.fillStyle = col.head;
+    c.beginPath(); c.roundRect(neck.x - 6, hy - 7.5, 16.5, 15, 3.5); c.fill();
+    c.fillStyle = '#0b0f18';
+    c.beginPath(); c.roundRect(neck.x - 2.8, hy - 3.2, 10.5, 5, 1.5); c.fill();
+    c.fillStyle = '#2ee06f';
+    c.beginPath(); c.arc(neck.x + 0.2, hy - 0.7, 1.4, 0, 7); c.fill();
+    c.beginPath(); c.arc(neck.x + 4.7, hy - 0.7, 1.4, 0, 7); c.fill();
+    c.strokeStyle = col.stud; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(neck.x + 2.2, hy - 7.5); c.lineTo(neck.x + 2.2, hy - 12); c.stroke();
+    c.fillStyle = '#ff5a52'; c.beginPath(); c.arc(neck.x + 2.2, hy - 13.2, 2, 0, 7); c.fill();
+  } else {
+    // 미니피겨 얼굴
+    c.fillStyle = col.head;
+    c.beginPath(); c.arc(neck.x + 2, hy, 8.5, 0, 7); c.fill();
+    c.fillStyle = '#0b0f18';
+    c.beginPath(); c.arc(neck.x + 5.5, hy - 1.5, 1.6, 0, 7); c.fill();
+    c.strokeStyle = '#0b0f18'; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(neck.x + 3.5, hy + 1.5, 3.4, 0.25, 1.35); c.stroke();
+    if (col.headType === 'cap') {
+      // 야구모자 (챙은 진행 방향)
+      c.fillStyle = col.body;
+      c.beginPath(); c.arc(neck.x + 2, hy - 1.2, 8.8, Math.PI, Math.PI * 2); c.fill();
+      c.beginPath(); c.roundRect(neck.x + 2, hy - 4.6, 11.5, 2.8, 1.4); c.fill();
+      c.fillStyle = col.stud;
+      c.beginPath(); c.arc(neck.x + 2, hy - 9.4, 2, 0, 7); c.fill();
+    } else if (col.headType === 'spiky') {
+      // 뾰족 머리카락
+      c.fillStyle = '#4a3120';
+      c.beginPath();
+      c.moveTo(neck.x - 6.3, hy - 2);
+      for (let i = 0; i < 4; i++) {
+        const sx = neck.x - 5 + i * 4.6;
+        c.lineTo(sx + 2.3, hy - 12 - (i % 2) * 2);
+        c.lineTo(sx + 4.6, hy - 5.5);
+      }
+      c.lineTo(neck.x + 10.3, hy - 2);
+      c.arc(neck.x + 2, hy, 8.5, -0.24, Math.PI + 0.24, true);
+      c.closePath(); c.fill();
+    } else if (col.headType === 'helmet') {
+      // 헬멧
+      c.fillStyle = col.body;
+      c.beginPath(); c.arc(neck.x + 2, hy - 0.6, 9.3, Math.PI * 0.92, Math.PI * 2.06); c.fill();
+      c.fillStyle = col.stud;
+      c.beginPath(); c.roundRect(neck.x - 1.2, hy - 10.8, 6.5, 2.2, 1.1); c.fill();
+    } else {
+      c.fillStyle = col.stud;
+      c.beginPath(); c.roundRect(neck.x - 1, hy - 13, 6, 4, 1.5); c.fill();
+    }
+  }
+  // 크랭크 기구 노출: 커넥팅 로드 + 크랭크 빔 + 십자축 + 크랭크 핀
+  const pF = legPt(ph);
+  const rc = r * 0.55;
+  const cpx = Math.cos(ph) * rc, cpy = hipY + Math.sin(ph) * rc;
+  c.strokeStyle = 'rgba(150,175,215,.5)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(cpx, cpy); c.lineTo(pF.fx, pF.fy); c.stroke();   // 커넥팅 로드
+  beamPart(c, 0, hipY, cpx, cpy, 5, '#7c88a4');                            // 크랭크 빔
   c.fillStyle = '#0b0f18';
   c.beginPath(); c.arc(0, hipY, 4.6, 0, 7); c.fill();
   c.fillStyle = '#39445c';
   c.fillRect(-1.6, hipY - 4.6, 3.2, 9.2); c.fillRect(-4.6, hipY - 1.6, 9.2, 3.2);
+  pinJoint(c, cpx, cpy, 2.4);                                              // 크랭크 핀
   drawLeg(ph, true);            // 앞다리
   drawArm(ph + Math.PI, true);  // 앞팔
   c.restore();
@@ -397,6 +495,29 @@ function trackScene(c, W, H, trackKey) {
   c.fillStyle = 'rgba(120,145,190,.08)';
   for (let x = 20; x < W; x += 30)
     for (let y = 20; y < H * 0.55; y += 30) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+  // 관중석 (지붕 + 계단식 스탠드 + 응원하는 관중)
+  const gx0 = W * 0.05, gx1 = trackKey === 'flat' ? W * 0.95 : W * 0.52;
+  const gsY = H * 0.08, gsH = H * 0.26;
+  c.fillStyle = '#0f1830';
+  c.beginPath(); c.roundRect(gx0, gsY, gx1 - gx0, gsH, 9); c.fill();
+  c.strokeStyle = '#243356'; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(gx0, gsY, gx1 - gx0, gsH, 9); c.stroke();
+  c.fillStyle = '#1c2a4c';
+  c.beginPath(); c.roundRect(gx0 - 8, gsY - 7, gx1 - gx0 + 16, 8, 4); c.fill();
+  const CROWD = ['#4da3ff', '#ff9046', '#2ee06f', '#c792ea', '#ffd23e', '#ff5a52', '#e8eef7'];
+  const nowS = performance.now() / 1000;
+  for (let ri = 0; ri < 4; ri++) {
+    const ry = gsY + 13 + ri * (gsH - 22) / 3.1;
+    c.fillStyle = '#16213c';
+    c.fillRect(gx0 + 5, ry + 5, gx1 - gx0 - 10, 3);
+    for (let sx = gx0 + 14, i = 0; sx < gx1 - 9; sx += 16, i++) {
+      const rnd = Math.abs(Math.sin((ri * 37 + i) * 12.9898) * 43758.55) % 1;
+      const bob = Math.sin(nowS * 3.2 + i * 1.7 + ri * 0.9) * 1.1;
+      c.fillStyle = CROWD[Math.floor(rnd * CROWD.length)];
+      c.beginPath(); c.arc(sx, ry + bob, 3, 0, 7); c.fill();
+      c.fillRect(sx - 2.6, ry + bob + 2.8, 5.2, 3.4);
+    }
+  }
   // 지면 (양끝 연장)
   const slope = (y1 - y0) / (xe - xs);
   const yAt = x => y0 + (x - xs) * slope;
@@ -404,9 +525,17 @@ function trackScene(c, W, H, trackKey) {
   c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
   c.strokeStyle = '#2a3a5c'; c.lineWidth = 4;
   c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.stroke();
+  // 레인 라인 (점선)
+  c.setLineDash([12, 9]); c.lineWidth = 1.5; c.strokeStyle = 'rgba(140,165,210,.25)';
+  [-14, 14, 42, 70].forEach(off => {
+    const po = perpOffset(ang, off);
+    const a0 = posOf(0), a1 = posOf(T.len);
+    c.beginPath(); c.moveTo(a0.x + po.x, a0.y + po.y); c.lineTo(a1.x + po.x, a1.y + po.y); c.stroke();
+  });
+  c.setLineDash([]);
   // 거리 눈금
   const step = T.len >= 40 ? 10 : 2;
-  c.font = '10px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#5d6b85';
+  c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#6d7b95';
   for (let d = 0; d <= T.len; d += step) {
     const p = posOf(d);
     c.strokeStyle = 'rgba(120,145,190,.3)'; c.lineWidth = 1.5;
@@ -417,7 +546,7 @@ function trackScene(c, W, H, trackKey) {
   const s0 = posOf(0);
   c.strokeStyle = '#4da3ff'; c.lineWidth = 3;
   c.beginPath(); c.moveTo(s0.x, s0.y + 2); c.lineTo(s0.x, s0.y - 66); c.stroke();
-  c.font = 'bold 11px sans-serif'; c.fillStyle = '#4da3ff';
+  c.font = 'bold 12.5px sans-serif'; c.fillStyle = '#4da3ff';
   c.fillText('출발', s0.x, s0.y - 74);
   // 결승 깃발
   const f = posOf(T.len);
@@ -429,17 +558,30 @@ function trackScene(c, W, H, trackKey) {
   }
   c.strokeStyle = 'rgba(200,215,240,.5)'; c.lineWidth = 1;
   c.strokeRect(f.x, f.y - 86, 36, 18);
-  c.font = 'bold 11px sans-serif'; c.fillStyle = '#e8eef7'; c.textAlign = 'center';
+  c.font = 'bold 12.5px sans-serif'; c.fillStyle = '#e8eef7'; c.textAlign = 'center';
   c.fillText('결승', f.x + 18, f.y - 94);
+  // 결승 테이프 (레인 가로지름, 빨강·흰 줄무늬 + 양끝 기둥)
+  const tpA = perpOffset(ang, -14), tpB = perpOffset(ang, 74);
+  const tx0 = f.x + tpA.x, ty0 = f.y + tpA.y - 26, tx1 = f.x + tpB.x, ty1 = f.y + tpB.y - 26;
+  c.strokeStyle = '#8fa0bf'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(tx0, ty0); c.lineTo(tx0, f.y + tpA.y); c.stroke();
+  c.beginPath(); c.moveTo(tx1, ty1); c.lineTo(tx1, f.y + tpB.y); c.stroke();
+  for (let i = 0; i < 10; i++) {
+    c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
+    c.beginPath();
+    c.moveTo(tx0 + (tx1 - tx0) * i / 10, ty0 + (ty1 - ty0) * i / 10);
+    c.lineTo(tx0 + (tx1 - tx0) * (i + 1) / 10, ty0 + (ty1 - ty0) * (i + 1) / 10);
+    c.stroke();
+  }
   return { posOf, ang, T };
 }
 function perpOffset(ang, off) { return { x: Math.sin(ang) * off, y: -Math.cos(ang) * off }; }
 
 const COLS = {
-  blue:   { body: '#2563eb', head: '#ffd23e', stud: '#7db4ff', leg: '#3d7bff', legDim: '#22448c', arm: '#3d7bff', armDim: '#22448c', foot: '#e8eef7', footDim: '#5d6b85', hud: '#4da3ff' },
-  orange: { body: '#c2410c', head: '#ffd23e', stud: '#ffb27d', leg: '#ff8a3d', legDim: '#7c3a16', arm: '#ff8a3d', armDim: '#7c3a16', foot: '#e8eef7', footDim: '#5d6b85', hud: '#ff9046' },
-  green:  { body: '#15803d', head: '#ffd23e', stud: '#7ce8a8', leg: '#2ec06f', legDim: '#14532d', arm: '#2ec06f', armDim: '#14532d', foot: '#e8eef7', footDim: '#5d6b85', hud: '#2ee06f' },
-  purple: { body: '#7c3aed', head: '#ffd23e', stud: '#c9a6ff', leg: '#a78bfa', legDim: '#3c2a6e', arm: '#a78bfa', armDim: '#3c2a6e', foot: '#e8eef7', footDim: '#5d6b85', hud: '#c792ea' },
+  blue:   { body: '#2563eb', head: '#ffd23e', stud: '#7db4ff', leg: '#3d7bff', legDim: '#22448c', arm: '#3d7bff', armDim: '#22448c', foot: '#e8eef7', footDim: '#5d6b85', hud: '#4da3ff', num: '7', headType: 'cap' },
+  orange: { body: '#c2410c', head: '#d9dfeb', stud: '#ffb27d', leg: '#ff8a3d', legDim: '#7c3a16', arm: '#ff8a3d', armDim: '#7c3a16', foot: '#e8eef7', footDim: '#5d6b85', hud: '#ff9046', num: '9', headType: 'bot' },
+  green:  { body: '#15803d', head: '#ffd23e', stud: '#7ce8a8', leg: '#2ec06f', legDim: '#14532d', arm: '#2ec06f', armDim: '#14532d', foot: '#e8eef7', footDim: '#5d6b85', hud: '#2ee06f', num: '2', headType: 'spiky' },
+  purple: { body: '#7c3aed', head: '#ffd23e', stud: '#c9a6ff', leg: '#a78bfa', legDim: '#3c2a6e', arm: '#a78bfa', armDim: '#3c2a6e', foot: '#e8eef7', footDim: '#5d6b85', hud: '#c792ea', num: '3', headType: 'helmet' },
 };
 
 function makeRunnerState(gearKey, L, trackKey, name, col) {
@@ -459,18 +601,18 @@ function drawLaneRunner(c, scene, r, off, scale, label) {
   const x = p.x + o.x, y = p.y + o.y;
   drawRunner(c, x, y, scene.ang, r.ph, r.L, r.col, { scale, stall: r.stall && r.fin == null });
   c.save(); c.translate(x, y);
-  const top = -(13 + r.L * 1.9) * 4.6 * scale;
+  const top = -(13 + r.L * 1.9) * 4.6 * scale - off * 0.45;  // 뒤 레인 라벨은 더 위로 (겹침 방지)
   const fin = r.fin != null;
   const badge = fin
     ? (r.rank === 1 ? '🥇 ' : r.rank === 2 ? '🥈 ' : '🥉 ') + r.fin.toFixed(1) + '초'
     : (r.stall ? '💦 힘 부족!' : '');
-  c.font = 'bold 11.5px sans-serif';
+  c.font = 'bold 13px sans-serif';
   const lw = c.measureText(label).width;
-  const bFont = fin ? 'bold 12px sans-serif' : 'bold 11.5px sans-serif';
+  const bFont = fin ? 'bold 13.5px sans-serif' : 'bold 13px sans-serif';
   let bw = 0;
   if (badge) { c.font = bFont; bw = c.measureText(badge).width + 7; }
   c.textAlign = 'left';
-  c.font = 'bold 11.5px sans-serif'; c.fillStyle = r.col.hud;
+  c.font = 'bold 13px sans-serif'; c.fillStyle = r.col.hud;
   c.fillText(label, -(lw + bw) / 2, top);
   if (badge) {
     c.font = bFont; c.fillStyle = fin ? '#ffd23e' : '#ff5a52';
@@ -628,12 +770,17 @@ function pickCtl(container, attr, onChange) {
     drawLaneRunner(c, scene, me, 0, 1, '😀 나 · ' + GEARS[me.gearKey].icon + GEARS[me.gearKey].name);
     if (state === 'count') countdownOverlay(c, W, H, countT);
     if ((ffOn || ts > 1) && state === 'run') {
-      c.font = 'bold 12px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
+      c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
       c.fillText('⏩ ×' + ts + ' 빨리감기', W - 14, H - 14);
     }
     $('hud_t').textContent = t.toFixed(1) + ' s';
     $('hud_v').textContent = me.v.toFixed(1) + ' m/s';
     $('hud_d').textContent = Math.min(me.d, TRACKS[me.trackKey].len).toFixed(1) + ' m';
+    const VMAX = 16;
+    $('liveMe').style.width = Math.min(100, me.v / VMAX * 100) + '%';
+    $('liveMeV').textContent = me.v.toFixed(1) + ' m/s';
+    $('liveAi').style.width = Math.min(100, ai.v / VMAX * 100) + '%';
+    $('liveAiV').textContent = ai.v.toFixed(1) + ' m/s';
     $('hud_ai').textContent = state === 'idle' || (state === 'count' && countT > 2)
       ? '?' : GEARS[ai.gearKey].icon + ' ' + GEARS[ai.gearKey].name;
   }
@@ -709,6 +856,10 @@ function pickCtl(container, attr, onChange) {
     lanes = q.lanes.map(l => makeRunnerState(l.gearKey, l.L, q.track, l.label, l.col));
     $('hud_qn').textContent = (qi + 1) + ' / ' + QUESTIONS.length;
     $('qText').textContent = q.text;
+    $('liveQ').innerHTML = q.lanes.map((l, i) =>
+      `<div class="live-row"><span class="lab" style="color:${l.col.hud}">${l.label}</span>` +
+      `<div class="track"><div class="fill" id="lq${i}" style="background:linear-gradient(90deg,${l.col.body},${l.col.hud})"></div></div>` +
+      `<span class="val" id="lqv${i}">0.0 m/s</span></div>`).join('');
     const box = $('qAns'); box.innerHTML = '';
     q.choices.forEach((ch, i) => {
       const b = document.createElement('button');
@@ -777,10 +928,14 @@ function pickCtl(container, attr, onChange) {
     const offs = [56, 28, 0], scales = [0.78, 0.88, 1];
     lanes.forEach((l, i) => drawLaneRunner(c, scene, l, offs[i], scales[i], l.name));
     if (state === 'run' && ts > 2) {
-      c.font = 'bold 12px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
+      c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
       c.fillText('⏩ 빨리감기', W - 14, H - 14);
     }
     $('hud_qt').textContent = t.toFixed(1) + ' s';
+    lanes.forEach((l, i) => {
+      const f2 = $('lq' + i), v2 = $('lqv' + i);
+      if (f2) { f2.style.width = Math.min(100, l.v / 16 * 100) + '%'; v2.textContent = l.v.toFixed(1) + ' m/s'; }
+    });
   }
   $('btnQGo').onclick = () => {
     if (picked == null || state === 'run') return;

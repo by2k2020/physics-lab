@@ -54,7 +54,7 @@
   .predict .btns { display: flex; gap: 10px; }
   .predict button { padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; }
   .predict button:hover { border-color: var(--accent); }
-  .side { width: 344px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side { width: 384px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; text-transform: uppercase; }
   .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
   .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
@@ -86,14 +86,23 @@
   .readout .v { font-family: var(--mono); font-size: 15.5px; }
   .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
   .readout .v.g { color: var(--green); } .readout .v.s { color: #b9c4d6; }
-  canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 13px; font-family: var(--mono); }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 5px 0; }
-  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 11px; font-weight: 600; padding: 5px 0; }
+  canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 14.5px; font-family: var(--mono); cursor: zoom-in; }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 7px 0; }
+  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 13px; font-weight: 600; padding: 7px 0; }
   table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
   table.mx td.miss { color: #ff6a5e; font-weight: 700; }
   table.mx td.empty { color: #38445c; }
-  table.mx td.lab { color: var(--dim); font-size: 11px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx td.lab { color: var(--dim); font-size: 13px; font-family: 'Malgun Gothic',sans-serif; }
+  .zoom-ov { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: rgba(4,8,16,.84); backdrop-filter: blur(4px); }
+  .zoom-ov.on { display: flex; }
+  .zoom-box { background: var(--panel); border: 1px solid rgba(120,150,200,.4); border-radius: 16px; padding: 18px 22px 22px; max-width: 94vw; max-height: 92vh; overflow: auto; box-shadow: 0 24px 70px rgba(0,0,0,.6); }
+  .zoom-box .zh { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 12px; font-size: 16px; font-weight: 800; }
+  .zoom-box .zh button { background: var(--panel2); border: 1px solid var(--border); color: var(--dim); border-radius: 8px; padding: 5px 12px; font-size: 14px; cursor: pointer; }
+  .zoom-box canvas.graph { width: min(900px, 88vw); cursor: default; }
+  .zoom-box table.mx { cursor: default; font-size: 20px; min-width: min(760px, 86vw); }
+  .zoom-box table.mx td, .zoom-box table.mx th { padding: 10px 0; }
+  .zoom-box table.mx th, .zoom-box table.mx td.lab { font-size: 15px; }
   .srow { display: flex; gap: 6px; align-items: center; }
   .srow input[type=range] { flex: 1; }
   button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
@@ -191,7 +200,7 @@
         <button id="spc">0.25×</button>
       </div>
 
-      <h3>📋 각도 × 거리 골 성공표 <span style="text-transform:none;color:#5a6a85">(O 골 · X 노골)</span></h3>
+      <h3>📋 각도 × 거리 골 성공표 <span style="text-transform:none;color:#5a6a85">(O 골 · X 노골 · 클릭=확대)</span></h3>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값</h3>
@@ -204,8 +213,8 @@
         <div class="readout"><div class="k">골라인까지</div><div class="v g" id="ro_left">—</div></div>
       </div>
 
-      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰이 속도를 갉아먹는 모양)</span></h3>
-      <canvas class="graph" id="gr" height="150"></canvas>
+      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰이 속도를 갉아먹는 모양 · 클릭=확대)</span></h3>
+      <canvas class="graph" id="gr" height="280"></canvas>
     </div>
   </section>
 
@@ -264,6 +273,14 @@
   </section>
 </div>
 
+<div class="zoom-ov" id="zoomOv">
+  <div class="zoom-box">
+    <div class="zh"><span id="zoomTitle"></span><button id="zoomClose">✕ 닫기</button></div>
+    <canvas class="graph" id="grBig" height="440" style="display:none"></canvas>
+    <div id="zoomTable" style="display:none"></div>
+  </div>
+</div>
+
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/OrbitControls.js';
@@ -300,27 +317,53 @@ function fit2d(cv) {
   const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0); return { c, W: w, H: h };
 }
 function niceStep(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p; return 10 * p; }
-function drawVTGraph(pts, tMax, vMax, tNow) {
-  const { c, W, H } = fit2d($('gr'));
-  const L = 40, R = 12, T = 14, B = 26;
+let lastGraph = null;
+function renderVT(cvEl, pts, tMax, vMax, tNow, fpx) {
+  const { c, W, H } = fit2d(cvEl);
+  const L = 50, R = 14, T = 16, B = 34;
   c.clearRect(0, 0, W, H);
   if (!(tMax > 0)) tMax = 1; if (!(vMax > 0)) vMax = 1;
   const px = t => L + (t / tMax) * (W - L - R);
   const py = v => H - B - (v / vMax) * (H - T - B);
-  c.font = '10px sans-serif';
+  c.font = fpx + 'px sans-serif';
   const tS = niceStep(tMax), vS = niceStep(vMax);
-  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#77839a'; c.lineWidth = 1;
-  for (let t = 0; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + 12); }
-  for (let v = 0; v <= vMax + 1e-9; v += vS) { c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke(); c.textAlign = 'right'; c.fillText(v.toFixed(1), L - 5, py(v) + 3.5); }
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8894ab'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + fpx + 4); }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) { c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke(); c.textAlign = 'right'; c.fillText(v.toFixed(1), L - 6, py(v) + fpx * 0.36); }
   c.strokeStyle = '#3a4661'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
-  c.fillStyle = '#8b98ad'; c.textAlign = 'center'; c.fillText('시간 (s) — 속도 (m/s)', (L + W - R) / 2, H - 3);
+  c.fillStyle = '#a3b0c6'; c.textAlign = 'center'; c.fillText('시간 (s) — 속도 (m/s)', (L + W - R) / 2, H - 4);
   if (pts.length > 1) {
     const n = tNow != null ? pts.filter(p => p[0] <= tNow).length : pts.length;
-    c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 6; c.strokeStyle = '#4da3ff'; c.lineWidth = 2.2; c.beginPath();
+    c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 6; c.strokeStyle = '#4da3ff'; c.lineWidth = 2.4; c.beginPath();
     pts.slice(0, Math.max(2, n)).forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
     c.stroke(); c.restore();
   }
 }
+function drawVTGraph(pts, tMax, vMax, tNow) {
+  lastGraph = { pts, tMax, vMax, tNow };
+  renderVT($('gr'), pts, tMax, vMax, tNow, 13);
+  if (zoomMode === 'graph') renderVT($('grBig'), pts, tMax, vMax, tNow, 16);
+}
+
+/* ── 클릭 확대 오버레이 (그래프·성공표) ── */
+let zoomMode = null;
+function openZoom(mode) {
+  zoomMode = mode;
+  $('zoomOv').classList.add('on');
+  $('grBig').style.display = mode === 'graph' ? 'block' : 'none';
+  $('zoomTable').style.display = mode === 'table' ? 'block' : 'none';
+  $('zoomTitle').textContent = mode === 'graph' ? '📈 속도–시간 그래프' : '📋 각도 × 거리 골 성공표';
+  if (mode === 'graph' && lastGraph) renderVT($('grBig'), lastGraph.pts, lastGraph.tMax, lastGraph.vMax, lastGraph.tNow, 16);
+  if (mode === 'table') syncZoomTable();
+}
+function syncZoomTable() {
+  $('zoomTable').innerHTML = '<table class="mx">' + $('matrix').innerHTML + '</table>';
+}
+function closeZoom() { zoomMode = null; $('zoomOv').classList.remove('on'); }
+$('gr').onclick = () => openZoom('graph');
+$('matrix').onclick = () => openZoom('table');
+$('zoomClose').onclick = closeZoom;
+$('zoomOv').onclick = e => { if (e.target === $('zoomOv')) closeZoom(); };
 
 /* ── 공용 3D 헬퍼 ── */
 function makeRenderer(cv) {
@@ -371,17 +414,36 @@ sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -6; sun.shadow.camera.right = 10; sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -2;
 scene.add(sun);
 
-// ── 바닥 (잔디 ↔ 맨땅 토글) ──
-const grassCol = 0x2e6b3a, dirtCol = 0x8a6b42;
-const floorMat = new THREE.MeshStandardMaterial({ color: grassCol, roughness: 0.9 });
+// ── 바닥 (잔디 ↔ 맨땅 토글 — 캔버스 텍스처: 줄무늬 스트라이프 + 질감 스페클) ──
+function makeGroundTex(grass) {
+  const tcv = document.createElement('canvas'); tcv.width = 1024; tcv.height = 512;
+  const c = tcv.getContext('2d');
+  if (grass) {
+    c.fillStyle = '#2e6b3a'; c.fillRect(0, 0, 1024, 512);
+    for (let i = 0; i < 16; i += 2) { c.fillStyle = '#37804a'; c.fillRect(i * 64, 0, 64, 512); }   // 1m 폭 스트라이프
+    for (let i = 0; i < 5200; i++) {                                                              // 잔디 결 스페클
+      c.fillStyle = Math.random() < 0.5 ? 'rgba(30,74,40,.5)' : 'rgba(78,158,96,.4)';
+      c.fillRect(Math.random() * 1024, Math.random() * 512, 1.6, 3 + Math.random() * 5);
+    }
+  } else {
+    c.fillStyle = '#8a6b42'; c.fillRect(0, 0, 1024, 512);
+    for (let i = 0; i < 4200; i++) {                                                              // 흙·자갈 스페클
+      c.fillStyle = Math.random() < 0.5 ? 'rgba(110,84,50,.55)' : 'rgba(168,134,88,.5)';
+      const s = 2 + Math.random() * 4;
+      c.fillRect(Math.random() * 1024, Math.random() * 512, s, s * 0.7);
+    }
+    c.globalAlpha = 0.25; c.fillStyle = '#75552f';                                                // 마른 얼룩 패치
+    for (let i = 0; i < 26; i++) { c.beginPath(); c.ellipse(Math.random() * 1024, Math.random() * 512, 22 + Math.random() * 46, 12 + Math.random() * 24, Math.random() * 3, 0, 7); c.fill(); }
+    c.globalAlpha = 1;
+  }
+  const tex = new THREE.CanvasTexture(tcv);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return tex;
+}
+const grassTex = makeGroundTex(true), dirtTex = makeGroundTex(false);
+const floorMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.95 });
 const floor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, 8), floorMat);
 floor.position.set(4.5, -0.1, 0); floor.receiveShadow = true; scene.add(floor);
-// 잔디 줄무늬 (맨땅이면 숨김)
-const stripes = new THREE.Group(); scene.add(stripes);
-for (let i = 0; i < 8; i++) {
-  const st = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.005, 8), new THREE.MeshStandardMaterial({ color: 0x357a44, roughness: 0.9 }));
-  st.position.set(i * 2.0 - 2.5, 0.003, 0); stripes.add(st);
-}
 // 사이드 라인 + 킥 지점 원
 const lineMat = new THREE.MeshBasicMaterial({ color: 0xf2f4f8 });
 [-2.4, 2.4].forEach(z => {
@@ -465,17 +527,43 @@ function makeKicker() {
   const gp = new THREE.Group();
   const jersey = new THREE.MeshStandardMaterial({ color: 0xe23c3c, roughness: 0.5 });
   const jerseyDark = new THREE.MeshStandardMaterial({ color: 0xb02a2a, roughness: 0.55 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.55 });
   const shorts = new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.6 });
   const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
   const sockMat = new THREE.MeshStandardMaterial({ color: 0xe23c3c, roughness: 0.55 });
   const boot = new THREE.MeshStandardMaterial({ color: 0x1c2333, roughness: 0.45 });
+  const pinMat = new THREE.MeshStandardMaterial({ color: 0x9aa5ba, roughness: 0.3, metalness: 0.45 });   // 레고 테크닉 핀 회색
+  const beamMat = new THREE.MeshStandardMaterial({ color: 0xd6dce8, roughness: 0.5 });                   // 테크닉 빔 밝은 회색
+  const holeMat = new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.4 });
+  // 축구화 (밑창 + 스터드 + 끈 패치)
+  function makeBoot(parent, x, y, z, studs) {
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.095), boot);
+    foot.position.set(x, y, z); foot.castShadow = true; parent.add(foot);
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.168, 0.014, 0.102), white);
+    sole.position.set(x, y - 0.028, z); parent.add(sole);
+    const lace = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.012, 0.06), new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.6 }));
+    lace.position.set(x + 0.03, y + 0.028, z); parent.add(lace);
+    const swoosh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.016, 0.004), white);
+    swoosh.position.set(x, y + 0.005, z + 0.05); parent.add(swoosh);
+    if (studs) [-0.055, 0, 0.055].forEach(dx => [-0.03, 0.03].forEach(dz => {
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.014, 8), boot);
+      st.position.set(x + dx, y - 0.04, z + dz); parent.add(st);
+    }));
+  }
+  // 양말 (줄무늬 2줄)
+  function makeSock(parent, y, z, h) {
+    const sock = new THREE.Mesh(new THREE.BoxGeometry(0.075, h, 0.085), sockMat);
+    sock.position.set(0, y, z); parent.add(sock);
+    [h * 0.32, h * 0.06].forEach(dy => {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.079, 0.016, 0.089), white);
+      stripe.position.set(0, y + dy, z); parent.add(stripe);
+    });
+  }
   // 디딤 다리 (왼쪽, 고정)
   {
     const z = -0.075;
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.055, 0.095), boot);
-    foot.position.set(0.03, 0.028, z); foot.castShadow = true; gp.add(foot);
-    const sock = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.09, 0.085), sockMat);
-    sock.position.set(0, 0.1, z); gp.add(sock);
+    makeBoot(gp, 0.03, 0.038, z, false);
+    makeSock(gp, 0.105, z, 0.085);
     const shin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.09), skin);
     shin.position.set(0, 0.2, z); shin.castShadow = true; gp.add(shin);
     const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.1, 0.105), shorts);
@@ -489,22 +577,50 @@ function makeKicker() {
     thigh.position.y = -0.06; legPivot.add(thigh);
     const shin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.13, 0.09), skin);
     shin.position.y = -0.165; shin.castShadow = true; legPivot.add(shin);
-    const sock = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.08, 0.085), sockMat);
-    sock.position.y = -0.265; legPivot.add(sock);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.055, 0.095), boot);
-    foot.position.set(0.035, -0.325, 0); foot.castShadow = true; legPivot.add(foot);
+    makeSock(legPivot, -0.26, 0, 0.08);
+    makeBoot(legPivot, 0.035, -0.32, 0, true);
+    // 테크닉 빔 — 피벗~무릎을 잇는 관절 구조 노출 (다리와 함께 회전)
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.22, 0.018), beamMat);
+    beam.position.set(0, -0.1, 0.062); legPivot.add(beam);
+    [0, -0.1, -0.2].forEach(y => {
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.022, 10), holeMat);
+      hole.rotation.x = Math.PI / 2; hole.position.set(0, y, 0.062); legPivot.add(hole);
+    });
+    // 무릎 핀
+    const knee = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.017, 0.115, 12), pinMat);
+    knee.rotation.x = Math.PI / 2; knee.position.set(0, -0.113, 0.008); legPivot.add(knee);
   }
   gp.add(legPivot);
+  // 엉덩이 피벗 핀 (몸통 고정 — 진자 회전축이 보이게)
+  {
+    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.15, 12), pinMat);
+    axle.rotation.x = Math.PI / 2; axle.position.set(0, 0.345, 0.075); gp.add(axle);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.014, 12), beamMat);
+    cap.rotation.x = Math.PI / 2; cap.position.set(0, 0.345, 0.155); gp.add(cap);
+    const capHole = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.017, 10), holeMat);
+    capHole.rotation.x = Math.PI / 2; capHole.position.set(0, 0.345, 0.156); gp.add(capHole);
+  }
   // 상체
   const body = new THREE.Group(); body.position.y = 0.34; gp.add(body);
   const hip = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.09, 0.2), shorts);
   hip.position.y = 0.03; body.add(hip);
+  [-0.102, 0.102].forEach(z => {                                    // 반바지 옆 스트라이프
+    const hs = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.024, 0.012), jersey);
+    hs.position.set(0, 0.03, z); body.add(hs);
+  });
   const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.105, 0.26, 4, 1), jersey);
   torso.rotation.y = Math.PI / 4; torso.scale.z = 0.74; torso.position.y = 0.21; torso.castShadow = true; body.add(torso);
   const trim = new THREE.Mesh(new THREE.CylinderGeometry(0.083, 0.083, 0.03, 4, 1), jerseyDark);
   trim.rotation.y = Math.PI / 4; trim.scale.z = 0.74; trim.position.y = 0.335; body.add(trim);
+  const beltTrim = new THREE.Mesh(new THREE.CylinderGeometry(0.104, 0.108, 0.024, 4, 1), white);
+  beltTrim.rotation.y = Math.PI / 4; beltTrim.scale.z = 0.74; beltTrim.position.y = 0.09; body.add(beltTrim);
   const numLab = textSprite('10', { size: 44, color: '#ffffff', scale: 0.0022 });
   numLab.position.set(-0.1, 0.22, 0); body.add(numLab);
+  // 가슴 엠블럼 (유니폼 프린트)
+  const crest = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16), white);
+  crest.position.set(0.091, 0.265, 0.032); crest.rotation.y = Math.PI / 2; body.add(crest);
+  const crestDot = new THREE.Mesh(new THREE.CircleGeometry(0.01, 6), jerseyDark);
+  crestDot.position.set(0.093, 0.265, 0.032); crestDot.rotation.y = Math.PI / 2; body.add(crestDot);
   // 머리
   const head = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.105, 20), skin);
   head.position.y = 0.42; head.castShadow = true; body.add(head);
@@ -514,14 +630,18 @@ function makeKicker() {
   smile.position.set(0.058, 0.405, 0); smile.rotation.y = Math.PI / 2; smile.rotation.z = Math.PI + 0.35; body.add(smile);
   const hair = new THREE.Mesh(new THREE.SphereGeometry(0.068, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), new THREE.MeshStandardMaterial({ color: 0x2e2018, roughness: 0.8 }));
   hair.position.y = 0.475; body.add(hair);
-  // 팔 (양옆 벌려 균형)
+  // 팔 (양옆 벌려 균형 — 소매 흰 커프 프린트)
   [-0.145, 0.145].forEach(z => {
     const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), jersey);
     shoulder.position.set(0, 0.32, z); body.add(shoulder);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.05), jersey);
-    arm.position.set(-0.02, 0.26, z * 1.35); arm.rotation.x = z > 0 ? 0.7 : -0.7; arm.rotation.z = 0.25; body.add(arm);
+    const armG = new THREE.Group();
+    armG.position.set(0, 0.32, z); armG.rotation.x = z > 0 ? 0.7 : -0.7; armG.rotation.z = 0.25; body.add(armG);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.15, 0.05), jersey);
+    arm.position.y = -0.085; armG.add(arm);
+    const cuff = new THREE.Mesh(new THREE.BoxGeometry(0.054, 0.026, 0.054), white);
+    cuff.position.y = -0.155; armG.add(cuff);
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), skin);
-    hand.position.set(-0.045, 0.185, z * 1.85); body.add(hand);
+    hand.position.y = -0.195; armG.add(hand);
   });
   gp.userData = { legPivot };
   return gp;
@@ -543,20 +663,34 @@ const goal = new THREE.Group(); scene.add(goal);
   });
   const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, GOAL_HW * 2 + 0.056, 12), postMat);
   bar.rotation.x = Math.PI / 2; bar.position.set(0, BAR_H, 0); bar.castShadow = true; goal.add(bar);
-  // 그물 (세로줄 + 가로줄)
-  const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+  // 기둥 밑판 (지면 고정 플랜지)
+  [-GOAL_HW, GOAL_HW].forEach(z => {
+    const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.018, 12), postMat);
+    flange.position.set(0, 0.009, z); goal.add(flange);
+  });
+  // 그물 뒤쪽 바닥 프레임 바
+  const backBar = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, GOAL_HW * 2, 8), postMat);
+  backBar.rotation.x = Math.PI / 2; backBar.position.set(0.5, 0.02, 0); goal.add(backBar);
+  // 그물 (촘촘한 세로줄 + 가로줄 + 옆면 메시)
+  const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
   const netPts = [];
-  const N = 11;
+  const N = 18;
   for (let i = 0; i <= N; i++) {
     const z = -GOAL_HW + (2 * GOAL_HW) * i / N;
     netPts.push(0, BAR_H, z, 0.5, 0.02, z);                  // 세로줄 (바 → 뒤 바닥)
   }
-  for (let k = 1; k <= 4; k++) {
-    const f = k / 5, x = 0.5 * f, y = BAR_H * (1 - f) + 0.02 * f;
+  const NH = 7;
+  for (let k = 1; k <= NH; k++) {
+    const f = k / (NH + 1), x = 0.5 * f, y = BAR_H * (1 - f) + 0.02 * f;
     netPts.push(x, y, -GOAL_HW, x, y, GOAL_HW);              // 가로줄
   }
-  [-GOAL_HW, GOAL_HW].forEach(z => {                          // 옆 그물
-    netPts.push(0, BAR_H, z, 0.5, 0.02, z, 0, 0.02, z, 0.5, 0.02, z);
+  [-GOAL_HW, GOAL_HW].forEach(z => {                          // 옆 그물 (테두리 + 내부 메시)
+    netPts.push(0, BAR_H, z, 0.5, 0.02, z, 0, 0.02, z, 0.5, 0.02, z, 0, BAR_H, z, 0, 0.02, z);
+    for (const f of [0.25, 0.5, 0.75]) {
+      const ex = 0.5 * f, ey = BAR_H * (1 - f) + 0.02 * f;
+      netPts.push(ex, ey, z, ex, 0.02, z);                   // 세로 메시
+      netPts.push(0, ey, z, ex, ey, z);                      // 가로 메시
+    }
   });
   const netGeo = new THREE.BufferGeometry();
   netGeo.setAttribute('position', new THREE.Float32BufferAttribute(netPts, 3));
@@ -572,18 +706,21 @@ goalLab.position.set(0, BAR_H + 0.28, 0); goal.add(goalLab);
 const ball = new THREE.Mesh(new THREE.SphereGeometry(R_BALL, 24, 24), new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.45 }));
 ball.castShadow = true; scene.add(ball);
 {
-  const patMat = new THREE.MeshBasicMaterial({ color: 0x22283a });
-  for (let i = 0; i < 6; i++) {
-    const a = i / 6 * Math.PI * 2;
-    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.035, 6), patMat);
-    dot.position.set(Math.cos(a) * R_BALL, Math.sin(a) * R_BALL, 0);
-    dot.lookAt(dot.position.clone().multiplyScalar(2));
-    ball.add(dot);
-  }
-  const dotT = new THREE.Mesh(new THREE.CircleGeometry(0.035, 6), patMat);
-  dotT.position.set(0, 0, R_BALL); ball.add(dotT);
-  const dotB = new THREE.Mesh(new THREE.CircleGeometry(0.035, 6), patMat);
-  dotB.position.set(0, 0, -R_BALL); dotB.rotation.y = Math.PI; ball.add(dotB);
+  // 클래식 축구공 — 정십이면체 면 중심 12곳에 검은 펜타곤 패치
+  const patMat = new THREE.MeshBasicMaterial({ color: 0x22283a, side: THREE.DoubleSide });
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const dirs = [];
+  [1, -1].forEach(s1 => [1, -1].forEach(s2 => {
+    dirs.push([0, s1, s2 * PHI], [s1, s2 * PHI, 0], [s1 * PHI, 0, s2]);
+  }));
+  const pentGeo = new THREE.CircleGeometry(0.043, 5);
+  dirs.forEach(v => {
+    const d = new THREE.Vector3(v[0], v[1], v[2]).normalize();
+    const pent = new THREE.Mesh(pentGeo, patMat);
+    pent.position.copy(d).multiplyScalar(R_BALL * 0.992);
+    pent.lookAt(d.clone().multiplyScalar(R_BALL * 2));
+    ball.add(pent);
+  });
 }
 
 // ── 궤적 히스토리 (이전 킥이 흐리게 남아 비교 — ↺·지우기로 삭제) ──
@@ -667,8 +804,8 @@ function simulate(opts = {}) {
 
 function layoutScene() {
   goal.position.x = DIST_M(cfg.dist);
-  floorMat.color.setHex(cfg.grass ? grassCol : dirtCol);
-  stripes.visible = cfg.grass;
+  floorMat.map = cfg.grass ? grassTex : dirtTex;
+  floorMat.needsUpdate = true;
   $('hud_a').textContent = cfg.ang + '°';
   $('hud_d').textContent = cfg.dist;
   $('hud_g').textContent = cfg.grass ? '잔디' : '맨땅';
@@ -732,6 +869,7 @@ function drawMatrix() {
     return r === true ? '<td class="hit"' + cur + '>O</td>' : r === false ? '<td class="miss"' + cur + '>X</td>' : '<td class="empty"' + cur + '></td>';
   }).join('') + '</tr>';
   $('matrix').innerHTML = html;
+  if (zoomMode === 'table') syncZoomTable();
 }
 
 /* ── 상태 UI ── */
