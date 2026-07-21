@@ -568,7 +568,7 @@ function pickCtl(container, key, labId, names) {
     syncPick(container, cfg[key]);
     $(labId).textContent = names ? names[cfg[key]] : cfg[key];
     if (key === 'dist') { reset(); drawMatrix(); }
-    else if (anim.done) { anim.aimOnly = true; anim.path = null; draw(); }
+    else { drawMatrix(); if (anim.done) { anim.aimOnly = true; anim.path = null; draw(); } }
   });
 }
 pickCtl('pickPow', 'pw', 'v_pw', null);

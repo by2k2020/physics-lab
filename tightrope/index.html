@@ -320,7 +320,8 @@ let activeTab = 'exp';
 
 /* ── 물리 상수 (역진자 + 좌우 모멘트 + 바람 외란) ── */
 // 검증값: 대칭+무풍 100% 성공 · 불균형은 1.5~3.7초 뒤 낙하(클수록 빨리) ·
-//         바람 쌩쌩 맨몸 43% → 추1:1 80% → 추3:3 100% 성공 (관성↑ = 천천히 기울어 버티기 쉬움)
+//         바람은 시도별 고정 시드로 재현 가능(같은 설정=같은 결과, 결과표 🌬 표기) ·
+//         관성↑(긴 봉·추 많음) = 천천히 기울어 버티기 쉬움 · 물리는 고정 dt로 프레임률 무관
 const ROPE_Y = 2.0, CRIT = 28 * Math.PI / 180, TARGET = 10;
 const M_GIRL = 1.0, H_GIRL = 0.22;           // 소녀 질량·무게중심 높이(줄 위)
 const H_HANDS = 0.35, H_W = -0.12;           // 손 높이·추 높이(줄 아래로 매달림 → 안정화)
@@ -893,7 +894,7 @@ function stepSpray(dt) {
 const cfg = { nL: 0, nR: 0, longPole: false, wind: 0 };
 let mode = 'ready';           // ready | run | fall | done
 let th = 0, om = 0, runT = 0; // 기울기(rad, +=오른쪽)·각속도·경과
-let windTau = 0, windTarget = 0, windTimer = 0;
+let windTau = 0, windTarget = 0, windTimer = 0, physAcc = 0;
 let graphPts = [];
 let best = 0;
 try { best = +(localStorage.getItem('tightrope_best') || 0) || 0; } catch (e) { /* file:// 차단 환경 대비 */ }
@@ -901,6 +902,16 @@ let fall = null;
 let lastPrediction = null;
 const recs = {};   // key: (S|L)_nL_nR → 마지막 결과 (결과 정리표)
 let cheerT = 0, idleT = 0;
+
+// 시도별 고정 시드 PRNG(mulberry32) — 같은 설정이면 항상 같은 바람·jitter → 결과표 재현 가능
+let rngState = 1;
+function srand(seed) { rngState = (seed >>> 0) || 1; }
+function rand() {
+  rngState = (rngState + 0x6D2B79F5) | 0;
+  let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
 
 function derived() {
   const a = cfg.longPole ? A_LONG : A_SHORT;
@@ -991,7 +1002,7 @@ function drawTable() {
 
 /* ── 실행 흐름 ── */
 function standReset() {
-  th = 0; om = 0; runT = 0; windTau = 0; windTarget = 0; windTimer = 0;
+  th = 0; om = 0; runT = 0; windTau = 0; windTarget = 0; windTimer = 0; physAcc = 0;
   graphPts = []; fall = null;
   girlRoot.position.set(0, ROPE_Y, 0);
   girlRoot.rotation.set(0, 0, 0);
@@ -1009,6 +1020,7 @@ function resetAll() {
 }
 function beginRun() {
   standReset();
+  srand(cfg.nL * 131 + cfg.nR * 17 + (cfg.longPole ? 257 : 0) + cfg.wind * 3 + 1);
   mode = 'run';
   $('bd').className = 'badge';
   $('analysis').classList.remove('on');
@@ -1139,12 +1151,14 @@ function frame(ts) {
 
   if (mode === 'run') {
     const P = derived();
-    const sub = 4, dt = real / sub;
-    for (let i = 0; i < sub; i++) {
+    const dt = 1 / 240;               // 고정 서브스텝 — 프레임률과 무관하게 동일 궤적
+    physAcc += real;
+    while (physAcc >= dt) {
+      physAcc -= dt;
       windTimer -= dt;
-      if (windTimer <= 0) { windTimer = 0.7 + Math.random() * 0.9; windTarget = (Math.random() * 2 - 1) * WIND_AMP[cfg.wind]; }
+      if (windTimer <= 0) { windTimer = 0.7 + rand() * 0.9; windTarget = (rand() * 2 - 1) * WIND_AMP[cfg.wind]; }
       windTau += (windTarget - windTau) * Math.min(1, dt * 3);
-      const jitter = (Math.random() - 0.5) * 0.1;
+      const jitter = (rand() - 0.5) * 0.1;
       const biasEff = P.bias * Math.min(1, runT / BIAS_RAMP);  // 처음엔 버티다 점점 힘이 빠짐
       const tauC = clamp(KP * th + KD * om, -TMAX, TMAX);      // 소녀의 복원 노력 (한계 있음)
       const alpha = (P.G * Math.sin(th) + biasEff * Math.cos(th) + windTau + jitter - tauC - DAMP_C * P.I * om) / P.I;

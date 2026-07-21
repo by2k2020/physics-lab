@@ -932,6 +932,8 @@ function slider(id, lbl, key) {
 slider('pw', 'v_pw', 'pw');
 slider('dd', 'v_d', 'dist');
 slider('hh', 'v_h', 'h');
+// 득점표 키는 dist|height뿐(힘 미포함) — 힘이 바뀌면 이전 힘의 결과가 섞이므로 표를 비운다
+$('pw').addEventListener('input', () => { for (const k in results) delete results[k]; drawMatrix(); });
 $('air').addEventListener('input', () => { cfg.air = $('air').checked; if (!flying) reset(); });
 
 // ◀▶▲▼ 화살표로 1단위 변경

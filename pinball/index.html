@@ -172,12 +172,12 @@
         <div class="readout"><div class="k">범퍼·타겟 히트</div><div class="v p" id="hits">—</div></div>
       </div>
 
-      <h3>격자 결과표 — 세기 × 경사 → 점수</h3>
+      <h3>격자 결과표 — 세기 × 경사 → 최고 높이</h3>
       <table id="grid">
         <thead><tr><th>세기 ＼ 경사</th><th>완만</th><th>보통</th><th>가파름</th></tr></thead>
         <tbody></tbody>
       </table>
-      <div class="grid-cap">현재 배치 <b id="capPreset">A · 삼각</b> 기준 · 발사할 때마다 자동 기록 · <b>⚡ 자동 실험</b>으로 한 번에 채우기</div>
+      <div class="grid-cap">현재 배치 <b id="capPreset">A · 삼각</b> 기준 · 공이 도달한 <b>최고 높이</b>(결정적 지표) 기록 · 세기↑·완만할수록 높이↑ · <b>⚡ 자동 실험</b>으로 한 번에 채우기</div>
     </div>
   </section>
 
@@ -249,7 +249,7 @@ const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const FW = 100, FH = 150, BALL_R = 2.5, G = 72;
 const TILTS = [{ name: '완만', deg: 12 }, { name: '보통', deg: 22 }, { name: '가파름', deg: 35 }];
 const PRESET_NAMES = ['A · 삼각', 'B · 다이아', 'C · 밀집'];
-const E_WALL = 0.86, E_BUMP = 0.94, BUMP_KICK = 8, FRICTION = 0.15, MAX_T = 26;
+const E_WALL = 0.86, E_BUMP = 0.94, BUMP_KICK = 5, FRICTION = 0.15, MAX_T = 26;
 const PT_BUMP = 100, PT_TARGET = 300;
 const PLUNGE_X = 87, PLUNGE_Y = 143, LAUNCH_ANG = 74 * Math.PI / 180;   // 우하단에서 위+좌 대각 발사
 
@@ -333,21 +333,28 @@ function stepBall(b, dt, a, bumps, onHit) {
     if (b.y > FH + BALL_R) { b.drained = true; return; }
   }
 }
-function simulate(power, tiltIdx, presetIdx) {
+/* 결정적·단조 지표: 발사가 공을 판 위로 얼마나 높이 쏘아 올리는가.
+   벽만 반영한 범퍼 이전 자유비행 최고 높이 → 세기↑·경사 완만↑일수록 단조 증가 (h ≈ v₀²/2a).
+   범퍼 카오스와 무관해 격자에서 경향이 깨끗이 읽힘. 프레임률·재생속도와도 완전 무관. */
+function launchReach(power, tiltIdx) {
   const a = accelOf(tiltIdx);
-  const bumps = PRESETS[presetIdx].map(m => ({ x: m.x, y: m.y, target: m.target }));
   const v = launchVel(power);
-  const b = { x: PLUNGE_X, y: PLUNGE_Y, vx: v.vx, vy: v.vy, score: 0, hits: 0, reach: PLUNGE_Y, drained: false };
+  const b = { x: PLUNGE_X, y: PLUNGE_Y, vx: v.vx, vy: v.vy, reach: PLUNGE_Y, drained: false };
   let t = 0;
-  while (!b.drained && t < MAX_T) { stepBall(b, 1 / 120, a, bumps, null); t += 1 / 120; }
-  return { score: b.score, hits: b.hits, reach: FH - b.reach };
+  while (!b.drained && t < MAX_T) {
+    stepBall(b, 1 / 120, a, [], null);
+    if (b.vy > 0 && b.y > PLUNGE_Y - BALL_R) break;   // 정점 지나 발사 지점으로 복귀 → 종료
+    t += 1 / 120;
+  }
+  return FH - b.reach;
 }
 
 /* ═════════ 실험 · 핀볼 (라이브) ═════════ */
 (() => {
   const cv = $('cv1');
+  const FIXED_DT = 1 / 120;                    // 라이브·격자 공통 고정 물리 스텝
   let power = 4, tiltIdx = 1, presetIdx = 0, speedScale = 1;
-  let ball = null, bumps = [], t = 0, phase = 'ready', best = 0, trail = [];
+  let ball = null, bumps = [], t = 0, acc = 0, phase = 'ready', best = 0, trail = [];
   const grid = [[], [], []].map(() => Array(24).fill(null));   // grid[preset][tilt*8+(power-1)]
 
   function newBall() {
@@ -355,7 +362,7 @@ function simulate(power, tiltIdx, presetIdx) {
     trail = [];
   }
   function reset() {
-    phase = 'ready'; t = 0;
+    phase = 'ready'; t = 0; acc = 0;
     bumps = PRESETS[presetIdx].map(m => ({ x: m.x, y: m.y, target: m.target, flash: 0 }));
     newBall();
     $('bd1').className = 'badge';
@@ -369,7 +376,7 @@ function simulate(power, tiltIdx, presetIdx) {
     bumps = PRESETS[presetIdx].map(m => ({ x: m.x, y: m.y, target: m.target, flash: 0 }));
     newBall();
     const v = launchVel(power); ball.vx = v.vx; ball.vy = v.vy;
-    phase = 'run'; t = 0;
+    phase = 'run'; t = 0; acc = 0;
     setSt('run'); $('bd1').className = 'badge';
     $('run1').disabled = true;
   }
@@ -378,23 +385,30 @@ function simulate(power, tiltIdx, presetIdx) {
     $('scoreBig').textContent = ball.score.toLocaleString();
     $('scoreSub').textContent = `범퍼·타겟 ${ball.hits}회 히트`;
     $('hits').textContent = ball.hits;
-    $('reach').textContent = (FH - ball.reach).toFixed(0);
+    const lr = launchReach(power, tiltIdx);                          // 결정적·단조 지표
+    $('reach').textContent = lr.toFixed(0);
     if (ball.score > best) { best = ball.score; $('best').textContent = best.toLocaleString(); }
-    grid[presetIdx][tiltIdx * 8 + (power - 1)] = ball.score;
+    grid[presetIdx][tiltIdx * 8 + (power - 1)] = lr;                 // 격자 = 라이브 (동일 함수)
     renderGrid();
     const bd = $('bd1');
     if (ball.score >= best && ball.score > 0) { bd.className = 'badge same'; bd.textContent = `🏆 ${ball.score.toLocaleString()}점 — 최고 기록!`; }
     else if (ball.score > 0) { bd.className = 'badge diff'; bd.textContent = `✓ ${ball.score.toLocaleString()}점 · 최고 ${best.toLocaleString()}점`; }
     else { bd.className = 'badge diff'; bd.textContent = '아쉽! 범퍼를 못 맞히고 배수구로 — 세기·경사를 바꿔보세요'; }
   }
+  // 고정 서브스텝 accumulator: 프레임률·재생속도와 무관하게 궤적·결과 동일 (격자와 동일한 1/120 스텝 시퀀스)
   function tick(dt) {
     if (phase !== 'run') return;
-    t += dt;
+    acc += dt;
     const a = accelOf(tiltIdx);
-    stepBall(ball, dt, a, bumps, () => {});
-    trail.push([ball.x, ball.y]); if (trail.length > 26) trail.shift();
-    bumps.forEach(m => { if (m.flash > 0) m.flash = Math.max(0, m.flash - dt * 3.2); });
-    if (ball.drained || t > MAX_T) finish();
+    while (acc >= FIXED_DT && phase === 'run') {
+      acc -= FIXED_DT;
+      if (t >= MAX_T) { finish(); break; }
+      stepBall(ball, FIXED_DT, a, bumps, () => {});
+      t += FIXED_DT;
+      trail.push([ball.x, ball.y]); if (trail.length > 26) trail.shift();
+      bumps.forEach(m => { if (m.flash > 0) m.flash = Math.max(0, m.flash - FIXED_DT * 3.2); });
+      if (ball.drained) { finish(); break; }
+    }
   }
 
   /* ── 렌더 ── */
@@ -548,7 +562,7 @@ function simulate(power, tiltIdx, presetIdx) {
         if (v == null) tds += `<td class="${cur.trim()}" style="color:#4a556b">·</td>`;
         else {
           const frac = mx > mn ? (v - mn) / (mx - mn) : 1;
-          tds += `<td class="${cur.trim()}" style="background:${heat(frac, v > 0)};color:${frac > 0.55 ? '#0a0e17' : '#e8eef7'}">${v.toLocaleString()}</td>`;
+          tds += `<td class="${cur.trim()}" style="background:${heat(frac, v > 0)};color:${frac > 0.55 ? '#0a0e17' : '#e8eef7'}">${Math.round(v)}</td>`;
         }
       }
       rows += `<tr>${tds}</tr>`;
@@ -574,17 +588,17 @@ function simulate(power, tiltIdx, presetIdx) {
     let i = 0;
     const stepAuto = () => {
       const chunk = combos.slice(i, i + 4);
-      chunk.forEach(([p, ti]) => { grid[presetIdx][ti * 8 + (p - 1)] = simulate(p, ti, presetIdx); });
+      chunk.forEach(([p, ti]) => { grid[presetIdx][ti * 8 + (p - 1)] = launchReach(p, ti); });
       i += 4; renderGrid();
       if (i < combos.length) { setTimeout(stepAuto, 60); }
       else {
         autoBusy = false; $('auto1').disabled = false; $('run1').disabled = false; setSt('done');
-        const vals = grid[presetIdx].filter(v => v != null);
-        const bv = Math.max(...vals); if (bv > best) { best = bv; $('best').textContent = best.toLocaleString(); }
-        // 최고 조합 찾기
-        let bi = grid[presetIdx].indexOf(bv), bti = Math.floor(bi / 8), bp = bi % 8 + 1;
+        const cells = grid[presetIdx];
+        const bv = Math.max(...cells.filter(v => v != null));
+        // 최고 높이 조합 찾기
+        let bi = cells.indexOf(bv), bti = Math.floor(bi / 8), bp = bi % 8 + 1;
         $('bd1').className = 'badge same';
-        $('bd1').textContent = `⚡ 완료! 최고 ${bv.toLocaleString()}점 — 세기 ${bp} · ${TILTS[bti].name}`;
+        $('bd1').textContent = `⚡ 완료! 최고 높이 ${Math.round(bv)} — 세기 ${bp} · ${TILTS[bti].name}`;
       }
     };
     stepAuto();
@@ -606,7 +620,7 @@ function simulate(power, tiltIdx, presetIdx) {
   }
   pick($('pickPw'), v => { power = v; $('v_pw').textContent = v; reset(); renderGrid(); });
   pick($('pickTilt'), v => { tiltIdx = v; reset(); renderGrid(); });
-  pick($('pickPreset'), v => { presetIdx = v; best = grid[v].reduce((a, x) => Math.max(a, x || 0), 0); $('best').textContent = best.toLocaleString(); reset(); renderGrid(); });
+  pick($('pickPreset'), v => { presetIdx = v; reset(); renderGrid(); });
 
   $('run1').onclick = launch;
   $('reset1').onclick = () => { if (phase === 'run') return; reset(); setSt('ready'); };

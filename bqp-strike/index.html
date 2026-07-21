@@ -199,13 +199,13 @@
       </div>
 
       <div class="mx-head">
-        <h3 style="text-transform:none;font-size:12.5px">📋 결과 정리표 — 발사각 × 힘</h3>
+        <h3 style="text-transform:none;font-size:12.5px">📋 결과 정리표 — 사거리(m) · 발사각 × 힘</h3>
         <div class="mx-toggle">
-          <button id="mvPts" class="on">명중 점수</button>
-          <button id="mvRng">사거리(m)</button>
+          <button id="mvPts">명중 점수</button>
+          <button id="mvRng" class="on">사거리(m)</button>
         </div>
       </div>
-      <p style="font-size:11px;color:#5a6a85;margin:-4px 0 8px" id="mxHelp">숫자 = 맞힌 판 점수 · X = 못 맞힘</p>
+      <p style="font-size:11px;color:#5a6a85;margin:-4px 0 8px" id="mxHelp">숫자 = 평지 사거리(m) R=v₀²sin2θ/g · 주황색 = 그 힘에서 최대(항상 45°!)</p>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값 (실제 물리량)</h3>
@@ -872,7 +872,7 @@ let S = null, flying = false, swinging = false, swingT = 0, t = 0, ballIdx = 0, 
 let shotCfg = null;
 const results = {};   // '단|세기' → { pts, range }
 let pendingPredict = null, predictStreak = 0;
-let gridView = 'pts';
+let gridView = 'rng';
 const SWING_TIME = 0.24;
 const cockAngle = () => Math.max(angDeg() * Math.PI / 180 - 1.6, -0.85);
 

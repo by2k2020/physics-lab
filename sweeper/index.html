@@ -426,10 +426,11 @@ function picker(container, onChange) {
 }
 
 /* ── 물리 모델 ── */
+// 공식: 브러시 RPM = 모터 RPM(90) ÷ 기어비 · 토크 = 모터 토크(60) × 기어비 (원리표와 정확히 일치)
 const GEARS = {
-  speed:   { label: '속도형', gearRatio: 0.2, brushRPM: 150, torque: 25,  color: '#4da3ff' },
+  speed:   { label: '속도형', gearRatio: 0.2, brushRPM: 450, torque: 12,  color: '#4da3ff' },
   balance: { label: '균형형', gearRatio: 1.0, brushRPM: 90,  torque: 60,  color: '#c792ea' },
-  power:   { label: '힘형',   gearRatio: 5.0, brushRPM: 45,  torque: 120, color: '#ff9046' },
+  power:   { label: '힘형',   gearRatio: 5.0, brushRPM: 18,  torque: 300, color: '#ff9046' },
 };
 const DRIVE = {
   slow:   { label: '느리게', f: 0.8, dur: 8.0 },
@@ -437,8 +438,8 @@ const DRIVE = {
   fast:   { label: '빠르게', f: 1.3, dur: 3.6 },
 };
 const DEBRIS = {
-  dust:   { label: '가벼운 먼지', reqT: 20,  needRPM: 110, color: '#cfd8e6', r: 3.4, emoji: '💨' },
-  pellet: { label: '무거운 알갱이', reqT: 100, needRPM: 35,  color: '#b07a4a', r: 5.6, emoji: '🪨' },
+  dust:   { label: '가벼운 먼지', reqT: 12,  needRPM: 110, color: '#cfd8e6', r: 3.4, emoji: '💨' },
+  pellet: { label: '무거운 알갱이', reqT: 100, needRPM: 12,  color: '#b07a4a', r: 5.6, emoji: '🪨' },
 };
 const clamp01 = v => Math.max(0, Math.min(1, v));
 function computeEff(gk, dk, drk) {
@@ -468,8 +469,11 @@ function computeEff(gk, dk, drk) {
   }
   function makePieces() {
     pieces = [];
+    // 결정적 포획: 효율에 비례한 개수를 균등 분포(브레젠험)로 미리 배정 — 실행마다 동일
+    const target = Math.round(P.eff * TOTAL);
     for (let i = 0; i < TOTAL; i++) {
-      pieces.push({ frac: 0.10 + (i + 0.5) / TOTAL * 0.82, judged: false, captured: false, jt: 0, yoff: 0 });
+      const willCapture = Math.floor((i + 1) * target / TOTAL) > Math.floor(i * target / TOTAL);
+      pieces.push({ frac: 0.10 + (i + 0.5) / TOTAL * 0.82, judged: false, captured: false, willCapture, jt: 0, yoff: 0 });
     }
   }
   function preview() {
@@ -480,7 +484,7 @@ function computeEff(gk, dk, drk) {
     $('roTrq').textContent = P.gear.torque;
     $('roTime').textContent = P.drive.dur.toFixed(1) + ' s';
     $('roCap').textContent = '—';
-    const spd = Math.min(100, P.gear.brushRPM / 150 * 100), trq = Math.min(100, P.gear.torque / 120 * 100);
+    const spd = Math.min(100, P.gear.brushRPM / 450 * 100), trq = Math.min(100, P.gear.torque / 300 * 100);
     $('barSpd').style.width = spd + '%'; $('valSpd').textContent = P.gear.brushRPM + ' RPM';
     $('barTrq').style.width = trq + '%'; $('valTrq').textContent = '×' + P.gear.gearRatio.toFixed(P.gear.gearRatio < 1 ? 1 : 0);
     markCurGrid();
@@ -506,8 +510,7 @@ function computeEff(gk, dk, drk) {
     pieces.forEach(pc => {
       if (!pc.judged && brushFrac >= pc.frac) {
         pc.judged = true;
-        // 힘·속도 조건 곱을 조각별 확률로 사용
-        pc.captured = Math.random() < P.eff;
+        pc.captured = pc.willCapture;
         if (pc.captured) { captured++; pc.jt = t; }
       }
     });
@@ -646,7 +649,7 @@ function computeEff(gk, dk, drk) {
     c.save(); c.translate(x, y);
     // 회전 속도감 글로우 (빠를수록 진함)
     const glow = Math.min(0.4, gear.brushRPM / 150 * 0.4);
-    c.save(); c.shadowColor = gear.color; c.shadowBlur = gear.brushRPM / 6;
+    c.save(); c.shadowColor = gear.color; c.shadowBlur = Math.min(24, gear.brushRPM / 8);
     c.fillStyle = `rgba(77,163,255,${glow * 0.15})`; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.restore();
     c.rotate(ang);
     // 솔 (털) — 힘형은 두껍고 굵게, 속도형은 가늘고 많이
@@ -699,7 +702,7 @@ function computeEff(gk, dk, drk) {
     ], Math.max(1, dur) * 1.04, vMax, t, '쓰레기 (개)');
   }
   function onDone() {
-    const effPct = Math.round(captured / TOTAL * 100);
+    const effPct = Math.round(P.eff * 100);   // 결정적 예측값 (Math.random 아님)
     $('roCap').textContent = captured + ' / ' + TOTAL;
     const bd = $('bd1');
     if (effPct >= 75) { bd.className = 'badge same'; bd.textContent = `✓ 청소 효율 ${effPct}% — ${P.gear.label} 기어가 ${P.debris.label}에 잘 맞아요!`; }
