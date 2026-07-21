@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16.5px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; z-index: 5; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.good { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
@@ -70,18 +70,18 @@
     background: repeating-linear-gradient(90deg, transparent 0, transparent calc(12.5% - 1px), rgba(140,170,220,.30) calc(12.5% - 1px), rgba(140,170,220,.30) 12.5%); }
   .bar-fill { height: 100%; border-radius: 7px; transition: width .12s; box-shadow: inset 0 0 14px rgba(255,255,255,.18); }
   .bar-row .val { width: 54px; text-align: right; font-family: var(--mono); font-size: 18px; font-weight: 800; }
-  .bar-scale { display: flex; justify-content: space-between; margin: 2px 62px 0 92px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .bar-scale { display: flex; justify-content: space-between; margin: 2px 62px 0 92px; font-family: var(--mono); font-size: 12px; color: var(--dim); }
   .tank { display: flex; gap: 8px; margin-bottom: 12px; }
   .slot { flex: 1; background: #0c1526; border: 1px solid var(--border); border-radius: 10px; padding: 6px 6px 7px; text-align: center; }
   .slot canvas { display: block; width: 100%; border-radius: 7px; background: #0a1c30; }
   .slot.got { border-color: rgba(46,224,111,.5); box-shadow: 0 0 12px rgba(46,224,111,.15); }
-  .slot .nm { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .slot .nm { font-size: 12.5px; color: var(--dim); margin-top: 4px; }
   .slot.got .nm { color: var(--green); font-weight: 700; }
   details { margin-top: 4px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -127,6 +127,7 @@
         <div class="chip"><span class="lab">낚시 시간</span><span id="hud_t">0.0 s</span></div>
         <div class="chip" style="color:var(--accent)"><span class="lab">물고기 깊이</span><span id="hud_d">— m</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">줄 감는 속도</span><span id="hud_v">0.0 m/s</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">끌어올림</span><span id="hud_p">0 %</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
@@ -167,9 +168,9 @@
       </div>
       <h3>🏆 미션 — 세 마리를 모두 어항에 모으자!</h3>
       <div class="tank">
-        <div class="slot" id="slot_small"><canvas class="tankCv" id="tankCv_small" height="48"></canvas><div class="nm">🐟 소형 · 붕어</div></div>
-        <div class="slot" id="slot_mid"><canvas class="tankCv" id="tankCv_mid" height="48"></canvas><div class="nm">🐠 중형 · 잉어</div></div>
-        <div class="slot" id="slot_big"><canvas class="tankCv" id="tankCv_big" height="48"></canvas><div class="nm">🐡 대형 · 메기</div></div>
+        <div class="slot" id="slot_small"><canvas class="tankCv" id="tankCv_small" height="58"></canvas><div class="nm">🐟 소형 · 붕어</div></div>
+        <div class="slot" id="slot_mid"><canvas class="tankCv" id="tankCv_mid" height="58"></canvas><div class="nm">🐠 중형 · 잉어</div></div>
+        <div class="slot" id="slot_big"><canvas class="tankCv" id="tankCv_big" height="58"></canvas><div class="nm">🐡 대형 · 메기</div></div>
       </div>
       <details open>
         <summary>📋 낚시 기록 (최근 8회)</summary>
@@ -266,8 +267,8 @@ let t = 0, depth = 0, crankAng = 0, boost = 0, holdingPtr = false, holdingKey = 
 let lineSpeed = 0, stalled = false, struggling = false, hintShown = false;
 let prediction = null, runCount = 0;
 const caught = { small: false, mid: false, big: false };
-const bubbles = [], ambBubbles = [];
-let wave = 0, lastTs = null, caughtFishAnim = 0;
+const bubbles = [], ambBubbles = [], splashes = [];
+let wave = 0, lastTs = null, caughtFishAnim = 0, curRes = 0, splashPending = false;
 
 const holding = () => holdingPtr || holdingKey;
 const gear = () => GEARS[gearKey];
@@ -310,6 +311,7 @@ function refreshStatic() {
     $('hud_d').textContent = f.depth.toFixed(1) + ' m';
     $('hud_t').textContent = '0.0 s';
     $('hud_v').textContent = '0.0 m/s';
+    $('hud_p').textContent = '0 %';
   }
 }
 
@@ -355,6 +357,7 @@ function step(dt) {
   // 물고기 몸부림 — 주기적으로 저항이 세짐
   struggling = t > 1.2 && (t % 3.5) < 1.0;
   const res = f.res * (struggling ? 1.45 : 1);
+  curRes = res;
   $('valRes').textContent = res.toFixed(1);
   $('barRes').style.width = Math.min(100, res / 32 * 100) + '%';
 
@@ -391,6 +394,7 @@ function step(dt) {
   $('hud_t').textContent = t.toFixed(1) + ' s';
   $('hud_d').textContent = depth.toFixed(1) + ' m';
   $('hud_v').textContent = lineSpeed.toFixed(1) + ' m/s';
+  $('hud_p').textContent = Math.round(Math.max(0, Math.min(1, 1 - depth / f.depth)) * 100) + ' %';
 }
 
 function finish(success, why) {
@@ -414,6 +418,7 @@ function finish(success, why) {
     caught[fishKey] = true;
     $('slot_' + fishKey).classList.add('got');
     caughtFishAnim = 1;
+    splashPending = true;
     const all = caught.small && caught.mid && caught.big;
     setBadge('good', all
       ? `🏆 미션 완료! 세 마리 다 모았다 — 기어비 마스터!`
@@ -436,6 +441,12 @@ function finish(success, why) {
 /* ── 그리기: 낚시터 장면 ── */
 function spawnBubble() {
   bubbles.push({ y: 0, r: 1.5 + Math.random() * 2.5, vy: 18 + Math.random() * 22, life: 1, offX: (Math.random() - 0.5) * 22 });
+}
+function spawnSplash(x, n, power) {
+  for (let i = 0; i < n; i++)
+    splashes.push({ x: x + (Math.random() - 0.5) * 12, y: 0,
+      vx: (Math.random() - 0.5) * power, vy: -(36 + Math.random() * power),
+      r: 1.2 + Math.random() * 2, life: 0.8 + Math.random() * 0.35 });
 }
 function roundedRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
 
@@ -550,16 +561,26 @@ function drawScene(dt) {
   const maxD = 6.8;
   const pxPerM = (H - waterY - 26) / maxD;
 
-  // 하늘
+  // 노을 하늘
   const sky = c.createLinearGradient(0, 0, 0, waterY);
-  sky.addColorStop(0, '#101a38'); sky.addColorStop(1, '#1b2f55');
+  sky.addColorStop(0, '#1c1440'); sky.addColorStop(0.42, '#5b2a5e');
+  sky.addColorStop(0.72, '#b04a47'); sky.addColorStop(1, '#ff9a52');
   c.fillStyle = sky; c.fillRect(0, 0, W, waterY);
-  // 달 + 별
-  c.fillStyle = '#ffe9b8'; c.beginPath(); c.arc(W * 0.82, waterY * 0.34, 16, 0, 7); c.fill();
-  c.fillStyle = '#1b2f55'; c.beginPath(); c.arc(W * 0.82 + 7, waterY * 0.34 - 4, 13, 0, 7); c.fill();
-  c.fillStyle = 'rgba(255,255,255,.5)';
-  for (let i = 0; i < 14; i++) {
-    const sx = (i * 137.5) % W, sy = ((i * 91.7) % (waterY * 0.8));
+  // 지는 해 + 노을빛
+  const sunX = W * 0.82, sunY = waterY * 0.74;
+  const glow = c.createRadialGradient(sunX, sunY, 4, sunX, sunY, 80);
+  glow.addColorStop(0, 'rgba(255,205,110,.95)'); glow.addColorStop(1, 'rgba(255,130,60,0)');
+  c.fillStyle = glow; c.fillRect(sunX - 80, sunY - 80, 160, 160);
+  c.fillStyle = '#ffd77a'; c.beginPath(); c.arc(sunX, sunY, 17, 0, 7); c.fill();
+  // 노을 구름 띠
+  c.fillStyle = 'rgba(255,150,110,.28)';
+  [[0.16, 0.38, 90], [0.42, 0.56, 130], [0.64, 0.28, 70]].forEach(cl => {
+    c.beginPath(); c.ellipse(W * cl[0], waterY * cl[1], cl[2], 7, 0, 0, 7); c.fill();
+  });
+  // 초저녁 별 (위쪽만)
+  c.fillStyle = 'rgba(255,255,255,.4)';
+  for (let i = 0; i < 8; i++) {
+    const sx = (i * 173.5) % W, sy = ((i * 71.7) % (waterY * 0.3));
     c.fillRect(sx, sy, 1.6, 1.6);
   }
 
@@ -567,6 +588,17 @@ function drawScene(dt) {
   const wat = c.createLinearGradient(0, waterY, 0, H);
   wat.addColorStop(0, '#0d3a63'); wat.addColorStop(0.55, '#08284a'); wat.addColorStop(1, '#041226');
   c.fillStyle = wat; c.fillRect(0, waterY, W, H - waterY);
+  // 노을 반사 — 수면 상부 온기
+  const warm = c.createLinearGradient(0, waterY, 0, waterY + 60);
+  warm.addColorStop(0, 'rgba(255,140,70,.22)'); warm.addColorStop(1, 'rgba(255,140,70,0)');
+  c.fillStyle = warm; c.fillRect(0, waterY, W, 60);
+  // 해 기둥 반사 (일렁임)
+  for (let i = 0; i < 8; i++) {
+    const ry = waterY + 8 + i * 10;
+    const flick = Math.sin(wave * 2.8 + i * 1.3) * (5 + i);
+    c.fillStyle = `rgba(255,160,85,${0.16 - i * 0.016})`;
+    c.beginPath(); c.ellipse(sunX + flick, ry, 26 - i * 2, 2.4, 0, 0, 7); c.fill();
+  }
   // 물결
   c.strokeStyle = 'rgba(140,200,255,.45)'; c.lineWidth = 2;
   c.beginPath();
@@ -582,6 +614,15 @@ function drawScene(dt) {
     x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
   }
   c.stroke();
+  // 수면 반짝임
+  for (let i = 0; i < 26; i++) {
+    const gx = (i * 89 + (i * i * 37) % 53) % W;
+    const twk = Math.sin(wave * 3.1 + i * 2.13);
+    if (twk > 0.35) {
+      c.fillStyle = `rgba(255,225,170,${(twk - 0.35) * 0.9})`;
+      c.fillRect(gx, waterY + 2 + (i * 5) % 9, 4 + twk * 5, 1.5);
+    }
+  }
 
   // 바닥
   c.fillStyle = '#0c1a2e'; c.beginPath();
@@ -621,7 +662,7 @@ function drawScene(dt) {
   }
 
   // 깊이 눈금 (오른쪽)
-  c.font = '10px sans-serif'; c.textAlign = 'right';
+  c.font = '11.5px sans-serif'; c.textAlign = 'right';
   for (let m = 0; m <= maxD; m += 1) {
     const y = waterY + m * pxPerM;
     if (y > H - 22) break;
@@ -669,11 +710,13 @@ function drawScene(dt) {
   roundedRect(c, kidX + 3, kidY - 48.5, 12, 3.2, 1.6); c.fill();
   c.fillStyle = '#175c36'; c.beginPath(); c.arc(kidX, kidY - 55, 2, 0, 7); c.fill();
 
-  // 낚싯대 — 긴장도에 따라 휘어짐
-  const tension = mode === 'fight' ? (stalled ? 1 : 0.55) : 0.12;
+  // 낚싯대 — 물고기 저항에 비례해 휘어짐 (버틸 땐 더 크게)
+  const tension = mode === 'fight'
+    ? Math.min(1, 0.2 + (curRes / 32) * 0.85 + (stalled ? 0.22 : 0))
+    : 0.12;
   const baseX = kidX + 16, baseY = kidY - 25;
   const tipX = Math.min(W * 0.46, baseX + W * 0.26);
-  const tipY = waterY - H * 0.2 + tension * 26;
+  const tipY = waterY - H * 0.2 + tension * 42;
   const cpx = baseX + (tipX - baseX) * 0.6, cpy = baseY - (baseY - tipY) * 1.15;
   const qp = tq => ({ x: (1 - tq) * (1 - tq) * baseX + 2 * (1 - tq) * tq * cpx + tq * tq * tipX,
                       y: (1 - tq) * (1 - tq) * baseY + 2 * (1 - tq) * tq * cpy + tq * tq * tipY });
@@ -738,13 +781,30 @@ function drawScene(dt) {
     c.beginPath(); c.moveTo(tipX, tipY);
     c.quadraticCurveTo(tipX + (fx - tipX) * 0.3, (tipY + fy) / 2, fx, fy - f.size * 0.9);
     c.stroke();
-    // 물고기
-    const wig = Math.sin(t * (struggling ? 18 : 6)) * 0.22;
+    // 물고기 — 버틸 땐 파닥임 크게
+    const wig = Math.sin(t * (struggling ? 20 : 6)) * (struggling ? 0.4 : 0.22);
     drawFishShape(c, fx, fy, f.size, f, -Math.PI / 2 + wig, true);
     if (struggling) {
       c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ff5a52';
       c.fillText('💢 버티는 중!', fx, fy + f.size * 1.9);
     }
+    // 줄이 수면을 가르는 지점 — 파문 + 버틸 때 물튀김
+    const lx = tipX + (fx - tipX) * ((waterY - tipY) / Math.max(1, fy - tipY));
+    const rp = (t % 0.9) / 0.9;
+    c.strokeStyle = `rgba(220,240,255,${(1 - rp) * 0.45})`; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(lx, waterY + 2, 5 + rp * 24, 2 + rp * 5, 0, 0, 7); c.stroke();
+    if (struggling && Math.random() < dt * 12) spawnSplash(lx, 2, 30);
+    // 깊이 진행률 — 오른쪽 세로 바 + 물고기 옆 %
+    const prog = Math.max(0, Math.min(1, 1 - depth / f.depth));
+    const barX = W - 8, botY2 = waterY + f.depth * pxPerM, fyB = waterY + depth * pxPerM;
+    c.lineCap = 'round';
+    c.strokeStyle = 'rgba(140,170,220,.25)'; c.lineWidth = 7;
+    c.beginPath(); c.moveTo(barX, waterY + 4); c.lineTo(barX, botY2); c.stroke();
+    c.strokeStyle = stalled ? 'rgba(255,110,100,.85)' : 'rgba(46,224,111,.85)';
+    c.beginPath(); c.moveTo(barX, Math.min(fyB, botY2)); c.lineTo(barX, botY2); c.stroke();
+    c.font = 'bold 14px sans-serif'; c.textAlign = 'center';
+    c.fillStyle = stalled ? '#ffb02e' : '#7ce8a8';
+    c.fillText(`▲ ${Math.round(prog * 100)}% 끌어올림`, fx, fy - f.size * 2.3);
     // 거품
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];
@@ -764,19 +824,34 @@ function drawScene(dt) {
     const px = W * 0.62 + Math.sin(wave * 0.7) * 26;
     const py = waterY + f.depth * pxPerM + Math.sin(wave * 1.6) * 6;
     drawFishShape(c, px, py, f.size, f, Math.sin(wave * 0.9) * 0.1, false);
-    c.font = '11.5px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(210,225,250,.75)';
+    c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(210,225,250,.8)';
     c.fillText(`${f.name} · 깊이 ${f.depth} m · 저항 ${f.res}`, px, py - f.size * 1.5);
   }
 
-  // 잡은 직후 연출
+  // 물튀김 입자
+  if (splashPending) { spawnSplash(tipX, 18, 70); splashPending = false; }
+  for (let i = splashes.length - 1; i >= 0; i--) {
+    const s = splashes[i];
+    s.vy += 190 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+    if (s.life <= 0 || s.y > 10) { splashes.splice(i, 1); continue; }
+    c.fillStyle = `rgba(210,235,255,${Math.min(0.85, s.life)})`;
+    c.beginPath(); c.arc(s.x, waterY + s.y, s.r, 0, 7); c.fill();
+  }
+
+  // 잡은 직후 — 물 밖 점프 연출
   if (caughtFishAnim > 0) {
-    caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.6);
+    caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.55);
     const k = 1 - caughtFishAnim;
-    const ay = waterY - 30 - k * 40;
-    drawFishShape(c, tipX, ay, f.size * (0.7 + caughtFishAnim * 0.3), f, -0.4 + Math.sin(wave * 12) * 0.15, true);
-    c.globalAlpha = caughtFishAnim;
-    c.font = 'bold 17px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#2ee06f';
-    c.fillText('낚았다!', tipX, ay - f.size * 1.6);
+    const jumpH = H * 0.10 + f.size * 1.4;
+    const ax = tipX - 12 + k * 28;
+    const ay = waterY + 8 - Math.sin(Math.PI * Math.min(1, k * 1.08)) * jumpH;
+    const rot = -0.9 + k * 1.6 + Math.sin(wave * 13) * 0.18;
+    drawFishShape(c, ax, ay, f.size * (0.85 + 0.15 * caughtFishAnim), f, rot, true);
+    if (Math.random() < dt * 26)
+      splashes.push({ x: ax, y: ay - waterY, vx: (Math.random() - 0.5) * 26, vy: 14, r: 1 + Math.random() * 1.6, life: 0.55 });
+    c.globalAlpha = Math.min(1, caughtFishAnim * 2.2);
+    c.font = 'bold 21px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#2ee06f';
+    c.fillText('낚았다!', tipX, waterY - jumpH - 16);
     c.globalAlpha = 1;
   }
 }
@@ -866,6 +941,13 @@ function drawTanks() {
     c.beginPath(); c.moveTo(W * 0.85, H - 3);
     c.quadraticCurveTo(W * 0.85 + Math.sin(wave * 1.5 + idx) * 3, H - 10, W * 0.85 + Math.sin(wave * 1.5 + idx) * 5, H - 17);
     c.stroke();
+    // 어항 기포 줄기 (항상)
+    for (let bi = 0; bi < 3; bi++) {
+      const bx2 = W * (0.14 + bi * 0.36) + Math.sin(wave * 2 + bi * 2.4 + idx) * 2;
+      const bp = (wave * (11 + bi * 5) + bi * 19 + idx * 13) % (H + 6);
+      c.strokeStyle = 'rgba(180,220,255,.35)'; c.lineWidth = 1;
+      c.beginPath(); c.arc(bx2, H - bp, 1 + (bi % 2) * 0.6, 0, 7); c.stroke();
+    }
     if (caught[k]) {
       const ph = wave * (0.8 + idx * 0.15) + idx * 2.1;
       const fx2 = W / 2 + Math.sin(ph) * W * 0.24;

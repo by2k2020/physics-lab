@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.78); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.3); border-radius: 10px; padding: 6px 14px; font-family: var(--mono); font-size: 19px; font-weight: 700; line-height: 1.15; }
+  .chip .lab { color: var(--dim); font-size: 11px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
   .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
   .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
@@ -53,7 +53,7 @@
   .predict .btns { display: flex; gap: 10px; }
   .predict button { padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; }
   .predict button:hover { border-color: var(--accent); }
-  .side { width: 364px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side { width: 398px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; text-transform: uppercase; }
   .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
   .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
@@ -69,7 +69,7 @@
   button.p.on small { color: #ffe6d3; }
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 17px; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
@@ -83,8 +83,8 @@
   .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
   .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
   .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
-  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
-  .readout .v { font-family: var(--mono); font-size: 15.5px; }
+  .readout .k { font-size: 11.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 18px; font-weight: 600; }
   .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
   .readout .v.g { color: var(--green); } .readout .v.s { color: #b9c4d6; }
   canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
@@ -101,9 +101,9 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 18px; font-family: var(--mono); cursor: zoom-in; }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 10px 0; }
-  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 13px; font-weight: 600; padding: 7px 0; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 20px; font-family: var(--mono); cursor: zoom-in; }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 12px 0; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 14px; font-weight: 700; padding: 8px 0; }
   table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
   table.mx td.miss { color: #ff6a5e; font-weight: 700; }
   table.mx td.empty { color: #38445c; }
@@ -224,7 +224,7 @@
       </div>
 
       <h3>높이–시간 그래프 <span style="text-transform:none;color:#5a6a85">(클릭하면 크게)</span></h3>
-      <canvas class="graph" id="gr" height="280"></canvas>
+      <canvas class="graph" id="gr" height="310"></canvas>
     </div>
   </section>
 
@@ -304,22 +304,29 @@ function fit2d(cv) {
 }
 function niceStep(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p; return 10 * p; }
 let ovlMode = null, lastHT = null;
-function renderHT(cvEl, series, tMax, yMax, tNow, big) {
+function renderHT(cvEl, series, tMax, yMax, tNow, big, refY) {
   const { c, W, H } = fit2d(cvEl);
   if (!W) return;
-  const F = big ? 16 : 13;
-  const L = big ? 66 : 50, R = big ? 22 : 14, T = big ? 24 : 16, B = big ? 48 : 38;
+  const F = big ? 17 : 14;
+  const L = big ? 70 : 54, R = big ? 22 : 14, T = big ? 24 : 18, B = big ? 50 : 42;
   c.clearRect(0, 0, W, H);
   const px = t => L + (t / tMax) * (W - L - R);
   const py = y => H - B - (y / yMax) * (H - T - B);
   c.font = F + 'px sans-serif';
   const tS = niceStep(tMax), yS = niceStep(yMax);
-  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0bd'; c.lineWidth = 1;
-  for (let t = 0; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + F + 5); }
-  for (let y = 0; y <= yMax + 1e-9; y += yS) { c.beginPath(); c.moveTo(L, py(y)); c.lineTo(W - R, py(y)); c.stroke(); c.textAlign = 'right'; c.fillText(y.toFixed(1), L - 7, py(y) + F * 0.36); }
-  c.strokeStyle = '#3a4661'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
-  c.fillStyle = '#9daabf'; c.textAlign = 'center'; c.fillText('시간 (s)', (L + W - R) / 2, H - 5);
+  c.strokeStyle = 'rgba(105,128,170,.28)'; c.fillStyle = '#a9b8d2'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0) + 's', px(t), H - B + F + 6); }
+  for (let y = 0; y <= yMax + 1e-9; y += yS) { c.beginPath(); c.moveTo(L, py(y)); c.lineTo(W - R, py(y)); c.stroke(); c.textAlign = 'right'; c.fillText(y.toFixed(1) + 'm', L - 7, py(y) + F * 0.36); }
+  c.strokeStyle = '#4a5878'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#b9c6da'; c.textAlign = 'center'; c.font = `bold ${F}px sans-serif`; c.fillText('시간 (s)', (L + W - R) / 2, H - 5);
   c.save(); c.translate(F + 2, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText('높이 (m)', 0, 0); c.restore();
+  c.font = F + 'px sans-serif';
+  // 골대 림 높이 기준선 — 곡선이 이 선을 내려오며 지나면 골인 가능
+  if (refY != null && refY > 0 && refY < yMax) {
+    c.save(); c.setLineDash([7, 5]); c.strokeStyle = 'rgba(255,176,46,.75)'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(L, py(refY)); c.lineTo(W - R, py(refY)); c.stroke(); c.restore();
+    c.fillStyle = '#ffb02e'; c.textAlign = 'left'; c.fillText('골대 림 ' + refY.toFixed(2) + 'm', L + 8, py(refY) - 6);
+  }
   if (series.pts.length > 1) {
     const n = Math.max(2, tNow != null ? series.pts.filter(p => p[0] <= tNow).length : series.pts.length);
     const drawn = series.pts.slice(0, n);
@@ -335,10 +342,10 @@ function renderHT(cvEl, series, tMax, yMax, tNow, big) {
     c.fillStyle = '#ff9046'; c.beginPath(); c.arc(px(cur[0]), py(cur[1]), big ? 7 : 5.5, 0, Math.PI * 2); c.fill();
   }
 }
-function drawHTGraph(series, tMax, yMax, tNow) {
-  lastHT = { series, tMax, yMax, tNow };
-  renderHT($('gr'), series, tMax, yMax, tNow, false);
-  if (ovlMode === 'graph') renderHT($('grBig'), series, tMax, yMax, tNow, true);
+function drawHTGraph(series, tMax, yMax, tNow, refY) {
+  lastHT = { series, tMax, yMax, tNow, refY };
+  renderHT($('gr'), series, tMax, yMax, tNow, false, refY);
+  if (ovlMode === 'graph') renderHT($('grBig'), series, tMax, yMax, tNow, true, refY);
 }
 
 /* ── 공용 3D 헬퍼 (스키슬로프와 동일) ── */
@@ -388,14 +395,39 @@ sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -6; sun.shadow.camera.right = 6; sun.shadow.camera.top = 6; sun.shadow.camera.bottom = -2;
 scene.add(sun);
 
-// 바닥 (체육관 마루 느낌)
-const floorMat = new THREE.MeshStandardMaterial({ color: 0xcaa46a, roughness: 0.75 });
+// 바닥 (체육관 마루 — 캔버스 텍스처: 널빤지 색 편차 + 이음매)
+const floorTex = (() => {
+  const fc = document.createElement('canvas'); fc.width = 512; fc.height = 512;
+  const c = fc.getContext('2d');
+  const shades = ['#cfa76d', '#c49a5f', '#d4ae76', '#bf9358', '#c9a065', '#d1a970', '#c29760', '#cba368'];
+  for (let r = 0; r < 8; r++) {
+    c.fillStyle = shades[r]; c.fillRect(0, r * 64, 512, 64);
+    c.fillStyle = 'rgba(120,85,40,.5)'; c.fillRect(0, r * 64 + 62, 512, 2);   // 널빤지 경계
+    c.fillStyle = 'rgba(140,100,50,.28)';                                       // 나뭇결
+    for (let k = 0; k < 5; k++) c.fillRect(0, r * 64 + 10 + k * 11 + (r * 7) % 6, 512, 1);
+    const off = (r * 173) % 512;                                                // 엇갈린 이음매
+    c.fillStyle = 'rgba(110,78,36,.55)';
+    c.fillRect(off, r * 64, 2, 64); c.fillRect((off + 256) % 512, r * 64, 2, 64);
+  }
+  const tex = new THREE.CanvasTexture(fc);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(5, 2);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+})();
+const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75 });
 const floor = new THREE.Mesh(new THREE.BoxGeometry(20, 0.2, 8), floorMat);
 floor.position.set(3.5, -0.1, 0); floor.receiveShadow = true; scene.add(floor);
-// 마루 라인
-for (let i = 0; i <= 10; i++) {
-  const ln = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.01, 8), new THREE.MeshBasicMaterial({ color: 0xb08a4e }));
-  ln.position.set(i * 0.9 - 0.5, 0.005, 0); scene.add(ln);
+// 3점 라인 (슈터 뒤 반원 아크 + 사이드 직선)
+{
+  const lineMat3 = new THREE.MeshBasicMaterial({ color: 0xf2f4f8 });
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(1.72, 0.02, 6, 64, Math.PI), lineMat3);
+  arc.rotation.x = Math.PI / 2;
+  const arcGrp = new THREE.Group(); arcGrp.add(arc);
+  arcGrp.rotation.y = -Math.PI / 2; arcGrp.position.y = 0.007; scene.add(arcGrp);
+  [-1.72, 1.72].forEach(z => {
+    const straight = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.012, 0.04), lineMat3);
+    straight.position.set(0.55, 0.007, z); scene.add(straight);
+  });
 }
 // 거리 눈금 포스트 (1~8)
 for (let d = 1; d <= 8; d++) {
@@ -447,7 +479,7 @@ function updateScore() {
     scene.remove(scoreSprite);
     scoreSprite.material.map.dispose(); scoreSprite.material.dispose(); scoreSprite.geometry.dispose();
   }
-  scoreSprite = textSprite(`골인 ${goals}  ·  시도 ${shots}`, { size: 44, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007, plane: true });
+  scoreSprite = textSprite(`골인 ${goals}  ·  시도 ${shots}`, { size: 52, color: '#ffd23e', bg: 'rgba(6,10,18,.95)', scale: 0.007, plane: true });
   const gw = scoreSprite.geometry.parameters.width;
   if (gw > 2.1) scoreSprite.scale.setScalar(2.1 / gw);   // 전광판(폭 2.3) 밖으로 글자가 삐져나가지 않게
   scoreSprite.position.set(5.4, 2.6, -3.72); scene.add(scoreSprite);
@@ -468,7 +500,8 @@ const crowd = [];
     legs.position.y = 0.05; fig.add(legs);
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.085, 0.18, 4), shirt);
     torso.rotation.y = Math.PI / 4; torso.scale.z = 0.72; torso.position.y = 0.2; fig.add(torso);
-    [-0.09, 0.09].forEach(z => { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.13, 0.04), shirt); arm.position.set(0, 0.24, z); arm.rotation.x = z > 0 ? -2.6 : 2.6; fig.add(arm); });   // 만세 팔
+    fig.userData.arms = [];
+    [-0.09, 0.09].forEach(z => { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.13, 0.04), shirt); arm.position.set(0, 0.24, z); arm.rotation.x = z > 0 ? -2.6 : 2.6; arm.userData.baseRX = arm.rotation.x; fig.add(arm); fig.userData.arms.push(arm); });   // 만세 팔
     const head = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.085, 16), skin);
     head.position.y = 0.36; fig.add(head);
     [-0.018, 0.018].forEach(x => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 6), crowdEye); e.position.set(x, 0.372, 0.044); fig.add(e); });
@@ -579,8 +612,58 @@ const shooterBody = shooter.userData.body, shootArm = shooter.userData.arms, han
 const BODY_Y = shooter.userData.bodyY;
 const ARM_READY = 1.9, ARM_RELEASE = -0.55;   // 양팔: 뒤로 젖힘(준비) → 앞으로 뻗음(릴리스)
 
+// ── BricQ 무게추 발사대 (슈터 뒤 — 던질 때 무게추가 낙하하며 지렛대를 누른다) ──
+const rig = { weight: null, lever: null, W_TOP: 0.74, W_BOT: 0.22, L_UP: 0.2, L_DOWN: -0.26 };
+{
+  const grey = new THREE.MeshStandardMaterial({ color: 0x5b6c8c, roughness: 0.6 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.6 });
+  const rigGp = new THREE.Group(); rigGp.position.set(-0.85, 0, 0); scene.add(rigGp);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.3), dark);
+  base.position.y = 0.025; base.castShadow = true; rigGp.add(base);
+  [-0.1, 0.1].forEach(z => {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.85, 0.05), grey);
+    post.position.set(0, 0.475, z); post.castShadow = true; rigGp.add(post);
+  });
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.3), dark);
+  top.position.y = 0.9; rigGp.add(top);
+  // 무게추 (노란 브릭 + 스터드)
+  const weight = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15),
+    new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.45 }));
+  weight.castShadow = true; weight.position.y = rig.W_TOP; rigGp.add(weight);
+  const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 12),
+    new THREE.MeshStandardMaterial({ color: 0xe6b825 }));
+  stud.position.y = 0.09; weight.add(stud);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.153, 0.03, 0.153),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+  weight.add(stripe);
+  // 지렛대 (피벗에서 기울어짐 — 무게추 쪽이 눌리면 반대쪽이 올라감)
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 10), dark);
+  pivot.rotation.x = Math.PI / 2; pivot.position.y = 0.14; rigGp.add(pivot);
+  const lever = new THREE.Group(); lever.position.y = 0.14; rigGp.add(lever);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.035, 0.09),
+    new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.5 }));
+  beam.castShadow = true; lever.add(beam);
+  const cup = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.11), grey);
+  cup.position.set(0.26, 0.03, 0); lever.add(cup);
+  lever.rotation.z = rig.L_UP;
+  rig.weight = weight; rig.lever = lever;
+}
+
 // ── 골대 (지지 기둥+베이스 + 프레임 백보드 + 교차 그물 + 파란 눈금자) ──
 const hoop = new THREE.Group(); scene.add(hoop);
+// 페인트 존 (골대 아래 키 영역 — 골대 거리를 따라 함께 이동)
+{
+  const key = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.006, 1.05),
+    new THREE.MeshBasicMaterial({ color: 0xb85c2e, transparent: true, opacity: 0.5 }));
+  key.position.set(-0.45, 0.0045, 0); hoop.add(key);
+  const kMat = new THREE.MeshBasicMaterial({ color: 0xf2f4f8 });
+  [-0.525, 0.525].forEach(z => {
+    const e = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.008, 0.035), kMat);
+    e.position.set(-0.45, 0.006, z); hoop.add(e);
+  });
+  const front = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 1.08), kMat);
+  front.position.set(-1.025, 0.006, 0); hoop.add(front);
+}
 const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 2.6, 12), new THREE.MeshStandardMaterial({ color: 0xe23c3c, roughness: 0.4 }));
 pole.castShadow = true; pole.position.set(0.34, 1.3, 0); hoop.add(pole);
 const poleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.6 }));
@@ -700,6 +783,8 @@ function stepSpray(dt) {
 /* ── 상태 ── */
 let cfg = { pw: 3, dist: 2, h: 1, air: false };
 let S = null, flying = false, t = 0, samples = [], finished = false, ballIdx = 0, armAngle = ARM_READY;
+const THROW_DUR = 0.5, THROW_DIP = 0.36;   // 슛 동작: 윈드업 36% + 드라이브 64%
+let throwT = 0, released = false, simT = 0;
 const results = {};
 let pendingPredict = null;
 
@@ -745,15 +830,17 @@ function placeBallOnHand() {
 
 function reset() {
   flying = false; finished = false; t = 0; samples = []; ballIdx = 0; armAngle = ARM_READY;
+  throwT = 0; released = false;
   shootArm.rotation.x = armAngle;
   shooterBody.position.y = BODY_Y - 0.07;   // 준비 자세 = 무릎 굽힘
+  if (rig.weight) { rig.weight.position.y = rig.W_TOP; rig.lever.rotation.z = rig.L_UP; }
   layoutScene();
   S = simulate();
   placeBallOnHand();
   $('bd').className = 'badge';
   $('fire').disabled = false;
   ['ro_ang', 'ro_v0', 'ro_apex', 'ro_time', 'ro_gap', 'ro_range'].forEach(id => $(id).textContent = '—');
-  drawHTGraph({ pts: [] }, 1, 1, 0);
+  drawHTGraph({ pts: [] }, 1.2, Math.max(1, S.apex * 1.15), 0, S.hoopY);
   setSt('ready');
 }
 
@@ -783,7 +870,7 @@ function onLand() {
 
 function launch() {
   if (finished) reset();
-  flying = true; t = 0; ballIdx = 0; finished = false;
+  flying = true; t = 0; ballIdx = 0; finished = false; throwT = 0; released = false;
   $('fire').disabled = true; setSt('run', '던지는 중…');
   setTraj(S.pts, S.scored ? 0x2ee06f : 0xff8a3d);
   trajLine.visible = !$('predictMode').checked;   // 예측 모드면 궤적 숨김
@@ -809,7 +896,7 @@ function openOvl(mode) {
   $('grBig').style.display = mode === 'graph' ? 'block' : 'none';
   $('mxBig').style.display = mode === 'mx' ? 'block' : 'none';
   $('ovlTitle').textContent = mode === 'graph' ? '📈 높이–시간 그래프' : '📋 거리 × 높이 득점표 (O 골인 · X 노골)';
-  if (mode === 'graph' && lastHT) renderHT($('grBig'), lastHT.series, lastHT.tMax, lastHT.yMax, lastHT.tNow, true);
+  if (mode === 'graph' && lastHT) renderHT($('grBig'), lastHT.series, lastHT.tMax, lastHT.yMax, lastHT.tNow, true, lastHT.refY);
   if (mode === 'mx') $('mxBig').innerHTML = '<table class="mx">' + $('matrix').innerHTML + '</table>';
 }
 function closeOvl() { ovlMode = null; $('ovl').classList.remove('on'); }
@@ -953,15 +1040,31 @@ function frame(ts) {
   if (w && h && (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR))) {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
-  // 슛 동작: 무릎 굽혔다 펴며(몸 상승) 양팔 스윙 → 릴리스
-  if (flying && armAngle > ARM_RELEASE) {
-    armAngle = Math.max(ARM_RELEASE, armAngle - real * 14); shootArm.rotation.x = armAngle;
-    const prog = (ARM_READY - armAngle) / (ARM_READY - ARM_RELEASE);   // 0=준비, 1=릴리스
-    shooterBody.position.y = BODY_Y - 0.07 * (1 - prog);               // 굽힌 무릎이 펴짐
+  simT += real;
+  // 슛 동작 2단계: ① 윈드업(무릎 더 굽히고 팔 젖힘) ② 드라이브(무게추 낙하 = 가속 스윙 + 점프)
+  if (flying && !released) {
+    throwT += real;
+    const u = Math.min(1, throwT / THROW_DUR);
+    if (u < THROW_DIP) {
+      const e = Math.sin((u / THROW_DIP) * Math.PI / 2);
+      armAngle = ARM_READY + 0.28 * e;
+      shooterBody.position.y = BODY_Y - 0.07 - 0.05 * e;
+    } else {
+      const k = (u - THROW_DIP) / (1 - THROW_DIP), e = k * k * (3 - 2 * k);
+      const acc = e * e;                                   // 릴리스로 갈수록 빨라지는 스윙
+      armAngle = (ARM_READY + 0.28) + (ARM_RELEASE - ARM_READY - 0.28) * acc;
+      shooterBody.position.y = BODY_Y - 0.12 + 0.16 * e;   // 무릎 펴며 살짝 점프
+      if (rig.weight) {                                    // 무게추 낙하 → 지렛대 눌림
+        rig.weight.position.y = rig.W_TOP + (rig.W_BOT - rig.W_TOP) * e;
+        rig.lever.rotation.z = rig.L_UP + (rig.L_DOWN - rig.L_UP) * e;
+      }
+    }
+    shootArm.rotation.x = armAngle;
     placeBallOnHand();
-    if (armAngle <= ARM_RELEASE) { t = 0; ballIdx = 0; }
+    if (u >= 1) { released = true; t = 0; ballIdx = 0; }
   } else if (flying) {
-    // 공 비행
+    // 공 비행 (슈터는 착지하며 자세 안정)
+    shooterBody.position.y += (BODY_Y - shooterBody.position.y) * Math.min(1, real * 6);
     t += real * speed;
     const hoopX = S.hoopX;
     while (ballIdx < S.pts.length - 1 && S.pts[ballIdx][2] < t) ballIdx++;
@@ -969,15 +1072,25 @@ function frame(ts) {
     ball.position.set(p[0], p[1], 0);
     ball.rotation.z -= real * 6;
     fillReadouts(false);
-    drawHTGraph({ pts: S.pts.map(q => [q[2], q[1]]) }, S.tEnd * 1.05, S.apex * 1.15, t);
+    drawHTGraph({ pts: S.pts.map(q => [q[2], q[1]]) }, S.tEnd * 1.05, S.apex * 1.15, t, S.hoopY);
     if (ballIdx >= S.pts.length - 1) onLand();
   }
   stepSpray(real);
-  // 골인 환호 — 관중 점프
+  // 관중 — 평소엔 좌우로 흔들며 응원, 골인하면 점프 + 팔 흔들기
   if (cheerT > 0) {
     cheerT -= real;
-    crowd.forEach((f, i) => { f.position.y = f.userData.baseY + Math.abs(Math.sin(cheerT * 9 + i * 1.3)) * 0.09; });
-    if (cheerT <= 0) crowd.forEach(f => f.position.y = f.userData.baseY);
+    crowd.forEach((f, i) => {
+      f.position.y = f.userData.baseY + Math.abs(Math.sin(cheerT * 9 + i * 1.3)) * 0.11;
+      f.rotation.z = Math.sin(cheerT * 12 + i) * 0.14;
+      f.userData.arms.forEach((a, j) => a.rotation.x = a.userData.baseRX + Math.sin(cheerT * 16 + i + j * Math.PI) * 0.45);
+    });
+    if (cheerT <= 0) crowd.forEach(f => { f.position.y = f.userData.baseY; f.rotation.z = 0; f.userData.arms.forEach(a => a.rotation.x = a.userData.baseRX); });
+  } else {
+    crowd.forEach((f, i) => {
+      f.position.y = f.userData.baseY + Math.abs(Math.sin(simT * 2.1 + i * 1.7)) * 0.012;
+      f.rotation.z = Math.sin(simT * 1.5 + i) * 0.05;
+      f.userData.arms.forEach((a, j) => a.rotation.x = a.userData.baseRX + Math.sin(simT * 2.6 + i * 1.1 + j * Math.PI) * 0.14);
+    });
   }
   if (camGoal.active) {
     camera.position.lerp(camGoal.pos, 0.09); controls.target.lerp(camGoal.tgt, 0.09);

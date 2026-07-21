@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16.5px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
@@ -66,15 +66,19 @@
 
   .gauge { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
   .gauge .g-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; color: #c6d2e6; margin-bottom: 8px; }
-  .gauge .g-head b { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+  .gauge .g-head b { font-family: var(--mono); font-weight: 700; font-size: 18px; }
   .g-track { position: relative; height: 30px; background: #070c16; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .g-fill { height: 100%; border-radius: 9px; width: 0%; transition: none; }
+  @keyframes gpulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.6); } }
+  .gauge.pulse .g-fill { animation: gpulse .45s ease-in-out infinite; }
+  .gauge.pulse { border-color: rgba(77,163,255,.55); box-shadow: 0 0 14px rgba(77,163,255,.22); }
+  .gauge.pulse.over { border-color: rgba(46,224,111,.6); box-shadow: 0 0 16px rgba(46,224,111,.3); }
   .g-mark { position: absolute; top: -2px; bottom: -2px; width: 3.5px; background: var(--red); box-shadow: 0 0 8px rgba(255,90,82,.9); }
   .bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; font-size: 13px; color: #c6d2e6; }
   .bar-row .lab { width: 88px; flex: none; font-weight: 700; }
   .bar-track { flex: 1; height: 24px; background: #0c1220; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 8px; }
-  .bar-row .val { width: 64px; text-align: right; font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
+  .bar-row .val { width: 72px; text-align: right; font-family: var(--mono); font-size: 15.5px; font-weight: 700; }
 
   .quiz { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
   .quiz .q { font-size: 12.5px; color: #c6d2e6; line-height: 1.55; margin-bottom: 8px; }
@@ -90,8 +94,8 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 10px 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 5px 3px; text-align: center; word-break: keep-all; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 4px; text-align: center; word-break: keep-all; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -169,7 +173,7 @@
       </div>
 
       <h3>힘 게이지 — 빨간 선(필요한 힘)을 넘겨야 올라가!</h3>
-      <div class="gauge">
+      <div class="gauge" id="gauge">
         <div class="g-head"><span>💪 내 힘</span><b><span id="g_pow" style="color:var(--accent)">0</span> / 필요 <span id="g_need" style="color:var(--red)">10</span></b></div>
         <div class="g-track">
           <div class="g-fill" id="g_fill" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div>
@@ -292,6 +296,8 @@ const S = {
   holding: false, lowering: false, dropping: false,
   arrived: false, failLogged: false, stuckT: 0,
   shakeT: 0, t: 0, runCount: 0, missionDone: false,
+  swayAng: 0, swayVel: 0, ropeVel: 0, slip: false,
+  dust: [], lastPx: 0, lastGroundY: 0,
 };
 const ma = () => CONFIGS[S.cfg].ma;
 const need = () => S.w / ma();
@@ -311,6 +317,7 @@ function softReset() {
   S.h = 0; S.rope = 0; S.power = 0;
   S.lowering = false; S.dropping = false;
   S.arrived = false; S.failLogged = false; S.stuckT = 0;
+  S.swayAng = 0; S.swayVel = 0; S.ropeVel = 0; S.slip = false; S.dust = [];
   hideBadge();
 }
 function hideBadge() { $('bd').className = 'badge'; }
@@ -334,7 +341,7 @@ holdBtn($('lower'),
   () => { if (S.dropping) return; S.lowering = true; S.holding = false; },
   () => { S.lowering = false; });
 $('drop').addEventListener('click', () => {
-  if (S.h > 0.05 && !S.dropping) { S.dropping = true; S.holding = false; S.lowering = false; }
+  if (S.h > 0.05 && !S.dropping) { S.dropping = true; S.holding = false; S.lowering = false; S.swayVel += 1.4; }
 });
 $('reset').addEventListener('click', softReset);
 
@@ -371,6 +378,8 @@ function logRow(verdict) {
 function step(dt) {
   S.t += dt;
   const nd = need();
+  const prevRope = S.rope;
+  S.slip = false;
 
   // 힘: 꾹 누르면 차오르고, 놓으면 스르르 빠짐
   if (S.holding) S.power += (MAX_PULL - S.power) * Math.min(1, 5 * dt);
@@ -382,6 +391,7 @@ function step(dt) {
     S.h -= 3 * dt; S.rope = Math.max(0, S.rope - 3 * ma() * dt);
     if (S.h <= 0) {
       S.h = 0; S.dropping = false; S.shakeT = 0.55;
+      spawnDust();
       showBadge('fail', '💥 쿵!! 확 놓으면 화물이 부서져 — 브레이크로 천천히 내리자!');
     }
   } else if (S.lowering && S.h > 0) {    // 브레이크 하강
@@ -410,7 +420,8 @@ function step(dt) {
       logRow('성공 🎉');
     }
   } else if (S.holding && S.power >= Math.min(MAX_PULL * 0.93, nd) && S.power <= nd && S.h < MAX_H) {
-    // 최대 힘으로도 못 드는 중
+    // 최대 힘으로도 못 드는 중 — 발이 미끄러짐
+    S.slip = true;
     S.stuckT += dt;
     if (S.stuckT > 1.4 && !S.failLogged) {
       S.failLogged = true;
@@ -419,6 +430,36 @@ function step(dt) {
     }
   }
   if (S.shakeT > 0) S.shakeT = Math.max(0, S.shakeT - dt);
+
+  // 줄 속도 (도르래 회전 강조·스웨이 여기에 연동)
+  S.ropeVel = dt > 0 ? (S.rope - prevRope) / dt : 0;
+
+  // 화물 스웨이 — 감쇠 진자
+  S.swayVel += (-7 * S.swayAng - 1.6 * S.swayVel) * dt;
+  if (Math.abs(S.ropeVel) > 0.02 && !S.dropping) S.swayVel += Math.sin(S.t * 2.1) * 0.9 * dt;
+  if (S.dropping) S.swayVel += Math.sin(S.t * 9) * 2.6 * dt;
+  S.swayAng += S.swayVel * dt;
+  S.swayAng = Math.max(-0.35, Math.min(0.35, S.swayAng));
+
+  // 먼지 파티클
+  for (const p of S.dust) {
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vx *= Math.exp(-1.8 * dt); p.vy *= Math.exp(-2.2 * dt);
+    p.r += 24 * dt; p.life -= dt;
+  }
+  S.dust = S.dust.filter(p => p.life > 0);
+}
+function spawnDust() {
+  for (let i = 0; i < 18; i++) {
+    S.dust.push({
+      x: S.lastPx + (Math.random() - 0.5) * 80,
+      y: S.lastGroundY - 3 - Math.random() * 8,
+      vx: (Math.random() - 0.5) * 170,
+      vy: -(15 + Math.random() * 60),
+      r: 4 + Math.random() * 7,
+      life: 0.7 + Math.random() * 0.55, max: 1.25,
+    });
+  }
 }
 
 /* ── 게이지 DOM ── */
@@ -435,6 +476,9 @@ function updatePanel() {
     ? 'linear-gradient(90deg,#15803d,#2ee06f)'
     : 'linear-gradient(90deg,#1f5eff,#4da3ff)';
   $('g_mark').style.left = Math.min(98, nd / GAUGE_MAX * 100) + '%';
+  const gz = $('gauge');
+  gz.classList.toggle('pulse', S.holding);
+  gz.classList.toggle('over', S.power > nd);
   $('barRope').style.width = Math.min(100, S.rope / ROPE_MAX * 100) + '%';
   $('barH').style.width = Math.min(100, S.h / ROPE_MAX * 100) + '%';
   $('valRope').textContent = S.rope.toFixed(1) + ' m';
@@ -463,9 +507,20 @@ function wheel(c, x, y, r, ang, color) {
     c.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
     c.stroke();
   }
+  // 림 마커 점 (회전이 눈에 보이게)
+  c.fillStyle = '#fff3c4';
+  c.beginPath(); c.arc(r * 0.82, 0, Math.max(1.8, r * 0.13), 0, 7); c.fill();
   // 허브 + 축 볼트
   c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.26, 0, 7); c.fill();
   c.fillStyle = '#4d5d84'; c.beginPath(); c.arc(0, 0, r * 0.12, 0, 7); c.fill();
+  // 회전 중 속도선 (줄과 같이 도는 아크)
+  if (Math.abs(S.ropeVel) > 0.05) {
+    c.strokeStyle = 'rgba(255,217,122,.5)'; c.lineWidth = 2; c.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      const a = k * 2.094;
+      c.beginPath(); c.arc(0, 0, r + 7, a, a + 0.85); c.stroke();
+    }
+  }
   c.restore();
 }
 function rope(c, pts, width = 3) {
@@ -509,13 +564,32 @@ function draw() {
   const shy = S.shakeT > 0 ? (Math.random() - 0.5) * S.shakeT * 18 : 0;
   c.save(); c.translate(shx, shy);
 
-  // 하늘 + 별 점
+  // 밤하늘 — 그라데이션 + 반짝이는 별 + 달 + 흐르는 구름
   const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  bg.addColorStop(0, '#070b18'); bg.addColorStop(0.55, '#0c1326'); bg.addColorStop(1, '#152140');
   c.fillStyle = bg; c.fillRect(-30, -30, W + 60, H + 60);
-  c.fillStyle = 'rgba(120,145,190,.08)';
-  for (let x = 20; x < W; x += 34)
-    for (let y = 20; y < H * 0.7; y += 34) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+  for (let i = 0; i < 70; i++) {
+    const sx = (i * 97.31) % W, sy = (i * 57.77) % (H * 0.62);
+    const tw = 0.5 + 0.5 * Math.sin(S.t * 1.6 + i * 2.3);
+    c.fillStyle = `rgba(190,210,255,${0.06 + 0.16 * tw})`;
+    c.beginPath(); c.arc(sx, sy, 0.8 + (i % 3) * 0.5, 0, 7); c.fill();
+  }
+  const moonX = W - 88, moonY = 74;
+  const mg = c.createRadialGradient(moonX, moonY, 6, moonX, moonY, 52);
+  mg.addColorStop(0, 'rgba(240,238,215,.28)'); mg.addColorStop(1, 'rgba(240,238,215,0)');
+  c.fillStyle = mg; c.beginPath(); c.arc(moonX, moonY, 52, 0, 7); c.fill();
+  c.fillStyle = '#e8e4c8'; c.beginPath(); c.arc(moonX, moonY, 19, 0, 7); c.fill();
+  c.fillStyle = 'rgba(160,158,130,.5)';
+  for (const [ox, oy, or2] of [[-6, -4, 3.4], [5, 5, 2.6], [3, -8, 2], [-3, 8, 1.7]]) {
+    c.beginPath(); c.arc(moonX + ox, moonY + oy, or2, 0, 7); c.fill();
+  }
+  c.fillStyle = 'rgba(150,170,210,.06)';
+  for (const [sp, oy, sc] of [[9, 60, 1], [14, 128, 1.35]]) {
+    const cx0 = ((S.t * sp + oy * 7) % (W + 260)) - 130;
+    for (const [ex, ey, rw, rh] of [[0, 0, 66, 15], [40, -8, 48, 12], [-38, -5, 42, 11]]) {
+      c.beginPath(); c.ellipse(cx0 + ex * sc, oy + ey, rw * sc, rh, 0, 0, 7); c.fill();
+    }
+  }
 
   const groundY = H - 46;
   const jibY = 74;
@@ -533,6 +607,24 @@ function draw() {
     c.beginPath(); c.moveTo(x, groundY + 2); c.lineTo(x - 10, groundY + 14); c.stroke();
   }
 
+  // 아주 먼 스카이라인 (지평선 실루엣)
+  c.fillStyle = 'rgba(19,27,48,.55)';
+  for (let i = 0; i < 14; i++) {
+    const fx = (i * 137.3) % (W + 60) - 30;
+    const fw = 34 + (i * 41) % 46, fh = 24 + (i * 67) % 44;
+    c.fillRect(fx, groundY - fh, fw, fh);
+  }
+  // 먼 곳의 다른 타워크레인 실루엣
+  const dcx = W * 0.55, dcy = groundY - 118;
+  c.strokeStyle = 'rgba(45,60,95,.7)'; c.lineWidth = 2.5;
+  c.beginPath();
+  c.moveTo(dcx, groundY); c.lineTo(dcx, dcy);
+  c.moveTo(dcx - 44, dcy + 6); c.lineTo(dcx + 62, dcy + 6);
+  c.moveTo(dcx, dcy - 14); c.lineTo(dcx - 40, dcy + 6);
+  c.moveTo(dcx, dcy - 14); c.lineTo(dcx + 58, dcy + 6);
+  c.moveTo(dcx + 44, dcy + 6); c.lineTo(dcx + 44, dcy + 34);
+  c.stroke();
+  c.fillStyle = 'rgba(45,60,95,.7)'; c.fillRect(dcx + 38, dcy + 34, 12, 9);
   // 멀리 보이는 건물 실루엣 (공사장 배경)
   for (const [bx0, bw, bh] of [[W - 165, 92, 150], [W - 228, 56, 96], [14, 50, 74]]) {
     c.fillStyle = 'rgba(26,36,62,.6)';
@@ -583,8 +675,23 @@ function draw() {
   c.strokeStyle = '#46557a'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(mastX + 4, jibY - 52); c.lineTo(px + 34, jibY - 9);
   c.moveTo(mastX + 4, jibY - 52); c.lineTo(mastX - 56, jibY - 24); c.stroke();
-  c.fillStyle = '#ff5a52';                                          // 항공 표시등
-  c.beginPath(); c.arc(mastX + 4, jibY - 54, 2.5 + Math.sin(S.t * 3) * 0.8, 0, 7); c.fill();
+  // 항공 경고등 — 꼭대기 빨강 · 지브 끝 주황 교차 점멸
+  const beaconOn = Math.sin(S.t * 5) > -0.15;
+  if (beaconOn) {
+    const bgl = c.createRadialGradient(mastX + 4, jibY - 55, 1, mastX + 4, jibY - 55, 16);
+    bgl.addColorStop(0, 'rgba(255,90,82,.75)'); bgl.addColorStop(1, 'rgba(255,90,82,0)');
+    c.fillStyle = bgl; c.beginPath(); c.arc(mastX + 4, jibY - 55, 16, 0, 7); c.fill();
+  }
+  c.fillStyle = beaconOn ? '#ff5a52' : '#57231f';
+  c.beginPath(); c.arc(mastX + 4, jibY - 55, 3.2, 0, 7); c.fill();
+  const tipOn = Math.sin(S.t * 5 + Math.PI) > -0.15;
+  if (tipOn) {
+    const tgl = c.createRadialGradient(px + 46, jibY - 14, 1, px + 46, jibY - 14, 12);
+    tgl.addColorStop(0, 'rgba(255,176,46,.7)'); tgl.addColorStop(1, 'rgba(255,176,46,0)');
+    c.fillStyle = tgl; c.beginPath(); c.arc(px + 46, jibY - 14, 12, 0, 7); c.fill();
+  }
+  c.fillStyle = tipOn ? '#ffb02e' : '#4d3a12';
+  c.beginPath(); c.arc(px + 46, jibY - 14, 2.6, 0, 7); c.fill();
 
   // 화물 위치 계산
   const loadW = S.w === 10 ? 62 : S.w === 20 ? 96 : 84;
@@ -592,10 +699,12 @@ function draw() {
   const blockGap = M > 1 ? 46 : 26;                       // 훅/움직도르래 공간
   const liftPx = groundY - loadH2 - (jibY + 60) - blockGap;
   const pxPerM = liftPx / MAX_H;
-  const sway = (S.holding || S.lowering || S.dropping) ? Math.sin(S.t * 2.4) * 4 : 0;
-  const lx = px + sway;                                    // 화물 중심 x
   const loadTop = groundY - loadH2 - S.h * pxPerM;
+  const hangLen = Math.max(60, loadTop - (jibY + 34));     // 매달린 길이 → 진폭 연동
+  const sway = Math.sin(S.swayAng) * Math.min(46, hangLen * 0.22);
+  const lx = px + sway;                                    // 화물 중심 x (진자 스웨이)
   const wheelAng = S.rope * 1.6;
+  S.lastPx = px; S.lastGroundY = groundY;                  // 먼지 스폰 좌표
 
   // 높이 눈금자
   const rulerX = px + 74;
@@ -672,6 +781,13 @@ function draw() {
 
   // 사람 + 손잡이
   drawPuller(c, handleX, handleY, groundY, S.holding);
+
+  // 추락 먼지 구름
+  for (const p of S.dust) {
+    const a = Math.max(0, p.life / p.max);
+    c.fillStyle = `rgba(152,142,120,${(0.34 * a).toFixed(3)})`;
+    c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill();
+  }
 
   // 당긴 줄 코일
   const coilR = 7 + Math.min(20, S.rope * 1.6);
@@ -768,12 +884,19 @@ function drawPuller(c, hx, hy, groundY, pulling) {
   c.fillStyle = '#c2410c';
   c.beginPath(); c.roundRect(hx - 14, hy - 6, 28, 12, 6); c.fill();
   c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-  // 미니피겨 인부 — 힘을 줄수록 뒤로 기울며 버티는 자세
+  // 미니피겨 인부 — 힘을 줄수록 뒤로 기울며 버티는 자세, 힘 부족이면 발이 미끄러짐
   const lean = Math.min(1, S.power / MAX_PULL) * 16;
-  const bx = hx + 24, by = groundY;
+  const sl = S.slip ? Math.sin(S.t * 26) * 2.5 + 2 : 0;   // 미끄러지는 발 떨림
+  const bx = hx + 24 + sl, by = groundY;
   const hipX = bx + lean * 0.5, hipY = by - 26;
   const shX = hipX + lean * 1.1, shY = hipY - 20 + lean * 0.25;
   c.lineCap = 'round';
+  if (S.slip) {                                            // 발 밑 스키드 자국
+    c.strokeStyle = 'rgba(205,192,160,.4)'; c.lineWidth = 2;
+    for (let k = 0; k < 3; k++) {
+      c.beginPath(); c.moveTo(bx - 22 + k * 6, by - 1.5); c.lineTo(bx - 30 + k * 6, by - 1.5); c.stroke();
+    }
+  }
   // 다리 (앞다리 버팀 + 뒷다리 뻗음)
   c.strokeStyle = '#3b5b8f'; c.lineWidth = 6;
   c.beginPath();
@@ -806,9 +929,15 @@ function drawPuller(c, hx, hy, groundY, pulling) {
   c.beginPath(); c.roundRect(hdX - 10, hdY - 3.5, 20, 3, 1.5); c.fill();
   c.fillStyle = '#1a2234';
   c.beginPath(); c.arc(hdX - 3.6, hdY + 2, 1.2, 0, 7); c.fill();   // 눈
+  if (S.slip) {                                               // 땀방울 + 미끌 표시
+    c.fillStyle = 'rgba(120,190,255,.85)';
+    c.beginPath(); c.arc(hdX + 10, hdY - 6 + Math.sin(S.t * 10) * 2.5, 2, 0, 7); c.fill();
+    c.fillStyle = '#ff5a52'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
+    c.fillText('미끌!', bx - 20, by - 12);
+  }
   if (pulling) {
     c.fillStyle = '#ffb02e'; c.font = 'bold 12.5px sans-serif'; c.textAlign = 'center';
-    c.fillText('영차!', hdX, hdY - 16);
+    c.fillText(S.slip ? '으윽...!' : '영차!', hdX, hdY - 16);
     // 당기는 방향 화살
     c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
     c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, hy + 30); c.stroke();

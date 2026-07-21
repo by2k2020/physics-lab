@@ -28,8 +28,10 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 15.5px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .chip.dist { border-color: rgba(255,144,70,.55); box-shadow: 0 0 16px rgba(255,144,70,.2); }
+  .chip.dist #hud_last { font-size: 19px; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.good { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
@@ -56,16 +58,16 @@
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .gauge-wrap { margin: 7px 0 2px; }
-  .gauge { position: relative; height: 28px; background: #0c1220; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .gauge { position: relative; height: 34px; background: #0c1220; border: 1px solid var(--border); border-radius: 17px; overflow: hidden; }
   .gauge-fill { position: absolute; inset: 0; background: linear-gradient(90deg, #2ee06f 0%, #ffd02e 55%, #ff5a52 100%); clip-path: inset(0 100% 0 0); transition: clip-path .18s ease; }
-  .gauge-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+  .gauge-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 16px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
   .pick { display: flex; gap: 6px; }
   .pick button { flex: 1; padding: 7px 0; font-size: 12.5px; border-radius: 8px; }
   .pick button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); font-weight: 700; }
   .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
   .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
-  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
-  .readout .v { font-family: var(--mono); font-size: 15.5px; }
+  .readout .k { font-size: 11.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 17.5px; font-weight: 600; }
   .readout .v.a { color: var(--accent); } .readout .v.g { color: var(--green); } .readout .v.o { color: var(--orange); }
   .predict { background: rgba(199,146,234,.06); border: 1px solid rgba(199,146,234,.3); border-radius: 10px; padding: 11px 13px; margin-bottom: 13px; }
   .predict .q { font-size: 12.5px; color: #dcc9f0; line-height: 1.6; margin-bottom: 9px; }
@@ -80,8 +82,8 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -127,7 +129,7 @@
       <div class="hud">
         <div class="chip"><span class="lab">건넌 연잎</span><span id="hud_pads" style="color:var(--green)">0 / 4</span></div>
         <div class="chip"><span class="lab">다음 목표까지</span><span id="hud_next">— cm</span></div>
-        <div class="chip"><span class="lab">지난 점프 거리</span><span id="hud_last" style="color:var(--orange)">— cm</span></div>
+        <div class="chip dist"><span class="lab">점프 거리 (실시간)</span><span id="hud_last" style="color:var(--orange)">— cm</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
@@ -236,6 +238,10 @@ let flight = null;                      // {x0, vx, vy, t, pts, peak}
 let pastTrails = [];                    // [{pts, ok}]
 let splash = null;                      // {x, t, drops:[]}
 let demo = null;                        // 예측 확인 고스트
+let padFx = [];                         // 연잎 출렁임 [{x, t}]
+let rings = [];                         // 착지 물결 링 [{x, t}]
+let distPop = null;                     // 착지 거리 팝업 {x, dist, t}
+let celebrate = null;                   // 클리어 연출 {t}
 let runCount = 0;
 let lastDist = null, lastPeak = null;
 let clock = 0;
@@ -312,17 +318,21 @@ function landAt(x) {
   pastTrails.push({ pts: flight.pts, ok });
   if (pastTrails.length > 8) pastTrails.shift();
   logRow(flight.p, lastDist, onBank ? '🏆 클리어' : pad ? '🍃 착지' : '💦 첨벙');
+  distPop = { x, dist: lastDist, t: 0 };
   if (onBank) {
     posX = BANK_X + 24;
     padsCrossed = PADS.length;
     cleared = true;
     state = 'ready';
+    celebrate = { t: 0 };
     setBadge('good', '🏆 클리어! 연못을 다 건넜어 — 대단해!');
     setStatus('done', '클리어! ↺ 처음부터로 다시 도전');
   } else if (pad) {
     posX = pad;
     padsCrossed = Math.max(padsCrossed, PADS.indexOf(pad) + 1);
     state = 'ready';
+    padFx.push({ x: pad, t: 0 });
+    rings.push({ x: pad, t: 0 });
     setBadge('good', '🍃 연잎 착지! 이어서 다음 점프!');
     setStatus('done', '착지 성공 — 다음 연잎을 노려 봐');
     $('btnJump').disabled = false;
@@ -343,6 +353,7 @@ function landAt(x) {
 function restart() {
   posX = START_X; padsCrossed = 0; cleared = false;
   state = 'ready'; flight = null; splash = null; demo = null;
+  padFx = []; rings = []; distPop = null; celebrate = null;
   setBadge('');
   setStatus('', '준비 — 고무줄을 당기고 점프!');
   $('btnJump').disabled = false;
@@ -448,7 +459,19 @@ function drawFrog(c, px, py, size, phase, heavy, angRad, pullT) {
   const hip = [-s * 0.25, s * 0.15];
   let knee, ankle, footDir;
   if (phase === 'fly') {
-    knee = [-s * 0.95, s * 0.35]; ankle = [-s * 1.5, s * 0.62]; footDir = Math.PI + 0.45;
+    // pullT = 비행 진행도(0..1): 발사 뻗기 → 공중 오므리기 → 착지 뻗기 3단계
+    const ft = Math.min(1, Math.max(0, pullT));
+    const P0 = { k: [-0.95, 0.35], a: [-1.5, 0.62], fd: Math.PI + 0.45 };   // 발사: 뒤로 쭉
+    const P1 = { k: [-0.52, 0.0], a: [-0.26, 0.42], fd: Math.PI * 0.92 };   // 공중: 몸 아래로 오므림
+    const P2 = { k: [-0.5, 0.48], a: [-0.92, 0.98], fd: Math.PI * 0.68 };   // 착지: 앞아래로 뻗기
+    const sm = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    const mixP = (A, B, t) => ({
+      k: [lerp(A.k[0], B.k[0], t), lerp(A.k[1], B.k[1], t)],
+      a: [lerp(A.a[0], B.a[0], t), lerp(A.a[1], B.a[1], t)],
+      fd: lerp(A.fd, B.fd, t),
+    });
+    const P = mixP(mixP(P0, P1, sm((ft - 0.2) / 0.25)), P2, sm((ft - 0.66) / 0.26));
+    knee = [P.k[0] * s, P.k[1] * s]; ankle = [P.a[0] * s, P.a[1] * s]; footDir = P.fd;
   } else {
     knee = [lerp(-s * 0.62, -s * 0.78, pullT), lerp(s * 0.26, -s * 0.08, pullT)];
     ankle = [lerp(-s * 0.18, -s * 0.34, pullT), lerp(s * 0.5, s * 0.46, pullT)];
@@ -524,7 +547,11 @@ function drawFrog(c, px, py, size, phase, heavy, angRad, pullT) {
   c.restore();
 }
 function drawPad(c, M, cx, isGoalDone) {
-  const px = M.x(cx), py = M.waterY;
+  // 착지 직후 감쇠 출렁임
+  let bob = 0;
+  const fx = padFx.find(f => f.x === cx);
+  if (fx) bob = Math.sin(fx.t * 12) * 5.5 * Math.exp(-fx.t * 2.6);
+  const px = M.x(cx), py = M.waterY + bob;
   const rw = PAD_HALF * M.s, rh = Math.max(6, rw * 0.28);
   c.save();
   c.fillStyle = 'rgba(0,0,0,.35)';
@@ -592,6 +619,20 @@ function drawDragonfly(c, W, H) {
   c.fillStyle = '#0b2a33';
   c.beginPath(); c.arc(6.5, -1, 1.1, 0, 7); c.fill();
   c.restore();
+}
+function drawFireflies(c, W, waterY) {
+  // 상시 배경 반딧불 — 수면 위를 천천히 떠다니며 깜빡임
+  for (let i = 0; i < 10; i++) {
+    const sp = 0.11 + (i % 5) * 0.04;
+    const x = W * (0.5 + 0.46 * Math.sin(clock * sp + i * 2.4));
+    const y = waterY - 16 - (26 + (i * 37) % 95) - Math.sin(clock * 0.7 + i * 1.3) * 12;
+    const tw = 0.5 + 0.5 * Math.sin(clock * 2.3 + i * 1.9);
+    c.save();
+    c.globalAlpha = 0.2 + 0.6 * tw;
+    c.fillStyle = '#d9ff7c'; c.shadowColor = '#c8ff5e'; c.shadowBlur = 9;
+    c.beginPath(); c.arc(x, y, 1.9, 0, 7); c.fill();
+    c.restore();
+  }
 }
 function draw() {
   const { c, W, H } = fit();
@@ -663,10 +704,22 @@ function draw() {
   drawCattail(c, M.x(-38), M.waterY - 6, 46, 1.7);
   drawCattail(c, M.x(448), M.waterY - 8, 58, 3.1);
   drawCattail(c, M.x(468), M.waterY - 5, 44, 4.6);
-  // 잠자리
+  // 잠자리 + 반딧불
   drawDragonfly(c, W, H);
+  drawFireflies(c, W, M.waterY);
   // 연잎
   PADS.forEach((p, i) => drawPad(c, M, p, i < padsCrossed && posX >= p));
+  // 착지 물결 링
+  rings.forEach(r => {
+    for (let k = 0; k < 3; k++) {
+      const rr = (r.t - k * 0.16) * 105;
+      if (rr <= 0) continue;
+      const a = Math.max(0, 0.55 - r.t * 0.42) * (1 - k * 0.3);
+      c.strokeStyle = `rgba(150,232,182,${a})`;
+      c.lineWidth = 2;
+      c.beginPath(); c.ellipse(M.x(r.x), M.waterY + 3, rr, rr * 0.22, 0, 0, 7); c.stroke();
+    }
+  });
   // 지난 궤적 (흐리게)
   pastTrails.forEach((tr, i) => {
     const a = 0.08 + 0.14 * (i + 1) / pastTrails.length;
@@ -709,7 +762,14 @@ function draw() {
   const frogSize = Math.max(12, 9 * M.s);
   if (state === 'fly' && flight) {
     const last = flight.pts[flight.pts.length - 1];
-    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx), 0);
+    const flyT = flight.t / (2 * flight.vy / G);
+    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx), flyT);
+    // 실시간 점프 거리
+    c.save();
+    c.font = 'bold 17px "Cascadia Mono", Consolas, monospace'; c.textAlign = 'center';
+    c.fillStyle = '#ffd02e'; c.shadowColor = 'rgba(0,0,0,.9)'; c.shadowBlur = 5;
+    c.fillText('▸ ' + Math.round(last[0] - flight.x0) + ' cm', M.x(last[0]), M.y(last[1]) - frogSize * 2.0);
+    c.restore();
   } else if (state !== 'splash') {
     const pNow = params();
     const pullT = (pNow.pull - 1) / 9;
@@ -756,6 +816,44 @@ function draw() {
       c.fillText(pNow.angDeg + '°', tx + 8, ty + 2);
     }
   }
+  // 클리어 연출 — 무지개 + 반딧불 축포
+  if (celebrate) {
+    const ct = celebrate.t;
+    const ease = Math.min(1, ct * 0.9);
+    const cxp = M.x(205), cyp = M.waterY + 8;
+    const R0 = Math.min(W * 0.42, M.waterY * 0.94);
+    const cols = ['255,90,90', '255,170,60', '255,228,80', '110,230,130', '95,180,255', '190,145,255'];
+    c.save();
+    c.globalAlpha = 0.34 * ease;
+    c.lineCap = 'butt';
+    cols.forEach((col, i) => {
+      c.strokeStyle = `rgba(${col},1)`; c.lineWidth = Math.max(4, R0 * 0.035);
+      c.beginPath(); c.arc(cxp, cyp, R0 * (1 - i * 0.038), Math.PI, Math.PI * 2); c.stroke();
+    });
+    c.restore();
+    for (let i = 0; i < 24; i++) {
+      const ph = i * 1.7;
+      const rise = (ct * (22 + (i * 13) % 34) + (i * 41) % 90) % 175;
+      const px = M.x(BANK_X + 25) + Math.sin(clock * 1.1 + ph) * (16 + (i * 7) % 42) - 20;
+      const py = M.waterY - 12 - rise;
+      const tw = 0.5 + 0.5 * Math.sin(clock * 3 + ph);
+      c.save();
+      c.globalAlpha = (0.25 + 0.65 * tw) * ease;
+      c.fillStyle = '#ffe98a'; c.shadowColor = '#ffd94e'; c.shadowBlur = 10;
+      c.beginPath(); c.arc(px, py, 2.3, 0, 7); c.fill();
+      c.restore();
+    }
+  }
+  // 착지 거리 팝업
+  if (distPop) {
+    const a = distPop.t < 1.3 ? Math.min(1, distPop.t * 4) : Math.max(0, 1 - (distPop.t - 1.3) / 0.6);
+    c.save();
+    c.globalAlpha = a; c.textAlign = 'center';
+    c.font = 'bold 27px "Cascadia Mono", Consolas, monospace';
+    c.fillStyle = '#ffb02e'; c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowBlur = 7;
+    c.fillText(Math.round(distPop.dist) + ' cm', M.x(distPop.x), M.waterY - 48 - distPop.t * 15);
+    c.restore();
+  }
   // 첨벙
   if (splash) {
     c.fillStyle = 'rgba(140,200,255,.8)';
@@ -787,6 +885,7 @@ function loop(ts) {
     } else {
       flight.peak = Math.max(flight.peak, y);
       flight.pts.push([flight.x0 + flight.vx * t, y]);
+      $('hud_last').textContent = Math.round(flight.vx * t) + ' cm';
     }
   } else if (state === 'splash' && splash) {
     splash.t += dt;
@@ -814,6 +913,10 @@ function loop(ts) {
       setStatus('done', '확인 끝! 당김 2배 = 거리 약 4배');
     }
   }
+  padFx.forEach(f => f.t += dt); padFx = padFx.filter(f => f.t < 1.6);
+  rings.forEach(r => r.t += dt); rings = rings.filter(r => r.t < 1.5);
+  if (distPop && (distPop.t += dt) > 1.9) distPop = null;
+  if (celebrate) celebrate.t += dt;
   draw();
   requestAnimationFrame(loop);
 }

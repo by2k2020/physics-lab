@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>기어비 시뮬레이션 — 브릭 프라임 · 코딩더메이커</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
     --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
@@ -64,15 +65,27 @@
   .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
   .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
   .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
-  .readout .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .readout .v { font-family: var(--mono); font-size: 20px; font-weight: 700; }
   .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout.wide { grid-column: 1 / -1; }
+  .readout.wide .v { font-size: 25px; }
+  .ratio-hero { background: linear-gradient(135deg, rgba(77,163,255,.14), rgba(255,144,70,.14)); border: 1.5px solid rgba(77,163,255,.5); border-radius: 12px; padding: 10px 14px 9px; margin: 6px 0 8px; text-align: center; box-shadow: 0 0 18px rgba(77,163,255,.12) inset; }
+  .ratio-hero .k { font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .ratio-hero .v { font-family: var(--mono); font-size: 36px; font-weight: 800; color: #fff; letter-spacing: 1px; line-height: 1.15; }
+  .ratio-hero .sub { font-size: 12px; color: var(--amber); font-weight: 700; margin-top: 3px; }
   .bars { margin: 4px 0 12px; }
   .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
   .bar-row .lab { width: 58px; flex: none; }
   .bar-track { flex: 1; height: 12px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
   .bar-row .val { width: 52px; text-align: right; font-family: var(--mono); font-size: 12px; }
-  canvas.graph { display: block; width: 100%; height: 310px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; }
+  canvas.graph { display: block; width: 100%; height: 310px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  .graph-hint { font-size: 10.5px; color: var(--dim); text-align: right; margin: 4px 2px 0; }
+  #zoom { display: none; position: fixed; inset: 0; background: rgba(4,8,16,.92); z-index: 50; cursor: zoom-out; }
+  #zoom.on { display: block; }
+  #zoom .zbox { position: absolute; inset: 4% 5% 8%; background: #0b101d; border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+  #zoom canvas { width: 100%; height: 100%; display: block; }
+  #zoom .hint { position: absolute; bottom: 2.4%; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 13px; }
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
@@ -155,9 +168,9 @@
         <button id="sp1c">0.25×</button>
       </div>
       <h3>출력 예측 → 측정</h3>
+      <div class="ratio-hero"><div class="k">기어비 (팔로워 : 드라이버)</div><div class="v" id="ratio">—</div><div class="sub" id="ratioSub"></div></div>
       <div class="readouts">
-        <div class="readout"><div class="k">기어비 (팔로워:드라이버)</div><div class="v" id="ratio">—</div></div>
-        <div class="readout"><div class="k">팔로워 회전 속도</div><div class="v b" id="outRpm">—</div></div>
+        <div class="readout wide"><div class="k">팔로워 회전 속도</div><div class="v b" id="outRpm">—</div></div>
         <div class="readout"><div class="k">드라이버 총 회전 (10초)</div><div class="v a" id="revA">—</div></div>
         <div class="readout"><div class="k">팔로워 총 회전 (10초)</div><div class="v b" id="revB">—</div></div>
       </div>
@@ -168,6 +181,7 @@
       </div>
       <h3>누적 회전수–시간 그래프</h3>
       <canvas class="graph" id="gr1" height="310"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
       <details open>
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
@@ -222,6 +236,7 @@
       </div>
       <h3>누적 회전수–시간 그래프</h3>
       <canvas class="graph" id="gr2" height="310"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
       <details open>
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
@@ -267,6 +282,8 @@
   </section>
 </div>
 
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -295,28 +312,29 @@ function niceStep(max) {
   for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
   return 10 * p;
 }
-function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
+function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
   const { c, W, H } = fit(cv);
-  const L = 56, R = 14, T = 30, B = 44;
+  const fs = Math.max(14, Math.round(Math.min(W, H) / 20));   // 캔버스가 클수록 글자도 확대
+  const L = fs * 3.6, R = fs, T = fs * 2.2, B = fs * 3.1;
   c.clearRect(0, 0, W, H);
   const px = t => L + (t / tMax) * (W - L - R);
   const py = v => H - B - (v / vMax) * (H - T - B);
-  c.font = '13px sans-serif';
+  c.font = fs + 'px sans-serif';
   const tS = niceStep(tMax), vS = niceStep(vMax);
   c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
   for (let t = 0; t <= tMax + 1e-9; t += tS) {
     c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
-    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + 18);
+    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + fs * 1.35);
   }
   for (let v = 0; v <= vMax + 1e-9; v += vS) {
     c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
-    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - 7, py(v) + 4.5);
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - fs * 0.5, py(v) + fs * 0.35);
   }
   c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
-  c.fillStyle = '#9aa8bf'; c.textAlign = 'center'; c.font = '13px sans-serif';
-  c.fillText('시간 (s)', (L + W - R) / 2, H - 7);
-  c.save(); c.translate(14, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center'; c.font = fs + 'px sans-serif';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.5);
+  c.save(); c.translate(fs * 0.95, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
   if (tNow > 0 && tNow < tMax) {
     c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
     c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
@@ -324,21 +342,35 @@ function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
   series.forEach(s => {
     if (s.pts.length < 2) return;
     c.save(); c.shadowColor = s.color; c.shadowBlur = 8;
-    c.strokeStyle = s.color; c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath();
+    c.strokeStyle = s.color; c.lineWidth = Math.max(3, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
     s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
     c.stroke();
     const last = s.pts[s.pts.length - 1];
-    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), 4.5, 0, 7); c.fill();
+    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4.5, fs * 0.33), 0, 7); c.fill();
     c.restore();
   });
-  let lx = 12;
-  c.font = 'bold 13px sans-serif';
+  let lx = fs;
+  c.font = 'bold ' + fs + 'px sans-serif';
   series.forEach(s => {
-    c.fillStyle = s.color; c.fillRect(lx, 10, 18, 4.5);
-    c.fillStyle = '#d7e1f2'; c.textAlign = 'left'; c.fillText(s.name, lx + 23, 17);
-    lx += 23 + c.measureText(s.name).width + 14;
+    c.fillStyle = s.color; c.fillRect(lx, fs * 0.7, fs * 1.4, fs * 0.34);
+    c.fillStyle = '#d7e1f2'; c.textAlign = 'left'; c.fillText(s.name, lx + fs * 1.75, fs * 1.25);
+    lx += fs * 1.75 + c.measureText(s.name).width + fs;
   });
 }
+/* 그래프 클릭 확대 오버레이 — 실행 중에도 라이브 갱신 */
+const graphArgs = new Map();
+let zoomSrc = null;
+function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  renderGraph(cv, series, tMax, vMax, tNow, yLabel);
+  graphArgs.set(cv, [series, tMax, vMax, tNow, yLabel]);
+  if (zoomSrc === cv) renderGraph($('zoomCv'), series, tMax, vMax, tNow, yLabel);
+}
+['gr1', 'gr2'].forEach(id => $(id).addEventListener('click', () => {
+  zoomSrc = $(id);
+  $('zoom').classList.add('on');
+  requestAnimationFrame(() => { const a = graphArgs.get(zoomSrc); if (a) renderGraph($('zoomCv'), ...a); });
+}));
+$('zoom').onclick = () => { zoomSrc = null; $('zoom').classList.remove('on'); };
 function makeEngine(o) {
   let running = false, raf = null, lastTs = null;
   function frame(ts) {
@@ -452,11 +484,12 @@ function shade(hex) {
   const f = v => Math.max(0, Math.round(v * 0.55));
   return `rgb(${f(n >> 16 & 255)},${f(n >> 8 & 255)},${f(n & 255)})`;
 }
-function dirArrow(c, x, y, r, cw, color) {
-  // 회전 방향 화살 호 (글로우 + 큰 화살촉)
+function dirArrow(c, x, y, r, cw, color, lw = 3.5) {
+  // 회전 방향 화살 호 (글로우 + 큰 화살촉) — 굵기 lw ∝ 토크 크기
+  const k = Math.max(0.7, lw / 3.5);
   c.save(); c.translate(x, y);
   c.shadowColor = color; c.shadowBlur = 7;
-  c.strokeStyle = color; c.lineWidth = 3.5; c.lineCap = 'round';
+  c.strokeStyle = color; c.lineWidth = lw; c.lineCap = 'round';
   c.beginPath();
   if (cw) c.arc(0, 0, r, -2.25, -0.88);
   else c.arc(0, 0, r, -0.88, -2.25, true);
@@ -467,10 +500,42 @@ function dirArrow(c, x, y, r, cw, color) {
   const tang = tip + (cw ? Math.PI / 2 : -Math.PI / 2);
   c.fillStyle = color;
   c.beginPath();
-  c.moveTo(tx + Math.cos(tang) * 12, ty + Math.sin(tang) * 12);
-  c.lineTo(tx + Math.cos(tang + 2.45) * 8.5, ty + Math.sin(tang + 2.45) * 8.5);
-  c.lineTo(tx + Math.cos(tang - 2.45) * 8.5, ty + Math.sin(tang - 2.45) * 8.5);
+  c.moveTo(tx + Math.cos(tang) * 12 * k, ty + Math.sin(tang) * 12 * k);
+  c.lineTo(tx + Math.cos(tang + 2.45) * 8.5 * k, ty + Math.sin(tang + 2.45) * 8.5 * k);
+  c.lineTo(tx + Math.cos(tang - 2.45) * 8.5 * k, ty + Math.sin(tang - 2.45) * 8.5 * k);
   c.closePath(); c.fill();
+  c.restore();
+}
+function meshGlow(c, x, y, size, t) {
+  // 기어 맞물림 접촉 지점 하이라이트 (펄스 글로우 + 스파크 틱)
+  const pulse = 0.72 + 0.28 * Math.sin(t * 6);
+  const g = c.createRadialGradient(x, y, 0, x, y, size);
+  g.addColorStop(0, `rgba(255,238,160,${0.8 * pulse})`);
+  g.addColorStop(0.42, `rgba(255,190,80,${0.32 * pulse})`);
+  g.addColorStop(1, 'rgba(255,190,80,0)');
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, size, 0, 7); c.fill();
+  c.strokeStyle = `rgba(255,242,200,${0.75 * pulse})`; c.lineWidth = 1.6; c.lineCap = 'round';
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2 + Math.PI / 4 + t * 2;
+    c.beginPath();
+    c.moveTo(x + Math.cos(a) * size * 0.42, y + Math.sin(a) * size * 0.42);
+    c.lineTo(x + Math.cos(a) * size * 0.72, y + Math.sin(a) * size * 0.72);
+    c.stroke();
+  }
+  c.lineCap = 'butt';
+}
+function speedStreaks(c, x, y, rr, ang, rpm, color) {
+  // 회전 속도감 라인 — 빠를수록 길고 진한 모션 호 3개
+  if (rpm < 1) return;
+  const len = 0.18 + Math.min(1.1, rpm / 110);
+  const alpha = Math.min(0.55, 0.12 + rpm / 220);
+  c.save(); c.translate(x, y);
+  c.strokeStyle = color; c.globalAlpha = alpha; c.lineCap = 'round'; c.lineWidth = 2.4;
+  for (let k = 0; k < 3; k++) {
+    const a0 = ang + k * Math.PI * 2 / 3;
+    c.beginPath(); c.arc(0, 0, rr, a0, a0 + len); c.stroke();
+  }
   c.restore();
 }
 function drawTag(c, x, y, text, color) {
@@ -483,13 +548,23 @@ function drawTag(c, x, y, text, color) {
   c.fillStyle = color; c.textAlign = 'center'; c.fillText(text, x, y + 4.5);
 }
 function drawBeam(c, x0, x1, y) {
-  // 테크닉 리프트암(빔) — 축을 지지하는 프레임
+  // 테크닉 리프트암(빔) — 축을 지지하는 프레임 (입체 두께 + 지지 기둥)
   const h = 24;
+  const post = x => {
+    const pg = c.createLinearGradient(x, y, x, y + 78);
+    pg.addColorStop(0, '#39435c'); pg.addColorStop(1, 'rgba(20,26,40,0)');
+    c.fillStyle = pg; c.fillRect(x - 7, y, 14, 78);
+  };
+  post(x0 + 14); post(x1 - 14);
+  c.fillStyle = '#141b2c';   // 아래쪽 두께 (사출 측면)
+  c.beginPath(); c.roundRect(x0 + 3, y - h / 2 + 5, x1 - x0, h, h / 2); c.fill();
   const g = c.createLinearGradient(0, y - h / 2, 0, y + h / 2);
   g.addColorStop(0, '#525d74'); g.addColorStop(0.45, '#3b465e'); g.addColorStop(1, '#232b3e');
   c.fillStyle = g;
   c.beginPath(); c.roundRect(x0, y - h / 2, x1 - x0, h, h / 2); c.fill();
   c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 1;   // 상단 하이라이트
+  c.beginPath(); c.moveTo(x0 + 11, y - h / 2 + 3.5); c.lineTo(x1 - 11, y - h / 2 + 3.5); c.stroke();
   for (let x = x0 + 16; x <= x1 - 12; x += 30) {   // 핀 홀
     c.beginPath(); c.arc(x, y, 5.5, 0, 7);
     c.fillStyle = '#0c1322'; c.fill();
@@ -522,6 +597,9 @@ function drawBench(c, W, H, yAxis) {
   }
   function preview() {
     $('ratio').textContent = P.ratio >= 1 ? P.ratio.toFixed(2) + ' : 1' : '1 : ' + (1 / P.ratio).toFixed(2);
+    $('ratioSub').textContent = P.ratio > 1 ? `감속 — 속도 ×${(1 / P.ratio).toFixed(2)} · 힘 ×${P.ratio.toFixed(2)}`
+      : P.ratio < 1 ? `가속 — 속도 ×${(1 / P.ratio).toFixed(2)} · 힘 ×${P.ratio.toFixed(2)}`
+      : '1 : 1 — 속도·힘 그대로, 방향만 반대';
     $('outRpm').textContent = P.outRpm.toFixed(1) + ' RPM';
     const spd = Math.min(100, (1 / P.ratio) * 20), trq = Math.min(100, P.ratio * 20);
     $('barSpd').style.width = spd + '%'; $('valSpd').textContent = '×' + (1 / P.ratio).toFixed(2);
@@ -570,11 +648,19 @@ function drawBench(c, W, H, yAxis) {
     // 기어 2개 (맞물림 위상 보정)
     drawGear(c, cxA, yAxis, P.tA, angA, '#2563eb', { r: rA, light: '#7db4ff' });
     drawGear(c, cxB, yAxis, P.tB, angB + Math.PI / P.tB, '#c2410c', { r: rB, light: '#ffb27d' });
-    // 방향 화살 + 역할 라벨
-    dirArrow(c, cxA, yAxis, rA + 17, true, '#4da3ff');
-    dirArrow(c, cxB, yAxis, rB + 17, false, '#ff9046');
+    // 맞물림 접촉 지점 하이라이트
+    meshGlow(c, cxA + rA, yAxis, Math.max(15, Math.min(rA, rB) * 0.5), t);
+    // 회전 속도감 모션 라인 (빠른 기어일수록 길고 진함)
+    const outA = rA + Math.max(6, rA * 0.17) * 0.55, outB = rB + Math.max(6, rB * 0.17) * 0.55;
+    speedStreaks(c, cxA, yAxis, outA + 8, angA, P.rpm, '#7db4ff');
+    speedStreaks(c, cxB, yAxis, outB + 8, angB, P.outRpm, '#ffb27d');
+    // 방향 화살 (굵기 = 토크) + 역할 라벨
+    const lwB = Math.max(2, Math.min(9, 3.5 * Math.sqrt(P.ratio)));
+    dirArrow(c, cxA, yAxis, rA + 17, true, '#4da3ff', 3.5);
+    dirArrow(c, cxB, yAxis, rB + 17, false, '#ff9046', lwB);
     drawTag(c, cxA, yAxis - rA - 40, `드라이버 ${P.tA}T · ${P.rpm} RPM`, '#4da3ff');
     drawTag(c, cxB, yAxis + rB + 44, `팔로워 ${P.tB}T · ${P.outRpm.toFixed(1)} RPM`, '#ff9046');
+    drawTag(c, cxB, yAxis - rB - 40, `힘 ×${P.ratio.toFixed(2)}`, '#ffb02e');
     // HUD
     $('hud_t1').textContent = t.toFixed(1) + ' s';
     $('hud_rA').textContent = (angA / (Math.PI * 2)).toFixed(2) + ' 회전';
@@ -676,11 +762,17 @@ function drawBench(c, W, H, yAxis) {
     const names = [`드라이버 ${T_DRV}T`, `아이들러 ${P.tI}T`, `팔로워 ${T_FLW}T`];
     const hudCols = ['#4da3ff', '#c792ea', '#ff9046'];
     drawBeam(c, cx[0] - r[0] - 34, cx[2] + r[2] + 34, yAxis);
+    const rpms = [P.rpm, P.rpm * T_DRV / P.tI, P.rpm * T_DRV / T_FLW];
     teeth.forEach((n, i) => {
       drawGear(c, cx[i], yAxis, n, ang[i] + (i === 1 ? Math.PI / n : 0) + (i === 2 ? Math.PI / n / 2 : 0), colors[i], { r: r[i], light: lights[i] });
+      const out = r[i] + Math.max(6, r[i] * 0.17) * 0.55;
+      speedStreaks(c, cx[i], yAxis, out + 8, ang[i], rpms[i], lights[i]);
       dirArrow(c, cx[i], yAxis, r[i] + 16, i !== 1, hudCols[i]);
       drawTag(c, cx[i], yAxis + r[i] * (i === 1 ? -1 : 1) + (i === 1 ? -38 : 42), names[i], hudCols[i]);
     });
+    // 맞물림 접촉 지점 2곳 하이라이트
+    meshGlow(c, cx[0] + r[0], yAxis, Math.max(13, Math.min(r[0], r[1]) * 0.5), t);
+    meshGlow(c, cx[1] + r[1], yAxis, Math.max(13, Math.min(r[1], r[2]) * 0.5), t);
     $('hud_t2').textContent = t.toFixed(1) + ' s';
     $('hud_dA').textContent = (ang[0] / 6.283).toFixed(2) + ' 회전';
     $('hud_dI').textContent = (Math.abs(ang[1]) / 6.283).toFixed(2) + ' 회전';

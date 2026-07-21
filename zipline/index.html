@@ -65,16 +65,23 @@
   .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
   .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
   .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
-  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
-  .readout .v { font-family: var(--mono); font-size: 17px; }
+  .readout .k { font-size: 11.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 20px; }
   .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
   .readout .v.ok { color: var(--green); } .readout .v.ng { color: var(--red); }
   canvas.graph { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; }
+  #gr1 { cursor: zoom-in; }
+  .zoom-ov { position: fixed; inset: 0; background: rgba(4,8,16,.84); backdrop-filter: blur(3px); display: none; z-index: 60; align-items: center; justify-content: center; padding: 4vh 4vw; }
+  .zoom-ov.on { display: flex; }
+  .zoom-box { background: #0e1424; border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px 18px; width: min(1100px, 100%); box-shadow: 0 18px 60px rgba(0,0,0,.5); }
+  .zoom-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .zoom-head b { font-size: 15px; }
+  .zoom-head button { padding: 6px 14px; font-size: 13px; }
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 6px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -179,7 +186,7 @@
         <div class="readout"><div class="k">최고 속도</div><div class="v a" id="r_vm">—</div></div>
         <div class="readout"><div class="k">판정</div><div class="v" id="r_j">—</div></div>
       </div>
-      <h3>속도–시간 그래프</h3>
+      <h3>속도–시간 그래프 <span style="color:var(--accent);font-weight:400">· 클릭하면 크게 보기</span></h3>
       <canvas class="graph" id="gr1" height="310"></canvas>
       <details open>
         <summary>📋 시도 기록 (최근 8회)</summary>
@@ -271,6 +278,13 @@
   </section>
 </div>
 
+<div class="zoom-ov" id="zoomOv">
+  <div class="zoom-box">
+    <div class="zoom-head"><b>📈 속도–시간 그래프 (확대)</b><button id="zoomX">✕ 닫기</button></div>
+    <canvas class="graph" id="grBig" height="520"></canvas>
+  </div>
+</div>
+
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/OrbitControls.js';
@@ -329,14 +343,25 @@ function drawGraph(cv, series, tMax, vMax, tNow) {
   const py = v => H - B - (v / vMax) * (H - T - B);
   c.font = '13px sans-serif';
   const tS = niceStep(tMax), vS = niceStep(vMax);
-  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8b98ad'; c.lineWidth = 1;
+  // 보조 그리드 (주 눈금의 1/2 간격)
+  c.strokeStyle = 'rgba(90,110,150,.09)'; c.lineWidth = 1;
+  for (let t = tS / 2; t <= tMax + 1e-9; t += tS) { c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke(); }
+  for (let v = vS / 2; v <= vMax + 1e-9; v += vS) { c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke(); }
+  c.strokeStyle = 'rgba(90,110,150,.22)'; c.fillStyle = '#8b98ad'; c.lineWidth = 1;
   for (let t = 0; t <= tMax + 1e-9; t += tS) {
     c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
-    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + 17);
+    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0) + (t === 0 ? '' : 's'), px(t), H - B + 17);
   }
   for (let v = 0; v <= vMax + 1e-9; v += vS) {
     c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
     c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - 7, py(v) + 4.5);
+  }
+  // 안전 도착 속도 기준선
+  if (V_SAFE < vMax) {
+    c.strokeStyle = 'rgba(46,224,111,.55)'; c.setLineDash([6, 5]); c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(L, py(V_SAFE)); c.lineTo(W - R, py(V_SAFE)); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#2ee06f'; c.textAlign = 'left'; c.font = 'bold 12px sans-serif';
+    c.fillText('안전 3.5 m/s', L + 6, py(V_SAFE) - 5);
   }
   c.strokeStyle = '#3a4661'; c.lineWidth = 1.3;
   c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
@@ -468,6 +493,7 @@ const E1 = (() => {
   scene.add(sunL);
 
   /* — 고정 배경 (한 번만 생성) — */
+  const clouds = [];
   {
     const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 20, 20), new THREE.MeshBasicMaterial({ color: 0xfff7dc, fog: false }));
     sun.position.set(-90, 120, -110); scene.add(sun);
@@ -480,7 +506,8 @@ const E1 = (() => {
         puff.scale.y = 0.5; cl.add(puff);
       }
       cl.position.set(-120 + i * 45 + Math.random() * 20, 45 + Math.random() * 30, -110 - Math.random() * 60);
-      scene.add(cl);
+      cl.userData.drift = 0.6 + Math.random() * 1.2;
+      scene.add(cl); clouds.push(cl);
     }
     // 잔디 + 흙길
     const grass = new THREE.Mesh(new THREE.PlaneGeometry(320, 220), new THREE.MeshStandardMaterial({ color: 0x6fae55, roughness: 0.95 }));
@@ -538,12 +565,26 @@ const E1 = (() => {
       bush.position.set(-8 + Math.random() * (SPAN + 18), br * 0.5, (Math.random() > 0.5 ? 1 : -1) * (2.4 + Math.random() * 10));
       bush.scale.y = 0.62; scene.add(bush);
     }
-    // 먼 산
+    // 먼 산 (가까운 능선) + 눈 덮인 봉우리
     const mMat = new THREE.MeshStandardMaterial({ color: 0x8fb89a, roughness: 1 });
+    const snowMat = new THREE.MeshStandardMaterial({ color: 0xf4f8fc, roughness: 0.9 });
     for (let i = 0; i < 6; i++) {
-      const m = new THREE.Mesh(new THREE.ConeGeometry(20 + Math.random() * 16, 14 + Math.random() * 14, 5), mMat);
+      const mh = 14 + Math.random() * 14;
+      const m = new THREE.Mesh(new THREE.ConeGeometry(20 + Math.random() * 16, mh, 5), mMat);
       m.position.set(-30 + i * 20, -0.3, -55 - Math.random() * 25);
       scene.add(m);
+      if (mh > 20) {
+        const cap = new THREE.Mesh(new THREE.ConeGeometry((20 + Math.random() * 4) * 0.28, mh * 0.28, 5), snowMat);
+        cap.position.set(m.position.x, m.position.y + mh * 0.36, m.position.z);
+        cap.rotation.y = m.rotation.y; scene.add(cap);
+      }
+    }
+    // 아주 먼 산맥 레이어 — 안개에 잠긴 푸른 실루엣 (원근감)
+    const farMat = new THREE.MeshBasicMaterial({ color: 0x9fbdd4 });
+    for (let i = 0; i < 8; i++) {
+      const fm = new THREE.Mesh(new THREE.ConeGeometry(34 + Math.random() * 22, 26 + Math.random() * 18, 5), farMat);
+      fm.position.set(-90 + i * 30 + Math.random() * 12, -0.5, -120 - Math.random() * 45);
+      scene.add(fm);
     }
   }
 
@@ -580,7 +621,7 @@ const E1 = (() => {
   }
 
   /* — 구조물 (파라미터 바뀔 때마다 재구축) — */
-  let worldG = null;
+  let worldG = null, cableTube = null, cableT = 0, cableDirty = false;
   const steelMat = new THREE.MeshStandardMaterial({ color: 0x9aa8be, roughness: 0.4, metalness: 0.6 });
   const woodMat = new THREE.MeshStandardMaterial({ color: 0x8a6238, roughness: 0.85 });
   const railMat = new THREE.MeshStandardMaterial({ color: 0xd8b04a, roughness: 0.6 });
@@ -647,6 +688,7 @@ const E1 = (() => {
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.035, 8),
       new THREE.MeshStandardMaterial({ color: 0x55617a, roughness: 0.35, metalness: 0.8 }));
     tube.castShadow = true; worldG.add(tube);
+    cableTube = tube; cableDirty = false;
     // 출발 타워 (높이 가변) + 사다리
     worldG.add(makeTower(0, P.yA, P.yA - 1.9, 2.6));
     for (let y = 0.35; y < P.yA - 1.95; y += 0.42) {
@@ -801,8 +843,34 @@ const E1 = (() => {
       const foot = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.05, 0.055), pants);
       foot.position.set(0.1, -0.93, z); hanger.add(foot);
     });
+    // 스카프 — 활강 속도에 따라 뒤로 펄럭임 (옷·머리카락 휘날림 표현)
+    const scarfMat = new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.7, side: THREE.DoubleSide });
+    const scarfSegs = [];
+    for (let i = 0; i < 4; i++) {
+      const seg = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.014, 0.05), scarfMat);
+      seg.position.set(-0.055 - i * 0.078, -0.575, 0.015);
+      seg.castShadow = true; hanger.add(seg); scarfSegs.push(seg);
+    }
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.013, 8, 14), scarfMat);
+    collar.rotation.x = Math.PI / 2; collar.position.set(0, -0.578, 0); hanger.add(collar);
+    hanger.userData.scarf = scarfSegs;
     trolley.scale.setScalar(1.35);
     hanger.scale.setScalar(1.6);
+  }
+
+  /* — 바람 라인 (활강 중 속도감) — */
+  const WIND_N = 14;
+  const windLines = [];
+  {
+    const wMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
+    for (let i = 0; i < WIND_N; i++) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.9 + Math.random() * 0.7, 0.018, 0.018), wMat.clone());
+      m.visible = false; scene.add(m);
+      windLines.push({
+        m, u: Math.random(),
+        oy: (Math.random() - 0.5) * 1.6, oz: (Math.random() - 0.5) * 1.7,
+      });
+    }
   }
 
   /* — 이펙트: 충돌 파편 + 도착 링 — */
@@ -833,11 +901,53 @@ const E1 = (() => {
     if (dirty) fxGeo.attributes.position.needsUpdate = true;
   }
   const rings = [];
-  function landRing(x, y, color) {
+  function landRing(x, y, color, delay = 0) {
     const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.025, 8, 40),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
     r.position.set(x, y, 0);
-    r.userData.age = 0; scene.add(r); rings.push(r);
+    r.userData.age = -delay; r.visible = delay <= 0;
+    scene.add(r); rings.push(r);
+  }
+  // 도착 성공 색종이 (다색 confetti — 천천히 흩날리며 낙하)
+  const CF_N = 150, CF_COLORS = [0xff5a52, 0xffd23e, 0x2ee06f, 0x4da3ff, 0xc792ea, 0xff9046];
+  const cfGeo = new THREE.BufferGeometry();
+  const cfPos = new Float32Array(CF_N * 3);
+  const cfCol = new Float32Array(CF_N * 3);
+  cfGeo.setAttribute('position', new THREE.BufferAttribute(cfPos, 3));
+  cfGeo.setAttribute('color', new THREE.BufferAttribute(cfCol, 3));
+  const cfPts = new THREE.Points(cfGeo, new THREE.PointsMaterial({ size: 0.13, vertexColors: true, transparent: true, opacity: 0.95 }));
+  scene.add(cfPts);
+  const cfV = [];
+  for (let i = 0; i < CF_N; i++) { cfPos[i * 3 + 1] = -10; cfV.push({ vx: 0, vy: 0, vz: 0, life: 0, ph: 0 }); }
+  function confettiBurst(x, y) {
+    const col = new THREE.Color();
+    for (let i = 0; i < CF_N; i++) {
+      cfPos[i * 3] = x + (Math.random() - 0.5) * 0.5;
+      cfPos[i * 3 + 1] = y + Math.random() * 0.5;
+      cfPos[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+      col.setHex(CF_COLORS[i % CF_COLORS.length]);
+      cfCol[i * 3] = col.r; cfCol[i * 3 + 1] = col.g; cfCol[i * 3 + 2] = col.b;
+      cfV[i] = {
+        vx: (Math.random() - 0.5) * 3.2, vy: 1.6 + Math.random() * 3.4,
+        vz: (Math.random() - 0.5) * 3.2, life: 1.5 + Math.random() * 1.1, ph: Math.random() * 6.28,
+      };
+    }
+    cfGeo.attributes.color.needsUpdate = true;
+  }
+  function stepCf(dt) {
+    let dirty = false;
+    for (let i = 0; i < CF_N; i++) {
+      const p = cfV[i];
+      if (p.life <= 0) continue;
+      dirty = true; p.life -= dt; p.ph += dt * 9;
+      cfPos[i * 3] += (p.vx + Math.sin(p.ph) * 0.5) * dt;
+      cfPos[i * 3 + 1] += p.vy * dt;
+      cfPos[i * 3 + 2] += (p.vz + Math.cos(p.ph) * 0.5) * dt;
+      p.vy -= 3.2 * dt; p.vx *= 0.995; p.vz *= 0.995;
+      if (p.vy < -1.6) p.vy = -1.6;  // 나풀나풀 낙하 한계 속도
+      if (p.life <= 0 || cfPos[i * 3 + 1] < 0.04) { p.life = 0; cfPos[i * 3 + 1] = -10; }
+    }
+    if (dirty) cfGeo.attributes.position.needsUpdate = true;
   }
 
   /* — 물리 — */
@@ -857,6 +967,8 @@ const E1 = (() => {
     st = { s: S_START, v: 0, vMax: 0, rest: 0, vEnd: null, result: null };
     fx.amp = 0; fx.t = 0; shakeT = 0;
     rings.forEach(r => scene.remove(r)); rings.length = 0;
+    cfV.forEach((p, i) => { p.life = 0; cfPos[i * 3 + 1] = -10; });
+    cfGeo.attributes.position.needsUpdate = true;
     ['r_ve', 'r_t', 'r_vm'].forEach(id => $(id).textContent = '—');
     $('r_j').textContent = '—'; $('r_j').className = 'v';
     $('bd1').className = 'badge';
@@ -903,7 +1015,10 @@ const E1 = (() => {
       } else {
         const q2 = posAt(st.s);
         landRing(q2.x, q2.y - 0.8, 0x2ee06f);
-        landRing(q2.x, q2.y - 0.8, 0xffffff);
+        landRing(q2.x, q2.y - 0.8, 0xffffff, 0.14);
+        landRing(q2.x, q2.y - 0.8, 0xffd23e, 0.28);
+        landRing(q2.x, q2.y - 0.8, 0x4da3ff, 0.42);
+        confettiBurst(q2.x, q2.y - 0.4);
         fx.amp = 0.18; fx.t = 0;
         finish('safe', vEnd);
       }
@@ -911,6 +1026,7 @@ const E1 = (() => {
     }
     if (t > 40) finish('stop', 0);
   }
+  let flutterT = 0;
   function place(dt = 0.016) {
     const q = posAt(st.s);
     riderRoot.position.set(q.x, q.y, 0);
@@ -919,6 +1035,35 @@ const E1 = (() => {
     const swing = fx.amp * Math.exp(-1.4 * fx.t) * Math.sin(5.5 * fx.t);
     const lean = Math.max(-0.55, -st.v * 0.05);
     hanger.rotation.z = lean + swing + (finished && st.result === 'stop' ? Math.sin(t * 2 + fx.t * 2) * 0.05 : 0);
+    // 스카프 펄럭임 — 속도 비례 진폭·주파수
+    flutterT += dt;
+    const vAbs = Math.max(0, st.v);
+    const flapAmp = Math.min(0.55, 0.06 + vAbs * 0.075);
+    const flapFq = 6 + vAbs * 1.6;
+    hanger.userData.scarf.forEach((seg, i) => {
+      seg.rotation.z = Math.sin(flutterT * flapFq + i * 1.25) * flapAmp * (0.45 + i * 0.28);
+      seg.position.y = -0.575 + Math.sin(flutterT * flapFq * 0.8 + i * 1.6) * 0.012 * (i + 1);
+    });
+    // 바람 라인 — 일정 속도 이상일 때 탑승자 주변으로 스치는 흰 줄
+    const windOn = !finished && vAbs > 1.6;
+    const wk = Math.min(1, (vAbs - 1.6) / 5);
+    windLines.forEach(wl => {
+      if (!windOn) { wl.m.visible = false; return; }
+      wl.u += dt * (0.9 + vAbs * 0.28);
+      if (wl.u > 1) {
+        wl.u -= 1;
+        wl.oy = (Math.random() - 0.5) * 1.7;
+        wl.oz = (Math.random() - 0.5) * 1.8;
+      }
+      const back = 4.5;
+      wl.m.position.set(
+        q.x - Math.cos(q.a) * (wl.u * back - 1.2),
+        q.y - 0.5 + Math.sin(q.a) * (wl.u * back - 1.2) + wl.oy,
+        wl.oz);
+      wl.m.rotation.z = -q.a;
+      wl.m.material.opacity = wk * 0.55 * Math.sin(Math.PI * wl.u);
+      wl.m.visible = true;
+    });
     // 표정: 위험 속도(3.5 m/s) 넘거나 충돌하면 겁먹은 O 입, 아니면 신난 미소
     const face = hanger.userData.face;
     const scaredNow = (!finished && st.v > V_SAFE) || (finished && st.result === 'crash');
@@ -929,13 +1074,45 @@ const E1 = (() => {
     $('hud_s').textContent = Math.max(0, st.s - S_START).toFixed(1) + ' / ' + (Ltot - S_START).toFixed(1) + ' m';
     $('hud_a').textContent = P.angDeg + '°';
   }
+  // 케이블 진동 — 활강 중 탑승자 주변에서 잔물결, 정지 시 원형 복원
+  function vibrateCable(real) {
+    if (!cableTube) return;
+    const vAbs = Math.max(0, st.v);
+    if (running && !finished && vAbs > 0.4) {
+      cableT += real;
+      const amp = Math.min(0.085, 0.01 + vAbs * 0.011);
+      const N = 40, pts = [];
+      for (let i = 0; i <= N; i++) {
+        const p = curve.getPoint(i / N).clone();
+        const w = Math.sin(Math.PI * i / N);
+        const near = Math.exp(-Math.abs(p.x - riderRoot.position.x) * 0.32);
+        p.y += amp * w * Math.sin((i / N) * Math.PI * 7 - cableT * 17) * (0.35 + 0.65 * near);
+        pts.push(p);
+      }
+      const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 64, 0.035, 8);
+      cableTube.geometry.dispose(); cableTube.geometry = geo;
+      cableDirty = true;
+    } else if (cableDirty) {
+      const geo = new THREE.TubeGeometry(curve, 64, 0.035, 8);
+      cableTube.geometry.dispose(); cableTube.geometry = geo;
+      cableDirty = false;
+    }
+  }
+  let zoomOn = false;
   function drawG() {
     const tMax = Math.max(1, ...samples.map(s => s.t), t) * 1.06;
     const vMax = Math.max(1, ...samples.map(s => s.v)) * 1.18;
-    drawGraph($('gr1'), [
+    const series = [
       { name: '탑승자', color: '#4da3ff', pts: samples.map(s => [s.t, s.v]) },
-    ], tMax, vMax, t);
+    ];
+    drawGraph($('gr1'), series, tMax, vMax, t);
+    if (zoomOn) drawGraph($('grBig'), series, tMax, vMax, t);
   }
+  $('gr1').addEventListener('click', () => { zoomOn = true; $('zoomOv').classList.add('on'); drawG(); });
+  $('zoomX').onclick = () => { zoomOn = false; $('zoomOv').classList.remove('on'); };
+  $('zoomOv').addEventListener('click', e => {
+    if (e.target === $('zoomOv')) { zoomOn = false; $('zoomOv').classList.remove('on'); }
+  });
   const RESULT_TXT = {
     stop: ['🪂 중간에 멈췄어… 대롱대롱 (실패)', 'diff', '멈춤'],
     safe: ['✅ 사뿐히 도착! 완벽한 집라인! (성공)', 'same', '성공'],
@@ -1042,11 +1219,19 @@ const E1 = (() => {
       drawGauge(Math.max(0, st.v), null);
     }
     place(real);
+    vibrateCable(real);
     stepFx(real);
+    stepCf(real);
+    clouds.forEach(cl => {
+      cl.position.x += real * cl.userData.drift;
+      if (cl.position.x > 190) cl.position.x = -190;
+    });
     rings.forEach(r => {
       r.userData.age += real * 1.4;
-      r.scale.setScalar(1 + r.userData.age * 2.4);
-      r.material.opacity = Math.max(0, 0.9 - r.userData.age);
+      const a2 = Math.max(0, r.userData.age);
+      r.visible = r.userData.age >= 0;
+      r.scale.setScalar(1 + a2 * 2.4);
+      r.material.opacity = Math.max(0, 0.9 - a2);
     });
     for (let i = rings.length - 1; i >= 0; i--) if (rings[i].userData.age > 1) { scene.remove(rings[i]); rings.splice(i, 1); }
     if (camGoal.active) {

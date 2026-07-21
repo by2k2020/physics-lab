@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; pointer-events: none; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 13px; font-family: var(--mono); font-size: 19px; font-weight: 800; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 700; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; pointer-events: none; }
   #free .badge-wrap { bottom: 108px; } /* keep badge above the weight tray drawn at canvas bottom */
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
@@ -58,7 +58,12 @@
   .bar-row .lab { width: 62px; flex: none; }
   .bar-track { flex: 1; height: 28px; background: #0c1220; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 8px; transition: width .25s; box-shadow: inset 0 0 12px rgba(255,255,255,.18); }
-  .bar-row .val { width: 54px; text-align: right; font-family: var(--mono); font-size: 21px; font-weight: 800; }
+  .bar-row .val { width: 54px; text-align: right; font-family: var(--mono); font-size: 22px; font-weight: 800; }
+  .diff-ind { display: flex; align-items: center; justify-content: center; gap: 9px; font-weight: 800; font-size: 15.5px; border-radius: 10px; padding: 10px 12px; margin: 0 0 13px; border: 1.5px solid var(--border); background: #0c1220; color: var(--dim); transition: border-color .2s, color .2s; }
+  .diff-ind .arr { font-size: 21px; line-height: 1; }
+  .diff-ind.l { color: var(--accent); border-color: rgba(77,163,255,.55); background: rgba(77,163,255,.09); }
+  .diff-ind.r { color: var(--orange); border-color: rgba(255,144,70,.55); background: rgba(255,144,70,.09); }
+  .diff-ind.e { color: var(--green); border-color: rgba(46,224,111,.55); background: rgba(46,224,111,.09); box-shadow: 0 0 16px rgba(46,224,111,.15); }
   .ans-col { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
   .ans-col button { padding: 12px 14px; font-size: 14px; font-weight: 700; text-align: left; }
   .ans-col button.pick { border-color: var(--accent); background: rgba(77,163,255,.12); }
@@ -67,8 +72,8 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 5px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 6px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -135,8 +140,9 @@
         <div class="bar-row"><span class="lab">◀ 왼쪽</span><div class="bar-track"><div class="bar-fill" id="barL" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:0%"></div></div><span class="val" id="valL">0</span></div>
         <div class="bar-row"><span class="lab">오른쪽 ▶</span><div class="bar-track"><div class="bar-fill" id="barR" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:0%"></div></div><span class="val" id="valR">0</span></div>
       </div>
+      <div class="diff-ind" id="diffInd">추를 매달면 좌우 차이가 여기 표시돼요</div>
       <div class="readouts">
-        <div class="readout" style="grid-column:1/3"><div class="k">판정</div><div class="v" id="roSt" style="font-family:inherit;font-size:14px">추를 매달아 봐</div></div>
+        <div class="readout" style="grid-column:1/3"><div class="k">판정</div><div class="v" id="roSt" style="font-family:inherit;font-size:16.5px">추를 매달아 봐</div></div>
       </div>
       <details open>
         <summary>🏅 수평 성공 기록 (최근 8회)</summary>
@@ -268,6 +274,7 @@ function drawBackdrop(c, W, H, px, floorY, u) {
   const sp = c.createRadialGradient(px, floorY * 0.42, 10, px, floorY * 0.42, Math.max(W, H) * 0.6);
   sp.addColorStop(0, 'rgba(110,150,220,.11)'); sp.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = sp; c.fillRect(0, 0, W, floorY);
+  drawShelves(c, W, floorY);
   // 실험대 바닥 (판재 이음선 원근)
   const fg = c.createLinearGradient(0, floorY, 0, H);
   fg.addColorStop(0, '#1c2643'); fg.addColorStop(0.14, '#141d33'); fg.addColorStop(1, '#0a1020');
@@ -281,6 +288,71 @@ function drawBackdrop(c, W, H, px, floorY, u) {
   // 저울 그림자
   c.fillStyle = 'rgba(0,0,0,.35)';
   c.beginPath(); c.ellipse(px, floorY + u * 0.06, u * 1.75, u * 0.11, 0, 0, 7); c.fill();
+}
+
+function drawShelves(c, W, floorY) {
+  // 실험실 벽 선반 + 유리 기구 소품 (양쪽, 저채도로 배경 유지)
+  const shelfY = floorY * 0.30;
+  const beaker = (x, base, w, h, liq, lvl) => {
+    c.fillStyle = 'rgba(150,180,230,.08)';
+    c.beginPath(); c.roundRect(x - w / 2, base - h, w, h, [2, 2, 5, 5]); c.fill();
+    c.fillStyle = liq;
+    c.beginPath(); c.roundRect(x - w / 2 + 1.5, base - h * lvl, w - 3, h * lvl - 1.5, [0, 0, 4, 4]); c.fill();
+    c.strokeStyle = 'rgba(170,195,235,.5)'; c.lineWidth = 1.4;
+    c.beginPath(); c.roundRect(x - w / 2, base - h, w, h, [2, 2, 5, 5]); c.stroke();
+    c.beginPath(); c.moveTo(x - w / 2 + 3, base - h * 0.72); c.lineTo(x - w / 6, base - h * 0.72); c.stroke();
+  };
+  const flask = (x, base, w, h, liq) => {
+    c.beginPath();
+    c.moveTo(x - w * 0.14, base - h); c.lineTo(x + w * 0.14, base - h);
+    c.lineTo(x + w * 0.14, base - h * 0.6); c.lineTo(x + w * 0.5, base - 1);
+    c.lineTo(x - w * 0.5, base - 1); c.lineTo(x - w * 0.14, base - h * 0.6); c.closePath();
+    c.fillStyle = 'rgba(150,180,230,.08)'; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = liq; c.fillRect(x - w / 2, base - h * 0.34, w, h * 0.34);
+    c.restore();
+    c.strokeStyle = 'rgba(170,195,235,.5)'; c.lineWidth = 1.4; c.stroke();
+  };
+  const tubes = (x, base) => {
+    c.fillStyle = '#1d2848';
+    c.beginPath(); c.roundRect(x - 22, base - 20, 44, 5, 2); c.fill();
+    c.beginPath(); c.roundRect(x - 25, base - 4, 50, 4, 2); c.fill();
+    ['rgba(77,163,255,.5)', 'rgba(199,146,234,.5)', 'rgba(46,224,111,.45)'].forEach((lq, i) => {
+      const tx = x - 13 + i * 13;
+      c.fillStyle = 'rgba(150,180,230,.08)';
+      c.beginPath(); c.roundRect(tx - 3.5, base - 30, 7, 29, [1, 1, 3.5, 3.5]); c.fill();
+      c.fillStyle = lq;
+      c.beginPath(); c.roundRect(tx - 2.5, base - 13, 5, 11, [0, 0, 2.5, 2.5]); c.fill();
+      c.strokeStyle = 'rgba(170,195,235,.45)'; c.lineWidth = 1;
+      c.beginPath(); c.roundRect(tx - 3.5, base - 30, 7, 29, [1, 1, 3.5, 3.5]); c.stroke();
+    });
+  };
+  [[26, 224], [W - 250, 224]].forEach(([sx, sw], si) => {
+    if (sx < 8 || sx + sw > W - 8) return;
+    c.save(); c.globalAlpha = 0.9;
+    c.fillStyle = '#1a2440';
+    c.beginPath(); c.moveTo(sx + 16, shelfY + 6); c.lineTo(sx + 30, shelfY + 24); c.lineTo(sx + 30, shelfY + 6); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(sx + sw - 16, shelfY + 6); c.lineTo(sx + sw - 30, shelfY + 24); c.lineTo(sx + sw - 30, shelfY + 6); c.closePath(); c.fill();
+    const base = shelfY - 6;
+    if (si === 0) {
+      beaker(sx + 40, base, 30, 40, 'rgba(77,163,255,.45)', 0.42);
+      flask(sx + 95, base, 42, 48, 'rgba(46,224,111,.4)');
+      tubes(sx + 155, base);
+      beaker(sx + 200, base, 22, 28, 'rgba(255,176,46,.4)', 0.5);
+    } else {
+      tubes(sx + 40, base);
+      beaker(sx + 92, base, 34, 46, 'rgba(199,146,234,.4)', 0.36);
+      flask(sx + 146, base, 38, 42, 'rgba(255,176,46,.38)');
+      beaker(sx + 192, base, 24, 32, 'rgba(46,224,111,.4)', 0.55);
+    }
+    const sg = c.createLinearGradient(0, shelfY - 6, 0, shelfY + 7);
+    sg.addColorStop(0, '#2e3d66'); sg.addColorStop(1, '#1a2440');
+    c.fillStyle = sg;
+    c.beginPath(); c.roundRect(sx, shelfY - 6, sw, 13, 4); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1;
+    c.beginPath(); c.roundRect(sx, shelfY - 6, sw, 13, 4); c.stroke();
+    c.restore();
+  });
 }
 
 function weightSize(m, u) { return Math.max(20, MSIZE[m] * u); }
@@ -358,7 +430,7 @@ function drawFrameBeam(c, x1, y1, x2, y2, w, nHoles) {
 function makeScale(cv, opts) {
   const S = {
     hooks: {},                 // '-4'..'-1','1'..'4' → [mass,...]
-    theta: 0, omega: 0, locked: false,
+    theta: 0, omega: 0, sway: 0, swayV: 0, locked: false,
     selected: 0, drag: null, hover: 0,
     L: null,                   // 마지막 레이아웃 (히트 테스트용)
   };
@@ -385,6 +457,9 @@ function makeScale(cv, opts) {
     const acc = (target - S.theta) * 26 - S.omega * 8;
     S.omega += acc * dt;
     S.theta += S.omega * dt;
+    // 매달린 추의 진자 스웨이 (빔 각가속도가 흔들림을 유발, 감쇠 진동으로 복원)
+    S.swayV += (-46 * S.sway - 4.5 * S.swayV - acc * 0.30) * dt;
+    S.sway = Math.max(-0.26, Math.min(0.26, S.sway + S.swayV * dt));
   };
   S.settled = () => Math.abs(S.omega) < 0.02 &&
     Math.abs(S.theta - (S.locked ? 0 : MAX_ANG * Math.tanh((S.momentSide(1) - S.momentSide(-1)) / 14))) < 0.01;
@@ -461,19 +536,51 @@ function makeScale(cv, opts) {
     c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1;
     c.beginPath(); c.arc(px, py, ar * 0.72, 0, 7); c.stroke();
 
-    // ── 매달린 추 (끈은 항상 수직) ──
+    // ── 지침 눈금판 (수평 판독 다이얼: 눈금 호 + 빔과 함께 도는 바늘) ──
+    const dialR = u * 0.88, GAIN = 2.2;                 // 지침은 빔 각도를 증폭해 표시 (판독성)
+    c.save(); c.lineCap = 'round';
+    c.strokeStyle = 'rgba(140,162,198,.35)'; c.lineWidth = Math.max(3, u * 0.055);
+    c.beginPath(); c.arc(px, py, dialR, -Math.PI / 2 - MAX_ANG * GAIN * 1.12, -Math.PI / 2 + MAX_ANG * GAIN * 1.12); c.stroke();
+    for (let i = -2; i <= 2; i++) {
+      const a = -Math.PI / 2 + (MAX_ANG * GAIN / 2) * i, big = i === 0;
+      const r1 = dialR - (big ? u * 0.17 : u * 0.09), r2 = dialR + u * 0.035;
+      c.strokeStyle = big ? 'rgba(46,224,111,.95)' : 'rgba(155,175,210,.6)';
+      c.lineWidth = big ? 3.5 : 2;
+      c.beginPath(); c.moveTo(px + Math.cos(a) * r1, py + Math.sin(a) * r1);
+      c.lineTo(px + Math.cos(a) * r2, py + Math.sin(a) * r2); c.stroke();
+    }
+    const na = -Math.PI / 2 + Math.max(-MAX_ANG, Math.min(MAX_ANG, S.theta)) * GAIN;
+    const tot = S.momentSide(1) + S.momentSide(-1);
+    const level = !S.locked && tot > 0 && S.momentSide(1) === S.momentSide(-1) &&
+      Math.abs(S.theta) < 0.015 && Math.abs(S.omega) < 0.05;
+    const neutral = tot === 0 || S.locked;              // 빈 저울·퀴즈 잠금 중엔 중립색 (정답 유출 방지)
+    c.strokeStyle = level ? '#2ee06f' : neutral ? '#8fa0bd' : '#ff5a52';
+    c.lineWidth = Math.max(3, u * 0.05);
+    c.shadowColor = level ? 'rgba(46,224,111,.7)' : neutral ? 'rgba(0,0,0,0)' : 'rgba(255,90,82,.45)';
+    c.shadowBlur = level ? 12 : 6;
+    c.beginPath(); c.moveTo(px + Math.cos(na) * ar * 1.05, py + Math.sin(na) * ar * 1.05);
+    c.lineTo(px + Math.cos(na) * (dialR - u * 0.06), py + Math.sin(na) * (dialR - u * 0.06)); c.stroke();
+    c.restore();
+
+    // ── 매달린 추 (끈은 항상 수직 + 스웨이 진자) ──
     const cosT = Math.cos(S.theta), sinT = Math.sin(S.theta);
     S.wRects = [];
     for (let d = -4; d <= 4; d++) {
       if (!d) continue;
       const hx = px + cosT * d * u, hy = py + sinT * d * u + u * 0.16;
-      if (S.hover === d && opts.interactive) {               // 배치 후보 하이라이트
-        c.strokeStyle = 'rgba(77,163,255,.85)'; c.lineWidth = 2.5;
-        c.beginPath(); c.arc(hx, hy, u * 0.34, 0, 7); c.stroke();
-        c.fillStyle = 'rgba(77,163,255,.12)'; c.fill();
+      if (S.hover === d && opts.interactive) {               // 배치 후보 하이라이트 (펄스 링)
+        const pulse = 1 + 0.09 * Math.sin(performance.now() / 110);
+        c.fillStyle = 'rgba(77,163,255,.16)';
+        c.beginPath(); c.arc(hx, hy, u * 0.36 * pulse, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(77,163,255,.95)'; c.lineWidth = 3;
+        c.beginPath(); c.arc(hx, hy, u * 0.36 * pulse, 0, 7); c.stroke();
+        c.strokeStyle = 'rgba(77,163,255,.4)'; c.lineWidth = 1.5;
+        c.beginPath(); c.arc(hx, hy, u * 0.52 * pulse, 0, 7); c.stroke();
       }
       const arr = S.hooks[d];
       if (!arr.length) continue;
+      c.save();                                              // 진자 스웨이: 걸이점 기준 회전
+      c.translate(hx, hy); c.rotate(S.sway); c.translate(-hx, -hy);
       const strL = u * 0.22;
       const sTop = weightSize(arr[0], u);
       c.strokeStyle = '#aeb8ca'; c.lineWidth = 1.6;               // 매다는 줄 (핀 → 고리까지)
@@ -483,9 +590,10 @@ function makeScale(cv, opts) {
       let y = hy + strL + sTop * 0.14;
       arr.forEach((m, i) => {
         const s = drawWeight(c, hx, y, m, u, false);
-        S.wRects.push({ d, i, m, x: hx - s / 2, y, w: s, h: s });
+        S.wRects.push({ d, i, m, x: hx - s / 2 + Math.sin(S.sway) * (y - hy), y, w: s, h: s });
         y += s * 0.92;
       });
+      c.restore();
     }
 
     // ── 추 상자 (트레이) ──
@@ -512,8 +620,21 @@ function makeScale(cv, opts) {
       });
     }
 
-    // ── 드래그 고스트 ──
-    if (S.drag) drawWeight(c, S.drag.x, S.drag.y - weightSize(S.drag.m, u) * 0.4, S.drag.m, u, true);
+    // ── 드래그 고스트 (그림자 + 스냅 가이드 점선) ──
+    if (S.drag) {
+      const gs = weightSize(S.drag.m, u);
+      if (S.hover) {
+        const ghx = px + cosT * S.hover * u, ghy = py + sinT * S.hover * u + u * 0.16;
+        c.save();
+        c.setLineDash([7, 7]); c.lineDashOffset = -(performance.now() / 40) % 14;
+        c.strokeStyle = 'rgba(77,163,255,.85)'; c.lineWidth = 2.5;
+        c.beginPath(); c.moveTo(S.drag.x, S.drag.y); c.lineTo(ghx, ghy); c.stroke();
+        c.restore();
+      }
+      c.fillStyle = 'rgba(0,0,0,.42)';
+      c.beginPath(); c.ellipse(S.drag.x, S.drag.y + gs * 0.72, gs * 0.52, gs * 0.13, 0, 0, 7); c.fill();
+      drawWeight(c, S.drag.x, S.drag.y - gs * 0.4, S.drag.m, u, true);
+    }
   };
 
   // ── 히트 테스트 ──
@@ -581,6 +702,36 @@ function makeScale(cv, opts) {
 const Free = (() => {
   const sc = makeScale($('cvF'), { interactive: true, onChange: refresh });
   let lastKey = '', doneKeys = new Set(), successCount = 0, challenge = false;
+  let sparks = [];
+  function spawnSparks() {
+    const L = sc.L; if (!L) return;
+    for (let i = 0; i < 40; i++) {
+      sparks.push({
+        x: L.px + (Math.random() * 2 - 1) * 4.4 * L.u,
+        y: L.py + (Math.random() * 2 - 1) * L.u * 0.45,
+        vx: (Math.random() - 0.5) * 100, vy: -50 - Math.random() * 120,
+        life: 0.9 + Math.random() * 0.7, t: 0,
+        col: ['#ffe08a', '#ffffff', '#2ee06f', '#7db4ff'][i & 3],
+      });
+    }
+  }
+  function drawSparks(dt) {
+    if (!sparks.length) return;
+    const c = $('cvF').getContext('2d');
+    sparks = sparks.filter(p => (p.t += dt) < p.life);
+    sparks.forEach(p => {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 160 * dt;
+      const a = 1 - p.t / p.life, r = 2 + 3.5 * a;
+      c.save(); c.globalAlpha = a; c.fillStyle = p.col;
+      c.translate(p.x, p.y); c.rotate(p.t * 5);
+      c.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const rr = k % 2 ? r * 0.45 : r * 1.7, aa = k * Math.PI / 4;
+        c.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+      }
+      c.closePath(); c.fill(); c.restore();
+    });
+  }
 
   function refresh() {
     const ml = sc.momentSide(-1), mr = sc.momentSide(1);
@@ -590,6 +741,11 @@ const Free = (() => {
     const mx = Math.max(40, ml, mr);
     $('barL').style.width = (ml / mx * 100) + '%'; $('valL').textContent = ml;
     $('barR').style.width = (mr / mx * 100) + '%'; $('valR').textContent = mr;
+    const di = $('diffInd');
+    if (ml + mr === 0) { di.className = 'diff-ind'; di.textContent = '추를 매달면 좌우 차이가 여기 표시돼요'; }
+    else if (ml > mr) { di.className = 'diff-ind l'; di.innerHTML = `<span class="arr">◀◀</span> 왼쪽 모멘트가 ${ml - mr} 더 커요`; }
+    else if (mr > ml) { di.className = 'diff-ind r'; di.innerHTML = `오른쪽 모멘트가 ${mr - ml} 더 커요 <span class="arr">▶▶</span>`; }
+    else { di.className = 'diff-ind e'; di.textContent = '⚖️ 좌 = 우 — 차이 0, 완전 수평!'; }
     lastKey = JSON.stringify(sc.hooks);
     if (challenge && !sc.count(-1)) challenge = false;       // 왼쪽을 다 치우면 도전 무효
     const bd = $('bdF');
@@ -617,6 +773,7 @@ const Free = (() => {
     if (ml === mr && ml > 0 && sc.count(-1) && sc.count(1) && sc.settled() && !doneKeys.has(lastKey)) {
       doneKeys.add(lastKey);
       successCount++;
+      spawnSparks();
       const bd = $('bdF');
       bd.className = 'badge same';
       bd.textContent = challenge ? `🏆 도전 성공! 좌 = 우 = ${ml} — 수평 ${successCount}회째`
@@ -629,6 +786,7 @@ const Free = (() => {
       tb.prepend(tr);
       while (tb.children.length > 8) tb.removeChild(tb.lastChild);
     }
+    drawSparks(dt);
   }
   $('btnClear').onclick = () => { sc.clear(); $('bdF').className = 'badge'; challenge = false; };
   $('btnChal').onclick = () => {

@@ -29,7 +29,7 @@
   canvas.scene { display: block; width: 100%; height: 100%; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
   .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
-  .chip .lab { color: var(--dim); font-size: 11.5px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip .lab { color: var(--dim); font-size: 12.5px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 94%; }
   .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
   .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
@@ -37,7 +37,7 @@
   .badge.bad  { display: inline-flex; background: rgba(70,18,14,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
 
   .side { width: 400px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
-  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .side h3 { font-size: 12.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
   .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
   button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
   button:hover { border-color: var(--accent); }
@@ -56,7 +56,7 @@
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .pick { display: flex; gap: 6px; }
   .pick button { flex: 1; padding: 8px 2px; font-size: 12px; border-radius: 8px; line-height: 1.35; }
-  .pick button small { display: block; font-family: var(--mono); font-size: 10px; color: var(--dim); }
+  .pick button small { display: block; font-family: var(--mono); font-size: 11px; color: var(--dim); }
   .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
   .pick button.on small { color: var(--accent); }
   .bars { margin: 4px 0 12px; }
@@ -71,9 +71,15 @@
   .live-row .track { flex: 1; height: 21px; background: #0c1220; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; }
   .live-row .fill { height: 100%; border-radius: 10px; width: 0%; transition: width .12s linear; }
   .live-row .val { width: 76px; text-align: right; font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
-  .note { font-size: 11.5px; color: var(--dim); background: #0c1220; border: 1px dashed var(--border); border-radius: 9px; padding: 8px 11px; margin-bottom: 12px; line-height: 1.6; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 4px; text-align: center; }
+  .track.prog { position: relative; }
+  .track.prog::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent calc(16.666% - 1.5px), rgba(140,165,210,.4) calc(16.666% - 1.5px), rgba(140,165,210,.4) 16.666%); }
+  .track.slim { height: 12px !important; border-radius: 7px !important; }
+  .live-row.slim { margin-top: -3px; margin-bottom: 10px; }
+  .live-row.slim .val { font-size: 12px; font-weight: 400; color: var(--dim); }
+  .note { font-size: 12.5px; color: var(--dim); background: #0c1220; border: 1px dashed var(--border); border-radius: 9px; padding: 8px 11px; margin-bottom: 12px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 7px 5px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
@@ -148,6 +154,11 @@
       <div class="live-bars">
         <div class="live-row"><span class="lab" style="color:#4da3ff">😀 나</span><div class="track"><div class="fill" id="liveMe" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div></div><span class="val" id="liveMeV">0.0 m/s</span></div>
         <div class="live-row"><span class="lab" style="color:#ff9046">🤖 AI</span><div class="track"><div class="fill" id="liveAi" style="background:linear-gradient(90deg,#c2410c,#ff9046)"></div></div><span class="val" id="liveAiV">0.0 m/s</span></div>
+      </div>
+      <h3>📏 구간 진행률 (트랙 6구간)</h3>
+      <div class="live-bars">
+        <div class="live-row"><span class="lab" style="color:#4da3ff">😀 나</span><div class="track prog"><div class="fill" id="progMe" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div></div><span class="val" id="progMeV">0.0 m</span></div>
+        <div class="live-row"><span class="lab" style="color:#ff9046">🤖 AI</span><div class="track prog"><div class="fill" id="progAi" style="background:linear-gradient(90deg,#c2410c,#ff9046)"></div></div><span class="val" id="progAiV">0.0 m</span></div>
       </div>
       <h3>내 러너 조립</h3>
       <div class="param"><label>기어비 (모터→크랭크) <b id="v_gear">균형형</b></label>
@@ -461,24 +472,26 @@ function drawRunner(c, x, y, rot, ph, L, col, o = {}) {
     }
   }
   // 크랭크 기구 노출: 커넥팅 로드 + 크랭크 빔 + 십자축 + 크랭크 핀
+  // 회전-다리 연동이 눈에 띄도록 움직이는 링크(크랭크·로드)는 앰버색으로 강조
   const pF = legPt(ph);
   const rc = r * 0.55;
   const cpx = Math.cos(ph) * rc, cpy = hipY + Math.sin(ph) * rc;
-  c.strokeStyle = 'rgba(150,175,215,.5)'; c.lineWidth = 2;
+  c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
   c.beginPath(); c.moveTo(cpx, cpy); c.lineTo(pF.fx, pF.fy); c.stroke();   // 커넥팅 로드
-  beamPart(c, 0, hipY, cpx, cpy, 5, '#7c88a4');                            // 크랭크 빔
+  beamPart(c, 0, hipY, cpx, cpy, 5, '#ffb02e');                            // 크랭크 빔
   c.fillStyle = '#0b0f18';
   c.beginPath(); c.arc(0, hipY, 4.6, 0, 7); c.fill();
   c.fillStyle = '#39445c';
   c.fillRect(-1.6, hipY - 4.6, 3.2, 9.2); c.fillRect(-4.6, hipY - 1.6, 9.2, 3.2);
   pinJoint(c, cpx, cpy, 2.4);                                              // 크랭크 핀
+  c.fillStyle = '#ffd23e'; c.beginPath(); c.arc(cpx, cpy, 1.5, 0, 7); c.fill();
   drawLeg(ph, true);            // 앞다리
   drawArm(ph + Math.PI, true);  // 앞팔
   c.restore();
 }
 
 /* ── 트랙 씬 ── */
-function trackScene(c, W, H, trackKey) {
+function trackScene(c, W, H, trackKey, tapeAge) {
   const T = TRACKS[trackKey];
   const xs = 72, xe = W - 86;
   const y0 = trackKey === 'flat' ? H * 0.74 : H * 0.82;
@@ -512,10 +525,21 @@ function trackScene(c, W, H, trackKey) {
     c.fillRect(gx0 + 5, ry + 5, gx1 - gx0 - 10, 3);
     for (let sx = gx0 + 14, i = 0; sx < gx1 - 9; sx += 16, i++) {
       const rnd = Math.abs(Math.sin((ri * 37 + i) * 12.9898) * 43758.55) % 1;
-      const bob = Math.sin(nowS * 3.2 + i * 1.7 + ri * 0.9) * 1.1;
-      c.fillStyle = CROWD[Math.floor(rnd * CROWD.length)];
+      // 파도타기: 위상이 좌→우로 흐르는 웨이브, 정점에선 두 팔 번쩍
+      const wp = nowS * 2.4 - (sx - gx0) * 0.02 + ri * 0.35;
+      const lift = Math.max(0, Math.sin(wp));
+      const bob = -lift * lift * 4.5;
+      const col = CROWD[Math.floor(rnd * CROWD.length)];
+      c.fillStyle = col;
       c.beginPath(); c.arc(sx, ry + bob, 3, 0, 7); c.fill();
       c.fillRect(sx - 2.6, ry + bob + 2.8, 5.2, 3.4);
+      if (lift > 0.72) {
+        c.strokeStyle = col; c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(sx - 2.4, ry + bob + 3); c.lineTo(sx - 5.2, ry + bob - 3.5);
+        c.moveTo(sx + 2.4, ry + bob + 3); c.lineTo(sx + 5.2, ry + bob - 3.5);
+        c.stroke();
+      }
     }
   }
   // 지면 (양끝 연장)
@@ -525,6 +549,26 @@ function trackScene(c, W, H, trackKey) {
   c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
   c.strokeStyle = '#2a3a5c'; c.lineWidth = 4;
   c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.stroke();
+  if (trackKey === 'up') {
+    // 오르막 강조: 경사면 해칭 + 옅은 웜톤 + 기울기 화살표·라벨
+    c.strokeStyle = 'rgba(95,125,180,.16)'; c.lineWidth = 2;
+    for (let x = 24; x < W; x += 44) {
+      c.beginPath(); c.moveTo(x, yAt(x) + 7); c.lineTo(x - 15, yAt(x) + 30); c.stroke();
+    }
+    const eg = c.createLinearGradient(0, y1, 0, H);
+    eg.addColorStop(0, 'rgba(255,176,46,.07)'); eg.addColorStop(1, 'rgba(255,176,46,0)');
+    c.fillStyle = eg;
+    c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
+    const grade = Math.round(Math.abs(Math.tan(ang)) * 100);
+    const mp = posOf(T.len * 0.42);
+    c.save(); c.translate(mp.x, mp.y); c.rotate(ang);
+    c.strokeStyle = 'rgba(255,176,46,.65)'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-58, 46); c.lineTo(58, 46); c.stroke();
+    c.beginPath(); c.moveTo(46, 40); c.lineTo(58, 46); c.lineTo(46, 52); c.stroke();
+    c.fillStyle = 'rgba(255,196,86,.9)'; c.font = 'bold 13.5px sans-serif'; c.textAlign = 'center';
+    c.fillText('⛰ 오르막 · 경사 ' + grade + '% — 힘이 필요해!', 0, 68);
+    c.restore();
+  }
   // 레인 라인 (점선)
   c.setLineDash([12, 9]); c.lineWidth = 1.5; c.strokeStyle = 'rgba(140,165,210,.25)';
   [-14, 14, 42, 70].forEach(off => {
@@ -566,12 +610,33 @@ function trackScene(c, W, H, trackKey) {
   c.strokeStyle = '#8fa0bf'; c.lineWidth = 2.5;
   c.beginPath(); c.moveTo(tx0, ty0); c.lineTo(tx0, f.y + tpA.y); c.stroke();
   c.beginPath(); c.moveTo(tx1, ty1); c.lineTo(tx1, f.y + tpB.y); c.stroke();
-  for (let i = 0; i < 10; i++) {
-    c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
-    c.beginPath();
-    c.moveTo(tx0 + (tx1 - tx0) * i / 10, ty0 + (ty1 - ty0) * i / 10);
-    c.lineTo(tx0 + (tx1 - tx0) * (i + 1) / 10, ty0 + (ty1 - ty0) * (i + 1) / 10);
-    c.stroke();
+  if (tapeAge == null) {
+    for (let i = 0; i < 10; i++) {
+      c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
+      c.beginPath();
+      c.moveTo(tx0 + (tx1 - tx0) * i / 10, ty0 + (ty1 - ty0) * i / 10);
+      c.lineTo(tx0 + (tx1 - tx0) * (i + 1) / 10, ty0 + (ty1 - ty0) * (i + 1) / 10);
+      c.stroke();
+    }
+  } else {
+    // 1등 통과! 테이프가 끊어져 양쪽 기둥에서 펄럭이며 늘어짐
+    const droop = Math.min(1, tapeAge * 1.8);
+    const sway = Math.sin(performance.now() / 280) * 5 * (1 - droop * 0.6);
+    const tapeHalf = (px, py, dirX) => {
+      const ex2 = px + dirX * 0.42 + sway, ey2 = py + 34 + 52 * droop;
+      const cx2 = px + dirX * 0.3, cy2 = py + 10 + 20 * droop;
+      let lx = px, ly = py;
+      for (let i = 1; i <= 6; i++) {
+        const tt = i / 6;
+        const qx = (1 - tt) * (1 - tt) * px + 2 * (1 - tt) * tt * cx2 + tt * tt * ex2;
+        const qy = (1 - tt) * (1 - tt) * py + 2 * (1 - tt) * tt * cy2 + tt * tt * ey2;
+        c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
+        c.beginPath(); c.moveTo(lx, ly); c.lineTo(qx, qy); c.stroke();
+        lx = qx; ly = qy;
+      }
+    };
+    tapeHalf(tx0, ty0, tx1 - tx0);
+    tapeHalf(tx1, ty1, tx0 - tx1);
   }
   return { posOf, ang, T };
 }
@@ -584,6 +649,53 @@ const COLS = {
   purple: { body: '#7c3aed', head: '#ffd23e', stud: '#c9a6ff', leg: '#a78bfa', legDim: '#3c2a6e', arm: '#a78bfa', armDim: '#3c2a6e', foot: '#e8eef7', footDim: '#5d6b85', hud: '#c792ea', num: '3', headType: 'helmet' },
 };
 
+/* ── 이펙트: 먼지 · 발자국 · 색종이 · 결승 테이프 ── */
+function makeFx() { return { dust: [], prints: [], conf: [], tapeAge: null, burst: false }; }
+function fxReset(fx) { fx.dust.length = 0; fx.prints.length = 0; fx.conf.length = 0; fx.tapeAge = null; fx.burst = false; }
+const CONF_COLS = ['#ffd23e', '#ff5a52', '#2ee06f', '#4da3ff', '#c792ea', '#ff9046'];
+function fxBurst(fx, x, y) {
+  for (let i = 0; i < 70; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 190;
+    fx.conf.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 130,
+      rot: Math.random() * 6.3, vr: (Math.random() - .5) * 10,
+      w: 4 + Math.random() * 4, h: 2.5 + Math.random() * 2.5,
+      col: CONF_COLS[i % CONF_COLS.length], age: 0, life: 1.8 + Math.random() * 1.2 });
+  }
+}
+function fxUpdate(fx, dt) {
+  if (fx.tapeAge != null) fx.tapeAge += dt;
+  fx.dust = fx.dust.filter(p => (p.age += dt) < p.life);
+  fx.dust.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 2.2; p.vy -= 24 * dt; });
+  fx.prints = fx.prints.filter(p => (p.age += dt) < 2.6);
+  fx.conf = fx.conf.filter(p => (p.age += dt) < p.life);
+  fx.conf.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 170 * dt; p.vx *= 1 - dt * 0.8; p.rot += p.vr * dt; });
+}
+function fxDrawGround(c, fx) {
+  fx.prints.forEach(p => {
+    c.save(); c.translate(p.x, p.y); c.rotate(p.ang);
+    c.globalAlpha = Math.max(0, 1 - p.age / 2.6) * 0.5;
+    c.fillStyle = '#8fa0bf';
+    c.beginPath(); c.ellipse(0, 3, 5, 1.8, 0, 0, 7); c.fill();
+    c.restore();
+  });
+  c.globalAlpha = 1;
+}
+function fxDrawAir(c, fx) {
+  fx.dust.forEach(p => {
+    const k = p.age / p.life;
+    c.globalAlpha = (1 - k) * 0.4;
+    c.fillStyle = '#aab6cf';
+    c.beginPath(); c.arc(p.x, p.y, p.r * (1 + k * 1.6), 0, 7); c.fill();
+  });
+  fx.conf.forEach(p => {
+    c.globalAlpha = Math.min(1, (p.life - p.age) / 0.5);
+    c.save(); c.translate(p.x, p.y); c.rotate(p.rot);
+    c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    c.restore();
+  });
+  c.globalAlpha = 1;
+}
+
 function makeRunnerState(gearKey, L, trackKey, name, col) {
   return { gearKey, L, trackKey, name, col, d: 0, v: 0, ph: 0, fin: null };
 }
@@ -595,10 +707,26 @@ function stepRunner(r, dt, jitterMul) {
   if (r.fin == null) r.d += r.v * dt;
   r.ph += (m.stall ? 0.5 : m.rps * Math.PI * 2) * dt;
 }
-function drawLaneRunner(c, scene, r, off, scale, label) {
+function drawLaneRunner(c, scene, r, off, scale, label, fx) {
   const p = scene.posOf(Math.min(r.d, scene.T.len));
   const o = perpOffset(scene.ang, off);
   const x = p.x + o.x, y = p.y + o.y;
+  if (fx && r.fin == null) {
+    const sNow = Math.sin(r.ph);
+    if (r._pSin > 0 && sNow <= 0 && r.v > 0.4) {          // 발이 땅에 닿는 순간 발자국
+      const lx = Math.cos(r.ph) * (4 + r.L * 1.35) * 1.35 * scale;
+      fx.prints.push({ x: x + Math.cos(scene.ang) * lx, y: y + Math.sin(scene.ang) * lx, ang: scene.ang, age: 0 });
+      if (fx.prints.length > 26) fx.prints.shift();
+    }
+    r._pSin = sNow;
+    if (r.v > 1.2 && Math.random() < 0.55) {              // 달릴 때 발밑 먼지
+      const bx = -Math.cos(scene.ang), by = -Math.sin(scene.ang);
+      fx.dust.push({ x: x + bx * 9 * scale, y: y + by * 9 * scale - 2,
+        vx: bx * (24 + Math.random() * 34), vy: by * 10 - 6 - Math.random() * 10,
+        r: 2 + Math.random() * 2.5, age: 0, life: 0.5 + Math.random() * 0.3 });
+      if (fx.dust.length > 90) fx.dust.shift();
+    }
+  }
   drawRunner(c, x, y, scene.ang, r.ph, r.L, r.col, { scale, stall: r.stall && r.fin == null });
   c.save(); c.translate(x, y);
   const top = -(13 + r.L * 1.9) * 4.6 * scale - off * 0.45;  // 뒤 레인 라벨은 더 위로 (겹침 방지)
@@ -650,6 +778,8 @@ function pickCtl(container, attr, onChange) {
   let countT = 0, t = 0, ts = 1, ffOn = false;
   let me = null, ai = null, aiJit = 1, runCount = 0;
   const best = {};           // gear_track → 최고 기록
+  const fx = makeFx();
+  let postT = 0;             // 결승 후 축하 연출 시간
 
   const getGear = pickCtl($('pickGear'), 'g', onParam);
   const getTrk = pickCtl($('pickTrk'), 't', onParam);
@@ -669,6 +799,7 @@ function pickCtl(container, attr, onChange) {
   }
   function reset() {
     state = 'idle'; t = 0; ts = 1; ffOn = false;
+    fxReset(fx);
     const trk = getTrk();
     me = makeRunnerState(getGear(), +$('legLen').value, trk, '나', COLS.blue);
     const aiGear = ['power', 'balance', 'speed'][Math.floor(Math.random() * 3)];
@@ -749,25 +880,44 @@ function pickCtl(container, attr, onChange) {
       let ranks = 0;
       [me, ai].forEach(r => { if (r.fin != null) ranks++; });
       [me, ai].forEach(r => {
-        if (r.fin == null && r.d >= TRACKS[r.trackKey].len) { r.fin = t; r.rank = ++ranks; }
+        if (r.fin == null && r.d >= TRACKS[r.trackKey].len) {
+          r.fin = t; r.rank = ++ranks;
+          if (r.rank === 1) { fx.tapeAge = 0; fx.burst = true; }   // 테이프 끊김 + 색종이
+        }
       });
       const first = Math.min(me.fin ?? 1e9, ai.fin ?? 1e9);
       if (first < 1e9 && !ffOn && ts < 4) ts = 4;   // 1등 나오면 자동 빨리감기
       if (first === 1e9 && t > 10 && !ffOn && ts < 4) ts = 4;   // 둘 다 느린 경주도 자동 빨리감기
       const cap = TRACKS[me.trackKey].cap;
       if ((me.fin != null && ai.fin != null) || t >= cap || (first < 1e9 && t >= first + 25)) {
-        draw(); finishRace(); return;
+        fxUpdate(fx, real);
+        draw(); finishRace();
+        postT = 0; raf = requestAnimationFrame(postFrame);   // 축하 연출 지속
+        return;
       }
     }
+    fxUpdate(fx, real);
     draw();
     if (state === 'count' || state === 'run') raf = requestAnimationFrame(frame);
+  }
+  function postFrame(now) {
+    if (lastTs == null) lastTs = now;
+    const real = Math.min((now - lastTs) / 1000, 0.05);
+    lastTs = now;
+    postT += real;
+    fxUpdate(fx, real);
+    draw();
+    if (postT < 3.2 && state === 'done') raf = requestAnimationFrame(postFrame);
   }
 
   function draw() {
     const { c, W, H } = fit(cv);
-    const scene = trackScene(c, W, H, me.trackKey);
-    drawLaneRunner(c, scene, ai, 30, 0.86, '🤖 AI · ' + (state === 'idle' || (state === 'count' && countT > 2) ? '???' : GEARS[ai.gearKey].icon + GEARS[ai.gearKey].name));
-    drawLaneRunner(c, scene, me, 0, 1, '😀 나 · ' + GEARS[me.gearKey].icon + GEARS[me.gearKey].name);
+    const scene = trackScene(c, W, H, me.trackKey, fx.tapeAge);
+    if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
+    fxDrawGround(c, fx);
+    drawLaneRunner(c, scene, ai, 30, 0.86, '🤖 AI · ' + (state === 'idle' || (state === 'count' && countT > 2) ? '???' : GEARS[ai.gearKey].icon + GEARS[ai.gearKey].name), fx);
+    drawLaneRunner(c, scene, me, 0, 1, '😀 나 · ' + GEARS[me.gearKey].icon + GEARS[me.gearKey].name, fx);
+    fxDrawAir(c, fx);
     if (state === 'count') countdownOverlay(c, W, H, countT);
     if ((ffOn || ts > 1) && state === 'run') {
       c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
@@ -781,6 +931,11 @@ function pickCtl(container, attr, onChange) {
     $('liveMeV').textContent = me.v.toFixed(1) + ' m/s';
     $('liveAi').style.width = Math.min(100, ai.v / VMAX * 100) + '%';
     $('liveAiV').textContent = ai.v.toFixed(1) + ' m/s';
+    const len = TRACKS[me.trackKey].len;
+    $('progMe').style.width = Math.min(100, me.d / len * 100) + '%';
+    $('progMeV').textContent = Math.min(me.d, len).toFixed(1) + ' m';
+    $('progAi').style.width = Math.min(100, ai.d / len * 100) + '%';
+    $('progAiV').textContent = Math.min(ai.d, len).toFixed(1) + ' m';
     $('hud_ai').textContent = state === 'idle' || (state === 'count' && countT > 2)
       ? '?' : GEARS[ai.gearKey].icon + ' ' + GEARS[ai.gearKey].name;
   }
@@ -845,6 +1000,8 @@ function pickCtl(container, attr, onChange) {
   ];
   let qi = 0, picked = null, state = 'ask';   // ask | run | done
   let t = 0, ts = 2, lanes = [], raf = null, lastTs = null;
+  const fx = makeFx();
+  let postT = 0;
 
   function setStatus(mode, txt) {
     $('ledQ').className = 'led ' + (mode === 'run' ? 'run' : mode === 'done' ? 'done' : '');
@@ -853,13 +1010,17 @@ function pickCtl(container, attr, onChange) {
   function loadQ() {
     const q = QUESTIONS[qi];
     state = 'ask'; picked = null; t = 0; ts = 2;
+    fxReset(fx);
     lanes = q.lanes.map(l => makeRunnerState(l.gearKey, l.L, q.track, l.label, l.col));
     $('hud_qn').textContent = (qi + 1) + ' / ' + QUESTIONS.length;
     $('qText').textContent = q.text;
     $('liveQ').innerHTML = q.lanes.map((l, i) =>
       `<div class="live-row"><span class="lab" style="color:${l.col.hud}">${l.label}</span>` +
       `<div class="track"><div class="fill" id="lq${i}" style="background:linear-gradient(90deg,${l.col.body},${l.col.hud})"></div></div>` +
-      `<span class="val" id="lqv${i}">0.0 m/s</span></div>`).join('');
+      `<span class="val" id="lqv${i}">0.0 m/s</span></div>` +
+      `<div class="live-row slim"><span class="lab"></span>` +
+      `<div class="track prog slim"><div class="fill" id="lqp${i}" style="background:${l.col.hud}"></div></div>` +
+      `<span class="val" id="lqpv${i}">0.0 m</span></div>`).join('');
     const box = $('qAns'); box.innerHTML = '';
     q.choices.forEach((ch, i) => {
       const b = document.createElement('button');
@@ -868,6 +1029,7 @@ function pickCtl(container, attr, onChange) {
         if (state === 'run') return;
         if (state === 'done') {
           state = 'ask';
+          fxReset(fx);
           $('qVerdict').className = 'verdict'; $('bdQ').className = 'badge';
           lanes.forEach((l, k) => { l.d = 0; l.v = 0; l.ph = k * 1.1; l.fin = null; });
           draw();
@@ -910,23 +1072,41 @@ function pickCtl(container, attr, onChange) {
     let ranks = lanes.filter(l => l.fin != null).length;
     lanes.forEach(l => {
       stepRunner(l, dt, 1);
-      if (l.fin == null && l.d >= TRACKS[l.trackKey].len) { l.fin = t; l.rank = ++ranks; }
+      if (l.fin == null && l.d >= TRACKS[l.trackKey].len) {
+        l.fin = t; l.rank = ++ranks;
+        if (l.rank === 1) { fx.tapeAge = 0; fx.burst = true; }
+      }
     });
     const first = Math.min(...lanes.map(l => l.fin ?? 1e9));
     if (first < 1e9 && ts < 6) ts = 6;
     if (first === 1e9 && t > 10 && ts < 6) ts = 6;
     const cap = TRACKS[QUESTIONS[qi].track].cap;
+    fxUpdate(fx, real);
     if (lanes.every(l => l.fin != null) || t >= cap || (first < 1e9 && t >= first + 12)) {
-      draw(); finishQ(); return;
+      draw(); finishQ();
+      postT = 0; raf = requestAnimationFrame(postFrame);
+      return;
     }
     draw();
     raf = requestAnimationFrame(frame);
   }
+  function postFrame(now) {
+    if (lastTs == null) lastTs = now;
+    const real = Math.min((now - lastTs) / 1000, 0.05);
+    lastTs = now;
+    postT += real;
+    fxUpdate(fx, real);
+    draw();
+    if (postT < 3.2 && state === 'done') raf = requestAnimationFrame(postFrame);
+  }
   function draw() {
     const { c, W, H } = fit(cv);
-    const scene = trackScene(c, W, H, QUESTIONS[qi].track);
+    const scene = trackScene(c, W, H, QUESTIONS[qi].track, fx.tapeAge);
+    if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
+    fxDrawGround(c, fx);
     const offs = [56, 28, 0], scales = [0.78, 0.88, 1];
-    lanes.forEach((l, i) => drawLaneRunner(c, scene, l, offs[i], scales[i], l.name));
+    lanes.forEach((l, i) => drawLaneRunner(c, scene, l, offs[i], scales[i], l.name, fx));
+    fxDrawAir(c, fx);
     if (state === 'run' && ts > 2) {
       c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
       c.fillText('⏩ 빨리감기', W - 14, H - 14);
@@ -935,11 +1115,14 @@ function pickCtl(container, attr, onChange) {
     lanes.forEach((l, i) => {
       const f2 = $('lq' + i), v2 = $('lqv' + i);
       if (f2) { f2.style.width = Math.min(100, l.v / 16 * 100) + '%'; v2.textContent = l.v.toFixed(1) + ' m/s'; }
+      const p2 = $('lqp' + i), pv2 = $('lqpv' + i), len = TRACKS[l.trackKey].len;
+      if (p2) { p2.style.width = Math.min(100, l.d / len * 100) + '%'; pv2.textContent = Math.min(l.d, len).toFixed(1) + ' m'; }
     });
   }
   $('btnQGo').onclick = () => {
     if (picked == null || state === 'run') return;
     state = 'run'; t = 0; ts = 2; lastTs = null;
+    fxReset(fx);
     lanes.forEach((l, i) => { l.d = 0; l.v = 0; l.ph = i * 1.1; l.fin = null; });
     $('btnQGo').disabled = true;
     setStatus('run', '경주 중… 누가 1등일까?');
