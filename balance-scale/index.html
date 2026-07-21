@@ -89,6 +89,12 @@
   .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
   .theory-box table { font-size: 13px; margin: 10px 0; }
   .theory-box th, .theory-box td { padding: 7px 10px; }
+  .parent-card { background: rgba(199,146,234,.07); border: 1px solid rgba(199,146,234,.35); border-radius: 12px; padding: 15px 18px; margin-bottom: 20px; }
+  .parent-card .pc-title { font-size: 14.5px; font-weight: 800; color: var(--purple); margin-bottom: 7px; }
+  .term-card { background: rgba(46,224,111,.05); border: 1px solid rgba(46,224,111,.3); border-radius: 12px; padding: 15px 18px; margin: 18px 0; }
+  .term-card .tc-title { font-size: 14.5px; font-weight: 800; color: var(--green); margin-bottom: 9px; }
+  .term-card ul { margin: 0 0 0 20px; }
+  .term-card li { margin-bottom: 5px; }
 
   @media (max-width: 900px) {
     body { overflow: auto; }
@@ -131,7 +137,7 @@
         <button class="primary" id="btnChal">🎯 도전 만들기 (왼쪽 무작위)</button>
         <button id="btnClear">🧹 치우기</button>
       </div>
-      <h3>모멘트 = 무게 × 칸수</h3>
+      <h3>무게 × 칸수 = 모멘트(돌림힘)</h3>
       <div class="readouts">
         <div class="readout"><div class="k">◀ 왼쪽 모멘트</div><div class="v a" id="roML">0</div><div class="sub" id="foML">—</div></div>
         <div class="readout"><div class="k">오른쪽 모멘트 ▶</div><div class="v b" id="roMR">0</div><div class="sub" id="foMR">—</div></div>
@@ -200,6 +206,12 @@
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>지렛대의 원리</b>와 <b>모멘트(돌림힘)</b>를 배웁니다.
+        저울을 기울이는 힘이 <b>무게 × 거리</b>로 정해져, 가벼운 추도 멀리 걸면 무거운 추를 이길 수 있다는 것을 시뮬레이션 퀴즈와 레고 브릭큐 실험으로 확인합니다.<br>
+        아이는 예측 → 실험 → 결과 비교의 과학적 방법을 놀이처럼 익힙니다.
+      </div>
       <h2>📖 시소의 비밀 — 가벼워도 멀리 있으면 이긴다!</h2>
       <p>시소에서 몸무게가 가벼운 친구가 무거운 친구를 들어 올리려면 어떻게 해야 할까?
         맞아, <b>더 멀리 앉으면 돼!</b> 저울을 기울이는 힘은 무게만으로 정해지는 게 아니라
@@ -221,6 +233,13 @@
       <p><b>왜 그럴까?</b> 받침점에서 멀수록 같은 무게라도 저울을 빙 돌리는 힘이 커져.
         문 손잡이가 문의 <b>끝쪽</b>에 달린 것도 같은 이유야 — 멀리서 밀수록 작은 힘으로 문이 열리거든.
         이런 원리를 <b>지렛대의 원리</b>라고 불러.</p>
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div class="tip" style="background:rgba(77,163,255,.06); line-height:2">
+        <b>지렛대</b> — 받침점을 중심으로 힘을 키우거나 바꾸는 막대. 시소·저울이 대표적이에요.<br>
+        <b>모멘트(돌림힘)</b> — 저울을 빙 돌려 기울이는 힘. <b>무게 × 거리(칸수)</b>로 정해져요.<br>
+        <b>받침점</b> — 저울이 도는 가운데 중심. 여기서 멀수록 같은 무게라도 힘이 커져요.<br>
+        <b>평형(수평)</b> — 왼쪽과 오른쪽 모멘트가 똑같아 저울이 기울지 않는 상태예요.
+      </div>
       <div class="tip">
         <b>🧱 브릭큐로 진짜 저울 만들기 팁</b><br>
         · 긴 빔의 <b>정가운데 구멍</b>에 축을 끼워야 해 — 한 칸이라도 어긋나면 빈 저울도 기울어져!<br>

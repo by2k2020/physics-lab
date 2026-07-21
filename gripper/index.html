@@ -62,6 +62,11 @@
   .pick { display: flex; gap: 6px; }
   .pick button { flex: 1; padding: 7px 0; font-size: 12.5px; border-radius: 8px; }
   .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 42px; height: 36px; font-size: 15px; font-weight: 800; color: var(--accent); border-radius: 8px; padding: 0; flex-shrink: 0; }
+  button.step:active { transform: scale(.94); }
+  .param label b.lvl { font-size: 20px; }
 
   .formula { font-family: var(--mono); font-size: 14px; background: #121a2c; border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--purple); margin-bottom: 13px; line-height: 1.8; word-break: keep-all; }
   .formula b { color: var(--orange); font-size: 16px; }
@@ -75,7 +80,7 @@
 
   .bars { margin: 4px 0 14px; }
   .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; color: #c6d2e6; }
-  .bar-row .lab { width: 56px; flex: none; font-weight: 700; }
+  .bar-row .lab { width: 60px; flex: none; font-weight: 700; white-space: nowrap; }
   .bar-track { flex: 1; height: 30px; background: #0c1220; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; position: relative; }
   .zone { position: absolute; top: 0; height: 100%; z-index: 2; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; letter-spacing: 2px; overflow: hidden; white-space: nowrap; }
   .zone.safe { background: rgba(46,224,111,.16); border-left: 2px solid rgba(46,224,111,.6); border-right: 2px solid rgba(46,224,111,.6); color: #7dffb0; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
@@ -84,8 +89,8 @@
   .bar-row .val { width: 70px; text-align: right; font-family: var(--mono); font-size: 15.5px; font-weight: 700; }
   .bar-row .val.warn { color: var(--amber); }
   .bar-row .val.over { color: var(--red); }
-  .ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--dim); margin: -4px 78px 6px 64px; }
-  .zone-hint { font-size: 12.5px; color: var(--dim); margin: 0 0 0 64px; }
+  .ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--dim); margin: -4px 78px 6px 68px; }
+  .zone-hint { font-size: 12.5px; color: var(--dim); margin: 0 0 0 68px; }
   @keyframes gaugeBlink { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
   .bar-fill.blink { animation: gaugeBlink .55s infinite; }
   .bar-track.alert { border-color: rgba(255,90,82,.8); box-shadow: 0 0 12px rgba(255,90,82,.35), inset 0 0 8px rgba(255,90,82,.15); }
@@ -99,10 +104,12 @@
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
-  td.ok { color: var(--green); font-family: inherit; font-weight: 700; }
+  td.ok { color: var(--green); font-family: inherit; font-weight: 800; background: rgba(46,224,111,.12); font-size: 15px; }
   td.slip { color: var(--amber); font-family: inherit; font-weight: 700; }
   td.brk { color: var(--red); font-family: inherit; font-weight: 700; }
-  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+  td.na { color: #38445c; }
+  table#grid td { padding: 10px 4px; font-size: 14px; }
+  table#grid td.rowlab { font-family: inherit; color: #c6d2e6; font-weight: 700; }
 
   .scroll-tab { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   .scroll-tab.on { display: block; }
@@ -158,9 +165,9 @@
     <div class="stage">
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">지렛대 배율</span><span id="hud_ratio" style="color:var(--purple)">×1.0</span></div>
-        <div class="chip"><span class="lab">악력 (내가 누르는 힘)</span><span id="hud_grip" style="color:var(--accent)">0 N</span></div>
-        <div class="chip"><span class="lab">출력힘 (집게가 무는 힘)</span><span id="hud_out" style="color:var(--orange)">0 N</span></div>
+        <div class="chip"><span class="lab">힘이 몇 배? (지렛대 배율)</span><span id="hud_ratio" style="color:var(--purple)">×1.0</span></div>
+        <div class="chip"><span class="lab">쥐는 힘 (악력)</span><span id="hud_grip" style="color:var(--accent)">1단</span></div>
+        <div class="chip"><span class="lab">무는 힘 (출력 힘)</span><span id="hud_out" style="color:var(--orange)">0 N</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
@@ -187,15 +194,15 @@
           <button data-o="glass">🥛 유리컵</button>
         </div>
       </div>
-      <div class="param"><label>악력 — 손잡이를 쥐는 힘 <b id="v_g">0 N</b></label>
-        <input type="range" id="grip" min="0" max="100" value="0" step="5"></div>
-      <div class="formula" id="formula">출력힘 = 악력 × (손잡이 ÷ 집게)</div>
+      <div class="param"><label>✊ 쥐는 힘 (악력) — 몇 단으로 잡을까? <b id="v_g" class="lvl">1단</b></label>
+        <div class="srow"><button class="step" id="gDown">◀</button><input type="range" id="grip" min="1" max="5" value="1" step="1"><button class="step" id="gUp">▶</button></div></div>
+      <div class="formula" id="formula">무는 힘 = 쥐는 힘 × 배수</div>
       <h3>힘 게이지 — 초록 구간에 맞춰 봐!</h3>
       <div class="bars">
-        <div class="bar-row"><span class="lab">악력</span>
+        <div class="bar-row"><span class="lab">쥐는 힘</span>
           <div class="bar-track"><div class="bar-fill" id="barG" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:0%"></div></div>
           <span class="val" id="valG">0 N</span></div>
-        <div class="bar-row"><span class="lab">출력힘</span>
+        <div class="bar-row"><span class="lab">무는 힘</span>
           <div class="bar-track" id="trackO">
             <div class="bar-fill" id="barO" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:0%"></div>
             <div class="zone safe" id="zoneSafe">안전</div>
@@ -211,20 +218,16 @@
       </div>
       <h3>물건 정보</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">잡는 데 필요한 힘 (최소)</div><div class="v g" id="r_min">—</div></div>
-        <div class="readout"><div class="k">깨짐 한계 (최대)</div><div class="v r" id="r_max">—</div></div>
-        <div class="readout"><div class="k">지렛대 배율</div><div class="v" id="r_ratio" style="color:var(--purple)">—</div></div>
-        <div class="readout"><div class="k">지금 출력힘</div><div class="v b" id="r_out">—</div></div>
+        <div class="readout"><div class="k">이만큼은 세게! (최소)</div><div class="v g" id="r_min">—</div></div>
+        <div class="readout"><div class="k">이보다 세면 깨져! (최대)</div><div class="v r" id="r_max">—</div></div>
+        <div class="readout"><div class="k">힘이 몇 배?</div><div class="v" id="r_ratio" style="color:var(--purple)">—</div></div>
+        <div class="readout"><div class="k">지금 무는 힘</div><div class="v b" id="r_out">—</div></div>
       </div>
-      <details open>
-        <summary>📋 실험 기록 (최근 10회)</summary>
-        <div class="inner">
-          <table id="tb">
-            <thead><tr><th>#</th><th>손잡이</th><th>물건</th><th>악력→출력</th><th>결과</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </details>
+      <h3>📋 결과 정리표 <span style="color:#5a6a85">(✓성공한 단 · ❌미끄러짐 · 💥깨짐)</span></h3>
+      <table id="grid">
+        <thead><tr><th>물건 ↘ 손잡이</th><th>짧게</th><th>보통</th><th>길게</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </section>
 
@@ -251,7 +254,7 @@
           <button>🤷 아무렇게나 세게 잡는다</button>
         </div>
         <div class="explain">정답: <b>힘 조절!</b> 유리컵은 25N보다 세게 잡아야 안 미끄러지지만, 60N을 넘으면 쨍그랑 깨져.
-          긴 손잡이는 힘이 2배가 되니까 살짝만 쥐어야 해.</div>
+          긴 손잡이는 힘이 2배가 되니까 3단까지만 — 4단부터는 쨍그랑!</div>
       </div>
       <div class="qcard">
         <div class="q">Q3. 가위처럼 X자로 교차된 집게에서 <u>받침점</u>은 어디일까?</div>
@@ -270,6 +273,12 @@
   <!-- ══════ 원리 ══════ -->
   <section class="scroll-tab" id="theory">
     <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>지렛대의 원리</b>(받침점·힘점·작용점)와 <b>힘의 배율(기계적 이득)</b>을 배웁니다.
+        손잡이 길이에 따라 쥐는 힘(악력)이 무는 힘(출력 힘)으로 몇 배 커지는지, 그리고 물건이 깨지지 않게 힘을 조절하는 법을 시뮬레이션과 레고 브릭큐로 확인합니다.<br>
+        아이는 예측 → 실험 → 결과표 비교의 과학적 방법을 놀이처럼 익힙니다.
+      </div>
       <h2>📖 집게는 지렛대야 — 힘을 바꾸는 마법</h2>
       <p>가위처럼 X자로 교차한 집게는 <b>지렛대 2개를 겹친 것</b>이야. 지렛대에는 꼭 필요한 세 친구가 있어.</p>
       <div class="cards3">
@@ -283,11 +292,11 @@
         <li>손잡이(힘점 거리)가 길수록 → 같은 악력으로 <b>더 세게</b> 물 수 있어!</li>
       </ul>
       <table>
-        <thead><tr><th>손잡이</th><th>배율</th><th>악력 50N일 때 출력힘</th><th>어울리는 일</th></tr></thead>
+        <thead><tr><th>손잡이</th><th>배율</th><th>쥐는 힘 3단(30N)일 때</th><th>어울리는 일</th></tr></thead>
         <tbody>
-          <tr><td>짧게 5cm</td><td>×0.5</td><td>25N</td><td class="cond">유리컵처럼 살살 잡기</td></tr>
-          <tr><td>보통 10cm</td><td>×1.0</td><td>50N</td><td class="cond">골고루 무난하게</td></tr>
-          <tr><td>길게 20cm</td><td>×2.0</td><td>100N</td><td class="cond">무거운 나무토막 꽉 잡기</td></tr>
+          <tr><td>짧게 5cm</td><td>×0.5</td><td>15N</td><td class="cond">유리컵처럼 살살 잡기</td></tr>
+          <tr><td>보통 10cm</td><td>×1.0</td><td>30N</td><td class="cond">골고루 무난하게</td></tr>
+          <tr><td>길게 20cm</td><td>×2.0</td><td>60N</td><td class="cond">무거운 나무토막 꽉 잡기</td></tr>
         </tbody>
       </table>
       <p><b>물건마다 필요한 힘이 달라!</b> 너무 약하면 스르륵 미끄러지고, 너무 세면 깨져 버려.</p>
@@ -302,6 +311,13 @@
       <p><b>생활 속 집게 지렛대</b> — 가위·펜치·장도리는 손잡이가 길어서 힘이 커지는 지렛대야.
         반대로 젓가락·핀셋은 힘점이 받침점에 가까워서 힘은 줄지만 <b>정밀하게</b> 움직일 수 있지.
         무엇을 얻고 무엇을 내줄지 — 기어비랑 똑같은 맞바꾸기야!</p>
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div class="tip" style="background:rgba(77,163,255,.06); line-height:2">
+        <b>지렛대</b> — 받침점을 중심으로 힘을 키우거나 바꾸는 막대. 집게는 지렛대 2개를 겹친 거예요.<br>
+        <b>받침점·힘점·작용점</b> — 지렛대의 세 자리. 각각 도는 중심, 힘 주는 곳, 힘이 전해지는 곳이에요.<br>
+        <b>힘의 배율(기계적 이득)</b> — 쥐는 힘이 무는 힘으로 몇 배 커지는지. 손잡이가 길수록 커져요.<br>
+        <b>마찰력</b> — 집게 끝이 물건을 붙잡는 힘. 약하면 스르륵 미끄러져요.
+      </div>
       <div class="tip">
         <b>🧱 브릭큐로 진짜 집게 만들 때 팁</b><br>
         · 긴 블록 2개를 X자로 겹치고 가운데를 핀으로 연결하면 집게 완성!<br>
@@ -351,10 +367,14 @@ const OBJS = {
 };
 const TH_MAX = 30 * Math.PI / 180;   // 최대 벌어짐 반각
 const OUT_SCALE = 200;               // 출력힘 게이지 최대(N)
+// 쥐는 힘 1~5단 → N 매핑. 경계 검증:
+//   유리(25~60): 길게 1단❌ 2·3단✓ 4단부터💥 · 보통 3·4단✓ 5단💥 · 짧게 5단✓(안 깨짐)
+//   나무(≥60):  짧게 항상❌ · 보통 5단✓ · 길게 3단✓
+const GRIP_N = [10, 20, 30, 40, 70];
 
 /* ── 상태 ── */
 const S = {
-  h: 1, objKey: 'sponge', grip: 0,
+  h: 1, objKey: 'sponge', level: 1, grip: GRIP_N[0],
   theta: TH_MAX,
   phase: 'idle', phaseT: 0,
   dx: 0, dy: 0,               // 집게 이동 오프셋
@@ -363,7 +383,7 @@ const S = {
   particles: [],
   delivered: { sponge: false, wood: false, glass: false },
   basket: [],                 // 배달된 물건 키 목록
-  runCount: 0,
+  grid: { sponge: [null, null, null], wood: [null, null, null], glass: [null, null, null] },
   badgeTimer: 0,
 };
 const OBJ = () => OBJS[S.objKey];
@@ -383,20 +403,19 @@ function setStatus(mode, txt) {
 }
 function updateReadouts() {
   const o = OBJ(), r = ratio(), out = outForce();
-  const hcm = HANDLES[S.h].cm;
   $('hud_ratio').textContent = '×' + r.toFixed(1);
-  $('hud_grip').textContent = S.grip + ' N';
+  $('hud_grip').textContent = S.level + '단';
   $('hud_out').textContent = out.toFixed(0) + ' N';
-  $('v_g').textContent = S.grip + ' N';
+  $('v_g').textContent = S.level + '단';
   $('formula').innerHTML =
-    `출력힘 = 악력 × (손잡이 ÷ 집게)<br>= ${S.grip}N × (${hcm}cm ÷ ${JAW_CM}cm) = ${S.grip}N × ${r.toFixed(1)} = <b>${out.toFixed(0)}N</b>`;
+    `무는 힘 = 쥐는 힘 × 배수<br>= ${S.level}단(${S.grip}N) × ${r.toFixed(1)}배 = <b>${out.toFixed(0)}N</b>`;
   $('r_min').textContent = o.min + ' N';
   $('r_max').textContent = isFinite(o.max) ? o.max + ' N' : '없음';
   $('r_ratio').textContent = '×' + r.toFixed(1);
   $('r_out').textContent = out.toFixed(0) + ' N';
   // 게이지
   $('barG').style.width = S.grip + '%';
-  $('valG').textContent = S.grip + ' N';
+  $('valG').textContent = S.level + '단 ' + S.grip + 'N';
   $('barO').style.width = clamp(out / OUT_SCALE * 100, 0, 100) + '%';
   $('valO').textContent = out.toFixed(0) + ' N';
   const maxV = Math.min(isFinite(o.max) ? o.max : OUT_SCALE, OUT_SCALE);
@@ -430,19 +449,30 @@ function updateMission() {
     el.textContent = (S.delivered[k] ? '✓ ' : '') + OBJS[k].emoji + ' ' + OBJS[k].name;
   }
 }
-function addRow(resultCls, resultTxt) {
-  const tb = $('tb').querySelector('tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${++S.runCount}</td><td class="cond">${HANDLES[S.h].name} ×${ratio().toFixed(1)}</td>` +
-    `<td class="cond">${OBJ().emoji}${OBJ().name}</td><td>${S.grip}→${outForce().toFixed(0)}N</td>` +
-    `<td class="${resultCls}">${resultTxt}</td>`;
-  tb.prepend(tr);
-  while (tb.children.length > 10) tb.removeChild(tb.lastChild);
+function recordGrid(kind) {
+  const cell = S.grid[S.objKey][S.h];
+  if (kind === 'ok') S.grid[S.objKey][S.h] = { cls: 'ok', txt: S.level + '단 ✓' };
+  else if (!cell || cell.cls !== 'ok')   // 이미 성공한 칸은 실패로 덮지 않는다
+    S.grid[S.objKey][S.h] = kind === 'slip'
+      ? { cls: 'slip', txt: '❌ 미끌' }
+      : { cls: 'brk', txt: '💥 깨짐' };
+  renderGrid();
+}
+function renderGrid() {
+  const tb = $('grid').querySelector('tbody');
+  tb.innerHTML = ['sponge', 'wood', 'glass'].map(k => {
+    const o = OBJS[k];
+    const cells = [0, 1, 2].map(h => {
+      const cell = S.grid[k][h];
+      return cell ? `<td class="${cell.cls}">${cell.txt}</td>` : '<td class="na">—</td>';
+    }).join('');
+    return `<tr><td class="rowlab">${o.emoji} ${o.name}</td>${cells}</tr>`;
+  }).join('');
 }
 function setControlsEnabled(en) {
   $('grip').disabled = !en;
   $('carry').disabled = !en;
-  document.querySelectorAll('#pickH button, #pickO button').forEach(b => b.disabled = !en);
+  document.querySelectorAll('#pickH button, #pickO button, button.step').forEach(b => b.disabled = !en);
 }
 
 /* ── 이벤트 처리 ── */
@@ -453,8 +483,8 @@ function checkLiveBreak() {
   }
 }
 function doBreak() {
-  addRow('brk', '깨짐 💥');
-  setBadge('bad', `🥛 쨍그랑! ${OBJ().name}이 깨졌어 💥 힘이 ${outForce().toFixed(0)}N — 한계 ${OBJ().max}N을 넘었어!`, 5);
+  recordGrid('brk');
+  setBadge('bad', `🥛 쨍그랑! ${OBJ().name} 깨짐 💥 무는 힘 ${outForce().toFixed(0)}N — ${OBJ().max}N보다 셌어! ◀로 한 단 낮춰 봐`, 5);
   setStatus('', '너무 셌어… 새 물건이 곧 나와');
   spawnShards();
   S.objState = 'gone';
@@ -462,9 +492,9 @@ function doBreak() {
   setControlsEnabled(false);
 }
 function doSlip() {
-  addRow('slip', '미끄러짐');
-  setBadge('warn', `😮 미끄러졌어! 출력힘 ${outForce().toFixed(0)}N < 필요한 힘 ${OBJ().min}N — 더 세게 잡아야 해`, 5);
-  setStatus('', '더 세게! 악력을 올리거나 손잡이를 길게 해 봐');
+  recordGrid('slip');
+  setBadge('warn', `😮 미끄러졌어! 무는 힘 ${outForce().toFixed(0)}N — ${OBJ().min}N보다 약해. ▶로 한 단 올려 봐!`, 5);
+  setStatus('', '더 세게! ▶로 단을 올리거나 손잡이를 길게 해 봐');
   S.phase = 'slip'; S.phaseT = 0;
   setControlsEnabled(false);
 }
@@ -483,7 +513,7 @@ function finishDelivery() {
   S.delivered[S.objKey] = true;
   S.basket.push(S.objKey);
   updateMission();
-  addRow('ok', '성공 ✓');
+  recordGrid('ok');
   const all = ['sponge', 'wood', 'glass'].every(k => S.delivered[k]);
   if (all) {
     setBadge('good', '🎉 미션 완료! 3가지 물건을 전부 깨뜨리지 않고 옮겼어 — 힘 조절 최고!', 10);
@@ -499,8 +529,8 @@ function respawn() {
   S.dx = 0; S.dy = 0; S.fall = null;
   setControlsEnabled(true);
   if (outForce() > OBJ().max) {
-    // 새 물건까지 바로 깨지지 않게 손을 풀어 준다
-    S.grip = 0; $('grip').value = 0;
+    // 새 물건까지 바로 깨지지 않게 1단으로 풀어 준다
+    S.level = 1; S.grip = GRIP_N[0]; $('grip').value = 1;
     updateReadouts();
     return true;
   }
@@ -884,7 +914,7 @@ function drawScene(dt) {
   } else if (S.phase === 'respawn') {
     if (S.phaseT >= 0.5) {
       const released = respawn();
-      setStatus('', '새 ' + o.name + ' 등장! ' + (released ? '손은 풀어 뒀어 — 살살 조절해 봐' : '다시 도전해 봐'));
+      setStatus('', '새 ' + o.name + ' 등장! ' + (released ? '1단으로 풀어 뒀어 — 살살 조절해 봐' : '다시 도전해 봐'));
     }
   }
 
@@ -895,7 +925,9 @@ function drawScene(dt) {
   const thFree = Math.max(0.05, TH_MAX * (1 - S.grip / 115));
   let thTarget;
   if (S.phase === 'drop' || S.phase === 'return' || S.phase === 'respawn') thTarget = TH_MAX;
-  else if ((S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC)
+  else if (S.objState === 'held')   // 잡기에 성공했으면 시각적으로도 꽉 문다
+    thTarget = Math.max(Math.min(thFree, L.thetaC), L.thetaC * (1 - squish));
+  else if (S.objState === 'ground' && thFree <= L.thetaC)
     thTarget = Math.max(thFree, L.thetaC * (1 - squish));
   else thTarget = thFree;
   S.theta += (thTarget - S.theta) * Math.min(1, dt * 12);
@@ -1083,12 +1115,12 @@ function drawScene(dt) {
       c.closePath(); c.fill();
     });
     c.fillStyle = '#4da3ff'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText(`악력 ${S.grip}N`, gx, gy - hc - armW * 1.6 - 8);
+    c.fillText(`쥐는 힘 ${S.level}단`, gx, gy - hc - armW * 1.6 - 8);
   }
   // 출력힘 표시 (집게 끝)
-  if (out > 0 && (S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC + 0.02) {
+  if (out > 0 && (S.objState === 'held' || (S.objState === 'ground' && thFree <= L.thetaC + 0.02))) {
     c.fillStyle = '#ff9046'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText(`출력 ${out.toFixed(0)}N`, gx, gy + jc + Math.max(26, o.h * L.s * 0.5 + 22));
+    c.fillText(`무는 힘 ${out.toFixed(0)}N`, gx, gy + jc + Math.max(26, o.h * L.s * 0.5 + 22));
   }
 
   // 3요소 라벨
@@ -1120,11 +1152,16 @@ function loop(ts) {
 requestAnimationFrame(loop);
 
 /* ── 입력 바인딩 ── */
-$('grip').addEventListener('input', () => {
-  S.grip = +$('grip').value;
+function setLevel(l) {
+  S.level = clamp(l, 1, 5);
+  S.grip = GRIP_N[S.level - 1];
+  $('grip').value = S.level;
   updateReadouts();
   checkLiveBreak();
-});
+}
+$('grip').addEventListener('input', () => setLevel(+$('grip').value));
+$('gDown').onclick = () => { if (!$('grip').disabled) setLevel(S.level - 1); };
+$('gUp').onclick = () => { if (!$('grip').disabled) setLevel(S.level + 1); };
 document.querySelectorAll('#pickH button').forEach(b => b.onclick = () => {
   if (S.phase !== 'idle') return;
   S.h = +b.dataset.i;
@@ -1148,8 +1185,10 @@ $('resetM').onclick = () => {
   if (S.phase !== 'idle') return;
   S.delivered = { sponge: false, wood: false, glass: false };
   S.basket = [];
+  S.grid = { sponge: [null, null, null], wood: [null, null, null], glass: [null, null, null] };
   S.objState = 'ground'; S.particles = [];
   updateMission();
+  renderGrid();
   setStatus('', '미션 리셋! 다시 3가지를 옮겨 봐');
   $('bd').className = 'badge';
 };
@@ -1183,6 +1222,7 @@ $('qreset').onclick = () => {
 /* ── 초기화 ── */
 updateReadouts();
 updateMission();
+renderGrid();
 </script>
 </body>
 </html>

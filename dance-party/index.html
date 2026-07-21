@@ -95,6 +95,14 @@
   .score-box { flex: 1; background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
   .score-box .k { font-size: 11px; color: var(--dim); margin-bottom: 3px; }
   .score-box .v { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--amber); }
+  table.mx { width: 100%; border-collapse: collapse; font-family: var(--mono); table-layout: fixed; margin-bottom: 12px; }
+  table.mx th, table.mx td { border: 1px solid var(--border); text-align: center; padding: 7px 0; font-size: 13px; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic', sans-serif; font-weight: 700; font-size: 12px; }
+  table.mx th.corner { font-size: 9.5px; color: var(--dim); line-height: 1.3; }
+  table.mx td.empty { color: #38445c; }
+  table.mx td.cw { color: var(--green); font-weight: 700; }
+  table.mx td.ccw { color: var(--amber); font-weight: 700; }
+  table.mx td.cur, table.mx th.cur { outline: 2px solid var(--pink); outline-offset: -2px; }
 
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   #theory.on { display: block; }
@@ -128,7 +136,7 @@
       <div class="title">🕺 댄스파티 — 기어가 만드는 춤</div>
     </div>
     <div class="tabs">
-      <button class="tab on" data-tab="play">🎪 자유 무대</button>
+      <button class="tab on" data-tab="play">🧪 기어 실험</button>
       <button class="tab" data-tab="mission">🎯 미션</button>
       <button class="tab" data-tab="predict">🔮 예측 게임</button>
       <button class="tab" data-tab="theory">📖 원리 카드</button>
@@ -140,8 +148,8 @@
     <div class="stage">
       <canvas class="scene" id="cvPlay"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">경과 시간</span><span id="hudPlayT">0.0 s</span></div>
-        <div class="chip" style="color:var(--pink)"><span class="lab">크랭크 회전수</span><span id="hudPlayC">0.00 회전</span></div>
+        <div class="chip"><span class="lab">시간</span><span id="hudPlayT">0.0 s</span></div>
+        <div class="chip" style="color:var(--pink)"><span class="lab">크랭크 몇 바퀴 (회전수)</span><span id="hudPlayC">0.00 바퀴</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bdPlay"></span></div>
     </div>
@@ -153,8 +161,8 @@
     <div class="stage">
       <canvas class="scene" id="cvMission"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">경과 시간</span><span id="hudMisT">0.0 s</span></div>
-        <div class="chip" style="color:var(--pink)"><span class="lab">크랭크 회전수</span><span id="hudMisC">0.00 회전</span></div>
+        <div class="chip"><span class="lab">시간</span><span id="hudMisT">0.0 s</span></div>
+        <div class="chip" style="color:var(--pink)"><span class="lab">크랭크 몇 바퀴 (회전수)</span><span id="hudMisC">0.00 바퀴</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bdMission"></span></div>
     </div>
@@ -176,8 +184,25 @@
   <!-- ══════ 원리 카드 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="card wide" style="margin-bottom:16px; border-color:#3d5a8a; background:#101a30;">
+        <span class="em">👨‍👩‍👧</span>
+        <b>학부모님께 — 오늘 수업 브리핑</b>
+        이번 차시는 브릭큐 에센셜 '댄스파티' 모델로 기어의 기초 원리를 탐구했습니다.
+        맞물린 두 기어는 항상 서로 반대 방향으로 회전하고, 두 기어의 잇수 비(기어비)만큼 회전 속도가 달라진다는 사실을
+        댄서의 회전 방향과 빠르기로 직접 확인했습니다.
+        아이에게 <b style="display:inline">드라이버 기어·팔로워 기어·아이들러 기어</b>가 각각 무슨 일을 하는지 물어봐 주시면 좋은 복습이 됩니다.
+      </div>
       <h2>📖 원리 카드 — 기어는 어떻게 춤을 만들까?</h2>
       <div class="cards">
+        <div class="card wide">
+          <span class="em">🎓</span>
+          <b>오늘 배운 물리 용어</b>
+          <b style="display:inline">잇수 (T)</b> — 기어 톱니의 개수. 8T는 톱니가 8개라는 뜻.<br>
+          <b style="display:inline">드라이버 기어</b> — 내가 돌리는 기어. 힘이 시작되는 쪽 (크랭크).<br>
+          <b style="display:inline">팔로워 기어</b> — 드라이버에 맞물려 따라 도는 기어 (댄서).<br>
+          <b style="display:inline">기어비</b> — 두 기어의 잇수 비. 속도가 몇 배 변하는지 알려 줘. <span class="eq">기어비 = 드라이버 잇수 ÷ 팔로워 잇수</span><br>
+          <b style="display:inline">아이들러 기어</b> — 두 기어 사이에 낀 기어. 속도는 그대로, 회전 방향만 한 번 더 뒤집어.
+        </div>
         <div class="card">
           <span class="em">🤝</span>
           <b>맞물린 기어는 반대로 돌아</b>
@@ -754,7 +779,7 @@ function Stage(cv) {
         c.font = 'bold 14.5px sans-serif'; c.textAlign = 'center'; c.fillStyle = DCOLORS[n.idx];
         c.fillText(`댄서${n.idx + 1} · ${n.teeth}T`, xs[i], yG + r[i] + 21);
         c.fillStyle = '#c6d2e6'; c.font = 'bold 14px ' + 'monospace';
-        c.fillText((Math.abs(n.ratio * S.crankAng) / TAU).toFixed(1) + '회전', xs[i], yG + r[i] + 39);
+        c.fillText((Math.abs(n.ratio * S.crankAng) / TAU).toFixed(1) + '바퀴', xs[i], yG + r[i] + 39);
         if (S.showArrows) {   // 예측 게임 정답 공개 전에는 비율 숨김
           const ar = Math.abs(n.ratio);
           c.fillStyle = '#ff8fc6'; c.font = 'bold 14px ' + 'monospace';
@@ -861,15 +886,22 @@ function initStageMode(opts) {
   const cv = $(opts.cvId);
   const side = $(opts.sideId);
   const sim = Stage(cv);
-  const st = { rpm: 60, count: 2, crankT: 24, dancers: [24, 24, 24, 24], idlers: [false, false, false, false] };
+  const st = { rpm: 60, count: 2, crankT: 24, dancers: [24, 24, 24, 24], idlers: [false, false, false, false], dancerT: 24, idler0: false };
   const achieved = new Set();
   let running = false, raf = null, last = null, drag = null, badgeTimer = null;
 
-  const cfg = () => ({
-    crankT: st.crankT,
-    dancers: st.dancers.slice(0, st.count),
-    idlers: st.idlers.slice(0, st.count),
-  });
+  // simple 모드(초1 실험): 댄서 기어는 모두 같은 잇수, 아이들러는 크랭크-댄서1 사이 1개만
+  const cfg = () => opts.simple
+    ? {
+      crankT: st.crankT,
+      dancers: Array(st.count).fill(st.dancerT),
+      idlers: [st.idler0].concat(Array(st.count - 1).fill(false)),
+    }
+    : {
+      crankT: st.crankT,
+      dancers: st.dancers.slice(0, st.count),
+      idlers: st.idlers.slice(0, st.count),
+    };
 
   /* -- 사이드 패널 UI 생성 -- */
   const ledBox = el('div', 'led-box');
@@ -883,16 +915,21 @@ function initStageMode(opts) {
   const btnReset = el('button', null, '↺');
   ctl.append(btnRun, btnPause, btnReset);
 
+  const SPEEDS = [{ lb: '🐢 천천히', nm: '천천히', rpm: 30 }, { lb: '🚶 보통', nm: '보통', rpm: 60 }, { lb: '🐇 빨리', nm: '빨리', rpm: 90 }];
   const pRpm = el('div', 'param');
-  pRpm.innerHTML = '<label>크랭크 돌리는 속도 <b>60 RPM</b></label>';
-  const rpmSlider = el('input');
-  rpmSlider.type = 'range'; rpmSlider.min = 10; rpmSlider.max = 120; rpmSlider.step = 5; rpmSlider.value = 60;
-  pRpm.append(rpmSlider);
+  pRpm.innerHTML = '<label>크랭크 돌리는 빠르기 <b>보통</b></label>';
+  const speedPick = el('div', 'teeth-pick');
+  SPEEDS.forEach((s, i) => {
+    const b = el('button', i === 1 ? 'on' : '', s.lb);
+    b.onclick = () => { st.rpm = s.rpm; [...speedPick.children].forEach(x => x.classList.toggle('on', x === b)); pRpm.querySelector('b').textContent = s.nm; updateReadouts(); };
+    speedPick.append(b);
+  });
+  pRpm.append(speedPick);
 
   const pCount = el('div', 'param');
   pCount.innerHTML = '<label>댄서 수 <b>2명</b></label>';
   const countPick = el('div', 'teeth-pick');
-  [2, 3, 4].forEach(n => {
+  (opts.simple ? [2, 4] : [2, 3, 4]).forEach(n => {
     const b = el('button', n === 2 ? 'on' : '', n + '명');
     b.onclick = () => { st.count = n; [...countPick.children].forEach(x => x.classList.toggle('on', x === b)); pCount.querySelector('b').textContent = n + '명'; rebuildDancerCfg(); applyCfg(); };
     countPick.append(b);
@@ -900,22 +937,53 @@ function initStageMode(opts) {
   pCount.append(countPick);
 
   const pCrank = el('div', 'param');
-  pCrank.innerHTML = '<label>크랭크 기어 <b>24T</b></label>';
+  pCrank.innerHTML = '<label>내가 돌리는 기어 (드라이버 기어) <b>24T</b></label>';
   const crankPick = el('div', 'teeth-pick');
   TEETH_OPTS.forEach(t => {
     const b = el('button', t === 24 ? 'on' : '', t + 'T');
-    b.onclick = () => { st.crankT = t; [...crankPick.children].forEach(x => x.classList.toggle('on', x === b)); pCrank.querySelector('b').textContent = t + 'T'; applyCfg(); };
+    b.onclick = () => { st.crankT = t; syncCrankPick(); applyCfg(); };
     crankPick.append(b);
   });
   pCrank.append(crankPick);
+  function syncCrankPick() {
+    [...crankPick.children].forEach((x, i) => x.classList.toggle('on', TEETH_OPTS[i] === st.crankT));
+    pCrank.querySelector('b').textContent = st.crankT + 'T';
+  }
 
+  /* -- simple 모드 전용: 댄서 기어 4택 + 아이들러 스위치 -- */
   const dancerBox = el('div');
+  let pDancer = null, dancerPick = null;
+  function syncDancerPick() {
+    if (!dancerPick) return;
+    [...dancerPick.children].forEach((x, i) => x.classList.toggle('on', TEETH_OPTS[i] === st.dancerT));
+    pDancer.querySelector('b').textContent = st.dancerT + 'T';
+  }
+  if (opts.simple) {
+    pDancer = el('div', 'param');
+    pDancer.innerHTML = '<label>춤추는 기어 (팔로워 기어) <b>24T</b></label>';
+    dancerPick = el('div', 'teeth-pick');
+    TEETH_OPTS.forEach(t => {
+      const b = el('button', t === 24 ? 'on' : '', t + 'T');
+      b.onclick = () => { st.dancerT = t; syncDancerPick(); applyCfg(); };
+      dancerPick.append(b);
+    });
+    pDancer.append(dancerPick);
+    const pIdler = el('div', 'param');
+    const ib = el('button', 'idler-btn', '');
+    ib.style.width = '100%'; ib.style.padding = '9px 0'; ib.style.fontSize = '12.5px';
+    const ibText = () => { ib.innerHTML = `🔁 사이 기어(아이들러) — <b>${st.idler0 ? '넣었어' : '없어'}</b>`; };
+    ibText();
+    ib.onclick = () => { st.idler0 = !st.idler0; ib.classList.toggle('on', st.idler0); ibText(); applyCfg(); };
+    pIdler.append(ib);
+    dancerBox.append(pDancer, pIdler);
+  }
   function rebuildDancerCfg() {
+    if (opts.simple) return;
     dancerBox.innerHTML = '';
     for (let i = 0; i < st.count; i++) {
       const row = el('div', 'd-cfg');
       const head = el('div', 'd-head');
-      head.append(el('span', null, `<span style="color:${DCOLORS[i]}">●</span> 댄서${i + 1} 기어`));
+      head.append(el('span', null, `<span style="color:${DCOLORS[i]}">●</span> 댄서${i + 1} 기어 (팔로워)`));
       const ib = el('button', 'idler-btn' + (st.idlers[i] ? ' on' : ''), idlerLabel(i));
       ib.onclick = () => { st.idlers[i] = !st.idlers[i]; ib.classList.toggle('on', st.idlers[i]); ib.innerHTML = idlerLabel(i); applyCfg(); };
       head.append(ib);
@@ -941,9 +1009,9 @@ function initStageMode(opts) {
       dir.style.color = r > 0 ? 'var(--green)' : 'var(--amber)';
       row.querySelector('.rpm').innerHTML = (ar * st.rpm).toFixed(0) + ' <small>RPM</small>';
       row.querySelector('.fill').style.width = Math.min(100, ar / 5 * 100) + '%';
-      row.querySelector('.teeth-eq').textContent = st.crankT + ':' + st.dancers[i];
+      row.querySelector('.teeth-eq').textContent = sim.cfg.crankT + ':' + sim.cfg.dancers[i];
       row.querySelector('.mult').textContent = (ar % 1 ? ar.toFixed(2) : ar.toFixed(0)) + '배';
-      row.querySelector('.rev').textContent = (Math.abs(r * sim.crankAng) / TAU).toFixed(1) + '회전';
+      row.querySelector('.rev').textContent = (Math.abs(r * sim.crankAng) / TAU).toFixed(1) + '바퀴';
     });
   }
   function rebuildReadouts() {
@@ -954,15 +1022,82 @@ function initStageMode(opts) {
       row.innerHTML =
         `<div class="top"><span class="nm" style="color:${DCOLORS[i]}">댄서${i + 1}</span><span class="dir">⟳</span><span class="rpm">— <small>RPM</small></span></div>` +
         `<div class="meter"><div class="fill" style="background:linear-gradient(90deg,${DCOLORS[i]}55,${DCOLORS[i]})"></div><div class="ref" style="left:20%" title="크랭크 속도(×1)"></div></div>` +
-        `<div class="bot"><span class="mlab">잇수 <span class="teeth-eq">–:–</span> = <span class="mult">×1</span></span><span class="rev">0.0회전</span></div>`;
+        `<div class="bot"><span class="mlab">잇수비 (기어비) <span class="teeth-eq">–:–</span> = <span class="mult">×1</span></span><span class="rev">0.0바퀴</span></div>`;
       readBox.append(row);
     }
   }
 
   side.append(ledBox, ctl);
-  side.append(el('h3', null, '크랭크'), pRpm, pCrank);
-  side.append(el('h3', null, '무대 세팅'), pCount, dancerBox);
-  side.append(el('h3', null, '댄서 RPM 미터 — 흰 눈금 = 크랭크 속도(×1)'), readBox);
+  if (opts.simple) {
+    side.append(el('h3', null, '🔬 실험 변수 — 딱 3개만 정해!'), pCrank, dancerBox);
+    side.append(el('h3', null, '🎪 무대'), pCount, pRpm);
+  } else {
+    side.append(el('h3', null, '크랭크'), pRpm, pCrank);
+    side.append(el('h3', null, '무대 세팅'), pCount, dancerBox);
+  }
+
+  /* -- 결과 정리표 (simple 모드): 크랭크 기어 × 댄서 기어 격자 -- */
+  let gridEl = null;
+  const gridData = {};
+  let expAngle = 0, expDone = false, autoTimer = null;
+  const fmtMult = m => '×' + (m % 1 ? Math.round(m * 10) / 10 : m);
+  function recordCell(ct, dt2, idler) {
+    gridData[ct + '_' + dt2] = { dir: idler ? 1 : -1, mult: ct / dt2 };
+  }
+  function renderGrid() {
+    if (!gridEl) return;
+    let h = '<tr><th class="corner">크랭크↓<br>댄서→</th>' + TEETH_OPTS.map(t =>
+      `<th${t === st.dancerT ? ' class="cur"' : ''}>${t}T</th>`).join('') + '</tr>';
+    TEETH_OPTS.forEach(ct => {
+      h += `<tr><th${ct === st.crankT ? ' class="cur"' : ''}>${ct}T</th>` + TEETH_OPTS.map(dt2 => {
+        const d = gridData[ct + '_' + dt2];
+        const cur = ct === st.crankT && dt2 === st.dancerT ? ' cur' : '';
+        if (!d) return `<td class="empty${cur}">·</td>`;
+        return `<td class="${d.dir > 0 ? 'cw' : 'ccw'}${cur}">${d.dir > 0 ? '↻' : '↺'} ${fmtMult(d.mult)}</td>`;
+      }).join('') + '</tr>';
+    });
+    gridEl.innerHTML = h;
+  }
+  function stopRun() {
+    running = false; if (raf) cancelAnimationFrame(raf);
+    setSt('ready'); btnRun.disabled = false; btnPause.disabled = true; btnPause.textContent = '⏸';
+  }
+  function autoScan() {
+    if (autoTimer) return;
+    stopRun();
+    const combos = [];
+    TEETH_OPTS.forEach(ct => TEETH_OPTS.forEach(dt2 => combos.push([ct, dt2])));
+    let k = 0;
+    autoTimer = setInterval(() => {
+      const [ct, dt2] = combos[k++];
+      st.crankT = ct; st.dancerT = dt2;
+      syncCrankPick(); syncDancerPick();
+      applyCfg();
+      recordCell(ct, dt2, st.idler0);
+      sim.crankAng = TAU * 0.6;   // 살짝 돌아간 모습으로 보여주기
+      renderGrid();
+      draw(0, false); updateReadouts();
+      if (k >= combos.length) {
+        clearInterval(autoTimer); autoTimer = null;
+        showBadge('⚡ 표를 전부 채웠어! 어떤 규칙이 보이니?');
+      }
+    }, 170);
+  }
+  if (opts.simple) {
+    gridEl = el('table', 'mx');
+    const gRow = el('div', 'ctl-row');
+    const btnAuto = el('button', null, '⚡ 자동 실험 — 표 전부 채우기'); btnAuto.style.flex = '1';
+    const btnClear = el('button', null, '지우기');
+    btnAuto.onclick = autoScan;
+    btnClear.onclick = () => { Object.keys(gridData).forEach(k2 => delete gridData[k2]); renderGrid(); };
+    gRow.append(btnAuto, btnClear);
+    side.append(
+      el('h3', null, '📋 결과 정리표 — 반 바퀴 돌리면 칸이 채워져!<br><span style="color:#5a6a85;font-weight:400">↻↺ = 댄서1이 도는 방향 · ×N = 크랭크보다 몇 배</span>'),
+      gridEl, gRow);
+    renderGrid();
+  }
+
+  side.append(el('h3', null, '📊 댄서 빠르기 — 흰 눈금 = 크랭크와 같은 빠르기'), readBox);
 
   /* -- 미션 UI -- */
   let missionRows = [], progEl = null;
@@ -1022,7 +1157,16 @@ function initStageMode(opts) {
   function draw(dt, active) {
     sim.draw(dt, active);
     $(opts.hudT).textContent = sim.t.toFixed(1) + ' s';
-    $(opts.hudC).textContent = (Math.abs(sim.crankAng) / TAU).toFixed(2) + ' 회전';
+    $(opts.hudC).textContent = (Math.abs(sim.crankAng) / TAU).toFixed(2) + ' 바퀴';
+  }
+  function trackExp(dAng) {
+    if (!opts.simple || expDone) return;
+    expAngle += Math.abs(dAng);
+    if (expAngle >= TAU / 2) {
+      expDone = true;
+      recordCell(st.crankT, st.dancerT, st.idler0);
+      renderGrid();
+    }
   }
   function loop(ts) {
     if (!running) return;
@@ -1031,6 +1175,7 @@ function initStageMode(opts) {
     last = ts;
     sim.t += dt;
     sim.crankAng += st.rpm * TAU / 60 * dt;
+    trackExp(st.rpm * TAU / 60 * dt);
     draw(dt, true);
     updateReadouts();
     checkMissions();
@@ -1038,6 +1183,8 @@ function initStageMode(opts) {
   }
   function applyCfg() {
     sim.setCfg(cfg());
+    expAngle = 0; expDone = false;
+    renderGrid();
     rebuildReadouts();
     updateReadouts();
     if (!running) draw(0, false);
@@ -1045,6 +1192,7 @@ function initStageMode(opts) {
 
   btnRun.onclick = () => {
     if (running) return;
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
     running = true; last = null; setSt('run');
     btnRun.disabled = true; btnPause.disabled = false; btnPause.textContent = '⏸';
     raf = requestAnimationFrame(loop);
@@ -1059,15 +1207,10 @@ function initStageMode(opts) {
     }
   };
   btnReset.onclick = () => {
-    running = false; if (raf) cancelAnimationFrame(raf);
-    setSt('ready'); btnRun.disabled = false; btnPause.disabled = true; btnPause.textContent = '⏸';
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    stopRun();
     applyCfg();
   };
-  rpmSlider.addEventListener('input', () => {
-    st.rpm = +rpmSlider.value;
-    pRpm.querySelector('b').textContent = st.rpm + ' RPM';
-    updateReadouts();
-  });
 
   /* -- 크랭크 터치/드래그로 직접 돌리기 -- */
   const toLocal = e => {
@@ -1094,6 +1237,7 @@ function initStageMode(opts) {
     while (d < -Math.PI) d += TAU;
     sim.crankAng += d;
     sim.t += Math.abs(d) * 0.05;
+    trackExp(d);
     drag.lastA = a;
     draw(Math.abs(d) * 0.05, true);
     updateReadouts();
@@ -1109,7 +1253,7 @@ function initStageMode(opts) {
   window.addEventListener('resize', () => { if ($(opts.tabId).classList.contains('on') && !running) draw(0, false); });
 }
 
-initStageMode({ cvId: 'cvPlay', sideId: 'sidePlay', tabId: 'play', badgeId: 'bdPlay', hudT: 'hudPlayT', hudC: 'hudPlayC', missions: false });
+initStageMode({ cvId: 'cvPlay', sideId: 'sidePlay', tabId: 'play', badgeId: 'bdPlay', hudT: 'hudPlayT', hudC: 'hudPlayC', missions: false, simple: true });
 initStageMode({ cvId: 'cvMission', sideId: 'sideMission', tabId: 'mission', badgeId: 'bdMission', hudT: 'hudMisT', hudC: 'hudMisC', missions: true });
 
 /* ═════════ 예측 게임 ═════════ */

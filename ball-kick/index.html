@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.78); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.3); border-radius: 10px; padding: 6px 14px; font-family: var(--mono); font-size: 19px; font-weight: 700; line-height: 1.15; }
+  .chip .lab { color: var(--dim); font-size: 11px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
   .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
   .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
@@ -64,7 +64,7 @@
   .status-txt { font-size: 12px; color: #b7c3d8; }
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 17px; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .ground-row { display: flex; gap: 8px; margin: 4px 0 14px; }
   .ground-row button { flex: 1; padding: 10px 6px; font-size: 13.5px; font-weight: 700; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -146,7 +146,7 @@
     <div class="stage" id="stage">
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">다리 각도</span><span id="hud_a">40°</span></div>
+        <div class="chip"><span class="lab">다리 들기</span><span id="hud_a">3단</span></div>
         <div class="chip" style="color:var(--accent)"><span class="lab">골대 거리</span><span id="hud_d">2</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">바닥</span><span id="hud_g">잔디</span></div>
       </div>
@@ -157,8 +157,8 @@
       </div>
       <div class="hint">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="predict" id="predict">
-        <div class="q">🤔 다리를 <b style="color:var(--orange)">2배 높이</b> 들면,<br>공도 딱 <b style="color:var(--orange)">2배 멀리</b> 갈까?</div>
-        <div class="sub">답을 고르면 20°와 40°로 한 번씩 차서 확인해 볼게!</div>
+        <div class="q">🤔 다리를 <b style="color:var(--orange)">2배</b>(2단→4단) 들면,<br>공도 딱 <b style="color:var(--orange)">2배 멀리</b> 갈까?</div>
+        <div class="sub">답을 고르면 잔디밭에서 2단·4단으로 한 번씩 차서 확인해 볼게!</div>
         <div class="btns">
           <button id="predO">⭕ 딱 2배로 간다</button>
           <button id="predX">❌ 아니다</button>
@@ -173,14 +173,14 @@
     <div class="side">
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
 
-      <div class="param"><label>🦵 다리 들어올림 각도 <b id="v_a">40°</b></label>
-        <div class="srow"><button class="step" data-t="ang" data-s="-10">◀</button><input type="range" id="ang" min="10" max="90" value="40" step="10"><button class="step" data-t="ang" data-s="10">▶</button></div></div>
+      <div class="param"><label><span>🦵 다리 들어올리기 <small style="color:var(--dim);font-weight:400">(위치 에너지 저장)</small></span><span id="v_an" style="color:var(--dim);font-size:11.5px;align-self:center">반쯤 들기</span><b id="v_a">3단</b></label>
+        <div class="srow"><button class="step" data-t="ang" data-s="-1">◀</button><input type="range" id="ang" min="1" max="5" value="3" step="1"><button class="step" data-t="ang" data-s="1">▶</button></div></div>
       <div class="param"><label>🥅 골대 거리 <b id="v_d">2</b></label>
         <div class="srow"><button class="step" data-t="dd" data-s="-1">◀</button><input type="range" id="dd" min="1" max="8" value="2" step="1"><button class="step" data-t="dd" data-s="1">▶</button></div></div>
 
       <div class="ground-row">
-        <button id="gGrass" class="on">🌱 잔디밭<small>공을 붙잡아 금방 멈춤</small></button>
-        <button id="gDirt" class="dirt">🟤 맨땅<small>훨씬 잘 굴러감</small></button>
+        <button id="gGrass" class="on">🌱 잔디 (마찰력 큼)<small>공을 붙잡아 금방 멈춤</small></button>
+        <button id="gDirt" class="dirt">🟤 맨땅 (마찰력 작음)<small>훨씬 잘 굴러감</small></button>
       </div>
 
       <div class="ctl-row">
@@ -188,7 +188,7 @@
         <button class="ghost" id="reset">↺</button>
       </div>
       <div class="ctl-row">
-        <button class="ghost" id="predictBtn" style="flex:1">🤔 예측 — 각도 2배면 거리도 2배?</button>
+        <button class="ghost" id="predictBtn" style="flex:1">🤔 예측 — 다리 2배면 거리도 2배?</button>
       </div>
       <div class="ctl-row">
         <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 이 바닥에서 표 전부 체크</button>
@@ -200,27 +200,45 @@
         <button id="spc">0.25×</button>
       </div>
 
-      <h3>📋 각도 × 거리 골 성공표 <span style="text-transform:none;color:#5a6a85">(O 골 · X 노골 · 클릭=확대)</span></h3>
+      <h3>📋 다리 들기 × 거리 골 성공표 <span style="text-transform:none;color:#5a6a85">(O 골 · X 노골 · 클릭=확대)</span></h3>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">발끝이 올라간 높이</div><div class="v a" id="ro_h">—</div></div>
-        <div class="readout"><div class="k">공이 받은 속도</div><div class="v a" id="ro_v0">—</div></div>
-        <div class="readout"><div class="k">공 최고 높이</div><div class="v b" id="ro_apex">—</div></div>
+        <div class="readout"><div class="k">발끝이 올라간 높이 (위치 에너지)</div><div class="v a" id="ro_h">—</div></div>
+        <div class="readout"><div class="k">공이 받은 속도 (운동 에너지)</div><div class="v a" id="ro_v0">—</div></div>
+        <div class="readout"><div class="k">공 최고 높이 (포물선 꼭대기)</div><div class="v b" id="ro_apex">—</div></div>
         <div class="readout"><div class="k">걸린 시간</div><div class="v b" id="ro_time">—</div></div>
         <div class="readout"><div class="k">굴러간 거리</div><div class="v s" id="ro_range">—</div></div>
         <div class="readout"><div class="k">골라인까지</div><div class="v g" id="ro_left">—</div></div>
       </div>
 
-      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰이 속도를 갉아먹는 모양 · 클릭=확대)</span></h3>
+      <h3>공 빠르기 (속도) 그래프 <span style="text-transform:none;color:#5a6a85">(마찰력 때문에 점점 느려짐 · 클릭=확대)</span></h3>
       <canvas class="graph" id="gr" height="280"></canvas>
     </div>
   </section>
 
   <section id="theory">
     <div class="theory-box">
-      <h2>⚽ 다리를 높이 들수록 공이 멀리 가는 이유</h2>
+      <div class="card" style="border-color:rgba(255,176,46,.45); background:rgba(255,176,46,.06)">
+        <b class="t">👨‍👩‍👧 학부모님께 — 오늘 수업 한눈에</b><br>
+        오늘은 레고 축구선수 모델로 <b>에너지 전환</b>을 실험했습니다. 다리를 높이 들어올릴수록 발끝에 저장되는 <b>위치 에너지</b>가 커지고,
+        다리가 내려오며 <b>운동 에너지</b>로 바뀌어 공을 더 빠르게 차게 됩니다. 또 잔디와 맨땅에서 같은 힘으로 차 보며,
+        바닥의 <b>마찰력</b>에 따라 공이 굴러가는 거리가 달라진다는 것을 직접 측정하고 비교했습니다.
+      </div>
+
+      <div class="card">
+        <b class="t">🎓 오늘 배운 물리 용어</b>
+        <ul style="margin:8px 0 2px 20px; line-height:2">
+          <li><b>위치 에너지</b> — 높은 곳에 있는 물체가 숨겨 둔 에너지. 다리를 높이 들수록 커진다.</li>
+          <li><b>운동 에너지</b> — 움직이는 물체가 가진 에너지. 다리가 내려오며 위치 에너지가 이걸로 바뀐다.</li>
+          <li><b>진자 운동</b> — 그네처럼 축에 매달려 왔다 갔다 하는 움직임. 킥 다리가 바로 진자다.</li>
+          <li><b>마찰력</b> — 바닥이 공을 붙잡아 멈추게 하는 힘. 잔디가 맨땅보다 크다.</li>
+          <li><b>포물선</b> — 차인 공이 날아가는 둥근 곡선 경로.</li>
+        </ul>
+      </div>
+
+      <h2 style="margin-top:22px">⚽ 다리를 높이 들수록 공이 멀리 가는 이유</h2>
       <div class="card">
         <b class="t">① 위치에너지 → 운동에너지</b><br>
         다리를 뒤로 높이 들면, 발끝이 <b>높은 곳</b>에 올라가지? 높은 곳에 있는 물건은 떨어질 힘을 숨기고 있어 — 이걸 <b>위치에너지</b>라고 해.
@@ -235,28 +253,28 @@
       <div class="card">
         <b class="t">③ 마찰 — 바닥이 공을 붙잡는 힘</b><br>
         공은 날다가 땅에 떨어져 <b>데굴데굴</b> 굴러가. 그런데 잔디밭은 털이 북슬북슬해서 공을 계속 붙잡아(마찰이 큼) 금방 멈추고,
-        맨땅은 매끈해서 훨씬 멀리 굴러가. 같은 각도로 차도 바닥에 따라 결과가 달라져!
+        맨땅은 매끈해서 훨씬 멀리 굴러가. 다리를 똑같이 들고 차도 바닥에 따라 결과가 달라져!
       </div>
       <div class="card">
-        <b class="t">🤔 반전 퀴즈 — 각도 2배 = 거리 2배?</b><br>
-        아니야! 20°에서 40°로 <b>2배</b> 들었는데 공은 <b>2배보다 훨씬 더 멀리</b>(약 3배) 가.
-        왜냐하면 발끝이 올라간 <b>높이</b>가 2배가 아니라 4배 가까이 커지거든. 에너지는 각도가 아니라 <b>높이</b>를 따라가!
+        <b class="t">🤔 반전 퀴즈 — 다리 2배 = 거리 2배?</b><br>
+        아니야! 2단에서 4단으로 <b>2배</b> 들었는데 공은 <b>2배보다 더 멀리</b>(약 2.4배) 가.
+        왜냐하면 발끝이 올라간 <b>높이</b>가 2배보다 훨씬 크게(약 2.8배) 커지거든. 에너지는 <b>높이</b>를 따라가!
         시뮬레이터의 "예측" 버튼으로 직접 확인해 봐.
       </div>
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
       <ul style="line-height:2.1">
-        <li><b>① 다리 관찰</b> — 각도 슬라이더를 움직이며 3D 킥 다리가 올라가는 모습 보기. "높이 들면 뭐가 달라질까?"</li>
-        <li><b>② 첫 킥</b> — 각도 40°·거리 2에서 차기. 골인! 그래프에서 속도가 점점 줄어드는 모양 확인</li>
-        <li><b>③ 거리 실험</b> — 골대를 5, 7로 멀리 옮기고 "왜 안 들어가지?" → 각도를 올려 다시 골 (성공표에 기록)</li>
-        <li><b>④ 예측 퀴즈</b> — "각도 2배면 거리도 2배?" 손들고 투표 → 예측 버튼으로 확인 (정답: X, 더 멀리!)</li>
-        <li><b>⑤ 바닥 반전</b> — 맨땅으로 바꾸고 같은 각도로 차기. 훨씬 멀리 굴러간다 — "잔디가 공을 붙잡고 있었구나!"</li>
+        <li><b>① 다리 관찰</b> — 다리 들기를 1단→5단으로 바꾸며 3D 킥 다리가 올라가는 모습 보기. "높이 들면 뭐가 달라질까?"</li>
+        <li><b>② 첫 킥</b> — 다리 3단·거리 2에서 차기. 골인! 그래프에서 공이 점점 느려지는 모양 확인</li>
+        <li><b>③ 거리 실험</b> — 골대를 5, 7로 멀리 옮기고 "왜 안 들어가지?" → 다리를 더 들어 다시 골 (성공표에 기록)</li>
+        <li><b>④ 예측 퀴즈</b> — "다리 2배면 거리도 2배?" 손들고 투표 → 예측 버튼으로 확인 (정답: X, 더 멀리!)</li>
+        <li><b>⑤ 바닥 반전</b> — 맨땅으로 바꾸고 같은 단으로 차기. 훨씬 멀리 굴러간다 — "잔디가 공을 붙잡고 있었구나!"</li>
       </ul>
 
       <div class="tip">
         <b>🧱 레고 실험 팁</b><br>
-        · 브릭큐 에센셜 공차기 모델의 킥 다리를 손으로 들어올렸다 놓기 — 시뮬 각도 눈금과 <b>1:1</b>로 비교<br>
-        · 확장미션: 책상(맨땅)과 카펫(잔디)에서 같은 각도로 차서 굴러간 거리를 자로 재보기<br>
+        · 브릭큐 에센셜 공차기 모델의 킥 다리를 손으로 들어올렸다 놓기 — 시뮬 다리 들기 단수와 <b>1:1</b>로 비교<br>
+        · 확장미션: 책상(맨땅)과 카펫(잔디)에서 다리를 똑같이 들고 차서 굴러간 거리를 자로 재보기<br>
         · 순서는 항상: 시뮬로 예측 → 레고로 실험 → 성공표 비교하며 "왜 다르지?" 이야기
       </div>
 
@@ -264,7 +282,7 @@
         <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
         <div class="inner" style="padding:12px 16px; line-height:2">
           진자 낙하: 발끝 상승 높이 <span class="eq">h = L(1 − cosθ)</span>, 최저점 속도 <span class="eq">v = √(2gh)</span> — 속도는 각도가 아니라 <b>높이의 제곱근</b>에 비례합니다.<br>
-          θ를 2배로 하면 h는 (1−cos2θ)/(1−cosθ) ≈ 3.9배(20°→40°) 커지고, 구름 거리는 대략 <span class="eq">d ≈ v²/(2μg)</span>이라 거리도 약 3배가 됩니다.<br>
+          다리 들기 1~5단은 각도 25°/40°/55°/70°/85°에 대응합니다. 2단→4단이면 h가 (1−cos70°)/(1−cos40°) ≈ 2.8배 커지고, 구름 거리는 대략 <span class="eq">d ≈ v²/(2μg)</span>이라 거리도 약 2.4배가 됩니다.<br>
           구름 마찰 계수는 잔디 μ≈0.10, 맨땅 μ≈0.045로 두어 바닥 대비를 만들었습니다.<br>
           <span style="color:var(--dim)">이 차시는 레고에듀케이션 BricQ Motion Essential 공식 레슨(에너지 전달·힘과 운동)과 같은 원리입니다.</span>
         </div>
@@ -290,7 +308,10 @@ const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 let activeTab = 'exp';
 
-/* ── 물리 상수 (검증값: 각도별 O 대각선 밴드, 잔디↔맨땅 대비, 20°→40° 거리비 ≈2.9) ── */
+/* ── 물리 상수 (검증값: 잔디 5단 O 분포 0/2/4/6/8칸 대각선 밴드, 잔디↔맨땅 대비) ── */
+const ANGS = [25, 40, 55, 70, 85];                 // 다리 들기 1~5단 → 각도 매핑
+const LV_NAME = ['조금 들기', '무릎쯤 들기', '반쯤 들기', '많이 들기', '높이 들기'];
+const ANG_OF = lv => ANGS[lv - 1];
 const R_BALL = 0.11, ALPHA = 24 * Math.PI / 180;   // 공 반지름·발등 킥 발사각(낮은 포물선)
 const C_V = 5.2;                                    // v0 = C·√(1−cosθ) — 진자 에너지 → 공 속도
 const LEG_EFF = 0.45;                               // 실제 스케일 다리 길이(m) — 높이 표시용
@@ -368,7 +389,7 @@ function openZoom(mode) {
   $('zoomOv').classList.add('on');
   $('grBig').style.display = mode === 'graph' ? 'block' : 'none';
   $('zoomTable').style.display = mode === 'table' ? 'block' : 'none';
-  $('zoomTitle').textContent = mode === 'graph' ? '📈 속도–시간 그래프' : '📋 각도 × 거리 골 성공표';
+  $('zoomTitle').textContent = mode === 'graph' ? '📈 공 빠르기 (속도) 그래프' : '📋 다리 들기 × 거리 골 성공표';
   if (mode === 'graph' && lastGraph) renderVT($('grBig'), lastGraph.pts, lastGraph.tMax, lastGraph.vMax, lastGraph.tNow, 16);
   if (mode === 'table') syncZoomTable();
 }
@@ -850,7 +871,7 @@ function stepDebris(dt) {
 }
 
 /* ── 상태 ── */
-let cfg = { ang: 40, dist: 2, grass: true };
+let cfg = { lv: 3, dist: 2, grass: true };
 let S = null, flying = false, released = false, swingU = 0, t = 0, ballIdx = 0, finished = false, prevBallX = KICK_X;
 const results = { grass: {}, dirt: {} };
 const groundKey = () => cfg.grass ? 'grass' : 'dirt';
@@ -858,7 +879,7 @@ let compare = null;   // 예측 실험 진행 상태 {guess, phase, r1, r2, orig
 
 /* ── 시뮬레이션: 진자 → 공 속도 → 낮은 포물선 + 바운드 + 구르기(마찰) ── */
 function simulate(opts = {}) {
-  const th = cfg.ang * Math.PI / 180;
+  const th = ANG_OF(cfg.lv) * Math.PI / 180;
   const v0 = C_V * Math.sqrt(1 - Math.cos(th));
   const goalX = DIST_M(cfg.dist), mu = MU(cfg.grass);
   let x = KICK_X, y = R_BALL, vx = v0 * Math.cos(ALPHA), vy = v0 * Math.sin(ALPHA);
@@ -897,12 +918,13 @@ function layoutScene() {
   goal.position.x = DIST_M(cfg.dist);
   floorMat.map = cfg.grass ? grassTex : dirtTex;
   floorMat.needsUpdate = true;
-  $('hud_a').textContent = cfg.ang + '°';
+  $('hud_a').textContent = cfg.lv + '단';
+  $('v_an').textContent = LV_NAME[cfg.lv - 1];
   $('hud_d').textContent = cfg.dist;
   $('hud_g').textContent = cfg.grass ? '잔디' : '맨땅';
 }
 
-function poseLeg() { if (!flying) legPivot.rotation.z = -cfg.ang * Math.PI / 180; }
+function poseLeg() { if (!flying) legPivot.rotation.z = -ANG_OF(cfg.lv) * Math.PI / 180; }
 
 function reset() {
   flying = false; released = false; finished = false; netHit = false; swingU = 0; t = 0; ballIdx = 0;
@@ -933,10 +955,10 @@ function onLand() {
   updateScore();
   fillReadouts(true);
   const bd = $('bd');
-  if (S.scored) { bd.className = 'badge in'; bd.textContent = '⚽ 골~!!'; setSt('done', '골! — 이 각도면 이 거리는 충분해'); }
+  if (S.scored) { bd.className = 'badge in'; bd.textContent = '⚽ 골~!!'; setSt('done', '골! — 이만큼 들면 이 거리는 충분해'); }
   else if (S.over) { bd.className = 'badge out'; bd.textContent = '✗ 노골 — 골대 위로 넘어갔어'; setSt('done', '노골 — 너무 셌다'); }
   else { bd.className = 'badge out'; bd.textContent = `✗ 노골 — ${(S.goalX - S.range).toFixed(1)}m 모자랐어`; setSt('done', '노골 — 다리를 더 높이 들어보자'); }
-  if (!compare) { results[groundKey()][cfg.ang + '|' + cfg.dist] = S.scored; drawMatrix(); }
+  if (!compare) { results[groundKey()][cfg.lv + '|' + cfg.dist] = S.scored; drawMatrix(); }
   $('fire').disabled = false;
   if (compare) stepCompare();
 }
@@ -951,12 +973,12 @@ function launch() {
 }
 
 function drawMatrix() {
-  const angs = [10, 20, 30, 40, 50, 60, 70, 80, 90], dists = [1, 2, 3, 4, 5, 6, 7, 8];
+  const lvs = [1, 2, 3, 4, 5], dists = [1, 2, 3, 4, 5, 6, 7, 8];
   const res = results[groundKey()];
-  let html = '<tr><th style="font-size:11px">각도＼거리</th>' + dists.map(d => `<th>${d}</th>`).join('') + '</tr>';
-  for (const a of angs) html += `<tr><td class="lab">${a}°</td>` + dists.map(d => {
+  let html = '<tr><th style="font-size:11px">다리＼거리</th>' + dists.map(d => `<th>${d}</th>`).join('') + '</tr>';
+  for (const a of lvs) html += `<tr><td class="lab">${a}단</td>` + dists.map(d => {
     const r = res[a + '|' + d];
-    const cur = (a === cfg.ang && d === cfg.dist) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
+    const cur = (a === cfg.lv && d === cfg.dist) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
     return r === true ? '<td class="hit"' + cur + '>O</td>' : r === false ? '<td class="miss"' + cur + '>X</td>' : '<td class="empty"' + cur + '></td>';
   }).join('') + '</tr>';
   $('matrix').innerHTML = html;
@@ -976,7 +998,7 @@ function bindSlider(id, lbl, key, suffix) {
     cfg[key] = +$(id).value; $(lbl).textContent = cfg[key] + suffix; reset();
   });
 }
-bindSlider('ang', 'v_a', 'ang', '°');
+bindSlider('ang', 'v_a', 'lv', '단');
 bindSlider('dd', 'v_d', 'dist', '');
 document.querySelectorAll('.step').forEach(b => b.onclick = () => {
   const el = $(b.dataset.t);
@@ -987,21 +1009,19 @@ document.querySelectorAll('.step').forEach(b => b.onclick = () => {
 /* ── 바닥 토글 ── */
 function setGround(grass) {
   if (flying || scanTimer || compare) return;
-  cfg.grass = grass;
-  $('gGrass').classList.toggle('on', grass);
-  $('gDirt').classList.toggle('on', !grass);
+  setGroundUI(grass);
   $('analysis').classList.remove('on');   // 이전 바닥의 분석 결과가 새 표와 불일치하므로 닫기
   reset(); drawMatrix();
 }
 $('gGrass').onclick = () => setGround(true);
 $('gDirt').onclick = () => setGround(false);
 
-/* ── 자동 실험 — 각도 10~90° 한 줄씩 궤적을 보여주며 현재 바닥의 표 전부 체크 ── */
+/* ── 자동 실험 — 다리 1~5단 한 줄씩 궤적을 보여주며 현재 바닥의 표 전부 체크 ── */
 let scanTimer = null;
 $('autoScan').onclick = () => {
   if (flying || scanTimer || compare) return;
-  const angs = [10, 20, 30, 40, 50, 60, 70, 80, 90];
-  const orig = { a: cfg.ang, d: cfg.dist };
+  const lvs = [1, 2, 3, 4, 5];
+  const orig = { a: cfg.lv, d: cfg.dist };
   $('analysis').classList.remove('on');
   $('predict').classList.remove('on');
   $('bd').className = 'badge';
@@ -1010,23 +1030,23 @@ $('autoScan').onclick = () => {
   let i = 0;
   setSt('run', '자동 실험 중… (' + (cfg.grass ? '잔디' : '맨땅') + ')');
   scanTimer = setInterval(() => {
-    if (i >= angs.length) {
+    if (i >= lvs.length) {
       clearInterval(scanTimer); scanTimer = null;
-      cfg.ang = orig.a; cfg.dist = orig.d;
-      $('ang').value = orig.a; $('v_a').textContent = orig.a + '°';
+      cfg.lv = orig.a; cfg.dist = orig.d;
+      $('ang').value = orig.a; $('v_a').textContent = orig.a + '단';
       reset(); drawMatrix();
       setSt('done', '자동 실험 완료');
       showScanAnalysis();
       return;
     }
-    const a = angs[i++];
-    cfg.ang = a; $('ang').value = a; $('v_a').textContent = a + '°';
+    const a = lvs[i++];
+    cfg.lv = a; $('ang').value = a; $('v_a').textContent = a + '단';
     poseLeg(); layoutScene();
     const free = simulate({ free: true });
     for (let d = 1; d <= 8; d++) results[groundKey()][a + '|' + d] = free.range >= DIST_M(d);
     setTraj(free.pts, free.range >= DIST_M(cfg.dist) ? 0x2ee06f : 0xff8a3d);
     drawMatrix();
-  }, 430);
+  }, 620);
 };
 $('clearMx').onclick = () => {
   if (compare) return;
@@ -1040,50 +1060,56 @@ $('clearMx').onclick = () => {
 
 // 자동 실험 분석 — 표 데이터에서 규칙 계산 (전부 계산값)
 function showScanAnalysis() {
-  const res = results[groundKey()], angs = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  const res = results[groundKey()], lvs = [1, 2, 3, 4, 5];
   const minAngOf = {};
-  for (let d = 1; d <= 8; d++) for (const a of angs) if (res[a + '|' + d] === true) { if (!minAngOf[d]) minAngOf[d] = a; }
+  for (let d = 1; d <= 8; d++) for (const a of lvs) if (res[a + '|' + d] === true) { if (!minAngOf[d]) minAngOf[d] = a; }
   const dists = Object.keys(minAngOf).map(Number).sort((a, b) => a - b);
   const el = $('anBody');
   const gName = cfg.grass ? '잔디' : '맨땅';
   if (!dists.length) {
     el.innerHTML = `<div class="big" style="color:var(--amber)">골 0칸</div>
-      <div class="row">${gName}에서는 어떤 각도로도 골이 없었어. (있을 수 없는 결과 — 다시 실험해 보자)</div>`;
+      <div class="row">${gName}에서는 어떻게 들어도 골이 없었어. (있을 수 없는 결과 — 다시 실험해 보자)</div>`;
   } else {
     const rising = dists.length >= 2 && minAngOf[dists[0]] < minAngOf[dists[dists.length - 1]];
-    el.innerHTML = `<div class="big">${gName} 실험 완료 — 골 ${Object.values(res).filter(v => v).length}칸 / 72칸</div>
-      <div class="row">거리별 <b>필요한 최소 각도</b>: ${dists.map(d => `${d}→<b>${minAngOf[d]}°</b>`).join(' · ')}</div>
+    el.innerHTML = `<div class="big">${gName} 실험 완료 — 골 ${Object.values(res).filter(v => v).length}칸 / 40칸</div>
+      <div class="row">거리별 <b>필요한 다리 들기</b>: ${dists.map(d => `${d}→<b>${minAngOf[d]}단</b>`).join(' · ')}</div>
       ${rising ? `<div class="row">규칙 발견: 골대가 <b>멀수록</b> 다리를 <b>더 높이</b> 들어야 해!</div>` : ''}
-      <div class="why">왜? 다리를 높이 들수록 발끝의 <b>위치에너지</b>가 커지고, 그만큼 공이 빨라져 마찰을 이기고 멀리 굴러가. ${cfg.grass ? '맨땅으로 바꾸면 마찰이 작아져 같은 각도로도 더 멀리 가 — 표가 어떻게 변할까?' : '잔디로 바꾸면 마찰이 커져 같은 각도로도 짧아져 — 표가 어떻게 변할까?'}</div>`;
+      <div class="why">왜? 다리를 높이 들수록 발끝의 <b>위치에너지</b>가 커지고, 그만큼 공이 빨라져 마찰을 이기고 멀리 굴러가. ${cfg.grass ? '맨땅으로 바꾸면 마찰이 작아져 똑같이 들어도 더 멀리 가 — 표가 어떻게 변할까?' : '잔디로 바꾸면 마찰이 커져 똑같이 들어도 짧아져 — 표가 어떻게 변할까?'}</div>`;
   }
   $('analysis').classList.add('on');
 }
 
-/* ── 예측 실험 — "각도 2배면 거리도 2배?" O/X → 20° vs 40° 비교 킥 ── */
+/* ── 예측 실험 — "다리 2배(2단→4단)면 거리도 2배?" O/X → 잔디 고정 비교 킥 (맨땅은 4단이 펜스를 넘어 비교 불가) ── */
 $('predictBtn').onclick = () => {
   if (flying || scanTimer || compare) return;
   $('predict').classList.add('on');
 };
+function setGroundUI(grass) {
+  cfg.grass = grass;
+  $('gGrass').classList.toggle('on', grass);
+  $('gDirt').classList.toggle('on', !grass);
+}
 function startCompare(guess) {
   $('predict').classList.remove('on');
   if (flying || scanTimer || compare) return;
-  compare = { guess, phase: 1, r1: 0, r2: 0, orig: { a: cfg.ang, d: cfg.dist } };
+  compare = { guess, phase: 1, r1: 0, r2: 0, orig: { a: cfg.lv, d: cfg.dist, grass: cfg.grass } };
   cfg.dist = 8; $('dd').value = 8; $('v_d').textContent = '8';   // 골대를 최대로 멀리 — 굴러간 거리 순수 비교
-  setAngleUI(20);
-  reset(); camSide();
-  setSt('run', '예측 실험 ① — 20°로 차기');
+  setGroundUI(true);
+  setAngleUI(2);
+  reset(); camSide(); drawMatrix();
+  setSt('run', '예측 실험 ① — 2단으로 차기');
   setTimeout(launch, 500);
 }
 $('predO').onclick = () => startCompare('O');
 $('predX').onclick = () => startCompare('X');
-function setAngleUI(a) { cfg.ang = a; $('ang').value = a; $('v_a').textContent = a + '°'; }
+function setAngleUI(a) { cfg.lv = a; $('ang').value = a; $('v_a').textContent = a + '단'; }
 function stepCompare() {
   if (compare.phase === 1) {
     compare.r1 = S.range - KICK_X;
     compare.phase = 2;
-    setSt('run', '예측 실험 ② — 40°로 차기');
+    setSt('run', '예측 실험 ② — 4단으로 차기');
     setTimeout(() => {
-      setAngleUI(40); finished = false; flying = false;   // reset() 생략 — 20° 궤적을 남겨 비교
+      setAngleUI(4); finished = false; flying = false;   // reset() 생략 — 2단 궤적을 남겨 비교
       layoutScene(); poseLeg();
       S = simulate(); ball.position.set(KICK_X, R_BALL, 0); prevBallX = KICK_X;
       launch();
@@ -1092,15 +1118,16 @@ function stepCompare() {
     compare.r2 = S.range - KICK_X;
     const ratio = compare.r2 / Math.max(compare.r1, 0.01);
     const correct = compare.guess === 'X';
-    const h20 = (LEG_EFF * (1 - Math.cos(20 * Math.PI / 180)) * 100).toFixed(1);
-    const h40 = (LEG_EFF * (1 - Math.cos(40 * Math.PI / 180)) * 100).toFixed(1);
+    const h2 = (LEG_EFF * (1 - Math.cos(ANG_OF(2) * Math.PI / 180)) * 100).toFixed(1);
+    const h4 = (LEG_EFF * (1 - Math.cos(ANG_OF(4) * Math.PI / 180)) * 100).toFixed(1);
     $('anBody').innerHTML = `<div class="big" style="color:${correct ? 'var(--green)' : 'var(--amber)'}">${correct ? '🎉 예측 성공! 정답은 ❌' : '😲 정답은 ❌ — 2배가 아니야!'}</div>
-      <div class="row">🦵 20° → <b>${compare.r1.toFixed(2)} m</b> &nbsp;·&nbsp; 🦵 40° → <b>${compare.r2.toFixed(2)} m</b></div>
-      <div class="row">각도는 2배인데 거리는 <b>${ratio.toFixed(1)}배</b>! 2배보다 훨씬 멀리 갔어.</div>
-      <div class="why">왜? 공을 밀어주는 건 각도가 아니라 발끝이 올라간 <b>높이(위치에너지)</b>야. 20°일 때 발끝 높이는 ${h20}cm인데 40°면 ${h40}cm — 높이가 약 ${(h40 / h20).toFixed(1)}배라서 에너지도 그만큼 커진 거야.</div>`;
+      <div class="row">🦵 2단 → <b>${compare.r1.toFixed(2)} m</b> &nbsp;·&nbsp; 🦵 4단 → <b>${compare.r2.toFixed(2)} m</b></div>
+      <div class="row">다리는 2배 들었는데 거리는 <b>${ratio.toFixed(1)}배</b>! 2배보다 더 멀리 갔어.</div>
+      <div class="why">왜? 공을 밀어주는 건 발끝이 올라간 <b>높이</b>야. 2단이면 발끝이 ${h2}cm 올라가는데 4단이면 ${h4}cm — 높이가 약 ${(h4 / h2).toFixed(1)}배라서 공을 미는 힘도 그만큼 커진 거야.</div>`;
     $('analysis').classList.add('on');
     const orig = compare.orig; compare = null;
     setAngleUI(orig.a); cfg.dist = orig.d; $('dd').value = orig.d; $('v_d').textContent = orig.d;
+    setGroundUI(orig.grass);
     setSt('done', '예측 실험 완료');
     layoutScene(); poseLeg(); S = simulate(); ball.position.set(KICK_X, R_BALL, 0);
     drawMatrix();
@@ -1142,7 +1169,7 @@ function frame(ts) {
   // 킥 동작: 진자처럼 가속하며 내려와 최저점에서 공에 운동 전달
   if (flying && !released) {
     swingU += real * 7 * (speed === 1 ? 1 : speed * 1.6);
-    const th = cfg.ang * Math.PI / 180;
+    const th = ANG_OF(cfg.lv) * Math.PI / 180;
     const u = Math.min(swingU, Math.PI / 2 + 0.55);
     legPivot.rotation.z = -th * Math.cos(u);   // -θ(뒤로 든 상태) → 0(최저점, 임팩트) → 앞으로 팔로스루
     if (swingU >= Math.PI / 2) { released = true; t = 0; ballIdx = 0; debrisBurst(KICK_X, cfg.grass); }   // 임팩트 순간 바닥 파편
@@ -1158,7 +1185,7 @@ function frame(ts) {
       burst(S.goalX + 0.2, 0.4);
     }
     // 팔로스루 마무리
-    const th = cfg.ang * Math.PI / 180;
+    const th = ANG_OF(cfg.lv) * Math.PI / 180;
     swingU = Math.min(swingU + real * 7, Math.PI / 2 + 0.55);
     legPivot.rotation.z = -th * Math.cos(swingU);
     fillReadouts(false);

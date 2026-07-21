@@ -69,6 +69,7 @@
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
   .status-txt { font-size: 12px; color: #b7c3d8; }
   .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
+  .presets.three { grid-template-columns: 1fr 1fr 1fr; }
   button.p { padding: 11px 8px; font-size: 13.5px; font-weight: 700; display: flex; flex-direction: column; gap: 2px; align-items: center; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; transition: .1s; }
   button.p small { font-size: 10.5px; color: var(--dim); font-weight: 400; }
   button.p:hover { border-color: var(--accent); }
@@ -77,7 +78,7 @@
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
-  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .bigval { flex: 1; text-align: center; font-family: var(--mono); font-size: 26px; font-weight: 800; color: var(--accent); background: #0c1220; border: 1px solid var(--border); border-radius: 8px; padding: 3px 0; line-height: 1.3; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
   .ctl-row { display: flex; gap: 8px; margin: 8px 0 4px; }
@@ -102,14 +103,18 @@
   .go-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 16px; font-weight: 800; }
   .go-head small { color: var(--dim); font-weight: 400; font-size: 13px; }
   .go-head button { background: transparent; border: none; color: var(--dim); font-size: 20px; cursor: pointer; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 16px; font-family: var(--mono); }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 10px 3px; }
-  table.mx th { background: var(--panel2); color: #a9b6cc; font-family: 'Malgun Gothic',sans-serif; font-size: 14px; font-weight: 600; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 14px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 7px 3px; }
+  table.mx th { background: var(--panel2); color: #a9b6cc; font-family: 'Malgun Gothic',sans-serif; font-size: 13px; font-weight: 600; padding: 8px 2px; }
   table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
   table.mx td.miss { color: #ff6a5e; font-weight: 700; }
+  table.mx td.empty { color: #38445c; }
   table.mx td.lab { color: var(--dim); font-size: 13px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx tr.bal td { background: rgba(46,224,111,.06); }
+  table.mx tr.bal td.lab { color: #7fe0a5; font-weight: 700; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
   .srow { display: flex; gap: 6px; align-items: center; }
-  .srow input[type=range] { flex: 1; }
+  .srow .step { width: 46px; height: 40px; font-size: 16px; }
   button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
   button.step:hover { border-color: var(--accent); }
   button.step:active { transform: scale(.94); }
@@ -155,7 +160,7 @@
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
         <div class="chip"><span class="lab">기울기</span><span id="hud_tilt">0°</span></div>
-        <div class="chip" style="color:var(--orange)"><span class="lab">바람</span><span id="hud_wind">0</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">바람</span><span id="hud_wind">없음</span></div>
         <div class="chip" style="color:var(--purple)"><span class="lab">🏆 최고 기록</span><span id="hud_best">—</span></div>
       </div>
       <div class="timerbox">
@@ -186,22 +191,26 @@
     <div class="side">
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
 
-      <div class="param"><label>⬅ 왼쪽 추 <b id="v_nl">0개</b></label>
-        <div class="srow"><button class="step" data-t="nl" data-s="-1">◀</button><input type="range" id="nl" min="0" max="3" value="0" step="1"><button class="step" data-t="nl" data-s="1">▶</button></div></div>
-      <div class="param"><label>➡ 오른쪽 추 <b id="v_nr">0개</b></label>
-        <div class="srow"><button class="step" data-t="nr" data-s="-1">◀</button><input type="range" id="nr" min="0" max="3" value="0" step="1"><button class="step" data-t="nr" data-s="1">▶</button></div></div>
+      <div class="param"><label>⬅ 왼쪽 추 몇 개?</label>
+        <div class="srow"><button class="step" data-t="nl" data-s="-1">◀</button><div class="bigval" id="bv_nl">0개</div><button class="step" data-t="nl" data-s="1">▶</button></div></div>
+      <div class="param"><label>➡ 오른쪽 추 몇 개?</label>
+        <div class="srow"><button class="step" data-t="nr" data-s="-1">◀</button><div class="bigval" id="bv_nr">0개</div><button class="step" data-t="nr" data-s="1">▶</button></div></div>
 
       <label style="display:block;font-size:13px;color:#c6d2e6;margin-bottom:5px">🥢 균형봉 길이</label>
       <div class="presets">
-        <button class="p on" id="poleShort">짧은 봉<small>돌리기 쉬움 · 빨리 흔들림</small></button>
-        <button class="p" id="poleLong">긴 봉<small>돌리기 어려움 · 천천히 흔들림</small></button>
+        <button class="p on" id="poleShort">짧은 봉<small>빨리 흔들려요</small></button>
+        <button class="p" id="poleLong">긴 봉<small>천천히 흔들려요</small></button>
       </div>
 
-      <div class="param"><label>🌬 바람 세기 <b id="v_w">0 (없음)</b></label>
-        <div class="srow"><button class="step" data-t="wd" data-s="-1">◀</button><input type="range" id="wd" min="0" max="3" value="0" step="1"><button class="step" data-t="wd" data-s="1">▶</button></div></div>
+      <label style="display:block;font-size:13px;color:#c6d2e6;margin-bottom:5px">🌬 바람</label>
+      <div class="presets three">
+        <button class="p on" data-w="0">😌 없음<small>바람 없어요</small></button>
+        <button class="p" data-w="1">🍃 솔솔<small>살짝 불어요</small></button>
+        <button class="p" data-w="2">🌪 쌩쌩<small>세게 불어요</small></button>
+      </div>
 
       <div class="toggle-row">
-        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 예측 모드 (시작 전 물어보기)</label>
+        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 먼저 맞혀 보기 (시작 전 질문)</label>
       </div>
 
       <div class="ctl-row">
@@ -209,34 +218,52 @@
         <button class="ghost" id="reset">↺</button>
       </div>
 
+      <h3 style="margin-top:14px">📋 결과 정리표 <span style="text-transform:none;color:#5a6a85">(추 조합 × 봉 길이 · ⚖=양쪽 같음)</span></h3>
+      <table class="mx" id="recTable"></table>
+
       <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">기울기 각도</div><div class="v a" id="ro_tilt">—</div></div>
-        <div class="readout" id="ro_com_box"><div class="k">⚖ 무게중심 치우침</div><div class="v b" id="ro_com">—</div></div>
-        <div class="readout"><div class="k">돌리는 힘 (왼 : 오)</div><div class="v s" id="ro_mom">—</div></div>
-        <div class="readout"><div class="k">버틴 시간</div><div class="v g" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">기울어진 각도 · 기울기 각 (°)</div><div class="v a" id="ro_tilt">—</div></div>
+        <div class="readout" id="ro_com_box"><div class="k">⚖ 무게중심 쏠림 (cm)</div><div class="v b" id="ro_com">—</div></div>
+        <div class="readout"><div class="k">돌리는 힘 · 모멘트 (왼 : 오)</div><div class="v s" id="ro_mom">—</div></div>
+        <div class="readout"><div class="k">버틴 시간 (초)</div><div class="v g" id="ro_time">—</div></div>
       </div>
 
       <h3>기울기–시간 그래프 <span style="text-transform:none;color:#5a6a85">(빨간 선 넘으면 낙하 · 클릭하면 크게)</span></h3>
       <canvas class="graph" id="gr" height="265" title="클릭하면 크게 보기"></canvas>
-
-      <h3 style="margin-top:14px">📋 조건별 기록표</h3>
-      <table class="mx" id="recTable"></table>
     </div>
   </section>
 
   <section id="theory">
     <div class="theory-box">
+      <div class="card" style="border-color:rgba(199,146,234,.45);background:rgba(30,22,48,.55);margin-bottom:18px">
+        <h4>👨‍👩‍👧 학부모님께 드리는 이번 차시 안내</h4>
+        <p>이번 차시에서 아이들은 물리학의 핵심 개념인 <b>무게중심</b>과 <b>균형 잡힌 힘·불균형 힘</b>을 배웁니다.
+          양쪽에 매단 추가 대칭일 때만 균형이 유지된다는 원리를 시뮬레이션과 레고 실험으로 직접 확인하며,
+          예측 → 실험 → 검증의 과학적 탐구 과정을 경험합니다.</p>
+      </div>
+
+      <div class="card" style="border-color:rgba(77,163,255,.4);margin-bottom:18px">
+        <h4>🎓 오늘 배운 물리 용어</h4>
+        <p style="line-height:2">
+          · <b>무게중심 (center of gravity)</b> — 물체의 무게가 한 점에 모여 있다고 볼 수 있는 점<br>
+          · <b>균형 잡힌 힘 (balanced forces)</b> — 양쪽 힘이 똑같아 서로 비겨서 움직임이 없는 상태<br>
+          · <b>불균형 힘 (unbalanced forces)</b> — 한쪽 힘이 더 커서 그쪽으로 움직이게 만드는 힘<br>
+          · <b>모멘트 (돌림힘)</b> — 물체를 회전시키는 힘. 크기 = 무게 × 회전축에서의 거리<br>
+          · <b>복원 (restoring)</b> — 기울어진 물체가 다시 원래 자리로 돌아오려는 작용
+        </p>
+      </div>
+
       <h2>🎪 소녀는 어떻게 외줄 위에서 안 떨어질까?</h2>
       <p style="font-size:16px">비밀은 <b>무게중심</b>이야. 무게중심이 줄 바로 위에 있으면 균형, 옆으로 벗어나면 그쪽으로 넘어져!</p>
 
       <div class="cards">
         <div class="card"><h4>⚖ 무게중심이 뭐야?</h4>
           <p>물체의 무게가 <b>한 점에 다 모여 있다</b>고 생각할 수 있는 점이야. 시뮬레이터의 <b style="color:var(--amber)">노란 점</b>이 바로 소녀+봉+추 전체의 무게중심이야. 이 점이 줄에서 멀어질수록 위험해.</p></div>
-        <div class="card"><h4>🤝 균형 힘 vs 불균형 힘</h4>
-          <p>왼쪽 추와 오른쪽 추가 <b>똑같으면</b> 양쪽이 잡아당기는 힘이 비겨서(균형) 가만히 있어. 한쪽만 무거우면 힘이 <b>불균형</b>해져서 무거운 쪽으로 도는 힘이 생겨 — 그래서 넘어지는 거야.</p></div>
+        <div class="card"><h4>🤝 균형 잡힌 힘 vs 불균형 힘</h4>
+          <p>왼쪽 추와 오른쪽 추가 <b>똑같으면</b> 양쪽이 잡아당기는 힘이 비겨서 가만히 있어 — 이게 <b>균형 잡힌 힘</b>이야. 한쪽만 무거우면 <b>불균형 힘</b>이 생겨서 무거운 쪽으로 도는 힘(모멘트)이 작용해 — 그래서 넘어지는 거야.</p></div>
         <div class="card"><h4>🥢 균형봉은 왜 길까?</h4>
-          <p>긴 봉은 <b>돌리기 어려워</b>. 그래서 바람이 밀어도 <b>천천히</b> 기울어지고, 소녀가 다시 잡을 시간이 생겨. 짧은 봉은 휙휙 빨리 넘어가서 잡을 틈이 없어!</p></div>
+          <p>긴 봉은 <b>돌리기 어려워</b>. 그래서 바람이 밀어도 <b>천천히</b> 기울어지고, 소녀가 다시 원래 자세로 <b>복원</b>할 시간이 생겨. 짧은 봉은 휙휙 빨리 넘어가서 잡을 틈이 없어!</p></div>
         <div class="card"><h4>⬇ 추를 아래로 늘어뜨리는 이유</h4>
           <p>추가 줄보다 <b>아래</b>에 매달리면 전체 무게중심이 <b>내려가</b>. 무게중심이 낮을수록 오뚝이처럼 잘 안 넘어져. 줄타기 선수의 봉이 아래로 휘어 있는 이유야.</p></div>
       </div>
@@ -247,17 +274,17 @@
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
       <ul style="line-height:2.1">
-        <li><b>① 맨몸 도전</b> — 추 0개·바람 0으로 시작. "가만히 있어도 조금씩 흔들리네?" (10초 성공 쉬움)</li>
-        <li><b>② 불균형 실험</b> — 예측 모드를 켜고 왼쪽에만 추 2개. "어떻게 될까?" 손들고 → 실행 → 왼쪽으로 낙하 확인</li>
+        <li><b>① 맨몸 도전</b> — 추 0개·바람 없음으로 시작. "가만히 있어도 조금씩 흔들리네?" (10초 성공 쉬움)</li>
+        <li><b>② 불균형 실험</b> — "먼저 맞혀 보기"를 켜고 왼쪽에만 추 2개. "어떻게 될까?" 손들고 → 실행 → 왼쪽으로 낙하 확인</li>
         <li><b>③ 균형 회복</b> — 오른쪽에도 추 2개를 걸어 대칭으로. "다시 균형!" — 균형/불균형 힘 정리</li>
-        <li><b>④ 바람 도전</b> — 바람 3 + 짧은 봉 → 금방 낙하. 긴 봉 + 추 3:3으로 바꾸면? → 버틸 수 있다!</li>
-        <li><b>⑤ 기록 경쟁</b> — 조별로 "바람 3에서 10초 버티는 설정"을 찾고 기록표 비교</li>
+        <li><b>④ 바람 도전</b> — 바람 쌩쌩 + 짧은 봉 → 금방 낙하. 긴 봉 + 추 3:3으로 바꾸면? → 버틸 수 있다!</li>
+        <li><b>⑤ 표 완성</b> — 조별로 추 조합을 바꿔 가며 결과 정리표 채우기 — "⚖ 같은 줄만 초록이네!"</li>
       </ul>
 
       <div class="tip">
         <b>🧱 레고 실험 팁</b><br>
         · 실물 브릭큐 모델도 똑같이 <b>양쪽 무게가 같아야</b> 소녀가 서 있어 — 시뮬로 예측하고 실물 추를 옮겨 확인<br>
-        · 확장미션: 바람 3에서 10초 버티는 조합은 몇 개나 될까? 기록표에 모아 보기<br>
+        · 확장미션: 바람 쌩쌩에서 10초 버티는 조합은 몇 개나 될까? 결과 정리표에 모아 보기<br>
         · 순서는 항상: 시뮬로 예측 → 레고로 실험 → "왜 같을까/다를까?" 이야기
       </div>
 
@@ -293,7 +320,7 @@ let activeTab = 'exp';
 
 /* ── 물리 상수 (역진자 + 좌우 모멘트 + 바람 외란) ── */
 // 검증값: 대칭+무풍 100% 성공 · 불균형은 1.5~3.7초 뒤 낙하(클수록 빨리) ·
-//         바람3 맨몸 43% → 추1:1 80% → 추3:3 100% 성공 (관성↑ = 천천히 기울어 버티기 쉬움)
+//         바람 쌩쌩 맨몸 43% → 추1:1 80% → 추3:3 100% 성공 (관성↑ = 천천히 기울어 버티기 쉬움)
 const ROPE_Y = 2.0, CRIT = 28 * Math.PI / 180, TARGET = 10;
 const M_GIRL = 1.0, H_GIRL = 0.22;           // 소녀 질량·무게중심 높이(줄 위)
 const H_HANDS = 0.35, H_W = -0.12;           // 손 높이·추 높이(줄 아래로 매달림 → 안정화)
@@ -304,7 +331,8 @@ const BODY_I = 5.0;                          // 몸통 관성 계수 (시간 스
 const KP = 9, KD = 2.5, TMAX = 1.05;         // 소녀의 복원(제어) 능력 한계
 const DAMP_C = 2.5;                          // 관성 비례 감쇠 — 긴 봉 불리 역전 방지
 const BIAS_RAMP = 2.5;                       // 불균형 토크 램프(s) — 버티다 서서히 넘어지는 연출
-const WIND_AMP = [0, 0.45, 0.95, 1.15];
+const WIND_AMP = [0, 0.45, 1.15];               // 없음 / 솔솔 / 쌩쌩
+const WNAMES = ['없음', '솔솔', '쌩쌩'];
 
 /* ── 탭 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -870,8 +898,8 @@ let graphPts = [];
 let best = 0;
 try { best = +(localStorage.getItem('tightrope_best') || 0) || 0; } catch (e) { /* file:// 차단 환경 대비 */ }
 let fall = null;
-let pendingChoice = null, lastPrediction = null;
-const attempts = [];
+let lastPrediction = null;
+const recs = {};   // key: (S|L)_nL_nR → 마지막 결과 (결과 정리표)
 let cheerT = 0, idleT = 0;
 
 function derived() {
@@ -921,9 +949,9 @@ function momentText() {
   return `${cfg.nL * k} : ${cfg.nR * k}`;
 }
 function refreshStatic() {
-  $('v_nl').textContent = cfg.nL + '개'; $('v_nr').textContent = cfg.nR + '개';
-  $('v_w').textContent = cfg.wind + (cfg.wind === 0 ? ' (없음)' : cfg.wind === 3 ? ' (강풍)' : '');
-  $('hud_wind').textContent = cfg.wind;
+  $('bv_nl').textContent = cfg.nL + '개'; $('bv_nr').textContent = cfg.nR + '개';
+  $('hud_wind').textContent = WNAMES[cfg.wind];
+  document.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', +b.dataset.w === cfg.wind));
   $('poleShort').classList.toggle('on', !cfg.longPole);
   $('poleLong').classList.toggle('on', cfg.longPole);
   $('ro_mom').textContent = momentText();
@@ -943,14 +971,21 @@ function refreshLive() {
   $('tbarFill').style.width = Math.min(100, runT / TARGET * 100) + '%';
 }
 
+// 결과 정리표: 추 조합(왼:오) 16줄 × 봉 길이 2칸 — 대칭 조합(⚖)만 초록으로 남는 패턴이 보이게
 function drawTable() {
-  let html = '<tr><th>왼추</th><th>오른추</th><th>봉</th><th>바람</th><th>시간</th><th>결과</th></tr>';
-  attempts.slice(-8).reverse().forEach(r => {
-    html += `<tr><td>${r.nL}</td><td>${r.nR}</td><td class="lab">${r.long ? '긴' : '짧은'}</td><td>${r.wind}</td>`
-      + `<td>${r.time.toFixed(1)}s${r.star ? ' ⭐' : ''}</td>`
-      + (r.ok ? '<td class="hit">성공</td>' : `<td class="miss">${r.side === 'left' ? '←낙하' : '→낙하'}</td>`) + '</tr>';
-  });
-  if (!attempts.length) html += '<tr><td colspan="6" class="lab" style="padding:10px">아직 기록 없음 — 시작을 눌러 봐!</td></tr>';
+  let html = '<tr><th>왼쪽 추 : 오른쪽 추</th><th>짧은 봉</th><th>긴 봉</th></tr>';
+  for (let l = 0; l <= 3; l++) for (let r = 0; r <= 3; r++) {
+    const bal = l === r;
+    html += `<tr${bal ? ' class="bal"' : ''}><td class="lab">${l} : ${r}${bal ? ' ⚖' : ''}</td>`;
+    ['S', 'L'].forEach(p => {
+      const rec = recs[`${p}_${l}_${r}`];
+      const cur = cfg.nL === l && cfg.nR === r && (p === 'L') === cfg.longPole ? ' cur' : '';
+      if (!rec) html += `<td class="empty${cur}">·</td>`;
+      else if (rec.ok) html += `<td class="hit${cur}">✅10초${rec.wind ? '🌬' : ''}</td>`;
+      else html += `<td class="miss${cur}">${rec.side === 'left' ? '⬅' : '➡'}${rec.time.toFixed(1)}초${rec.wind ? '🌬' : ''}</td>`;
+    });
+    html += '</tr>';
+  }
   $('recTable').innerHTML = html;
 }
 
@@ -969,7 +1004,7 @@ function resetAll() {
   $('predict').classList.remove('on');
   $('analysis').classList.remove('on');
   $('go').disabled = false;
-  refreshStatic(); refreshLive(); drawTiltGraph([]);
+  refreshStatic(); refreshLive(); drawTiltGraph([]); drawTable();
   setSt('ready');
 }
 function beginRun() {
@@ -987,7 +1022,7 @@ function recordAttempt(ok, side, time) {
     try { localStorage.setItem('tightrope_best', best); } catch (e) {}
     updateRecordBoard();
   }
-  attempts.push({ nL: cfg.nL, nR: cfg.nR, long: cfg.longPole, wind: cfg.wind, time, ok, side, star });
+  recs[`${cfg.longPole ? 'L' : 'S'}_${cfg.nL}_${cfg.nR}`] = { time, ok, side, wind: cfg.wind };
   drawTable(); refreshStatic();
   return star;
 }
@@ -998,19 +1033,19 @@ function showResult(ok, side, time, star) {
   let html = '';
   if (ok) {
     html += `<div class="big">🎉 10초 성공!${star ? ' <span style="color:var(--purple)">🏅 신기록</span>' : ''}</div>`;
-    html += `<div class="row">추 <b>${cfg.nL} : ${cfg.nR}</b> · <b>${cfg.longPole ? '긴' : '짧은'} 봉</b> · 바람 <b>${cfg.wind}</b>으로 끝까지 버텼어!</div>`;
-    if (cfg.nL === cfg.nR && cfg.nL > 0) html += `<div class="row">양쪽 추가 <b>똑같아서</b> 돌리는 힘이 비겼어 — 이게 <b>균형 힘</b>이야.</div>`;
-    if (cfg.wind > 0) html += `<div class="row">바람이 밀어도 ${cfg.longPole ? '<b>긴 봉</b>이라 천천히 기울어서' : '용케'} 다시 세울 수 있었어.</div>`;
+    html += `<div class="row">추 <b>${cfg.nL} : ${cfg.nR}</b> · <b>${cfg.longPole ? '긴' : '짧은'} 봉</b> · 바람 <b>${WNAMES[cfg.wind]}</b>으로 끝까지 버텼어!</div>`;
+    if (cfg.nL === cfg.nR && cfg.nL > 0) html += `<div class="row">양쪽 추가 <b>똑같아서</b> 돌리는 힘(모멘트)이 비겼어 — 이게 <b>균형 잡힌 힘</b>이야.</div>`;
+    if (cfg.wind > 0) html += `<div class="row">바람이 밀어도 ${cfg.longPole ? '<b>긴 봉</b>이라 천천히 기울어서' : '용케'} 다시 세울(복원할) 수 있었어.</div>`;
     html += `<div class="why">더 어렵게? 바람을 올리거나 봉을 짧게 바꿔서 다시 도전!</div>`;
   } else {
     const dir = side === 'left' ? '왼쪽' : '오른쪽';
     html += `<div class="big" style="color:var(--amber)">💥 ${dir}으로 낙하 — ${time.toFixed(1)}초</div>`;
     if (Math.abs(P.bias) > 0.01) {
-      html += `<div class="row">${cfg.nL > cfg.nR ? '왼쪽' : '오른쪽'} 추가 더 무거워서 돌리는 힘이 <b>${momentText()}</b>로 불균형 — 무거운 쪽으로 넘어졌어.</div>`;
-      html += `<div class="row">돌리는 힘 = <b>무게 × 거리</b>. ${cfg.longPole ? '긴 봉이라 같은 추라도 더 세게 돌아갔어!' : '긴 봉이면 더 빨리 넘어졌을 거야.'}</div>`;
-      html += `<div class="why">양쪽 추 개수를 똑같이 맞추면 균형 힘이 돼서 안 넘어져.</div>`;
+      html += `<div class="row">${cfg.nL > cfg.nR ? '왼쪽' : '오른쪽'} 추가 더 무거워서 돌리는 힘(모멘트)이 <b>${momentText()}</b>로 <b>불균형 힘</b> — 무거운 쪽으로 넘어졌어.</div>`;
+      html += `<div class="row">돌리는 힘(모멘트) = <b>무게 × 거리</b>. ${cfg.longPole ? '긴 봉이라 같은 추라도 더 세게 돌아갔어!' : '긴 봉이면 더 빨리 넘어졌을 거야.'}</div>`;
+      html += `<div class="why">양쪽 추 개수를 똑같이 맞추면 <b>균형 잡힌 힘</b>이 돼서 안 넘어져.</div>`;
     } else {
-      html += `<div class="row">추는 균형이었는데 <b>바람 돌풍</b>에 밀렸어 (바람 ${cfg.wind}).</div>`;
+      html += `<div class="row">추는 균형이었는데 <b>바람 돌풍</b>에 밀렸어 (바람 ${WNAMES[cfg.wind]}).</div>`;
       html += `<div class="row">${cfg.longPole ? '' : '<b>긴 봉</b>으로 바꾸고 '}추를 <b>3 : 3</b>으로 아래에 매달면 무게중심이 낮아지고 천천히 흔들려서 버티기 쉬워져.</div>`;
       html += `<div class="why">봉이 길고 추가 많을수록 = 돌리기 어려움 = 천천히 기울어짐 = 잡을 시간 생김!</div>`;
     }
@@ -1046,16 +1081,16 @@ function startFall() {
 }
 
 /* ── 입력 ── */
-function bindSlider(id, apply) {
-  $(id).addEventListener('input', () => { if (mode === 'run' || mode === 'fall') { $(id).value = apply.get(); return; } apply.set(+$(id).value); resetAll(); });
-}
-bindSlider('nl', { get: () => cfg.nL, set: v => cfg.nL = v });
-bindSlider('nr', { get: () => cfg.nR, set: v => cfg.nR = v });
-bindSlider('wd', { get: () => cfg.wind, set: v => cfg.wind = v });
 document.querySelectorAll('.step').forEach(b => b.onclick = () => {
-  const el = $(b.dataset.t);
-  el.value = clamp(+el.value + +b.dataset.s, +el.min, +el.max);
-  el.dispatchEvent(new Event('input'));
+  if (mode === 'run' || mode === 'fall') return;
+  const s = +b.dataset.s;
+  if (b.dataset.t === 'nl') cfg.nL = clamp(cfg.nL + s, 0, 3);
+  else cfg.nR = clamp(cfg.nR + s, 0, 3);
+  resetAll();
+});
+document.querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+  if (mode === 'run' || mode === 'fall') return;
+  cfg.wind = +b.dataset.w; resetAll();
 });
 $('poleShort').onclick = () => { if (mode === 'run' || mode === 'fall') return; cfg.longPole = false; resetAll(); };
 $('poleLong').onclick = () => { if (mode === 'run' || mode === 'fall') return; cfg.longPole = true; resetAll(); };
@@ -1063,7 +1098,7 @@ $('poleLong').onclick = () => { if (mode === 'run' || mode === 'fall') return; c
 $('go').onclick = () => {
   if (mode === 'run' || mode === 'fall') return;
   if ($('predictMode').checked) {
-    $('predCfg').textContent = `왼쪽 추 ${cfg.nL} · 오른쪽 추 ${cfg.nR} · ${cfg.longPole ? '긴' : '짧은'} 봉 · 바람 ${cfg.wind}`;
+    $('predCfg').textContent = `왼쪽 추 ${cfg.nL}개 · 오른쪽 추 ${cfg.nR}개 · ${cfg.longPole ? '긴' : '짧은'} 봉 · 바람 ${WNAMES[cfg.wind]}`;
     $('predict').classList.add('on');
     return;
   }
@@ -1222,7 +1257,6 @@ function frame(ts) {
 updateRecordBoard();
 camFront();
 resetAll();
-drawTable();
 requestAnimationFrame(frame);
 </script>
 </body>

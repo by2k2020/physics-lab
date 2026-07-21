@@ -55,8 +55,13 @@
   .status-txt { font-size: 12px; color: #b7c3d8; }
   .param { margin-bottom: 13px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 18px; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 38px; height: 34px; font-size: 15px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; padding: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
   .gauge-wrap { margin: 7px 0 2px; }
   .gauge { position: relative; height: 34px; background: #0c1220; border: 1px solid var(--border); border-radius: 17px; overflow: hidden; }
   .gauge-fill { position: absolute; inset: 0; background: linear-gradient(90deg, #2ee06f 0%, #ffd02e 55%, #ff5a52 100%); clip-path: inset(0 100% 0 0); transition: clip-path .18s ease; }
@@ -86,8 +91,10 @@
   th, td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; }
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
-  td.cond { font-family: inherit; }
-  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+  td.cond { font-family: inherit; color: var(--dim); font-size: 12.5px; }
+  td.gv { color: var(--green); font-weight: 700; }
+  td.dash { color: #38445c; }
+  td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
 
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   #theory.on { display: block; }
@@ -99,6 +106,13 @@
   .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
   .theory-box table { font-size: 13px; margin: 10px 0; }
   .theory-box th, .theory-box td { padding: 7px 10px; }
+  .brief-card { background: rgba(255,176,46,.07); border: 1px solid rgba(255,176,46,.35); border-radius: 12px; padding: 15px 18px; margin-bottom: 20px; }
+  .brief-card h2 { margin: 0 0 8px !important; font-size: 16px !important; color: var(--amber) !important; }
+  .term-card { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.3); border-radius: 12px; padding: 15px 18px; margin-bottom: 20px; }
+  .term-card h2 { margin: 0 0 10px !important; font-size: 16px !important; color: var(--accent) !important; }
+  .term-card ul { margin: 0 0 0 4px !important; list-style: none; }
+  .term-card li { margin-bottom: 7px; }
+  .term-card li b { color: var(--purple); }
 
   @media (max-width: 900px) {
     body { overflow: auto; }
@@ -139,13 +153,17 @@
         <button class="primary" id="btnJump">🐸 점프!</button>
         <button id="btnRestart">↺ 처음부터</button>
       </div>
-      <h3>점프 조절</h3>
-      <div class="param"><label>고무줄 당김 (탄성 에너지) <b id="v_pull">5</b></label>
-        <input type="range" id="pull" min="1" max="10" value="5" step="1">
+      <h3>점프 조절 — 딱 3가지만!</h3>
+      <div class="param"><label>💪 고무줄 당기기 (탄성력) · 1~5칸 <b id="v_pull">3</b></label>
+        <div class="srow"><button class="step" id="pullDn">◀</button><input type="range" id="pull" min="1" max="5" value="3" step="1"><button class="step" id="pullUp">▶</button></div>
         <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="gaugeFill"></div><span class="gauge-txt" id="gaugeTxt">—</span></div></div></div>
-      <div class="param"><label>점프 각도 <b id="v_ang">45°</b></label>
-        <input type="range" id="ang" min="20" max="70" value="45" step="1"></div>
-      <div class="param"><label>개구리 무게 <b id="v_wt">가벼움</b></label>
+      <div class="param"><label>📐 점프 방향 (발사 각도) <b id="v_ang">중간 45°</b></label>
+        <div class="pick" id="pickAng">
+          <button data-a="30">낮게 30°</button>
+          <button data-a="45" class="on">중간 45°</button>
+          <button data-a="60">높게 60°</button>
+        </div></div>
+      <div class="param"><label>🐸 개구리 무게 <b id="v_wt">가벼움</b></label>
         <div class="pick" id="pickWt">
           <button data-w="1" class="on">🐸 가벼움</button>
           <button data-w="2">🐸🧱 무거움</button>
@@ -153,59 +171,70 @@
       </div>
       <h3>측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">저장된 탄성 에너지</div><div class="v g" id="ro_e">—</div></div>
-        <div class="readout"><div class="k">발사 속도</div><div class="v a" id="ro_v">—</div></div>
+        <div class="readout"><div class="k">모은 힘 (탄성 에너지)</div><div class="v g" id="ro_e">—</div></div>
+        <div class="readout"><div class="k">날아가는 빠르기 (운동 에너지)</div><div class="v a" id="ro_v">—</div></div>
         <div class="readout"><div class="k">지난 점프 거리</div><div class="v o" id="ro_d">— cm</div></div>
-        <div class="readout"><div class="k">지난 점프 최고 높이</div><div class="v" id="ro_h">— cm</div></div>
+        <div class="readout"><div class="k">최고 높이</div><div class="v" id="ro_h">— cm</div></div>
       </div>
-      <div class="predict">
-        <div class="q">🤔 <b>예측해 봐!</b> 각도·무게는 그대로 두고 <b>당김만 2배</b>로 하면, 딱 <b>2배</b> 멀리 갈까?</div>
+      <h3>📋 점프 거리표 (cm) — <span id="tbWt" style="color:var(--green)">가벼움 🐸</span></h3>
+      <div class="ctl-row">
+        <button id="btnAuto" style="flex:1">⚡ 자동 실험 — 표 전부 채우기</button>
+        <button id="btnClearTb">지우기</button>
+      </div>
+      <table id="tb"></table>
+      <div class="predict" style="margin-top:13px">
+        <div class="q">🤔 <b>맞혀 봐!</b> 당김을 <b>2칸 → 4칸</b>으로 2배 하면, 딱 <b>2배</b> 멀리 갈까?</div>
         <div class="ox-row">
           <button class="pickO" id="btnO">⭕ 응, 2배!</button>
           <button class="pickX" id="btnX">❌ 아니야!</button>
         </div>
         <div class="ans" id="predAns"></div>
       </div>
-      <details open>
-        <summary>📋 점프 기록 — 당김 × 각도 → 거리</summary>
-        <div class="inner">
-          <table id="tb">
-            <thead><tr><th>#</th><th>당김</th><th>각도</th><th>무게</th><th>거리(cm)</th><th>결과</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </details>
     </div>
   </section>
 
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="brief-card">
+        <h2>👨‍👩‍👧 학부모 브리핑</h2>
+        <p>이번 차시에는 고무줄의 <b>탄성 에너지</b>가 <b>운동 에너지</b>로 바뀌면서 개구리가 점프하는 원리를 시뮬레이션으로 실험했습니다.
+          고무줄을 당기는 정도와 발사 각도를 바꿔 가며 점프 거리를 표로 기록하고,
+          당김을 2배로 하면 거리는 약 <b>4배</b>가 된다는 것(에너지는 당김의 <b>제곱</b>에 비례)을 아이가 직접 확인했습니다.</p>
+      </div>
+      <div class="term-card">
+        <h2>🎓 오늘 배운 물리 용어</h2>
+        <ul>
+          <li>💪 <b>탄성력</b> — 늘어난 고무줄이 원래 모양으로 되돌아가려는 힘</li>
+          <li>⚡ <b>탄성 에너지</b> — 고무줄을 당겨 놓았을 때 그 안에 저장되는 에너지 (당김의 제곱에 비례)</li>
+          <li>🏃 <b>운동 에너지</b> — 움직이는 물체가 가진 에너지, 개구리가 날아갈 때의 에너지</li>
+          <li>🔄 <b>에너지 전환</b> — 탄성 에너지가 운동 에너지로 모양을 바꾸는 것</li>
+          <li>🌈 <b>포물선 운동</b> — 비스듬히 발사된 물체가 곡선(포물선)을 그리며 나는 운동, 45°에서 가장 멀리!</li>
+        </ul>
+      </div>
       <h2>📖 고무줄 탄성 에너지 — 당긴 만큼 에너지가 쌓여</h2>
       <p>고무줄을 당기면 원래대로 돌아가려는 힘이 생겨. 이때 고무줄 속에 <b>탄성 에너지</b>가 저장되는 거야.
         손을 놓으면 저장된 에너지가 개구리를 밀어내는 <b>운동 에너지</b>로 바뀌면서 개구리가 날아가!</p>
       <ul>
-        <li>탄성 에너지: <span class="eq">에너지 = ½ × k × (당긴 길이)²</span> — 당긴 길이의 <b>제곱</b>이 중요!</li>
-        <li>당김 2배 → 에너지는 <b>4배</b> → 날아가는 거리도 <b>약 4배</b> (2배가 아니야!)</li>
-        <li>무게: <span class="eq">속도 = √(2 × 에너지 ÷ 무게)</span> — 같은 고무줄이라도 무거우면 천천히, 짧게 날아가</li>
+        <li>많이 당길수록 에너지가 <b>훨씬 많이</b> 쌓여 — 당김 2배면 에너지는 <b>4배</b>!</li>
+        <li>그래서 날아가는 거리도 <b>약 4배</b> (2배가 아니야!)</li>
+        <li>무거운 개구리는? 같은 고무줄이라도 천천히, <b>짧게</b> 날아가</li>
       </ul>
-      <h2>📐 45°가 최고의 각도인 이유</h2>
-      <p>너무 낮게(20°) 쏘면 금방 물에 떨어지고, 너무 높게(70°) 쏘면 위로만 올라갔다가 제자리에 떨어져.
-        <b>앞으로 가는 힘</b>과 <b>위로 뜨는 힘</b>이 딱 반반인 <b>45°</b>일 때 가장 멀리 가!</p>
+      <h2>📐 중간(45°)이 가장 멀리 가는 이유</h2>
+      <p>낮게(30°) 쏘면 빨리 가지만 금방 물에 떨어지고, 높게(60°) 쏘면 높이 떴다가 가까이에 떨어져.
+        <b>앞으로 가는 힘</b>과 <b>위로 뜨는 힘</b>이 딱 반반인 <b>중간(45°)</b>일 때 가장 멀리 가!</p>
       <table>
-        <thead><tr><th>각도</th><th>거리 (45° 기준)</th><th>느낌</th></tr></thead>
+        <thead><tr><th>점프 방향</th><th>거리 (중간 기준)</th><th>느낌</th></tr></thead>
         <tbody>
-          <tr><td>20°</td><td>약 64%</td><td>낮고 빠르게 — 금방 떨어짐</td></tr>
-          <tr><td>30°</td><td>약 87%</td><td>꽤 멀리 감</td></tr>
-          <tr><td>45°</td><td>100% ★</td><td>가장 멀리!</td></tr>
-          <tr><td>60°</td><td>약 87%</td><td>높이 떴다가 가까이 떨어짐</td></tr>
-          <tr><td>70°</td><td>약 64%</td><td>거의 제자리 높이뛰기</td></tr>
+          <tr><td>낮게 30°</td><td>약 87%</td><td>낮고 빠르게 — 조금 짧아</td></tr>
+          <tr><td>중간 45°</td><td>100% ★</td><td>가장 멀리!</td></tr>
+          <tr><td>높게 60°</td><td>약 87%</td><td>높이 떴다가 가까이 떨어짐</td></tr>
         </tbody>
       </table>
-      <p>재미있는 비밀: 30°와 60°, 20°와 70°처럼 <b>45°에서 같은 만큼 떨어진 두 각도는 거리가 똑같아!</b></p>
+      <p>재미있는 비밀: <b>낮게(30°)와 높게(60°)는 거리가 똑같아!</b> 거리표를 채워서 눈으로 확인해 봐.</p>
       <div class="tip">
         <b>🧱 실제 레고 개구리 실험 팁</b><br>
-        · 고무줄을 다리 링키지에 걸고 <b>당기는 칸 수</b>를 정해서 실험해 봐 (1칸, 2칸, 3칸…)<br>
+        · 고무줄을 다리 링키지에 걸고 <b>당기는 칸 수</b>를 정해서 실험해 봐 (1칸~5칸)<br>
         · 바닥에 자를 붙여 놓고 <b>착지 지점까지 거리를 재서</b> 표에 적어 — 시뮬처럼 당김×각도 표를 만들면 최고!<br>
         · 같은 당김으로 3번 재서 평균을 내면 더 정확해<br>
         · 개구리에 브릭을 얹어 무겁게 만들면? 같은 고무줄인데 왜 덜 날아갈까 생각해 보기
@@ -226,11 +255,14 @@ const BANK_X = 420;                     // 건너편 둑 시작
 const WORLD_L = -70, WORLD_R = 490;
 const START_X = -14;                    // 출발 위치
 const G = 980;                          // cm/s²
-const K_E = 0.019;                      // 탄성 계수 (J / 당김²) — 최대 사거리로도 한 번에 골인 불가
+const K_E = 0.038;                      // 탄성 계수 (J / 당김²) — 당김 1~5단 기준, 최대 사거리로도 한 번에 골인 불가
+const PULL_MAX = 5;
+const ANGLES = [30, 45, 60];
+const ANG_NAME = { 30: '낮게', 45: '중간', 60: '높게' };
 const SLOWMO = 0.5;
 
 /* ── 상태 ── */
-let state = 'ready';                    // ready | fly | splash | demo
+let state = 'ready';                    // ready | fly | splash | demo | auto
 let posX = START_X;
 let padsCrossed = 0;
 let cleared = false;
@@ -242,7 +274,7 @@ let padFx = [];                         // 연잎 출렁임 [{x, t}]
 let rings = [];                         // 착지 물결 링 [{x, t}]
 let distPop = null;                     // 착지 거리 팝업 {x, dist, t}
 let celebrate = null;                   // 클리어 연출 {t}
-let runCount = 0;
+let auto = null;                        // ⚡ 자동 실험 {combos, i, traj, progress, cur, logged}
 let lastDist = null, lastPeak = null;
 let clock = 0;
 
@@ -258,10 +290,9 @@ function fit() {
 }
 
 /* ── 파라미터 ── */
-let weight = 1;
+let weight = 1, angDeg = 45;
 function params() {
   const pull = +$('pull').value;
-  const angDeg = +$('ang').value;
   const E = K_E * pull * pull;                       // J
   const m = weight === 1 ? 0.1 : 0.2;                // kg
   const v = Math.sqrt(2 * E / m) * 100;              // cm/s
@@ -270,12 +301,12 @@ function params() {
 function refreshReadouts() {
   const p = params();
   $('v_pull').textContent = p.pull;
-  $('v_ang').textContent = p.angDeg + '°';
+  $('v_ang').textContent = ANG_NAME[angDeg] + ' ' + angDeg + '°';
   $('ro_e').textContent = p.E.toFixed(2) + ' J';
   $('ro_v').textContent = (p.v / 100).toFixed(1) + ' m/s';
-  const pct = Math.round(100 * p.E / (K_E * 100));
+  const pct = Math.round(100 * p.E / (K_E * PULL_MAX * PULL_MAX));
   $('gaugeFill').style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
-  $('gaugeTxt').textContent = '⚡ ' + p.E.toFixed(2) + ' J (' + pct + '%)';
+  $('gaugeTxt').textContent = '⚡ 모은 힘 (탄성 에너지) ' + pct + '%';
 }
 
 /* ── 상태 표시 ── */
@@ -317,7 +348,7 @@ function landAt(x) {
   const ok = onBank || !!pad;
   pastTrails.push({ pts: flight.pts, ok });
   if (pastTrails.length > 8) pastTrails.shift();
-  logRow(flight.p, lastDist, onBank ? '🏆 클리어' : pad ? '🍃 착지' : '💦 첨벙');
+  recordGrid(flight.p, lastDist);
   distPop = { x, dist: lastDist, t: 0 };
   if (onBank) {
     posX = BANK_X + 24;
@@ -352,20 +383,35 @@ function landAt(x) {
 }
 function restart() {
   posX = START_X; padsCrossed = 0; cleared = false;
-  state = 'ready'; flight = null; splash = null; demo = null;
+  state = 'ready'; flight = null; splash = null; demo = null; auto = null;
   padFx = []; rings = []; distPop = null; celebrate = null;
   setBadge('');
   setStatus('', '준비 — 고무줄을 당기고 점프!');
   $('btnJump').disabled = false;
   refreshHud();
 }
-function logRow(p, dist, result) {
-  const tb = $('tb').querySelector('tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${++runCount}</td><td>${p.pull}</td><td>${p.angDeg}°</td>` +
-    `<td class="cond">${p.m === 0.1 ? '가벼움' : '무거움'}</td><td>${Math.round(dist)}</td><td class="cond">${result}</td>`;
-  tb.prepend(tr);
-  while (tb.children.length > 10) tb.removeChild(tb.lastChild);
+
+/* ── 결과 정리표 (당김 5 × 방향 3 격자, 무게별 별도 저장) ── */
+const grid = { 1: Object.create(null), 2: Object.create(null) };
+function recordGrid(p, dist) {
+  const w = p.m === 0.1 ? 1 : 2;
+  grid[w][p.pull + '|' + p.angDeg] = dist;
+  drawGrid();
+}
+function drawGrid() {
+  const g = grid[weight];
+  const cur = params();
+  let html = '<tr><th style="font-size:10.5px">당김＼방향</th>' +
+    ANGLES.map(a => `<th>${ANG_NAME[a]}<br>${a}°</th>`).join('') + '</tr>';
+  for (let pu = 1; pu <= PULL_MAX; pu++) {
+    html += `<tr><td class="cond">${pu}칸</td>` + ANGLES.map(a => {
+      const v = g[pu + '|' + a];
+      const isCur = pu === cur.pull && a === angDeg;
+      return `<td class="${v != null ? 'gv' : 'dash'}${isCur ? ' cur' : ''}">${v != null ? Math.round(v) : '·'}</td>`;
+    }).join('') + '</tr>';
+  }
+  $('tb').innerHTML = html;
+  $('tbWt').textContent = weight === 1 ? '가벼움 🐸' : '무거움 🐸🧱';
 }
 
 /* ── 예측 모드 ── */
@@ -380,29 +426,41 @@ function buildTraj(x0, pull, angDeg, m) {
     const t = T * i / 60;
     pts.push([x0 + vx * t, vy * t - 0.5 * G * t * t]);
   }
-  return { pts, dist: vx * T };
+  return { pts, dist: vx * T, peak: vy * vy / (2 * G) };
 }
 function runPredict(choseDouble) {
   const p = params();
-  const base = Math.min(p.pull, 5);
-  const t1 = buildTraj(START_X, base, p.angDeg, p.m);
-  const t2 = buildTraj(START_X, base * 2, p.angDeg, p.m);
+  const base = 2;
+  const t1 = buildTraj(START_X, base, angDeg, p.m);
+  const t2 = buildTraj(START_X, base * 2, angDeg, p.m);
   demo = { t1, t2, base, progress: 0 };
   state = 'demo';
   setBadge('');
   $('btnJump').disabled = true;
-  setStatus('run', `확인 실험: 당김 ${base} vs ${base * 2} 비교 중...`);
+  setStatus('run', `확인 실험: 당김 ${base}칸 vs ${base * 2}칸 비교 중...`);
   const ratio = t2.dist / t1.dist;
   const correct = !choseDouble;
   const ans = $('predAns');
   ans.className = 'ans show';
   ans.innerHTML =
     `<span class="verdict" style="color:${correct ? 'var(--green)' : 'var(--red)'}">${correct ? '🎉 정답!' : '😲 땡!'}</span> ` +
-    `당김 ${base} → <b>${Math.round(t1.dist)}cm</b>, 당김 ${base * 2} → <b>${Math.round(t2.dist)}cm</b>. ` +
-    `2배가 아니라 <b style="color:var(--purple)">약 ${ratio.toFixed(1)}배</b>! ` +
-    `당김 2배 → 탄성 에너지 4배(½kx²) → 거리도 4배야.`;
+    `당김 ${base}칸 → <b>${Math.round(t1.dist)}cm</b>, ${base * 2}칸 → <b>${Math.round(t2.dist)}cm</b>. ` +
+    `2배가 아니라 <b style="color:var(--purple)">약 ${ratio.toFixed(0)}배</b>! ` +
+    `당김이 2배면 고무줄에 쌓인 힘은 2×2 = <b>4배</b>가 되거든.`;
   $('btnO').classList.toggle('on', choseDouble);
   $('btnX').classList.toggle('on', !choseDouble);
+}
+
+/* ── ⚡ 자동 실험 — 궤적을 하나씩 시연하며 15칸(당김 5 × 방향 3) 전부 기록 ── */
+function startAuto() {
+  if (state !== 'ready') return;
+  const combos = [];
+  for (let pu = 1; pu <= PULL_MAX; pu++) for (const a of ANGLES) combos.push([pu, a]);
+  auto = { combos, i: 0, traj: null, progress: 0, cur: null, logged: false };
+  state = 'auto';
+  setBadge('');
+  $('btnJump').disabled = true;
+  setStatus('run', '⚡ 자동 실험 중 — 표를 채우고 있어!');
 }
 
 /* ── 좌표 변환 ── */
@@ -747,8 +805,24 @@ function draw() {
         c.fillText(label + ' → ' + Math.round(traj.dist) + 'cm', M.x(traj.pts[0][0] + traj.dist), M.waterY - 14);
       }
     };
-    dr(demo.t1, '#ffb02e', demo.progress, '당김 ' + demo.base);
-    dr(demo.t2, '#c792ea', demo.progress - 1, '당김 ' + demo.base * 2);
+    dr(demo.t1, '#ffb02e', demo.progress, '당김 ' + demo.base + '칸');
+    dr(demo.t2, '#c792ea', demo.progress - 1, '당김 ' + demo.base * 2 + '칸');
+  }
+  // ⚡ 자동 실험 궤적 시연
+  if (auto && auto.traj) {
+    const traj = auto.traj, frac = Math.min(1, auto.progress);
+    const n = Math.max(2, Math.floor(traj.pts.length * frac));
+    c.strokeStyle = '#ffd02e'; c.lineWidth = 2.5;
+    c.save(); c.shadowColor = '#ffd02e'; c.shadowBlur = 8;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const [x, y] = traj.pts[i];
+      i ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y));
+    }
+    c.stroke(); c.restore();
+    c.fillStyle = '#ffd02e'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
+    c.fillText(`당김 ${auto.cur[0]}칸 · ${ANG_NAME[auto.cur[1]]} → ${Math.round(traj.dist)}cm`,
+      M.x(traj.pts[0][0] + traj.dist / 2), M.y(traj.peak) - 10);
   }
   // 현재 비행 궤적
   if (flight) {
@@ -772,7 +846,7 @@ function draw() {
     c.restore();
   } else if (state !== 'splash') {
     const pNow = params();
-    const pullT = (pNow.pull - 1) / 9;
+    const pullT = (pNow.pull - 1) / (PULL_MAX - 1);
     const fx = M.x(posX), fyBase = M.waterY - frogSize * 0.5 - 2;
     // 고무줄 — 늘어날수록 팽팽(직선)·가늘어지고 색이 진해짐
     if (state === 'ready' && !cleared) {
@@ -912,6 +986,28 @@ function loop(ts) {
       $('btnJump').disabled = cleared;
       setStatus('done', '확인 끝! 당김 2배 = 거리 약 4배');
     }
+  } else if (state === 'auto' && auto) {
+    if (!auto.traj) {
+      const [pu, a] = auto.combos[auto.i];
+      auto.cur = [pu, a];
+      auto.traj = buildTraj(posX, pu, a, weight === 1 ? 0.1 : 0.2);
+      auto.progress = 0; auto.logged = false;
+    }
+    auto.progress += dt * 3.4;
+    if (auto.progress >= 1 && !auto.logged) {
+      auto.logged = true;
+      grid[weight][auto.cur[0] + '|' + auto.cur[1]] = auto.traj.dist;
+      drawGrid();
+    }
+    if (auto.progress >= 1.25) {
+      auto.traj = null;
+      if (++auto.i >= auto.combos.length) {
+        auto = null;
+        state = 'ready';
+        $('btnJump').disabled = cleared;
+        setStatus('done', '자동 실험 끝! 표에서 제일 멀리 간 조합을 찾아봐');
+      }
+    }
   }
   padFx.forEach(f => f.t += dt); padFx = padFx.filter(f => f.t < 1.6);
   rings.forEach(r => r.t += dt); rings = rings.filter(r => r.t < 1.5);
@@ -929,14 +1025,22 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
 });
 $('btnJump').onclick = doJump;
 $('btnRestart').onclick = () => { pastTrails = []; restart(); };
-$('pull').addEventListener('input', refreshReadouts);
-$('ang').addEventListener('input', refreshReadouts);
+$('pull').addEventListener('input', () => { refreshReadouts(); drawGrid(); });
+$('pullDn').onclick = () => { $('pull').value = Math.max(1, +$('pull').value - 1); $('pull').dispatchEvent(new Event('input')); };
+$('pullUp').onclick = () => { $('pull').value = Math.min(PULL_MAX, +$('pull').value + 1); $('pull').dispatchEvent(new Event('input')); };
+$('pickAng').querySelectorAll('button').forEach(b => b.onclick = () => {
+  angDeg = +b.dataset.a;
+  $('pickAng').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  refreshReadouts(); drawGrid();
+});
 $('pickWt').querySelectorAll('button').forEach(b => b.onclick = () => {
   weight = +b.dataset.w;
   $('pickWt').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   $('v_wt').textContent = weight === 1 ? '가벼움' : '무거움';
-  refreshReadouts();
+  refreshReadouts(); drawGrid();
 });
+$('btnAuto').onclick = startAuto;
+$('btnClearTb').onclick = () => { grid[weight] = Object.create(null); drawGrid(); };
 $('btnO').onclick = () => { if (state === 'ready') runPredict(true); };
 $('btnX').onclick = () => { if (state === 'ready') runPredict(false); };
 cv.addEventListener('pointerdown', () => { if (state === 'ready' && !cleared) doJump(); });
@@ -944,6 +1048,7 @@ window.addEventListener('resize', draw);
 
 refreshReadouts();
 refreshHud();
+drawGrid();
 requestAnimationFrame(loop);
 </script>
 </body>

@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.78); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.3); border-radius: 10px; padding: 6px 14px; font-family: var(--mono); font-size: 19px; font-weight: 700; line-height: 1.15; }
+  .chip .lab { color: var(--dim); font-size: 11px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
   .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
   .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
@@ -55,7 +55,7 @@
   .status-txt { font-size: 12px; color: #b7c3d8; }
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 17px; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
@@ -84,13 +84,13 @@
   .gbox .gtitle { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 800; margin-bottom: 10px; }
   .gbox .gtitle span { font-size: 12px; color: var(--dim); font-weight: 400; }
   .gbox canvas { cursor: default; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 13.5px; font-family: var(--mono); }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 6px 0; }
-  table.mx th { background: var(--panel2); color: var(--dim); font-family: 'Malgun Gothic',sans-serif; font-size: 13px; font-weight: 600; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 16px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 9px 0; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 13px; font-weight: 700; }
   table.mx td.hit { background: rgba(46,224,111,.2); color: var(--green); font-weight: 800; }
-  table.mx td.rec { color: #b9c4d6; }
+  table.mx td.miss { color: #ff6a5e; font-weight: 700; }
   table.mx td.empty { color: #38445c; }
-  table.mx td.lab { color: var(--dim); font-size: 12.5px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx td.lab { color: var(--dim); font-size: 11.5px; font-family: 'Malgun Gothic',sans-serif; line-height: 1.3; padding: 4px 2px; }
   .srow { display: flex; gap: 6px; align-items: center; }
   .srow input[type=range] { flex: 1; }
   button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
@@ -136,8 +136,8 @@
     <div class="stage" id="stage">
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">발사 각도</span><span id="hud_ang">45°</span></div>
-        <div class="chip" style="color:var(--orange)"><span class="lab">무게추 높이</span><span id="hud_pw">4</span></div>
+        <div class="chip"><span class="lab">각도 (발사각)</span><span id="hud_ang">3단 45°</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">세기 (무게추 개수)</span><span id="hud_pw">4</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">점수</span><span id="hud_sc">0</span></div>
       </div>
       <div class="cam-row">
@@ -163,21 +163,21 @@
 
       <div class="targets-row" id="tgRow"></div>
 
-      <div class="param"><label>📐 발사 각도 <b id="v_ang">45°</b></label>
-        <div class="srow"><button class="step" data-t="ang" data-s="-5">◀</button><input type="range" id="ang" min="20" max="70" value="45" step="5"><button class="step" data-t="ang" data-s="5">▶</button></div></div>
-      <div class="param"><label>🧱 발사 세기 — 무게추 높이 <b id="v_pw">4</b></label>
-        <div class="srow"><button class="step" data-t="pw" data-s="-1">▼</button><input type="range" id="pw" min="1" max="8" value="4" step="1"><button class="step" data-t="pw" data-s="1">▲</button></div></div>
+      <div class="param"><label>📐 각도 1단~5단 (발사각) <b id="v_ang">3단 (45°)</b></label>
+        <div class="srow"><button class="step" data-t="ang" data-s="-1">◀</button><input type="range" id="ang" min="1" max="5" value="3" step="1"><button class="step" data-t="ang" data-s="1">▶</button></div></div>
+      <div class="param"><label>🧱 세기 — 무게추 개수 (위치 에너지) <b id="v_pw">4개</b></label>
+        <div class="srow"><button class="step" data-t="pw" data-s="-1">◀</button><input type="range" id="pw" min="1" max="8" value="4" step="1"><button class="step" data-t="pw" data-s="1">▶</button></div></div>
 
       <div class="toggle-row">
-        <input type="checkbox" id="air"><label for="air">공기저항 켜기 (교육용 과장)</label>
-      </div>
-      <div class="toggle-row">
-        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 예측 모드 (쏘기 전 물어보기)</label>
+        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 예측 놀이 (쏘기 전에 맞혀보기)</label>
       </div>
 
       <div class="ctl-row">
         <button class="primary" id="fire">🚀 발사</button>
         <button class="ghost" id="reset">↺ 표적 세우기</button>
+      </div>
+      <div class="ctl-row">
+        <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 표 전부 채우기</button>
       </div>
       <div class="speed-row"><span>재생 속도</span>
         <button class="on" id="spa">1×</button>
@@ -186,21 +186,30 @@
         <button class="ghost" id="clearMx" style="margin-left:auto">기록 지우기</button>
       </div>
 
-      <h3>📋 각도 × 세기 → 도달 거리 (m) <span style="text-transform:none;color:#5a6a85">초록 = 명중</span></h3>
+      <h3>📋 결과 정리표 — 각도 × 세기 <span style="text-transform:none;color:#5a6a85">(숫자 = 맞힌 판 점수 · X = 못 맞힘)</span></h3>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">초기 속도</div><div class="v a" id="ro_v0">—</div></div>
-        <div class="readout"><div class="k">최고 높이</div><div class="v b" id="ro_apex">—</div></div>
-        <div class="readout"><div class="k">비행 시간</div><div class="v b" id="ro_time">—</div></div>
-        <div class="readout"><div class="k">도달 거리</div><div class="v s" id="ro_range">—</div></div>
-        <div class="readout"><div class="k">명중 표적</div><div class="v g" id="ro_hit">—</div></div>
+        <div class="readout"><div class="k">공 빠르기 (초기 속도)</div><div class="v a" id="ro_v0">—</div></div>
+        <div class="readout"><div class="k">가장 높은 곳 (최고점)</div><div class="v b" id="ro_apex">—</div></div>
+        <div class="readout"><div class="k">날아간 시간 (체공 시간)</div><div class="v b" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">날아간 거리 (사거리)</div><div class="v s" id="ro_range">—</div></div>
+        <div class="readout"><div class="k">맞힌 판</div><div class="v g" id="ro_hit">—</div></div>
         <div class="readout"><div class="k">총점</div><div class="v g" id="ro_score">0점</div></div>
       </div>
 
       <h3>높이–시간 그래프 <span style="text-transform:none;color:#5a6a85">클릭 = 확대</span></h3>
       <canvas class="graph" id="gr" height="265"></canvas>
+
+      <details style="margin-top:12px; border:1px solid var(--border); border-radius:10px; background:#0c1220">
+        <summary style="padding:9px 13px; font-size:12.5px; cursor:pointer; font-weight:700; color:#c6d2e6">🧑‍🏫 선생님용</summary>
+        <div style="padding:0 13px 4px">
+          <div class="toggle-row" style="border-top:none">
+            <input type="checkbox" id="air"><label for="air">공기저항 켜기 (교육용 과장)</label>
+          </div>
+        </div>
+      </details>
     </div>
     <div class="gwrap" id="gwrap">
       <div class="gbox">
@@ -212,6 +221,13 @@
 
   <section id="theory">
     <div class="theory-box">
+      <div class="card" style="border-color: rgba(255,210,62,.45); background: rgba(255,210,62,.06); margin-bottom: 18px;">
+        <h4>👨‍👩‍👧 학부모 브리핑 — 이번 차시에 배우는 것</h4>
+        이번 차시에는 무게추가 떨어질 때의 <b>위치 에너지</b>를 이용해 공을 발사하는 장치를 만들고,
+        <b>발사각</b>과 힘(무게추 개수)에 따라 공이 그리는 <b>포물선 운동</b>이 어떻게 달라지는지 실험합니다.
+        각도 5단 × 세기 8단을 바꿔 쏘며 결과를 표로 정리하고, <b>45°에서 가장 멀리 날아간다</b>는 사실을 아이가 스스로 발견하게 됩니다.
+      </div>
+
       <h2>🎯 원리 카드 — 어떻게 하면 표적을 다 넘어뜨릴까?</h2>
       <div class="cards">
         <div class="card">
@@ -221,17 +237,17 @@
           발사 버튼을 누르고 파란 선을 잘 봐 — 올라갈 때와 내려올 때 모양이 똑같아!
         </div>
         <div class="card">
-          <h4>📐 몇 도로 쏘면 가장 멀리 갈까?</h4>
-          정답은 <span class="pt">45도 근처</span>!
-          너무 낮게(20°) 쏘면 빠르게 가다가 금방 땅에 떨어지고,
-          너무 높게(70°) 쏘면 하늘로만 높이 올라가고 멀리는 못 가.
-          같은 세기로 각도만 바꿔 쏘면서 기록표에서 확인해보자.
+          <h4>📐 몇 단으로 쏘면 가장 멀리 갈까?</h4>
+          정답은 <span class="pt">3단 (45°)</span>!
+          너무 낮게(1단 20°) 쏘면 빠르게 가다가 금방 땅에 떨어지고,
+          너무 높게(5단 70°) 쏘면 하늘로만 높이 올라가고 멀리는 못 가.
+          같은 세기로 각도만 바꿔 쏘면서 결과 정리표에서 확인해보자.
         </div>
         <div class="card">
-          <h4>🧱 무게추를 높이 올리면?</h4>
-          무게추를 높이 올릴수록 떨어질 때의 힘(에너지)이 커져.
+          <h4>🧱 무게추를 많이 달면?</h4>
+          무게추가 많을수록 떨어질 때의 힘이 커져.
           그 힘이 발사 팔을 세게 돌려서 공이 <b>더 빠르게, 더 멀리</b> 날아가지.
-          멀리 있는 <span class="pt">50점판</span>을 맞히려면 무게추를 몇 칸까지 올려야 할까?
+          멀리 있는 <span class="pt">50점판</span>을 맞히려면 무게추가 몇 개 필요할까?
         </div>
         <div class="card">
           <h4>💨 공기저항을 켜면?</h4>
@@ -240,12 +256,23 @@
         </div>
       </div>
 
+      <div class="card" style="margin-top: 16px; border-color: rgba(199,146,234,.4);">
+        <h4>🎓 오늘 배운 물리 용어</h4>
+        <ul style="line-height: 2; margin-left: 20px;">
+          <li><b>발사각</b> — 공을 쏘아 올리는 각도. 여기서는 1단(20°)~5단(70°)으로 조절해요.</li>
+          <li><b>포물선 운동</b> — 던져진 물체가 중력 때문에 무지개 모양 곡선을 그리며 날아가는 운동.</li>
+          <li><b>위치 에너지 → 운동 에너지</b> — 높이 올라간 무게추가 떨어지면서, 저장된 에너지가 공의 움직이는 에너지로 바뀌어요.</li>
+          <li><b>사거리</b> — 공이 날아가 땅에 닿기까지의 수평 거리. 45°에서 가장 길어요.</li>
+          <li><b>중력</b> — 지구가 물체를 아래로 당기는 힘. 공이 다시 떨어지는 이유예요.</li>
+        </ul>
+      </div>
+
       <div class="mission">
         <b>🏅 도전 미션</b>
         <ul style="line-height:2.1; margin-top:6px">
-          <li><b>미션 1</b> — 각도를 45°에 두고 세기만 바꿔서 표적 4개를 모두 넘어뜨려보자.</li>
-          <li><b>미션 2</b> — 세기를 8에 고정하고 각도만 바꿔서 10점판을 맞혀보자. (힌트: 아주 낮게? 아주 높게?)</li>
-          <li><b>미션 3</b> — 예측 모드를 켜고 5발 연속 예측 성공에 도전!</li>
+          <li><b>미션 1</b> — 각도를 2단(30°)에 두고 세기만 바꿔서 판 3개를 넘어뜨려보자.</li>
+          <li><b>미션 2</b> — 세기를 8개로 고정하고 각도만 바꿔서 50점판을 맞혀보자. (힌트: 가운데 각도!)</li>
+          <li><b>미션 3</b> — 예측 놀이를 켜고 5발 연속 예측 성공에 도전!</li>
         </ul>
       </div>
 
@@ -273,7 +300,8 @@ let activeTab = 'exp';
 
 /* ── 물리 매핑 (미터·초) ── */
 const PIVOT = { x: -0.3, y: 0.3 }, ARM_LEN = 0.35, CUP_OFF = 0.05, BALL_R = 0.055;
-const V0_OF = pw => 2.55 + pw * 0.52;                 // 무게추 높이 1~8 → 초기속도
+const ANGLES = [20, 30, 45, 60, 70];                  // 각도 1단~5단 → 도수
+const V0_OF = pw => 2.3 + pw * 0.55;                  // 세기(무게추 개수) 1~8 → 초기속도 (검증: 5×8 격자에 명중 22칸, 50점은 3단×세기8 유일)
 const K_AIR = 0.12;
 // 컵(공) 위치 = 팔 끝 + 팔에 수직인 컵 오프셋 (발사 궤적 시작점과 팔 애니메이션이 일치)
 const launchPos = a => ({
@@ -282,10 +310,10 @@ const launchPos = a => ({
 });
 // 표적판: 거리·높이(판)·폭·점수·색 — 멀수록 작고 점수 높음
 const TARGETS = [
-  { x: 1.25, h: 0.55, w: 0.60, pts: 10, color: 0x2ee06f, name: '10점판' },
-  { x: 2.50, h: 0.45, w: 0.50, pts: 20, color: 0x4da3ff, name: '20점판' },
-  { x: 3.60, h: 0.36, w: 0.42, pts: 30, color: 0xc792ea, name: '30점판' },
-  { x: 4.95, h: 0.30, w: 0.36, pts: 50, color: 0xffd23e, name: '50점판' },
+  { x: 1.15, h: 0.62, w: 0.60, pts: 10, color: 0x2ee06f, name: '10점판' },
+  { x: 2.30, h: 0.50, w: 0.50, pts: 20, color: 0x4da3ff, name: '20점판' },
+  { x: 3.40, h: 0.42, w: 0.42, pts: 30, color: 0xc792ea, name: '30점판' },
+  { x: 4.70, h: 0.34, w: 0.36, pts: 50, color: 0xffd23e, name: '50점판' },
 ];
 
 /* ── 탭 ── */
@@ -518,7 +546,7 @@ for (let m = 0.5; m <= 5.5; m += 0.5) {
     gpS.position.set(x, 0, z); gpS.rotation.y = ry; scene.add(gpS);
   }
   makeSign('⚠ 사격 중 · 안전선 뒤로!', '#ffd23e', '#10141f', -1.05, -1.05, 0.28);
-  makeSign('🎯 5m 표적 사로', '#2f5fb8', '#ffffff', 6.15, -1.15, -0.3);
+  makeSign('🎯 표적 맞추기 사로', '#2f5fb8', '#ffffff', 6.15, -1.15, -0.3);
 }
 // 전광판 점수
 let scoreSprite = null, shots = 0, score = 0;
@@ -613,7 +641,7 @@ function buildWeights(n) {
 const guide = new THREE.Group(); scene.add(guide);
 function buildGuide() {
   while (guide.children.length) { const c = guide.children[0]; guide.remove(c); disposeObj(c); }
-  const a = cfg.ang * Math.PI / 180;
+  const a = angDeg() * Math.PI / 180;
   const pts = [];
   for (let t = 0; t <= 1; t += 0.05) pts.push(new THREE.Vector3(PIVOT.x + 0.55 * Math.cos(a * t), PIVOT.y + 0.55 * Math.sin(a * t), 0));
   const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x8b98ad, transparent: true, opacity: 0.7 }));
@@ -623,7 +651,7 @@ function buildGuide() {
     new THREE.Vector3(PIVOT.x + 0.75 * Math.cos(a), PIVOT.y + 0.75 * Math.sin(a), 0)
   ]), new THREE.LineBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.8 }));
   guide.add(dir);
-  const lab = textSprite(cfg.ang + '°', { size: 32, color: '#4da3ff', scale: 0.003 });
+  const lab = textSprite(angDeg() + '°', { size: 32, color: '#4da3ff', scale: 0.003 });
   lab.position.set(PIVOT.x + 0.68 * Math.cos(a * 0.55), PIVOT.y + 0.68 * Math.sin(a * 0.55), 0);
   guide.add(lab);
 }
@@ -866,21 +894,22 @@ function stepFan(dt) {
 }
 
 /* ── 상태 ── */
-let cfg = { ang: 45, pw: 4, air: false };
+let cfg = { ang: 3, pw: 4, air: false };            // ang = 단(1~5)
+const angDeg = () => ANGLES[cfg.ang - 1];
 let S = null, flying = false, swinging = false, swingT = 0, t = 0, ballIdx = 0, finished = false;
 let shotCfg = null;   // 발사 순간의 각도·세기 스냅샷 — 비행 중 슬라이더를 바꿔도 기록·팔 동작이 안 꼬이게
-const results = {};
+const results = {};   // '단|세기' → 명중 판 점수 (0 = 못 맞힘)
 let pendingPredict = null, predictStreak = 0;
 const SWING_TIME = 0.24;
-const cockAngle = () => Math.max(cfg.ang * Math.PI / 180 - 1.6, -0.85);
+const cockAngle = () => Math.max(angDeg() * Math.PI / 180 - 1.6, -0.85);
 
-function simulate() {
-  const angRad = cfg.ang * Math.PI / 180, v0 = V0_OF(cfg.pw);
+function simulate(allStanding) {
+  const angRad = angDeg() * Math.PI / 180, v0 = V0_OF(cfg.pw);
   const lp = launchPos(angRad);
   let x = lp.x, y = lp.y, vx = v0 * Math.cos(angRad), vy = v0 * Math.sin(angRad), tt = 0;
   const pts = [[x, y, 0]]; const dt = 0.004, K = cfg.air ? K_AIR : 0;
   let apex = y, range = x, hit = null, prevX = x, prevY = y;
-  const standing = targetGroups.map(t => !t.down);
+  const standing = targetGroups.map(t => allStanding || !t.down);
   while (y >= 0 && tt < 8) {
     const v = Math.hypot(vx, vy), drag = K * v;
     vx += (-drag * vx) * dt; vy += (-g - drag * vy) * dt; x += vx * dt; y += vy * dt; tt += dt;
@@ -924,8 +953,15 @@ function reset() {
   $('ro_v0').textContent = S.v0.toFixed(1) + ' m/s';
   drawHTGraph({ pts: [] }, 1, 1, 0);
   drawMatrix();
-  $('hud_ang').textContent = cfg.ang + '°'; $('hud_pw').textContent = cfg.pw;
+  syncHud();
   setSt('ready');
+}
+
+function syncHud() {
+  $('hud_ang').textContent = cfg.ang + '단 ' + angDeg() + '°';
+  $('hud_pw').textContent = cfg.pw;
+  $('v_ang').textContent = cfg.ang + '단 (' + angDeg() + '°)';
+  $('v_pw').textContent = cfg.pw + '개';
 }
 
 function standAllTargets() {
@@ -948,7 +984,7 @@ function onLand() {
   if (trajLine) trajLine.visible = true;
   shots++;
   fillReadouts();
-  results[shotCfg.ang + '|' + shotCfg.pw] = { range: S.range, hit: !!S.hit };
+  results[shotCfg.ang + '|' + shotCfg.pw] = shotCfg.gridPts;   // 정리표엔 표적이 다 서 있을 때 기준으로 기록
   drawMatrix();
   const bd = $('bd');
   let msg, cls;
@@ -980,14 +1016,16 @@ function onLand() {
   // 비행 중 슬라이더를 바꿨다면 팔·무게추·HUD를 현재 설정으로 재정렬
   if (shotCfg.ang !== cfg.ang || shotCfg.pw !== cfg.pw) {
     buildWeights(cfg.pw); buildGuide(); poseReady();
-    $('hud_ang').textContent = cfg.ang + '°'; $('hud_pw').textContent = cfg.pw;
+    syncHud();
   }
 }
 
 function launch() {
   if (finished) { finished = false; $('bd').className = 'badge'; }
   S = simulate();
-  shotCfg = { ang: cfg.ang, pw: cfg.pw, from: cockAngle(), to: cfg.ang * Math.PI / 180 };
+  const gAll = simulate(true);   // 정리표 기록용 — 쓰러진 판과 무관하게 이 조합이 닿는 판
+  shotCfg = { ang: cfg.ang, pw: cfg.pw, from: cockAngle(), to: angDeg() * Math.PI / 180,
+    gridPts: gAll.hit ? TARGETS[gAll.hit.i].pts : 0 };
   swinging = true; swingT = 0; flying = false; t = 0; ballIdx = 0;
   opAnim = 0;   // 조작수 줄 당김 동작
   $('fire').disabled = true; setSt('run', '발사 중…');
@@ -996,17 +1034,16 @@ function launch() {
   trajLine.visible = !$('predictMode').checked;   // 예측 모드면 결과 궤적 숨김 (착지 후 공개)
 }
 
-/* ── 기록표: 각도(행) × 세기(열) → 도달 거리 ── */
+/* ── 결과 정리표: 각도 5단(행) × 세기 1~8(열) → 맞힌 판 점수 / X ── */
 function drawMatrix() {
-  const angles = [], pws = [1, 2, 3, 4, 5, 6, 7, 8];
-  for (let a = 20; a <= 70; a += 5) angles.push(a);
-  let html = '<tr><th style="font-size:11px">각도＼추</th>' + pws.map(p => `<th>${p}</th>`).join('') + '</tr>';
-  for (const a of angles) {
-    html += `<tr><td class="lab">${a}°</td>` + pws.map(p => {
+  const pws = [1, 2, 3, 4, 5, 6, 7, 8];
+  let html = '<tr><th style="font-size:11px">각도＼세기</th>' + pws.map(p => `<th>${p}</th>`).join('') + '</tr>';
+  for (let a = 1; a <= 5; a++) {
+    html += `<tr><td class="lab"><b>${a}단</b><br>${ANGLES[a - 1]}°</td>` + pws.map(p => {
       const r = results[a + '|' + p];
       const cur = (a === cfg.ang && p === cfg.pw) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
-      if (!r) return '<td class="empty"' + cur + '></td>';
-      return `<td class="${r.hit ? 'hit' : 'rec'}"${cur}>${r.range.toFixed(1)}</td>`;
+      if (r === undefined) return '<td class="empty"' + cur + '></td>';
+      return r > 0 ? `<td class="hit"${cur}>${r}</td>` : `<td class="miss"${cur}>X</td>`;
     }).join('') + '</tr>';
   }
   $('matrix').innerHTML = html;
@@ -1019,15 +1056,15 @@ function setSt(mode, txt) {
 }
 
 /* ── 컨트롤 ── */
-function slider(id, lbl, key, suffix) {
+function slider(id, key) {
   $(id).addEventListener('input', () => {
-    cfg[key] = +$(id).value; $(lbl).textContent = cfg[key] + (suffix || '');
-    if (!flying && !swinging) reset();
+    cfg[key] = +$(id).value; syncHud();
+    if (!flying && !swinging && !scanTimer) reset();
   });
 }
-slider('ang', 'v_ang', 'ang', '°');
-slider('pw', 'v_pw', 'pw');
-$('air').addEventListener('input', () => { cfg.air = $('air').checked; if (!flying && !swinging) reset(); });
+slider('ang', 'ang');
+slider('pw', 'pw');
+$('air').addEventListener('input', () => { cfg.air = $('air').checked; if (!flying && !swinging && !scanTimer) reset(); });
 $('predictMode').addEventListener('input', () => {
   if (previewLine) previewLine.visible = !$('predictMode').checked;
   if (!$('predictMode').checked) $('predict').classList.remove('on');   // 끄면 열려있던 예측 창도 닫기
@@ -1040,7 +1077,7 @@ document.querySelectorAll('.step').forEach(b => b.onclick = () => {
 });
 
 function startFire() {
-  if (flying || swinging) return;
+  if (flying || swinging || scanTimer) return;
   if ($('predictMode').checked) { $('predict').classList.add('on'); return; }
   launch();
 }
@@ -1050,8 +1087,40 @@ document.querySelectorAll('#predict button').forEach(b => b.onclick = () => {
   $('predict').classList.remove('on');
   launch();
 });
-$('reset').onclick = () => { clearTraj(); standAllTargets(); reset(); };
-$('clearMx').onclick = () => { for (const k in results) delete results[k]; drawMatrix(); };
+$('reset').onclick = () => { stopScan(); clearTraj(); standAllTargets(); reset(); };
+$('clearMx').onclick = () => { stopScan(); for (const k in results) delete results[k]; drawMatrix(); };
+
+/* ── ⚡ 자동 실험: 각도 5단 × 세기 1~8 = 40칸을 훑으며 정리표 채우기 (표적 전부 서 있는 기준) ── */
+let scanTimer = null;
+function stopScan() { if (scanTimer) { clearInterval(scanTimer); scanTimer = null; } }
+$('autoScan').onclick = () => {
+  if (flying || swinging || scanTimer) return;
+  const combos = [];
+  for (let a = 1; a <= 5; a++) for (let p = 1; p <= 8; p++) combos.push([a, p]);
+  const orig = { a: cfg.ang, p: cfg.pw };
+  let i = 0;
+  setSt('run', '자동 실험 중…');
+  $('fire').disabled = true;
+  scanTimer = setInterval(() => {
+    if (i >= combos.length) {
+      stopScan();
+      cfg.ang = orig.a; cfg.pw = orig.p;
+      $('ang').value = orig.a; $('pw').value = orig.p;
+      reset();
+      setSt('done', '자동 실험 완료 — 표에서 규칙을 찾아보자!');
+      return;
+    }
+    const [a, p] = combos[i++];
+    cfg.ang = a; cfg.pw = p;
+    $('ang').value = a; $('pw').value = p;
+    const r = simulate(true);
+    results[a + '|' + p] = r.hit ? TARGETS[r.hit.i].pts : 0;
+    buildWeights(p); buildGuide(); poseReady();
+    setPreview(r.pts);
+    if (previewLine) previewLine.visible = true;   // 예측 모드여도 훑는 궤적은 보여줌
+    syncHud(); drawMatrix();
+  }, 90);
+};
 
 /* ── 속도 ── */
 let speed = 1;

@@ -126,7 +126,7 @@
       <div class="hud">
         <div class="chip"><span class="lab">낚시 시간</span><span id="hud_t">0.0 s</span></div>
         <div class="chip" style="color:var(--accent)"><span class="lab">물고기 깊이</span><span id="hud_d">— m</span></div>
-        <div class="chip" style="color:var(--orange)"><span class="lab">줄 감는 속도</span><span id="hud_v">0.0 m/s</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">줄 감는 속력</span><span id="hud_v">0.0 m/s</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">끌어올림</span><span id="hud_p">0 %</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
@@ -134,9 +134,9 @@
     <div class="side">
       <h3>1️⃣ 릴 기어비 고르기 (크랭크 → 줄감개)</h3>
       <div class="pick3" id="pickGear">
-        <button data-g="speed">⚡ 속도형<small>1:3 · 24T→8T</small></button>
-        <button data-g="even" class="on">⚖️ 균형<small>1:1 · 16T→16T</small></button>
-        <button data-g="power">💪 힘형<small>3:1 · 8T→24T</small></button>
+        <button data-g="speed">⚡ 속도형<small>기어비 1:3 · 24T→8T</small></button>
+        <button data-g="even" class="on">⚖️ 균형<small>기어비 1:1 · 16T→16T</small></button>
+        <button data-g="power">💪 힘형<small>기어비 3:1 · 8T→24T</small></button>
       </div>
       <h3>2️⃣ 물고기 고르기</h3>
       <div class="pick3" id="pickFish">
@@ -160,10 +160,10 @@
       <button id="reelBtn" disabled>🌀 릴 감기 — 꾹 누르거나 연타!</button>
       <h3>릴 기어 돌아가는 모습</h3>
       <canvas class="gearview" id="gearCv" height="190"></canvas>
-      <h3>힘 대결 — 내 당김 힘 vs 물고기 저항</h3>
+      <h3>힘 대결 — 내 당기는 힘 (토크) vs 물고기 저항</h3>
       <div class="bars">
-        <div class="bar-row"><span class="lab">내 당김 힘</span><div class="bar-track"><div class="bar-fill" id="barPull" style="background:linear-gradient(90deg,#166534,#2ee06f);width:0%"></div></div><span class="val" id="valPull">—</span></div>
-        <div class="bar-row"><span class="lab">물고기 저항</span><div class="bar-track"><div class="bar-fill" id="barRes" style="background:linear-gradient(90deg,#7f1d1d,#ff5a52);width:0%"></div></div><span class="val" id="valRes">—</span></div>
+        <div class="bar-row"><span class="lab">당기는 힘<br><small style="color:var(--dim);font-weight:400">(토크)</small></span><div class="bar-track"><div class="bar-fill" id="barPull" style="background:linear-gradient(90deg,#166534,#2ee06f);width:0%"></div></div><span class="val" id="valPull">—</span></div>
+        <div class="bar-row"><span class="lab">물고기 저항<br><small style="color:var(--dim);font-weight:400">(저항력)</small></span><div class="bar-track"><div class="bar-fill" id="barRes" style="background:linear-gradient(90deg,#7f1d1d,#ff5a52);width:0%"></div></div><span class="val" id="valRes">—</span></div>
         <div class="bar-scale"><span>0</span><span>8</span><span>16</span><span>24</span><span>32</span></div>
       </div>
       <h3>🏆 미션 — 세 마리를 모두 어항에 모으자!</h3>
@@ -187,6 +187,12 @@
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>기어비</b>와 <b>토크(돌리는 힘)</b>를 배웁니다.
+        릴의 기어비에 따라 줄 감는 속력과 당기는 힘이 서로 <b>맞바꿈</b>되어, 물고기 크기에 맞는 기어를 골라야 한다는 것을 시뮬레이션과 레고 브릭큐 실험으로 확인합니다.<br>
+        아이는 예측 → 실험 → 결과표 비교의 과학적 방법을 놀이처럼 익힙니다.
+      </div>
       <h2>📖 릴의 비밀 — 기어비는 힘과 속도를 맞바꾸는 장치야</h2>
       <p>낚싯대의 릴 안에는 기어 두 개가 맞물려 있어. 크랭크(손잡이) 쪽 기어가 <b>드라이버</b>,
         줄을 감는 줄감개 쪽 기어가 <b>팔로워</b>야. 맞물린 기어는 <b>지나가는 톱니 수가 항상 같아서</b>,
@@ -209,6 +215,13 @@
         속도형은 빠르지만 힘이 ⅓이라 큰 물고기 앞에선 꼼짝도 못 해.
         반대로 힘형은 느리지만 힘이 3배라 대형도 끌어올릴 수 있지.
         <b>세상에 공짜는 없어 — 빠르면 약하고, 세면 느려!</b></p>
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div class="tip" style="background:rgba(77,163,255,.06); line-height:2">
+        <b>기어비</b> — 맞물린 두 기어의 잇수 비. 속력과 힘이 얼마나 바뀌는지 정해요.<br>
+        <b>토크(돌리는 힘)</b> — 축을 돌리는 힘. 기어비가 클수록 커져 무거운 물고기를 끌어요.<br>
+        <b>속력</b> — 줄을 얼마나 빨리 감는지. 기어비가 작을수록 빨라요.<br>
+        <b>저항</b> — 물고기가 버티는 힘. 내 당기는 힘이 이보다 세야 줄이 감겨요.
+      </div>
       <div class="tip">
         <b>🧱 실제 브릭큐 낚싯대 팁</b><br>
         · 크랭크 축에 작은 기어, 줄감개 축에 큰 기어를 끼우면 힘형 릴 완성!<br>

@@ -28,8 +28,8 @@
   .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
   canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
   .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 5px 12px; font-family: var(--mono); font-size: 13px; }
-  .chip .lab { color: var(--dim); font-size: 10px; display: block; font-family: 'Malgun Gothic', sans-serif; }
+  .chip { background: rgba(8,12,22,.78); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.3); border-radius: 10px; padding: 6px 14px; font-family: var(--mono); font-size: 19px; font-weight: 700; line-height: 1.15; }
+  .chip .lab { color: var(--dim); font-size: 11px; font-weight: 400; display: block; font-family: 'Malgun Gothic', sans-serif; }
   .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
   .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
   .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
@@ -55,7 +55,7 @@
   .predict .btns { display: flex; gap: 10px; }
   .predict button { padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; }
   .predict button:hover { border-color: var(--accent); }
-  .side { width: 364px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side { width: 398px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
   .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; text-transform: uppercase; }
   .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
   .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
@@ -73,7 +73,11 @@
   button.p.on.rough small { color: #ffe6d3; }
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
-  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 17px; }
+  .dir3 { display: flex; gap: 6px; }
+  .dir3 button { flex: 1; padding: 13px 4px; font-size: 15px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; transition: .1s; }
+  .dir3 button:hover { border-color: var(--accent); }
+  .dir3 button.on { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; color: #fff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
@@ -98,13 +102,14 @@
   .gr-box { width: min(900px, 94vw); background: var(--panel); border: 1px solid rgba(120,150,200,.4); border-radius: 16px; padding: 16px 20px 20px; box-shadow: 0 12px 50px rgba(0,0,0,.55); }
   .gr-box .gr-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 15px; font-weight: 800; }
   .gr-box .gr-head button { background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 5px 13px; font-size: 14px; cursor: pointer; }
-  table.mx { width: 100%; border-collapse: collapse; font-size: 15px; font-family: var(--mono); }
-  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 12px 0; }
-  table.mx th { background: var(--panel2); color: #c6d2e6; font-family: 'Malgun Gothic',sans-serif; font-size: 13.5px; font-weight: 700; padding: 9px 0; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 18px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 9px 0; }
+  table.mx th { background: var(--panel2); color: #c6d2e6; font-family: 'Malgun Gothic',sans-serif; font-size: 14px; font-weight: 700; padding: 8px 0; }
   table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 800; }
   table.mx td.miss { color: #ff6a5e; font-weight: 700; }
   table.mx td.empty { color: #38445c; }
-  table.mx td.lab { color: #aab6cb; font-size: 12.5px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx td.lab { color: #aab6cb; font-size: 13px; font-family: 'Malgun Gothic',sans-serif; }
+  table.mx td .sub { display: block; font-size: 14px; line-height: 1.3; margin-top: 1px; }
   .srow { display: flex; gap: 6px; align-items: center; }
   .srow input[type=range] { flex: 1; }
   button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
@@ -148,8 +153,8 @@
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
         <div class="chip"><span class="lab">슛 세기</span><span id="hud_pw">4</span></div>
-        <div class="chip" style="color:var(--accent)"><span class="lab">슛 방향</span><span id="hud_ang">중앙</span></div>
-        <div class="chip" style="color:var(--orange)"><span class="lab">바닥</span><span id="hud_sf">🧊 빙판</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">슛 방향</span><span id="hud_ang">가운데</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">바닥 (마찰력)</span><span id="hud_sf">🧊 빙판</span></div>
       </div>
       <div class="cam-row">
         <button id="camSide" class="on">▶ 옆</button>
@@ -160,7 +165,7 @@
       <div class="hint">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="predict" id="predict">
         <div class="q">🤔 이 세기면 퍽이 골대까지 갈까?</div>
-        <div class="sub">마찰을 생각해 봐 — 지금 바닥은 <b id="predSurf">빙판</b>!</div>
+        <div class="sub">바닥을 잘 봐 — 지금 바닥은 <b id="predSurf">빙판</b>!</div>
         <div class="btns">
           <button id="predIn">⭕ 간다</button>
           <button id="predOut">❌ 못 간다</button>
@@ -175,15 +180,19 @@
     <div class="side">
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
 
-      <div class="param"><label>💪 슛 세기 (미는 힘) <b id="v_pw">4</b></label>
+      <div class="param"><label>💪 슛 세기 (미는 힘 · 작용) <b id="v_pw">4</b></label>
         <div class="srow"><button class="step" data-t="pw" data-s="-1">◀</button><input type="range" id="pw" min="1" max="8" value="4" step="1"><button class="step" data-t="pw" data-s="1">▶</button></div></div>
-      <div class="param"><label>🎯 슛 방향 <b id="v_ang">중앙</b></label>
-        <div class="srow"><button class="step" data-t="ang" data-s="-1">◀</button><input type="range" id="ang" min="-3" max="3" value="0" step="1"><button class="step" data-t="ang" data-s="1">▶</button></div></div>
+      <div class="param"><label>🎯 슛 방향 <b id="v_ang">가운데</b></label>
+        <div class="dir3">
+          <button data-a="-2">⬅ 왼쪽</button>
+          <button data-a="0" class="on">가운데</button>
+          <button data-a="2">오른쪽 ➡</button>
+        </div></div>
 
-      <h3>🧊 바닥 고르기 (마찰)</h3>
+      <h3>🧊 바닥 고르기</h3>
       <div class="presets">
-        <button class="p on" id="sfIce">🧊 빙판<small>마찰 작음 — 잘 미끄러짐</small></button>
-        <button class="p" id="sfRough">🟫 거친 바닥<small>마찰 큼 — 금방 멈춤</small></button>
+        <button class="p on" id="sfIce">🧊 빙판<small>미끌미끌 — 마찰력이 작아요</small></button>
+        <button class="p" id="sfRough">🟫 거친 바닥<small>까끌까끌 — 마찰력이 커요</small></button>
       </div>
 
       <div class="toggle-row">
@@ -207,25 +216,23 @@
         <button id="spc">0.25×</button>
       </div>
 
-      <h3>📋 세기 × 바닥 → 퍽 도달 거리 <span style="text-transform:none;color:#5a6a85">(골대까지 6.0 m)</span></h3>
+      <h3>📋 결과 정리표 — 세기 × 바닥 <span style="text-transform:none;color:#5a6a85">(간 거리 m · ⚽ 골! · ❌ 못 미침)</span></h3>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">퍽 처음 속도</div><div class="v a" id="ro_v0">—</div></div>
-        <div class="readout"><div class="k">마찰 감속</div><div class="v b" id="ro_dec">—</div></div>
-        <div class="readout"><div class="k">예상 도달 거리</div><div class="v s" id="ro_pred">—</div></div>
-        <div class="readout"><div class="k">실제 간 거리</div><div class="v g" id="ro_dist">—</div></div>
-        <div class="readout"><div class="k">걸린 시간</div><div class="v b" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">처음 속도 (m/s)</div><div class="v a" id="ro_v0">—</div></div>
+        <div class="readout"><div class="k">이동 거리 (m)</div><div class="v g" id="ro_dist">—</div></div>
+        <div class="readout"><div class="k">걸린 시간 (s)</div><div class="v b" id="ro_time">—</div></div>
         <div class="readout"><div class="k">판정</div><div class="v a" id="ro_res">—</div></div>
       </div>
 
-      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰이 속도를 깎는다 · 클릭하면 크게)</span></h3>
+      <h3>속도–시간 그래프 <span style="text-transform:none;color:#5a6a85">(마찰력 때문에 점점 느려져요 · 클릭하면 크게)</span></h3>
       <canvas class="graph" id="gr" height="260" title="클릭하면 크게 보기"></canvas>
     </div>
     <div class="gr-overlay" id="grOverlay">
       <div class="gr-box">
-        <div class="gr-head"><span>📈 속도–시간 그래프 — 마찰이 속도를 깎는다</span><button id="grClose">✕ 닫기</button></div>
+        <div class="gr-head"><span>📈 속도–시간 그래프 — 마찰력 때문에 퍽이 점점 느려져요</span><button id="grClose">✕ 닫기</button></div>
         <canvas class="graph" id="grBig" height="440"></canvas>
       </div>
     </div>
@@ -233,20 +240,35 @@
 
   <section id="theory">
     <div class="theory-box">
-      <h2>🏒 원리 카드 — 밀기 힘과 마찰</h2>
+      <div class="card" style="border-color:rgba(199,146,234,.5); background:rgba(199,146,234,.07)">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>밀기 힘(작용)</b>과 <b>마찰력</b>을 배웁니다.
+        같은 세기로 쳐도 바닥의 마찰력에 따라 퍽이 가는 거리가 달라지는 것을 3D 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
+        아이는 속도(m/s)·거리(m) 측정값과 속도–시간 그래프를 스스로 읽으며, 초등 과학의 핵심 개념인 '힘과 운동'을 놀이처럼 체득합니다.
+      </div>
+
+      <h2>🏒 원리 카드 — 밀기 힘(작용)과 마찰력</h2>
       <div class="card">
-        스틱으로 퍽을 <b>탁!</b> 치는 게 바로 <b style="color:var(--accent)">미는 힘</b>이야.<br>
+        스틱으로 퍽을 <b>탁!</b> 치는 게 바로 <b style="color:var(--accent)">미는 힘 (작용)</b>이야.<br>
         세게 밀수록 퍽은 빨라지고, 더 멀리 가!
       </div>
       <div class="card">
-        그런데 퍽은 왜 점점 느려질까? 바닥이 퍽을 붙잡는 힘, <b style="color:var(--orange)">마찰</b> 때문이야.<br>
-        🧊 <b>빙판</b>은 미끌미끌 → 마찰이 작아서 <b>쭉~</b> 미끄러져.<br>
-        🟫 <b>거친 바닥</b>은 까끌까끌 → 마찰이 커서 <b>금방 멈춰</b> 버려.
+        그런데 퍽은 왜 점점 느려질까? 바닥이 퍽을 붙잡는 힘, <b style="color:var(--orange)">마찰력</b> 때문이야.<br>
+        🧊 <b>빙판</b>은 미끌미끌 → 마찰력이 작아서 <b>쭉~</b> 미끄러져.<br>
+        🟫 <b>거친 바닥</b>은 까끌까끌 → 마찰력이 커서 <b>금방 멈춰</b> 버려.
       </div>
       <div class="card" style="border-color:rgba(46,224,111,.4)">
         ⭐ 그래서 규칙은 이거야!<br>
-        <b>힘이 셀수록, 마찰이 작을수록 → 퍽은 더 멀리 간다!</b><br>
+        <b>미는 힘이 셀수록, 마찰력이 작을수록 → 퍽은 더 멀리 간다!</b><br>
         거친 바닥에서 골을 넣고 싶으면? 훨씬 <b>더 세게</b> 쳐야 해.
+      </div>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div class="card" style="line-height:2">
+        <b style="color:var(--accent)">밀기 힘 (작용)</b> — 스틱으로 퍽을 탁! 밀어주는 힘. 힘이 클수록 퍽이 빨라져요.<br>
+        <b style="color:var(--orange)">마찰력</b> — 바닥이 퍽을 붙잡아 느려지게 하는 힘. 미끌미끌하면 작고, 까끌까끌하면 커요.<br>
+        <b style="color:var(--green)">속도</b> — 얼마나 빠른지를 나타내는 값. m/s(미터/초)로 재고, 그래프의 세로축이에요.<br>
+        <b style="color:var(--purple)">감속</b> — 마찰력 때문에 속도가 점점 줄어드는 것. 그래프 선이 내려가는 이유예요.
       </div>
       <div class="card">
         🧤 골키퍼는 좌우로 왔다갔다 해. 키퍼가 <b>반대쪽으로 갈 때</b>를 노려서
@@ -257,7 +279,7 @@
       <ul style="line-height:2.1">
         <li><b>① 예측</b> — "예측 모드"를 켜고, 슛 전에 "이 세기면 골대까지 갈까?" 손들기</li>
         <li><b>② 슛!</b> — 퍽이 미끄러지다 느려지는 모습 관찰. 예측과 비교</li>
-        <li><b>③ 바닥 바꾸기</b> — 같은 세기로 빙판 → 거친 바닥. "왜 금방 멈추지?" (마찰!)</li>
+        <li><b>③ 바닥 바꾸기</b> — 같은 세기로 빙판 → 거친 바닥. "왜 금방 멈추지?" (마찰력!)</li>
         <li><b>④ 자동 실험</b> — 세기 1~8 거리를 표로 채우고, 몇부터 골대에 닿는지 찾기</li>
         <li><b>⑤ 골키퍼 대결</b> — 골키퍼를 켜고, 타이밍·방향을 읽어 3골 넣기 미션</li>
       </ul>
@@ -294,14 +316,14 @@ let activeTab = 'exp';
 /* ── 눈금 → 물리량 (미터·초) : 빙판은 세기 3부터, 거친 바닥은 7부터 골대(6 m) 도달 ── */
 const MU_ICE = 0.05, MU_ROUGH = 0.20;
 const V0_OF = pw => 1.0 + pw * 0.58;               // 슛 세기 1~8 → 퍽 초기 속도
-const ANG_OF = a => a * 3 * Math.PI / 180;         // 방향 -3~3 → ±9° (±2까지 골 가능, ±3은 빗나감)
+const ANG_OF = a => a * 3 * Math.PI / 180;         // 방향 3택: 왼쪽 -2 · 가운데 0 · 오른쪽 +2 → ±6°
 const START_X = 0.35, GOAL_X = 6.35, NEED = 6.0;   // 퍽 출발점 → 골라인 6 m
 const GOAL_HALF = 0.8, GOAL_H = 0.62;
 const KEEPER_X = 5.85, KEEP_HALF = 0.34, PUCK_R = 0.07;
 const RINK_HALF = 1.9, BACK_X = 7.35;
 const muOf = () => cfg.rough ? MU_ROUGH : MU_ICE;
 const reachOf = (pw, rough) => { const v = V0_OF(pw); return v * v / (2 * (rough ? MU_ROUGH : MU_ICE) * G); };
-const angLabel = a => a === 0 ? '중앙' : (a < 0 ? '좌 ' + (-a) : '우 ' + a);
+const angLabel = a => a === 0 ? '가운데' : (a < 0 ? '왼쪽' : '오른쪽');
 
 /* ── 탭 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -968,8 +990,8 @@ function applySurface() {
   $('sfIce').classList.toggle('on', !cfg.rough);
   $('sfRough').classList.toggle('on', cfg.rough);
   $('sfRough').classList.toggle('rough', cfg.rough);
-  $('hud_sf').textContent = cfg.rough ? '🟫 거친' : '🧊 빙판';
-  $('predSurf').textContent = cfg.rough ? '거친 바닥' : '빙판';
+  $('hud_sf').textContent = cfg.rough ? '🟫 거친 · 큼' : '🧊 빙판 · 작음';
+  $('predSurf').textContent = cfg.rough ? '거친 바닥 (마찰력이 커요)' : '빙판 (마찰력이 작아요)';
 }
 
 function aimLineUpdate() {
@@ -981,7 +1003,7 @@ function resetPuck() {
   state = 'ready'; swingA = STICK_READY; stickPivot.rotation.y = swingA; P = null;
   puck.position.set(START_X, 0.018, 0);
   $('bd').className = 'badge';
-  ['ro_v0', 'ro_dec', 'ro_pred', 'ro_dist', 'ro_time', 'ro_res'].forEach(id => $(id).textContent = '—');
+  ['ro_v0', 'ro_dist', 'ro_time', 'ro_res'].forEach(id => $(id).textContent = '—');
   drawVTGraph([], 1, 1);
   aimLineUpdate();
   setSt('ready');
@@ -997,8 +1019,6 @@ function beginSlide() {
     reach: reachOf(cfg.pw, cfg.rough)
   };
   $('ro_v0').textContent = v0.toFixed(1) + ' m/s';
-  $('ro_dec').textContent = (P.mu * G).toFixed(2) + ' m/s²';
-  $('ro_pred').textContent = P.reach.toFixed(1) + ' m';
   state = 'sliding';
 }
 
@@ -1047,7 +1067,7 @@ function finishShot() {
   if (p.goal) { goals++; cheerT = 1.4; burst(GOAL_X, 0); buzz(); cls = 'in'; txt = '🚨 골!!!'; res = '골!'; setSt('done', '골! — 세기·방향·타이밍 모두 성공'); }
   else if (p.blocked) { cls = 'blk'; txt = '🧤 골키퍼가 막았다!'; res = '막힘'; setSt('done', '막힘 — 키퍼가 없는 쪽을 노려보자'); }
   else if (p.crossedGoal) { cls = 'out'; txt = '✗ 옆으로 빗나감'; res = '빗나감'; setSt('done', '빗나감 — 방향을 가운데로 돌려보자'); }
-  else { cls = 'out'; txt = '✗ 골대까지 못 갔어 (마찰!)'; res = '못 미침'; setSt('done', '마찰 때문에 멈췄다 — 더 세게 쳐보자'); }
+  else { cls = 'out'; txt = '✗ 골대까지 못 갔어 — 마찰력이 이겼다, 더 세게!'; res = '못 미침'; setSt('done', '마찰력이 퍽을 멈췄다 — 더 큰 힘으로 쳐보자'); }
   updateScore();
   // 예측 모드 비교 (질문: 골대까지 갈까? = 도달 거리 기준)
   if (pendingChoice != null) {
@@ -1076,7 +1096,7 @@ function drawMatrix() {
       const cur = (p === cfg.pw && s === (cfg.rough ? 1 : 0)) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
       if (r == null) return '<td class="empty"' + cur + '></td>';
       const v = r < 10 ? r.toFixed(1) : Math.round(r) + '';
-      return `<td class="${r >= NEED ? 'hit' : 'miss'}"${cur}>${v}</td>`;
+      return `<td class="${r >= NEED ? 'hit' : 'miss'}"${cur}>${v}<span class="sub">${r >= NEED ? '⚽' : '❌'}</span></td>`;
     }).join('') + '</tr>';
   });
   $('matrix').innerHTML = html;
@@ -1090,7 +1110,12 @@ function setSt(mode, txt) {
 
 /* ── 슬라이더 ── */
 $('pw').addEventListener('input', () => { cfg.pw = +$('pw').value; $('v_pw').textContent = cfg.pw; if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate(); drawMatrix(); });
-$('ang').addEventListener('input', () => { cfg.ang = +$('ang').value; $('v_ang').textContent = angLabel(cfg.ang); if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate(); });
+document.querySelectorAll('.dir3 button').forEach(b => b.onclick = () => {
+  cfg.ang = +b.dataset.a;
+  document.querySelectorAll('.dir3 button').forEach(x => x.classList.toggle('on', x === b));
+  $('v_ang').textContent = angLabel(cfg.ang);
+  if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate();
+});
 document.querySelectorAll('.step').forEach(b => b.onclick = () => {
   const el = $(b.dataset.t);
   el.value = Math.min(+el.max, Math.max(+el.min, +el.value + +b.dataset.s));
@@ -1153,11 +1178,11 @@ function showAnalysis() {
   const minPw = s => { for (let p = 1; p <= 8; p++) { const r = results[s + '|' + p]; if (r != null && r >= NEED) return p; } return null; };
   const mi = minPw(0), mr = minPw(1);
   const el = $('anBody');
-  el.innerHTML = `<div class="big">퍽 도달 거리 표 완성!</div>
-    <div class="row">🧊 빙판: 세기 <b>${mi ?? '—'}</b>부터 골대(6 m)까지 간다</div>
-    <div class="row">🟫 거친 바닥: 세기 <b>${mr ?? '8로도 안 됨'}</b>${mr ? '부터 골대까지 간다' : ''}</div>
-    <div class="row">같은 세기라도 거친 바닥에선 거리가 <b>약 ¼</b>로 줄어든다 — 마찰이 4배라서!</div>
-    <div class="why">왜? 마찰은 퍽 속도를 계속 깎아먹는 브레이크야. 마찰이 크면 브레이크가 세져서 금방 멈춰. 그래서 <b>힘이 셀수록, 마찰이 작을수록 멀리 간다!</b></div>`;
+  el.innerHTML = `<div class="big">결과 정리표 완성!</div>
+    <div class="row">🧊 빙판(미끌미끌): 세기 <b>${mi ?? '—'}</b>부터 골대(6 m)까지 간다 ⚽</div>
+    <div class="row">🟫 거친 바닥(까끌까끌): 세기 <b>${mr ?? '8로도 안 됨'}</b>${mr ? '부터 골대까지 간다 ⚽' : ''}</div>
+    <div class="row">같은 세기라도 마찰력이 큰 까끌까끌 바닥에선 <b>훨씬 짧게</b> 간다!</div>
+    <div class="why">왜? 까끌까끌한 바닥은 <b>마찰력</b>(퍽을 붙잡는 힘)이 커서 브레이크처럼 작동해. 그래서 <b>미는 힘이 셀수록, 마찰력이 작을수록 퍽은 더 멀리 간다!</b></div>`;
   $('analysis').classList.add('on');
 }
 

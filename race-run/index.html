@@ -86,7 +86,11 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
-  .matrix td.best { color: var(--green); font-weight: 700; }
+  table.matrix { font-size: 18px; }
+  .matrix th { font-size: 14px; padding: 9px 4px; }
+  .matrix td { padding: 12px 4px; font-weight: 700; }
+  .matrix td.cond { font-size: 15px; }
+  .matrix td.best { color: var(--green); font-weight: 800; }
 
   .quiz-card { background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
   .quiz-q { font-size: 14px; font-weight: 700; line-height: 1.6; margin-bottom: 12px; }
@@ -144,47 +148,52 @@
       <div class="badge-wrap"><span class="badge" id="bdR"></span></div>
     </div>
     <div class="side">
-      <div class="led-box"><span class="led" id="ledR"></span><span class="status-txt" id="stR">준비 — 러너를 조립하고 출발!</span></div>
+      <div class="led-box"><span class="led" id="ledR"></span><span class="status-txt" id="stR">준비 — 선수를 만들고 출발!</span></div>
       <div class="ctl-row">
         <button class="primary" id="btnGo">▶ 경주 시작</button>
         <button id="btnFF" disabled>⏭ 빨리감기</button>
         <button id="btnRst">↺</button>
       </div>
-      <h3>📶 실시간 속도 (레인별)</h3>
+      <h3>📶 지금 빠르기</h3>
       <div class="live-bars">
         <div class="live-row"><span class="lab" style="color:#4da3ff">😀 나</span><div class="track"><div class="fill" id="liveMe" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div></div><span class="val" id="liveMeV">0.0 m/s</span></div>
         <div class="live-row"><span class="lab" style="color:#ff9046">🤖 AI</span><div class="track"><div class="fill" id="liveAi" style="background:linear-gradient(90deg,#c2410c,#ff9046)"></div></div><span class="val" id="liveAiV">0.0 m/s</span></div>
       </div>
-      <h3>📏 구간 진행률 (트랙 6구간)</h3>
+      <h3>📏 얼마나 왔나</h3>
       <div class="live-bars">
         <div class="live-row"><span class="lab" style="color:#4da3ff">😀 나</span><div class="track prog"><div class="fill" id="progMe" style="background:linear-gradient(90deg,#1f5eff,#4da3ff)"></div></div><span class="val" id="progMeV">0.0 m</span></div>
         <div class="live-row"><span class="lab" style="color:#ff9046">🤖 AI</span><div class="track prog"><div class="fill" id="progAi" style="background:linear-gradient(90deg,#c2410c,#ff9046)"></div></div><span class="val" id="progAiV">0.0 m</span></div>
       </div>
-      <h3>내 러너 조립</h3>
-      <div class="param"><label>기어비 (모터→크랭크) <b id="v_gear">균형형</b></label>
+      <h3>🔧 내 선수 만들기</h3>
+      <div class="param"><label>⚙ 기어 <b id="v_gear">균형형</b></label>
         <div class="pick" id="pickGear">
-          <button data-g="power">💪 힘형<small>8T→24T</small></button>
-          <button data-g="balance" class="on">⚖ 균형형<small>24T→24T</small></button>
-          <button data-g="speed">⚡ 속도형<small>24T→8T</small></button>
+          <button data-g="power">💪 힘형<small>8T→24T · 기어비 3<br>느리지만 세!</small></button>
+          <button data-g="balance" class="on">⚖ 균형형<small>24T→24T · 기어비 1<br>중간!</small></button>
+          <button data-g="speed">⚡ 속도형<small>24T→8T · 기어비 ⅓<br>빠르지만 약해!</small></button>
         </div>
       </div>
-      <div class="param"><label>다리(크랭크) 길이 — 보폭 <b id="v_leg">5</b></label>
-        <input type="range" id="legLen" min="3" max="7" value="5" step="1"></div>
-      <div class="param"><label>트랙 <b id="v_trk">평지 60 m</b></label>
+      <div class="param"><label>🦵 다리 길이 <b id="v_leg">보통</b></label>
+        <div class="pick" id="pickLeg">
+          <button data-l="3">짧게<small>3칸</small></button>
+          <button data-l="5" class="on">보통<small>5칸</small></button>
+          <button data-l="7">길게<small>7칸</small></button>
+        </div></div>
+      <div class="param"><label>🏁 달리는 길 <b id="v_trk">평지 60 m</b></label>
         <div class="pick" id="pickTrk">
           <button data-t="flat" class="on">🟩 평지<small>60 m</small></button>
           <button data-t="up">⛰ 오르막<small>12 m</small></button>
         </div>
       </div>
-      <h3>내 러너 능력치 (예상)</h3>
+      <h3>📊 내 선수 능력</h3>
       <div class="bars">
-        <div class="bar-row"><span class="lab">발 빠르기</span><div class="bar-track"><div class="bar-fill" id="barSpd" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:33%"></div></div><span class="val" id="valSpd">×1.0</span></div>
-        <div class="bar-row"><span class="lab">다리 힘</span><div class="bar-track"><div class="bar-fill" id="barTrq" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:33%"></div></div><span class="val" id="valTrq">×1.0</span></div>
-        <div class="bar-row"><span class="lab">보폭</span><div class="bar-track"><div class="bar-fill" id="barStr" style="background:linear-gradient(90deg,#15803d,#2ee06f);width:60%"></div></div><span class="val" id="valStr">5칸</span></div>
+        <div class="bar-row"><span class="lab">발 빠르기<br><small style="color:var(--dim)">속력</small></span><div class="bar-track"><div class="bar-fill" id="barSpd" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:33%"></div></div><span class="val" id="valSpd">×1.0</span></div>
+        <div class="bar-row"><span class="lab">다리 힘<br><small style="color:var(--dim)">토크</small></span><div class="bar-track"><div class="bar-fill" id="barTrq" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:33%"></div></div><span class="val" id="valTrq">×1.0</span></div>
+        <div class="bar-row"><span class="lab">걸음 크기<br><small style="color:var(--dim)">보폭</small></span><div class="bar-track"><div class="bar-fill" id="barStr" style="background:linear-gradient(90deg,#15803d,#2ee06f);width:60%"></div></div><span class="val" id="valStr">5칸</span></div>
       </div>
-      <div class="note">🤖 AI 러너는 경주마다 기어를 <b>몰래 바꿔서</b> 나와! 출발 카운트다운 때 공개된다. 힘과 속도를 잘 골라서 이겨 보자.</div>
+      <div class="note">⚙ <b>기어비</b>가 크면 <b>토크(돌리는 힘)</b>가 세지는 대신 <b>속력</b>이 느려져 — 속력과 힘의 <b>맞바꿈(트레이드오프)</b>!</div>
+      <div class="note">🤖 AI 선수는 경주마다 기어를 <b>몰래 바꿔서</b> 나와! 출발할 때 알려 줄게. 기어를 잘 골라서 이겨 보자.</div>
       <details open>
-        <summary>🏅 최고 기록표 (기어비 × 트랙)</summary>
+        <summary>📋 결과 정리표 (⚙ 기어 × 🏁 길)</summary>
         <div class="inner">
           <table class="matrix">
             <thead><tr><th></th><th>🟩 평지 60m</th><th>⛰ 오르막 12m</th></tr></thead>
@@ -194,13 +203,15 @@
               <tr><td class="cond">⚡ 속도형</td><td id="m_speed_flat">—</td><td id="m_speed_up">—</td></tr>
             </tbody>
           </table>
+          <div class="note" style="margin:10px 0 2px">숫자 = 제일 빠른 기록(초) · 🥇 = AI를 이겼다 · 💦 = 힘이 모자라 멈췄다<br>
+          🦵 도전! 먼저 다리 <b>보통</b>으로 표 6칸을 다 채워 보자. 그다음 <b>짧게/길게</b>로 더 빠른 기록에 도전!</div>
         </div>
       </details>
       <details open>
-        <summary>📋 경주 기록 (최근 8회)</summary>
+        <summary>📜 경주 일기 (최근 8번)</summary>
         <div class="inner">
           <table id="tbR">
-            <thead><tr><th>#</th><th>기어</th><th>다리</th><th>트랙</th><th>내 기록</th><th>AI 기록</th><th>결과</th></tr></thead>
+            <thead><tr><th>#</th><th>기어</th><th>다리</th><th>길</th><th>내 기록</th><th>AI 기록</th><th>결과</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -229,7 +240,7 @@
         <button class="primary" id="btnQGo" disabled>🏁 경주로 확인하기</button>
         <button id="btnQNext" disabled>다음 문제 ›</button>
       </div>
-      <h3>📶 실시간 속도 (레인별)</h3>
+      <h3>📶 지금 빠르기</h3>
       <div class="live-bars" id="liveQ"></div>
       <div class="note">💡 답을 고르면 세 러너가 똑같은 트랙에서 동시에 달려. 누가 1등인지 <b>눈으로 확인</b>해 보자!</div>
     </div>
@@ -238,6 +249,21 @@
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="card" style="border-color: rgba(199,146,234,.45); background: rgba(124,58,237,.08);">
+        <h4>👨‍👩‍👧 학부모 브리핑</h4>
+        <p>이번 수업에서는 레고 크랭크 러너로 <b>기어비</b>에 따라 <b>속력</b>과 <b>힘(토크)</b>이 서로 <b>맞바꿈(트레이드오프)</b>된다는 물리 원리를 배웁니다.
+        속도형 기어(24T→8T)는 평지에서 빠르지만 오르막에선 힘이 모자라 멈추고, 힘형 기어(8T→24T)는 느려도 오르막을 꾸준히 오릅니다.
+        아이가 직접 기어를 골라 AI와 경주 실험을 반복하며, 트랙 조건에 맞는 기어를 스스로 찾아내는 공학적 사고를 연습했습니다.</p>
+      </div>
+      <div class="card" style="border-color: rgba(77,163,255,.4);">
+        <h4>🎓 오늘 배운 물리 용어</h4>
+        <p style="line-height:2">
+        · <b>기어비</b> — 맞물린 두 기어의 잇수 비율. 크랭크 잇수 ÷ 모터 잇수 (예: 8T→24T는 기어비 3)<br>
+        · <b>토크(돌리는 힘)</b> — 축을 돌리는 힘. 기어비가 클수록 토크가 세져서 오르막에 유리<br>
+        · <b>속력</b> — 얼마나 빨리 가는지. 기어비가 작을수록 다리가 빨리 움직여 평지에 유리<br>
+        · <b>맞바꿈(트레이드오프)</b> — 속력과 토크는 동시에 못 얻어. 하나를 얻으면 하나를 내주는 것<br>
+        · <b>보폭</b> — 한 걸음의 크기. 크랭크(다리)가 길수록 커지지만 필요한 토크도 커져</p>
+      </div>
       <h2>📖 크랭크 러너의 비밀 — 기어비와 보폭</h2>
       <div class="card">
         <h4>🔄 크랭크: 빙글빙글 → 왔다갔다</h4>
@@ -783,11 +809,13 @@ function pickCtl(container, attr, onChange) {
 
   const getGear = pickCtl($('pickGear'), 'g', onParam);
   const getTrk = pickCtl($('pickTrk'), 't', onParam);
+  const getLeg = pickCtl($('pickLeg'), 'l', onParam);
+  const LEG_NAMES = { 3: '짧게', 5: '보통', 7: '길게' };
 
   function preview() {
-    const g = GEARS[getGear()], L = +$('legLen').value;
+    const g = GEARS[getGear()], L = +getLeg();
     $('v_gear').textContent = g.name;
-    $('v_leg').textContent = L;
+    $('v_leg').textContent = LEG_NAMES[L];
     $('v_trk').textContent = TRACKS[getTrk()].icon + ' ' + TRACKS[getTrk()].name + ' ' + TRACKS[getTrk()].len + ' m';
     $('barSpd').style.width = (g.sm / 3 * 100) + '%'; $('valSpd').textContent = '×' + (g.sm >= 1 ? g.sm.toFixed(0) : g.sm.toFixed(2));
     $('barTrq').style.width = (g.tm / 3 * 100) + '%'; $('valTrq').textContent = '×' + (g.tm >= 1 ? g.tm.toFixed(0) : g.tm.toFixed(2));
@@ -801,7 +829,7 @@ function pickCtl(container, attr, onChange) {
     state = 'idle'; t = 0; ts = 1; ffOn = false;
     fxReset(fx);
     const trk = getTrk();
-    me = makeRunnerState(getGear(), +$('legLen').value, trk, '나', COLS.blue);
+    me = makeRunnerState(getGear(), +getLeg(), trk, '나', COLS.blue);
     const aiGear = ['power', 'balance', 'speed'][Math.floor(Math.random() * 3)];
     ai = makeRunnerState(aiGear, 5, trk, 'AI', COLS.orange);
     aiJit = 0.97 + Math.random() * 0.06;
@@ -809,13 +837,13 @@ function pickCtl(container, attr, onChange) {
     $('bdR').className = 'badge';
     $('btnGo').disabled = false; $('btnGo').textContent = '▶ 경주 시작';
     $('btnFF').disabled = true;
-    setStatus('idle', '준비 — 러너를 조립하고 출발!');
+    setStatus('idle', '준비 — 선수를 만들고 출발!');
     preview(); draw();
   }
   function onParam() {
     preview();
     if (state === 'idle' || state === 'done') reset();
-    else if (state === 'count') { me.gearKey = getGear(); me.L = +$('legLen').value; }
+    else if (state === 'count') { me.gearKey = getGear(); me.L = +getLeg(); }
   }
 
   function finishRace() {
@@ -828,32 +856,34 @@ function pickCtl(container, attr, onChange) {
     const g = GEARS[me.gearKey];
     if (me.fin != null && (ai.fin == null || me.fin <= ai.fin)) {
       bd.className = 'badge same';
-      bd.textContent = `🏆 네가 이겼어! ${g.icon} ${g.name} · 기록 ${me.fin.toFixed(1)}초`;
+      bd.textContent = `🏆 네가 이겼어! ${g.icon} ${g.name}(${g.sub}) · 기록 ${me.fin.toFixed(1)}초`;
     } else if (me.fin != null) {
       bd.className = 'badge diff';
       bd.textContent = `😅 AI가 이겼어… 내 기록 ${me.fin.toFixed(1)}초 (AI ${ai.fin.toFixed(1)}초)`;
     } else {
       bd.className = 'badge bad';
-      bd.textContent = `😵 힘이 모자라 완주 못 했어! ${TRACKS[me.trackKey].name}엔 다른 기어가 필요해`;
+      bd.textContent = `😵 토크(돌리는 힘)가 모자라 완주 못 했어! ${TRACKS[me.trackKey].name}엔 다른 기어비가 필요해`;
     }
-    // 최고 기록표
-    if (me.fin != null) {
+    // 결과 정리표 — 최고 기록(초) + 🥇 이긴 적 있음 / 💦 힘 부족으로 멈춤
+    {
       const key = me.gearKey + '_' + me.trackKey;
-      if (best[key] == null || me.fin < best[key]) {
-        best[key] = me.fin;
-        const cell = $('m_' + key);
-        cell.textContent = me.fin.toFixed(1) + 's';
-        cell.classList.add('best');
+      const rec = best[key] || (best[key] = { t: null, won: false });
+      if (me.fin != null) {
+        if (rec.t == null || me.fin < rec.t) rec.t = me.fin;
+        if (ai.fin == null || me.fin <= ai.fin) rec.won = true;
       }
+      const cell = $('m_' + key);
+      cell.textContent = rec.t != null ? rec.t.toFixed(1) + '초' + (rec.won ? ' 🥇' : '') : '💦';
+      cell.classList.toggle('best', rec.t != null);
     }
-    // 기록 테이블
+    // 경주 일기
     const tb = $('tbR').querySelector('tbody');
     const tr = document.createElement('tr');
-    const res = me.fin != null && (ai.fin == null || me.fin <= ai.fin) ? '🏆 승' : me.fin != null ? '패' : '포기';
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${g.icon}${g.name}</td><td>${me.L}</td>` +
+    const res = me.fin != null && (ai.fin == null || me.fin <= ai.fin) ? '🏆 이김' : me.fin != null ? '😅 짐' : '💦 멈춤';
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${g.icon}${g.name}</td><td class="cond">${LEG_NAMES[me.L]}</td>` +
       `<td class="cond">${TRACKS[me.trackKey].icon}${TRACKS[me.trackKey].name}</td>` +
-      `<td>${me.fin != null ? me.fin.toFixed(1) + 's' : '—'}</td>` +
-      `<td>${ai.fin != null ? ai.fin.toFixed(1) + 's' : '—'}</td><td class="cond">${res}</td>`;
+      `<td>${me.fin != null ? me.fin.toFixed(1) + '초' : '—'}</td>` +
+      `<td>${ai.fin != null ? ai.fin.toFixed(1) + '초' : '—'}</td><td class="cond">${res}</td>`;
     tb.prepend(tr);
     while (tb.children.length > 8) tb.removeChild(tb.lastChild);
     draw();
@@ -950,7 +980,6 @@ function pickCtl(container, attr, onChange) {
   };
   $('btnFF').onclick = () => { ffOn = true; ts = 12; };
   $('btnRst').onclick = () => { cancelAnimationFrame(raf); lastTs = null; reset(); };
-  $('legLen').addEventListener('input', onParam);
 
   redraws.race = () => { if (me && state !== 'run' && state !== 'count') draw(); };
   window.addEventListener('resize', redraws.race);
@@ -969,9 +998,9 @@ function pickCtl(container, attr, onChange) {
         { gearKey: 'balance', L: 5, label: '⚖ 균형형', col: COLS.blue },
         { gearKey: 'speed',   L: 5, label: '⚡ 속도형', col: COLS.orange },
       ],
-      choices: ['💪 힘형 (8T→24T)', '⚖ 균형형 (24T→24T)', '⚡ 속도형 (24T→8T)'],
+      choices: ['💪 힘형', '⚖ 균형형', '⚡ 속도형'],
       answer: 0,
-      why: '오르막은 다리에 걸리는 짐이 커! 속도형은 힘이 ⅓뿐이라 헛돌고, 힘형은 느려도 힘이 3배라 꾸준히 올라가.',
+      why: '오르막은 다리에 걸리는 짐이 커! 속도형(24T→8T)은 토크(돌리는 힘)가 ⅓뿐이라 헛돌고, 힘형(8T→24T)은 느려도 토크가 3배라 꾸준히 올라가.',
     },
     {
       track: 'flat',
@@ -981,13 +1010,13 @@ function pickCtl(container, attr, onChange) {
         { gearKey: 'balance', L: 5, label: '⚖ 균형형', col: COLS.blue },
         { gearKey: 'speed',   L: 5, label: '⚡ 속도형', col: COLS.orange },
       ],
-      choices: ['💪 힘형 (8T→24T)', '⚖ 균형형 (24T→24T)', '⚡ 속도형 (24T→8T)'],
+      choices: ['💪 힘형', '⚖ 균형형', '⚡ 속도형'],
       answer: 2,
-      why: '평지는 짐이 가벼워서 큰 힘이 필요 없어. 그래서 다리가 3배 빠른 속도형이 쌩 하고 1등!',
+      why: '평지는 짐이 가벼워서 큰 토크가 필요 없어. 그래서 속력이 3배인 속도형(24T→8T)이 쌩 하고 1등!',
     },
     {
       track: 'up',
-      text: '⛰ 오르막인데 셋 다 균형형(1:1) 기어야. 이번엔 다리 길이 대결! 누가 이길까?',
+      text: '⛰ 오르막인데 셋 다 균형형 기어야. 이번엔 다리 길이 대결! 누가 이길까?',
       lanes: [
         { gearKey: 'balance', L: 3, label: '🦵 짧은 다리(3)', col: COLS.green },
         { gearKey: 'balance', L: 5, label: '🦵 중간 다리(5)', col: COLS.blue },

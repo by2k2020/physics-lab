@@ -58,6 +58,16 @@
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .pick { margin-bottom: 12px; }
+  .pick label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .pick label b { color: var(--accent); font-weight: 700; }
+  .segs { display: flex; gap: 6px; }
+  .segs button { flex: 1; padding: 10px 4px; font-size: 13.5px; font-weight: 700; border-radius: 10px; }
+  .segs button.on { background: linear-gradient(135deg,#c2410c,#ff8a3d); border-color: #ff8a3d; color: #fff; }
+  table.mx td { font-size: 12.5px; line-height: 1.5; padding: 6px 4px; }
+  table.mx td.hit { background: rgba(46,224,111,.18); color: var(--green); font-weight: 700; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.mx td.empty { color: #38445c; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
   .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
@@ -87,7 +97,7 @@
   th { background: var(--panel2); color: var(--dim); font-weight: 600; }
   td { font-family: var(--mono); color: #c6d2e6; }
   td.cond { font-family: inherit; }
-  tbody tr:first-child td { background: rgba(77,163,255,.06); }
+  details tbody tr:first-child td { background: rgba(77,163,255,.06); }
   #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
   #theory.on { display: block; }
   .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
@@ -115,8 +125,8 @@
       <div class="title">⛷️ 스키 슬로프 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
-      <button class="tab on" data-tab="exp1">실험 1 · 경사면 활주</button>
-      <button class="tab" data-tab="exp2">실험 2 · 낙하 챔버</button>
+      <button class="tab on" data-tab="exp1">실험 1 · 스키 타기</button>
+      <button class="tab" data-tab="exp2">실험 2 · 떨어뜨리기</button>
       <button class="tab" data-tab="theory">📖 원리</button>
     </div>
   </div>
@@ -127,8 +137,8 @@
       <canvas class="scene" id="cv1"></canvas>
       <div class="hud">
         <div class="chip"><span class="lab">경과 시간</span><span id="hud_t1">0.000 s</span></div>
-        <div class="chip" style="color:var(--accent)"><span class="lab">A 속도</span><span id="hud_vA">0.00 m/s</span></div>
-        <div class="chip" style="color:var(--orange)"><span class="lab">B 속도</span><span id="hud_vB">0.00 m/s</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">A 빠르기</span><span id="hud_vA">0.00 m/s</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">B 빠르기</span><span id="hud_vB">0.00 m/s</span></div>
       </div>
       <div class="cam-row">
         <button id="camFull" class="on">◱ 전체</button>
@@ -147,44 +157,55 @@
         <button id="pause1" disabled>⏸</button>
         <button id="reset1">↺</button>
       </div>
-      <h3>실험 조건</h3>
-      <div class="param"><label>스키어 A 질량 <b id="v_mA">40 kg</b></label>
-        <input type="range" id="mA" min="30" max="120" value="40" step="5"></div>
-      <div class="param"><label>스키어 B 질량 <b id="v_mB">80 kg</b></label>
-        <input type="range" id="mB" min="30" max="120" value="80" step="5"></div>
-      <div class="param"><label>슬로프 높이 h <b id="v_h">10 m</b></label>
-        <input type="range" id="hh" min="5" max="25" value="10" step="1"></div>
-      <div class="param"><label>경사각 θ <b id="v_th">40°</b></label>
-        <input type="range" id="th" min="10" max="75" value="40" step="1"></div>
-      <div class="param"><label>마찰계수 μ <b id="v_mu">0.20</b></label>
-        <input type="range" id="mu" min="0.15" max="0.50" value="0.20" step="0.01"></div>
-      <div class="toggle-row">
-        <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
+      <h3>🔧 실험 정하기</h3>
+      <div class="pick"><label>🔵 스키어 A 몸무게 (질량) <b id="v_mA">가벼움 40kg</b></label>
+        <div class="segs" id="segA">
+          <button data-i="0" class="on">🪶 가벼움</button>
+          <button data-i="1">🙂 보통</button>
+          <button data-i="2">🐘 무거움</button>
+        </div></div>
+      <div class="pick"><label>🟠 스키어 B 몸무게 (질량) <b id="v_mB">무거움 120kg</b></label>
+        <div class="segs" id="segB">
+          <button data-i="0">🪶 가벼움</button>
+          <button data-i="1">🙂 보통</button>
+          <button data-i="2" class="on">🐘 무거움</button>
+        </div></div>
+      <div class="pick"><label>⛰️ 언덕 기울기 (경사각) <b id="v_sl">보통 35°</b></label>
+        <div class="segs" id="segS">
+          <button data-i="0">완만</button>
+          <button data-i="1" class="on">보통</button>
+          <button data-i="2">가파름</button>
+        </div></div>
+      <div class="ctl-row" style="margin-top:2px">
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 표 한 번에 채우기</button>
+        <button id="clearMx">지우기</button>
       </div>
-      <div class="toggle-row">
-        <input type="checkbox" id="snow1" checked><label for="snow1">❄️ 눈 내리기 (화면이 끊기면 끄기)</label>
-      </div>
-      <div class="speed-row"><span>재생 속도</span>
-        <button class="on" id="sp1a">1×</button>
-        <button id="sp1b">0.5×</button>
-        <button id="sp1c">0.25×</button>
-      </div>
-      <h3>측정값</h3>
+      <h3>📋 결과 정리표 <span class="h3-tip">· 초록 = 값이 똑같은 칸 · 클릭하면 크게</span></h3>
+      <table class="mx" id="mx1"></table>
+      <div id="mxMsg" style="display:none; margin:8px 0 4px; padding:8px 12px; background:rgba(46,224,111,.1); border:1px solid rgba(46,224,111,.35); border-radius:9px; color:var(--green); font-size:12.5px; font-weight:700">👀 몸무게가 달라도 초록 칸 값이 똑같아요!</div>
+      <h3 style="margin-top:12px">측정값</h3>
       <div class="readouts">
-        <div class="readout"><div class="k">A 슬로프 도착</div><div class="v a" id="tA">—</div></div>
-        <div class="readout"><div class="k">B 슬로프 도착</div><div class="v b" id="tB">—</div></div>
-        <div class="readout"><div class="k">A 정지 거리</div><div class="v a" id="dA">—</div></div>
-        <div class="readout"><div class="k">B 정지 거리</div><div class="v b" id="dB">—</div></div>
+        <div class="readout"><div class="k">A 내려온 시간</div><div class="v a" id="tA">—</div></div>
+        <div class="readout"><div class="k">B 내려온 시간</div><div class="v b" id="tB">—</div></div>
+        <div class="readout"><div class="k">A 멈춘 거리 (마찰력)</div><div class="v a" id="dA">—</div></div>
+        <div class="readout"><div class="k">B 멈춘 거리 (마찰력)</div><div class="v b" id="dB">—</div></div>
       </div>
-      <h3>속도–시간 그래프 <span class="h3-tip">· 클릭하면 크게 보기</span></h3>
+      <h3>빠르기 그래프 <span class="h3-tip">· 클릭하면 크게 보기</span></h3>
       <canvas class="graph" id="gr1" height="300"></canvas>
-      <details open>
-        <summary>📋 실험 기록 (최근 8회) <span class="h3-tip">· 표 클릭 = 확대</span></summary>
+      <details>
+        <summary>⚙️ 선생님 설정</summary>
         <div class="inner">
-          <table id="tb1">
-            <thead><tr><th>#</th><th>질량</th><th>h</th><th>θ</th><th>μ</th><th>공기</th><th>시간A/B</th><th>거리A/B</th><th>판정</th></tr></thead>
-            <tbody></tbody>
-          </table>
+          <div class="toggle-row" style="border-top:none">
+            <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
+          </div>
+          <div class="toggle-row">
+            <input type="checkbox" id="snow1" checked><label for="snow1">❄️ 눈 내리기 (화면이 끊기면 끄기)</label>
+          </div>
+          <div class="speed-row"><span>재생 속도</span>
+            <button class="on" id="sp1a">1×</button>
+            <button id="sp1b">0.5×</button>
+            <button id="sp1c">0.25×</button>
+          </div>
         </div>
       </details>
     </div>
@@ -242,6 +263,16 @@
   <!-- ══════ 원리 (초등 눈높이 + 선생님 수업 대본) ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div style="background:linear-gradient(135deg,rgba(199,146,234,.1),rgba(77,163,255,.08)); border:1px solid rgba(199,146,234,.35); border-radius:12px; padding:16px 20px; margin-bottom:24px">
+        <b style="font-size:15px">👨‍👩‍👧 학부모님께 — 오늘 수업 브리핑</b><br>
+        <span style="font-size:13.5px">
+        이번 차시는 경사면(스키 슬로프) 실험을 통해 <b>"질량이 달라도 미끄러져 내려오는 시간은 같다"</b>는
+        갈릴레이의 낙하 법칙을 아이가 직접 확인하는 시간입니다.
+        시뮬레이션으로 가설을 예측한 뒤 레고 브릭 썰매 실험으로 검증하며, 중력·질량·마찰력 같은
+        물리 개념을 초등 눈높이에 맞게 체험합니다. 가정에서 "무거우면 더 빨리 떨어질까?" 하고
+        물어봐 주시면 아이가 오늘 배운 원리를 신나게 설명해 줄 것입니다.
+        </span>
+      </div>
       <h2>🎿 무거운 사람이 더 빨리 내려올까?</h2>
       <p style="font-size:16px"><b>아니! 무겁든 가볍든 똑같이 내려온다.</b> 오늘 실험에서 확인할 단 하나의 사실이다.</p>
 
@@ -254,6 +285,21 @@
       </p>
       <p>그럼 깃털은 왜 늦게 떨어질까? 무거워서가 아니라 <b>공기가 방해해서</b>다.
         정말인지 궁금하면 <b>실험 2 탭</b>에서 공기를 끄고(진공) 깃털과 쇠공을 떨어뜨려 보자 — 동시에 떨어진다.</p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="background:#0c1220; border:1px solid var(--border); border-radius:12px; padding:14px 18px">
+        <ul style="margin:0 0 0 4px; list-style:none; line-height:2.15">
+          <li>🌍 <b>중력</b> — 지구가 물체를 아래로 끌어당기는 힘. 스키어를 미끄러지게 하는 원동력</li>
+          <li>⚖️ <b>질량</b> — 물체의 무거운 정도(kg). 오늘의 주인공 — 질량이 달라도 내려오는 시간은 같았다!</li>
+          <li>⛰️ <b>경사면</b> — 기울어진 비탈. 갈릴레이는 낙하가 너무 빨라서 경사면으로 "천천히" 실험했다</li>
+          <li>🛑 <b>마찰력</b> — 맞닿은 면이 움직임을 방해하는 힘. 평지에서 스키어를 멈추게 한다</li>
+          <li>💨 <b>공기저항</b> — 공기가 미는 힘. 깃털이 늦게 떨어지는 진짜 이유 (실험 2에서 확인)</li>
+        </ul>
+        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); font-size:12.5px; color:var(--dim)">
+          약 400년 전 <b style="color:#c6d2e6">갈릴레이</b>도 오늘 우리처럼 경사면에 공을 굴려서
+          "무겁든 가볍든 똑같이 떨어진다"는 사실을 알아냈어요.
+        </div>
+      </div>
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계 대본)</h2>
       <ul style="line-height:2.1">
@@ -454,7 +500,7 @@ function makeSnowfall(scene, box) {
 /* ═════════ 실험 1 · 3D 스키 슬로프 ═════════ */
 const E1 = (() => {
   const K_AIR = 1.2;   // 교육용 과장 공기저항 (kg 스케일)
-  let P = {}, S = null, t = 0, samples = [], finished = false, runCount = 0, running = false;
+  let P = {}, S = null, t = 0, samples = [], finished = false, running = false;
   let followCam = false;   // 기본: 전체 화면 (추적은 버튼)
 
   const cv = $('cv1'), stage = $('stage1');
@@ -592,7 +638,7 @@ const E1 = (() => {
       terrain.add(line);
     }
     // 각도 라벨
-    const angLab = textSprite(`경사각 ${P.thDeg}° · 높이 ${P.h} m`, { size: 38, color: '#cfe0ff', bg: 'rgba(10,16,30,.7)', scale: 0.006 * SK });
+    const angLab = textSprite(`기울기 ${SLOPE[selSlope].name} (${P.thDeg}°)`, { size: 38, color: '#cfe0ff', bg: 'rgba(10,16,30,.7)', scale: 0.006 * SK });
     angLab.position.set(base * 0.5, h * 0.62, TW / 2 + 0.6);
     terrain.add(angLab);
     // 소나무 숲 (단독 + 군락)
@@ -929,11 +975,16 @@ const E1 = (() => {
   }
   const snowStep = dt => { if (snowObj && snowObj.pts.visible) snowObj.step(dt); };
 
-  /* — 물리 (검증된 엔진 그대로) — */
+  /* — 물리 (검증된 엔진 그대로) · 초1 단계 변수 매핑 — */
+  // 몸무게 3택 · 기울기 3단, 높이 10 m·마찰 0.20 고정 (tan20° = 0.36 > μ → 항상 출발 가능)
+  const MASS = [40, 80, 120], MASS_NAME = ['가벼움', '보통', '무거움'];
+  const SLOPE = [{ name: '완만', deg: 20 }, { name: '보통', deg: 35 }, { name: '가파름', deg: 50 }];
+  const H_FIX = 10, MU_FIX = 0.20;
+  let selA = 0, selB = 2, selSlope = 1;
   function readParams() {
-    P = { mA: +$('mA').value, mB: +$('mB').value, h: +$('hh').value,
-          th: +$('th').value * Math.PI / 180, thDeg: +$('th').value,
-          mu: +$('mu').value, air: $('air1').checked };
+    P = { mA: MASS[selA], mB: MASS[selB], h: H_FIX,
+          th: SLOPE[selSlope].deg * Math.PI / 180, thDeg: SLOPE[selSlope].deg,
+          mu: MU_FIX, air: $('air1').checked };
     P.slopeLen = P.h / Math.sin(P.th);
   }
   function reset() {
@@ -964,6 +1015,7 @@ const E1 = (() => {
     if (flagLabB) { scene.remove(flagLabB); flagLabB = null; }
     place();
     drawG();
+    drawMx();
   }
   function stepPhysics(h) {
     if (finished) return;
@@ -1035,34 +1087,91 @@ const E1 = (() => {
     $('dB').textContent = fmt(S[1].dStop, 3) + ' m';
     const bd = $('bd1');
     const same = Math.abs(S[0].dStop - S[1].dStop) < 0.005 && Math.abs(S[0].tSlope - S[1].tSlope) < 0.005;
-    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 동일 — 질량 무관'; }
-    else { bd.className = 'badge diff'; bd.textContent = `△ 차이 ${Math.abs(S[0].dStop - S[1].dStop).toFixed(3)} m — 공기저항 때문`; }
-    const tb = $('tb1').querySelector('tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.mA}/${P.mB}kg</td><td>${P.h}m</td>` +
-      `<td>${P.thDeg}°</td><td>${P.mu.toFixed(2)}</td><td class="cond">${P.air ? '켬' : '끔'}</td>` +
-      `<td>${fmt(S[0].tSlope,2)}/${fmt(S[1].tSlope,2)}s</td>` +
-      `<td>${fmt(S[0].dStop,2)}/${fmt(S[1].dStop,2)}m</td>` +
-      `<td class="cond">${same ? '동일' : '차이'}</td>`;
-    tb.prepend(tr);
-    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    if (same) { bd.className = 'badge same'; bd.textContent = '✓ 똑같이 도착! 무거워도 가벼워도 같아요'; }
+    else { bd.className = 'badge diff'; bd.textContent = `△ ${Math.abs(S[0].dStop - S[1].dStop).toFixed(2)} m 차이 — 공기가 방해했어요`; }
+    recMx(selSlope, selA, S[0].tSlope, S[0].dStop);
+    recMx(selSlope, selB, S[1].tSlope, S[1].dStop);
+    drawMx();
     $('pause1').disabled = true; $('run1').disabled = false;
     drawG();
   }
+
+  /* — 결과 정리표: 기울기(3) × 몸무게(3) 격자, 같은 값 칸 초록 강조 — */
+  const mxData = {};   // 'slope|mass' -> { t: 내려온 시간, d: 멈춘 거리 }
+  function recMx(si, mi, tv, dv) { if (tv != null && dv != null) mxData[si + '|' + mi] = { t: tv, d: dv }; }
+  function drawMx() {
+    let hasHit = false;
+    let html = '<tr><th style="font-size:10px">몸무게(질량)＼기울기(경사각)</th>' + SLOPE.map(s => `<th>${s.name}<br>${s.deg}°</th>`).join('') + '</tr>';
+    for (let mi = 0; mi < MASS.length; mi++) {
+      html += `<tr><td class="cond" style="font-size:12px">${MASS_NAME[mi]}<br>${MASS[mi]}kg</td>`;
+      for (let si = 0; si < SLOPE.length; si++) {
+        const r = mxData[si + '|' + mi];
+        let cls = r ? '' : 'empty';
+        if (r) {   // 같은 기울기(열)에서 다른 몸무게와 값이 같으면 강조
+          for (let k = 0; k < MASS.length; k++) {
+            if (k === mi) continue;
+            const o = mxData[si + '|' + k];
+            if (o && Math.abs(o.t - r.t) < 0.05 && Math.abs(o.d - r.d) < 0.05) { cls = 'hit'; hasHit = true; break; }
+          }
+        }
+        const cur = si === selSlope && (mi === selA || mi === selB) ? ' cur' : '';
+        html += `<td class="${cls}${cur}">${r ? r.t.toFixed(1) + '초<br>' + r.d.toFixed(1) + 'm' : '·'}</td>`;
+      }
+      html += '</tr>';
+    }
+    $('mx1').innerHTML = html;
+    $('mxMsg').style.display = hasHit ? 'block' : 'none';
+  }
+  // ⚡ 자동 실험 — 실제 물리와 같은 식을 미세 스텝으로 적분해 9칸 전부 기록
+  function simulateRun(m, si, airOn) {
+    const th = SLOPE[si].deg * Math.PI / 180, L = H_FIX / Math.sin(th);
+    const kOverM = airOn ? K_AIR / m : 0;
+    let tSim = 0, s = 0, x = 0, v = 0, tSlope = null;
+    const dt = 0.0005;
+    while (tSim < 120) {
+      tSim += dt;
+      if (tSlope == null) {
+        const a = g * (Math.sin(th) - MU_FIX * Math.cos(th)) - kOverM * v * v;
+        v = Math.max(0, v + a * dt); s += v * dt;
+        if (s >= L) tSlope = tSim;
+      } else {
+        const a = -MU_FIX * g - kOverM * v * v;
+        v += a * dt;
+        if (v <= 0) break;
+        x += v * dt;
+      }
+    }
+    return { t: tSlope ?? tSim, d: x };
+  }
+  let scanTimer = null;
+  $('autoScan').onclick = () => {
+    if (running || scanTimer) return;
+    const combos = [];
+    for (let si = 0; si < SLOPE.length; si++) for (let mi = 0; mi < MASS.length; mi++) combos.push([si, mi]);
+    let i = 0;
+    setSt('run');
+    scanTimer = setInterval(() => {
+      if (i >= combos.length) {
+        clearInterval(scanTimer); scanTimer = null;
+        setSt('done');
+        return;
+      }
+      const [si, mi] = combos[i++];
+      const r = simulateRun(MASS[mi], si, $('air1').checked);
+      recMx(si, mi, r.t, r.d);
+      drawMx();
+    }, 160);
+  };
+  $('clearMx').onclick = () => {
+    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+    for (const k in mxData) delete mxData[k];
+    drawMx(); setSt('ready');
+  };
   const setSt = statusUI($('led1'), $('st1'));
   const scale = speedCtl([$('sp1a'), $('sp1b'), $('sp1c')]);
 
   $('run1').onclick = () => {
     if (finished) reset();
-    if (Math.tan(P.th) <= P.mu) {
-      finished = true; setSt('done');
-      const bd = $('bd1');
-      bd.className = 'badge diff';
-      bd.textContent = `⛔ 출발 못 함 — tan${P.thDeg}° ≤ μ ${P.mu.toFixed(2)}, 마찰이 중력을 이김 (경사각을 높여보자)`;
-      ['tA','tB'].forEach(id => $(id).textContent = '출발 못 함');
-      ['dA','dB'].forEach(id => $(id).textContent = '0.000 m');
-      return;
-    }
     running = true; setSt('run');
     $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸';
   };
@@ -1072,14 +1181,21 @@ const E1 = (() => {
     $('pause1').textContent = running ? '⏸' : '▶';
   };
   $('reset1').onclick = () => { running = false; reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸'; };
-  ['mA','mB','hh','th','mu','air1'].forEach(id => $(id).addEventListener('input', () => {
-    $('v_mA').textContent = $('mA').value + ' kg';
-    $('v_mB').textContent = $('mB').value + ' kg';
-    $('v_h').textContent = $('hh').value + ' m';
-    $('v_th').textContent = $('th').value + '°';
-    $('v_mu').textContent = (+$('mu').value).toFixed(2);
+  function segWire(segId, apply) {
+    const btns = [...document.querySelectorAll('#' + segId + ' button')];
+    btns.forEach(b => b.onclick = () => {
+      btns.forEach(x => x.classList.toggle('on', x === b));
+      apply(+b.dataset.i);
+      if (!running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸'; }
+      else drawMx();
+    });
+  }
+  segWire('segA', i => { selA = i; $('v_mA').textContent = MASS_NAME[i] + ' ' + MASS[i] + 'kg'; });
+  segWire('segB', i => { selB = i; $('v_mB').textContent = MASS_NAME[i] + ' ' + MASS[i] + 'kg'; });
+  segWire('segS', i => { selSlope = i; $('v_sl').textContent = SLOPE[i].name + ' ' + SLOPE[i].deg + '°'; });
+  $('air1').addEventListener('input', () => {
     if (!running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; }
-  }));
+  });
   $('snow1').addEventListener('input', () => { if (snowObj) snowObj.pts.visible = $('snow1').checked; });
   /* — 카메라 프리셋 (부드러운 이동) — */
   const camGoal = { active: false, pos: new THREE.Vector3(), tgt: new THREE.Vector3() };
@@ -1482,7 +1598,7 @@ const OV = (() => {
 })();
 $('gr1').onclick = () => OV.openGraph(cv2d => E1.drawTo(cv2d));
 $('gr2').onclick = () => OV.openGraph(cv2d => E2.drawTo(cv2d));
-$('tb1').onclick = () => OV.openTable($('tb1'));
+$('mx1').onclick = () => OV.openTable($('mx1'));
 $('tb2').onclick = () => OV.openTable($('tb2'));
 
 /* ── 마스터 루프 ── */
