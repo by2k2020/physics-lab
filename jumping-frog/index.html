@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>뜀뛰는 개구리 — 지렛대 발판 · 브릭큐 프라임 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 15.5px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 11.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .chip.dist { border-color: rgba(255,144,70,.55); box-shadow: 0 0 16px rgba(255,144,70,.2); }
+  .chip.dist #hud_last { font-size: 19px; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.good { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.warn { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.bad  { display: inline-flex; background: rgba(70,18,14,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 360px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #16a34a, #2ee06f); border-color: #2ee06f; font-weight: 700; flex: 1; color: #05230f; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.fail { background: var(--red); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 18px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 38px; height: 34px; font-size: 15px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; padding: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
+  .gauge-wrap { margin: 7px 0 2px; }
+  .gauge { position: relative; height: 34px; background: #0c1220; border: 1px solid var(--border); border-radius: 17px; overflow: hidden; }
+  .gauge-fill { position: absolute; inset: 0; background: linear-gradient(90deg, #2ee06f 0%, #ffd02e 55%, #ff5a52 100%); clip-path: inset(0 100% 0 0); transition: clip-path .18s ease; }
+  .gauge-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 7px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); font-weight: 700; }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 11.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 17.5px; font-weight: 600; }
+  .readout .v.a { color: var(--accent); } .readout .v.g { color: var(--green); } .readout .v.o { color: var(--orange); }
+  .predict { background: rgba(199,146,234,.06); border: 1px solid rgba(199,146,234,.3); border-radius: 10px; padding: 11px 13px; margin-bottom: 13px; }
+  .predict .q { font-size: 12.5px; color: #dcc9f0; line-height: 1.6; margin-bottom: 9px; }
+  .predict .q b { color: var(--purple); }
+  .ox-row { display: flex; gap: 8px; }
+  .ox-row button { flex: 1; font-size: 15px; font-weight: 800; padding: 8px 0; }
+  .ox-row button.pickO.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.12); }
+  .ox-row button.pickX.on { border-color: var(--red); color: var(--red); background: rgba(255,90,82,.12); }
+  .predict .ans { font-size: 12px; line-height: 1.65; margin-top: 9px; display: none; color: #c6d2e6; }
+  .predict .ans.show { display: block; }
+  .predict .ans .verdict { font-weight: 800; }
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; color: var(--dim); font-size: 12.5px; }
+  td.gv { color: var(--green); font-weight: 700; }
+  td.dash { color: #38445c; }
+  td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin: 22px 0 12px; color: var(--text); }
+  .theory-box h2:first-child { margin-top: 0; }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+  .brief-card { background: rgba(255,176,46,.07); border: 1px solid rgba(255,176,46,.35); border-radius: 12px; padding: 15px 18px; margin-bottom: 20px; }
+  .brief-card h2 { margin: 0 0 8px !important; font-size: 16px !important; color: var(--amber) !important; }
+  .term-card { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.3); border-radius: 12px; padding: 15px 18px; margin-bottom: 20px; }
+  .term-card h2 { margin: 0 0 10px !important; font-size: 16px !important; color: var(--accent) !important; }
+  .term-card ul { margin: 0 0 0 4px !important; list-style: none; }
+  .term-card li { margin-bottom: 7px; }
+  .term-card li b { color: var(--purple); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 52vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 12차시</div>
+      <div class="title">🐸 뜀뛰는 개구리 — 지렛대 발판으로 튕기기</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="game">🎮 발판 튕기기</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 게임 ══════ -->
+  <section class="exp on" id="game">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">성공한 발판</span><span id="hud_goals" style="color:var(--green)">0 / 4</span></div>
+        <div class="chip"><span class="lab">⭐ 목표 발판까지</span><span id="hud_next">— cm</span></div>
+        <div class="chip dist"><span class="lab">점프 거리 (실시간)</span><span id="hud_last" style="color:var(--orange)">— cm</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 지렛대를 누르고 튕겨!</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="btnJump">🐸 튕기기!</button>
+        <button id="btnRestart">↺ 처음부터</button>
+      </div>
+      <h3>발판 조절 — 딱 3가지만!</h3>
+      <div class="param"><label>💪 지렛대 누름 힘 · 1~5단 <b id="v_press">3</b></label>
+        <div class="srow"><button class="step" id="pressDn">◀</button><input type="range" id="press" min="1" max="5" value="3" step="1"><button class="step" id="pressUp">▶</button></div>
+        <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="gaugeFill"></div><span class="gauge-txt" id="gaugeTxt">—</span></div></div></div>
+      <div class="param"><label>📐 발판 각도 (튀는 방향) <b id="v_ang">중간 45°</b></label>
+        <div class="pick" id="pickAng">
+          <button data-a="30">낮게 30°</button>
+          <button data-a="45" class="on">중간 45°</button>
+          <button data-a="60">높게 60°</button>
+        </div></div>
+      <div class="param"><label>🐸 개구리 무게 <b id="v_wt">가벼움</b></label>
+        <div class="pick" id="pickWt">
+          <button data-w="1" class="on">🐸 가벼움</button>
+          <button data-w="2">🐸🧱 무거움</button>
+        </div>
+      </div>
+      <h3>측정값</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">저장된 힘 (탄성 위치에너지)</div><div class="v g" id="ro_e">—</div></div>
+        <div class="readout"><div class="k">튀어오르는 빠르기 (운동에너지)</div><div class="v a" id="ro_v">—</div></div>
+        <div class="readout"><div class="k">지난 점프 거리</div><div class="v o" id="ro_d">— cm</div></div>
+        <div class="readout"><div class="k">최고 높이</div><div class="v" id="ro_h">— cm</div></div>
+      </div>
+      <h3>📋 점프 거리표 (cm) — <span id="tbWt" style="color:var(--green)">가벼움 🐸</span></h3>
+      <div class="ctl-row">
+        <button id="btnAuto" style="flex:1">⚡ 자동 실험 — 표 전부 채우기</button>
+        <button id="btnClearTb">지우기</button>
+      </div>
+      <table id="tb"></table>
+      <div class="predict" style="margin-top:13px">
+        <div class="q">🤔 <b>맞혀 봐!</b> 누름 힘을 <b>2단 → 4단</b>으로 2배 하면, 딱 <b>2배</b> 멀리 튈까?</div>
+        <div class="ox-row">
+          <button class="pickO" id="btnO">⭕ 응, 2배!</button>
+          <button class="pickX" id="btnX">❌ 아니야!</button>
+        </div>
+        <div class="ans" id="predAns"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="brief-card">
+        <h2>👨‍👩‍👧 학부모님께</h2>
+        <p>이번 12차시에는 <b>지렛대(레버)</b>를 눌러 발판을 튕겨 개구리를 점프시키는 브릭큐 프라임 메커니즘으로,
+          눌러서 저장한 <b>탄성 위치에너지</b>가 <b>운동에너지</b>로 바뀌며 포물선을 그리는 원리를 실험했습니다.
+          누름 힘과 발판 각도를 바꿔 가며 점프 거리를 표로 기록하고, 누름 힘을 2배로 하면 거리는 약 <b>4배</b>가
+          된다(에너지는 누름 힘의 <b>제곱</b>에 비례)는 것을 아이가 직접 확인했습니다. 발판 각도는 <b>45°</b>에서 가장 멀리 나갑니다.</p>
+      </div>
+      <div class="term-card">
+        <h2>🎓 오늘 배운 물리 용어</h2>
+        <ul>
+          <li>⚖️ <b>지렛대(레버)</b> — 받침점을 중심으로 한쪽을 누르면 반대쪽이 튀어오르며 힘을 전달하는 도구</li>
+          <li>⚡ <b>탄성 위치에너지</b> — 발판을 눌러 놓았을 때 그 안에 저장되는 에너지 (누름 힘의 제곱에 비례)</li>
+          <li>🏃 <b>운동에너지</b> — 움직이는 물체가 가진 에너지, 개구리가 튀어나갈 때의 에너지</li>
+          <li>🔄 <b>에너지 전환</b> — 저장된 탄성 위치에너지가 운동에너지로 모양을 바꾸는 것</li>
+          <li>🌈 <b>포물선 운동</b> — 비스듬히 튀어오른 물체가 곡선(포물선)을 그리며 나는 운동, 45°에서 가장 멀리!</li>
+        </ul>
+      </div>
+      <h2>⚖️ 지렛대 발판 — 누른 만큼 힘이 쌓여</h2>
+      <p>발판을 누르면 원래대로 되돌아가려는 <b>탄성력</b>이 생기고, 발판 속에 <b>탄성 위치에너지</b>가 저장돼.
+        손을 놓으면 저장된 에너지가 개구리를 밀어내는 <b>운동에너지</b>로 바뀌면서 개구리가 튀어나가!</p>
+      <ul>
+        <li>세게 누를수록 에너지가 <b>훨씬 많이</b> 쌓여 — 누름 2배면 에너지는 <b>4배</b>! <span class="eq">E ∝ 누름²</span></li>
+        <li>그래서 날아가는 거리도 <b>약 4배</b> (2배가 아니야!)</li>
+        <li>무거운 개구리는? 같은 힘이라도 천천히, <b>짧게</b> 튀어 <span class="eq">v = √(2E ÷ m)</span></li>
+      </ul>
+      <h2>📐 중간(45°)이 가장 멀리 가는 이유</h2>
+      <p>낮게(30°) 튀기면 빨리 가지만 금방 물에 떨어지고, 높게(60°) 튀기면 높이 떴다가 가까이에 떨어져.
+        <b>앞으로 가는 힘</b>과 <b>위로 뜨는 힘</b>이 딱 반반인 <b>중간(45°)</b>일 때 가장 멀리 가!</p>
+      <table>
+        <thead><tr><th>발판 각도</th><th>거리 (중간 기준)</th><th>느낌</th></tr></thead>
+        <tbody>
+          <tr><td>낮게 30°</td><td>약 87%</td><td>낮고 빠르게 — 조금 짧아</td></tr>
+          <tr><td>중간 45°</td><td>100% ★</td><td>가장 멀리!</td></tr>
+          <tr><td>높게 60°</td><td>약 87%</td><td>높이 떴다가 가까이 떨어짐</td></tr>
+        </tbody>
+      </table>
+      <p>재미있는 비밀: <b>낮게(30°)와 높게(60°)는 거리가 똑같아!</b> 거리표를 채워서 눈으로 확인해 봐.</p>
+      <div class="tip">
+        <b>🧱 실제 브릭큐 프라임 실험 팁</b><br>
+        · 지렛대 발판에 개구리를 올리고 <b>누름 단수</b>를 정해서 튕겨 봐 (1단~5단)<br>
+        · 바닥에 자를 붙여 놓고 <b>착지 지점까지 거리를 재서</b> 표에 적어 — 시뮬처럼 누름×각도 표를 만들면 최고!<br>
+        · 같은 누름으로 3번 재서 평균을 내면 더 정확해<br>
+        · 개구리에 브릭을 얹어 무겁게 만들면? 같은 발판인데 왜 덜 튀는지 <span class="eq">v=√(2E/m)</span>로 생각해 보기
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 세계 좌표 (cm) ── */
+const PADS = [30, 68, 120, 190];       // 목표 발판(연잎) 중심 x — 누름 2·3·4·5단@45° 에 대응(제곱 간격)
+const PAD_HALF = 20;                    // 착지 허용 반경
+const WORLD_L = -60, WORLD_R = 232;
+const START_X = 0;                      // 발판(발사) 위치
+const G = 980;                          // cm/s²
+const K_E = 0.0372;                     // 탄성 계수 (J / 누름²) — 5단@45°가 딱 마지막 발판(190cm)
+const PULL_MAX = 5;
+const ANGLES = [30, 45, 60];
+const ANG_NAME = { 30: '낮게', 45: '중간', 60: '높게' };
+const SLOWMO = 0.5;
+const LOAD_DUR = 0.2;                   // 지렛대 스냅(튕김) 시간(초)
+
+/* ── 상태 ── */
+let state = 'ready';                    // ready | load | fly | splash | demo | auto
+let goalIdx = 0;                        // 지금 노리는 발판
+let cleared = false;
+let loadT = 0;                          // 지렛대 스냅 진행도
+let flight = null;
+let pastTrails = [];
+let splash = null;
+let demo = null;
+let padFx = [];
+let rings = [];
+let distPop = null;
+let celebrate = null;
+let auto = null;
+let lastDist = null, lastPeak = null;
+let clock = 0;
+const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+const cv = $('cv');
+function fit() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+/* ── 파라미터 ── */
+let weight = 1, angDeg = 45;
+function params() {
+  const press = +$('press').value;
+  const E = K_E * press * press;                     // J
+  const m = weight === 1 ? 0.1 : 0.2;                // kg
+  const v = Math.sqrt(2 * E / m) * 100;              // cm/s
+  return { press, angDeg, E, m, v };
+}
+function refreshReadouts() {
+  const p = params();
+  $('v_press').textContent = p.press + '단';
+  $('v_ang').textContent = ANG_NAME[angDeg] + ' ' + angDeg + '°';
+  $('ro_e').textContent = p.E.toFixed(2) + ' J';
+  $('ro_v').textContent = (p.v / 100).toFixed(1) + ' m/s';
+  const pct = Math.round(100 * p.E / (K_E * PULL_MAX * PULL_MAX));
+  $('gaugeFill').style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+  $('gaugeTxt').textContent = '⚡ 저장된 힘 (탄성 위치에너지) ' + pct + '%';
+}
+
+/* ── 상태 표시 ── */
+function setStatus(mode, txt) {
+  $('led').className = 'led ' + (mode || '');
+  $('st').textContent = txt;
+}
+function setBadge(cls, txt) {
+  const bd = $('bd');
+  bd.className = 'badge' + (cls ? ' ' + cls : '');
+  bd.textContent = txt || '';
+}
+function refreshHud() {
+  $('hud_goals').textContent = goalIdx + ' / ' + PADS.length;
+  $('hud_next').textContent = cleared ? '완주!' : Math.round(PADS[goalIdx] - START_X) + ' cm';
+  $('hud_last').textContent = lastDist != null ? Math.round(lastDist) + ' cm' : '— cm';
+}
+
+/* ── 튕기기 ── */
+function doJump() {
+  if (state !== 'ready' || cleared) return;
+  state = 'load';
+  loadT = 0;
+  setBadge('');
+  setStatus('run', '지렛대 스냅! 튕기는 중...');
+  $('btnJump').disabled = true;
+}
+function launchNow() {
+  const p = params();
+  const rad = p.angDeg * Math.PI / 180;
+  flight = { x0: START_X, vx: p.v * Math.cos(rad), vy: p.v * Math.sin(rad), t: 0, pts: [[START_X, 0]], peak: 0, p };
+  state = 'fly';
+  setStatus('run', '점프 중!');
+}
+function landAt(x) {
+  lastDist = x - flight.x0;
+  lastPeak = flight.peak;
+  $('ro_d').textContent = Math.round(lastDist) + ' cm';
+  $('ro_h').textContent = Math.round(lastPeak) + ' cm';
+  const padHit = PADS.findIndex(c => Math.abs(x - c) <= PAD_HALF);
+  const ok = padHit === goalIdx;
+  pastTrails.push({ pts: flight.pts, ok });
+  if (pastTrails.length > 8) pastTrails.shift();
+  recordGrid(flight.p, lastDist);
+  distPop = { x, dist: lastDist, t: 0 };
+  if (padHit === goalIdx) {
+    padFx.push({ x: PADS[padHit], t: 0 });
+    rings.push({ x: PADS[padHit], t: 0 });
+    goalIdx++;
+    if (goalIdx >= PADS.length) {
+      cleared = true;
+      celebrate = { t: 0 };
+      setBadge('good', '🏆 클리어! 발판 4개 전부 정복 — 대단해!');
+      setStatus('done', '클리어! ↺ 처음부터로 다시 도전');
+    } else {
+      setBadge('good', '🍃 ⭐목표 발판 착지! 다음 발판을 노려 봐');
+      setStatus('done', '착지 성공 — 더 멀리! 누름 힘을 올려 봐');
+    }
+    resetToLauncher();
+  } else if (padHit >= 0) {
+    padFx.push({ x: PADS[padHit], t: 0 });
+    rings.push({ x: PADS[padHit], t: 0 });
+    setBadge('warn', '🍃 다른 발판이야 — ⭐표시된 목표를 맞혀 봐');
+    setStatus('done', '살짝 빗나감 — 누름/각도를 조절해 봐');
+    resetToLauncher();
+  } else {
+    state = 'splash';
+    splash = { x, t: 0, drops: [] };
+    for (let i = 0; i < 26; i++) {
+      const a = Math.PI * (0.15 + 0.7 * Math.random());
+      const sp = 90 + Math.random() * 240;
+      splash.drops.push({ x, y: 0, dx: 0, vx: Math.cos(a) * sp * (Math.random() < 0.5 ? -1 : 1) * 0.6, vy: Math.sin(a) * sp });
+    }
+    setBadge('bad', '💦 첨벙! 물에 빠졌어 — 다시 튕겨!');
+    setStatus('fail', '풍덩... 누름 힘이나 각도를 바꿔 보자');
+  }
+  refreshHud();
+  flight = null;
+}
+function resetToLauncher() {
+  if (state !== 'splash') { state = 'ready'; $('btnJump').disabled = cleared; }
+}
+function restart() {
+  goalIdx = 0; cleared = false;
+  state = 'ready'; flight = null; splash = null; demo = null; auto = null; loadT = 0;
+  padFx = []; rings = []; distPop = null; celebrate = null;
+  setBadge('');
+  setStatus('', '준비 — 지렛대를 누르고 튕겨!');
+  $('btnJump').disabled = false;
+  refreshHud();
+}
+
+/* ── 결과 정리표 (누름 5 × 각도 3 격자, 무게별 별도 저장) ── */
+const grid = { 1: Object.create(null), 2: Object.create(null) };
+function recordGrid(p, dist) {
+  const w = p.m === 0.1 ? 1 : 2;
+  grid[w][p.press + '|' + p.angDeg] = dist;
+  drawGrid();
+}
+function drawGrid() {
+  const g = grid[weight];
+  const cur = params();
+  let html = '<tr><th style="font-size:10.5px">누름＼각도</th>' +
+    ANGLES.map(a => `<th>${ANG_NAME[a]}<br>${a}°</th>`).join('') + '</tr>';
+  for (let pu = 1; pu <= PULL_MAX; pu++) {
+    html += `<tr><td class="cond">${pu}단</td>` + ANGLES.map(a => {
+      const v = g[pu + '|' + a];
+      const isCur = pu === cur.press && a === angDeg;
+      return `<td class="${v != null ? 'gv' : 'dash'}${isCur ? ' cur' : ''}">${v != null ? Math.round(v) : '·'}</td>`;
+    }).join('') + '</tr>';
+  }
+  $('tb').innerHTML = html;
+  $('tbWt').textContent = weight === 1 ? '가벼움 🐸' : '무거움 🐸🧱';
+}
+
+/* ── 예측 모드 ── */
+function buildTraj(x0, press, angDeg, m) {
+  const E = K_E * press * press;
+  const v = Math.sqrt(2 * E / m) * 100;
+  const rad = angDeg * Math.PI / 180;
+  const vx = v * Math.cos(rad), vy = v * Math.sin(rad);
+  const T = 2 * vy / G;
+  const pts = [];
+  for (let i = 0; i <= 60; i++) {
+    const t = T * i / 60;
+    pts.push([x0 + vx * t, vy * t - 0.5 * G * t * t]);
+  }
+  return { pts, dist: vx * T, peak: vy * vy / (2 * G) };
+}
+function runPredict(choseDouble) {
+  const p = params();
+  const base = 2;
+  const t1 = buildTraj(START_X, base, angDeg, p.m);
+  const t2 = buildTraj(START_X, base * 2, angDeg, p.m);
+  demo = { t1, t2, base, progress: 0 };
+  state = 'demo';
+  setBadge('');
+  $('btnJump').disabled = true;
+  setStatus('run', `확인 실험: 누름 ${base}단 vs ${base * 2}단 비교 중...`);
+  const ratio = t2.dist / t1.dist;
+  const correct = !choseDouble;
+  const ans = $('predAns');
+  ans.className = 'ans show';
+  ans.innerHTML =
+    `<span class="verdict" style="color:${correct ? 'var(--green)' : 'var(--red)'}">${correct ? '🎉 정답!' : '😲 땡!'}</span> ` +
+    `누름 ${base}단 → <b>${Math.round(t1.dist)}cm</b>, ${base * 2}단 → <b>${Math.round(t2.dist)}cm</b>. ` +
+    `2배가 아니라 <b style="color:var(--purple)">약 ${ratio.toFixed(0)}배</b>! ` +
+    `누름이 2배면 발판에 쌓인 힘은 2×2 = <b>4배</b>가 되거든.`;
+  $('btnO').classList.toggle('on', choseDouble);
+  $('btnX').classList.toggle('on', !choseDouble);
+}
+
+/* ── ⚡ 자동 실험 — 궤적을 하나씩 시연하며 15칸(누름 5 × 각도 3) 전부 기록 ── */
+function startAuto() {
+  if (state !== 'ready') return;
+  const combos = [];
+  for (let pu = 1; pu <= PULL_MAX; pu++) for (const a of ANGLES) combos.push([pu, a]);
+  auto = { combos, i: 0, traj: null, progress: 0, cur: null, logged: false };
+  state = 'auto';
+  setBadge('');
+  $('btnJump').disabled = true;
+  setStatus('run', '⚡ 자동 실험 중 — 표를 채우고 있어!');
+}
+
+/* ── 좌표 변환 ── */
+function mapper(W, H) {
+  const sx = W / (WORLD_R - WORLD_L);
+  const waterY = H * 0.68;
+  return {
+    x: cm => (cm - WORLD_L) * sx,
+    y: cm => waterY - cm * sx,
+    s: sx, waterY,
+  };
+}
+
+/* ── 개구리 그리기 (frog-jump 재사용) ── */
+function drawFrog(c, px, py, size, phase, heavy, angRad, pullT) {
+  pullT = pullT || 0;
+  c.save(); c.translate(px, py);
+  if (phase === 'fly') c.rotate(-angRad * 0.5);
+  const s = size;
+  const crouch = phase === 'sit' ? pullT : 0;
+  c.translate(0, crouch * s * 0.16);
+
+  const drawFoot = (x, y, dir) => {
+    c.save(); c.translate(x, y); c.rotate(dir);
+    const fl = s * 0.36;
+    c.fillStyle = 'rgba(80,214,128,.92)'; c.strokeStyle = '#157a3e'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0, 0);
+    c.lineTo(Math.cos(-0.55) * fl, Math.sin(-0.55) * fl);
+    c.quadraticCurveTo(fl * 0.55, -fl * 0.1, Math.cos(0) * fl * 1.05, 0);
+    c.quadraticCurveTo(fl * 0.55, fl * 0.1, Math.cos(0.55) * fl, Math.sin(0.55) * fl);
+    c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#2fbb63';
+    for (const a of [-0.55, 0, 0.55]) {
+      c.beginPath(); c.arc(Math.cos(a) * fl * (a ? 1 : 1.05), Math.sin(a) * fl, s * 0.05, 0, 7); c.fill();
+    }
+    c.restore();
+  };
+  const beam = (x1, y1, x2, y2) => {
+    c.strokeStyle = '#1a8a49'; c.lineWidth = s * 0.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = 'rgba(160,255,190,.35)'; c.lineWidth = s * 0.07;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  };
+  const pin = (x, y) => {
+    c.fillStyle = '#0e3f22'; c.beginPath(); c.arc(x, y, s * 0.085, 0, 7); c.fill();
+    c.fillStyle = '#57d689'; c.beginPath(); c.arc(x, y, s * 0.035, 0, 7); c.fill();
+  };
+
+  const hip = [-s * 0.25, s * 0.15];
+  let knee, ankle, footDir;
+  if (phase === 'fly') {
+    const ft = Math.min(1, Math.max(0, pullT));
+    const P0 = { k: [-0.95, 0.35], a: [-1.5, 0.62], fd: Math.PI + 0.45 };
+    const P1 = { k: [-0.52, 0.0], a: [-0.26, 0.42], fd: Math.PI * 0.92 };
+    const P2 = { k: [-0.5, 0.48], a: [-0.92, 0.98], fd: Math.PI * 0.68 };
+    const sm = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    const mixP = (A, B, t) => ({
+      k: [lerp(A.k[0], B.k[0], t), lerp(A.k[1], B.k[1], t)],
+      a: [lerp(A.a[0], B.a[0], t), lerp(A.a[1], B.a[1], t)],
+      fd: lerp(A.fd, B.fd, t),
+    });
+    const P = mixP(mixP(P0, P1, sm((ft - 0.2) / 0.25)), P2, sm((ft - 0.66) / 0.26));
+    knee = [P.k[0] * s, P.k[1] * s]; ankle = [P.a[0] * s, P.a[1] * s]; footDir = P.fd;
+  } else {
+    knee = [lerp(-s * 0.62, -s * 0.78, pullT), lerp(s * 0.26, -s * 0.08, pullT)];
+    ankle = [lerp(-s * 0.18, -s * 0.34, pullT), lerp(s * 0.5, s * 0.46, pullT)];
+    footDir = Math.PI * 0.94;
+  }
+  drawFoot(ankle[0], ankle[1], footDir);
+  beam(hip[0], hip[1], knee[0], knee[1]);
+  beam(knee[0], knee[1], ankle[0], ankle[1]);
+  pin(knee[0], knee[1]); pin(ankle[0], ankle[1]);
+
+  const squash = 1 - crouch * 0.14;
+  const g = c.createRadialGradient(-s * 0.2, -s * 0.35, s * 0.1, 0, 0, s);
+  g.addColorStop(0, '#6fe89b'); g.addColorStop(1, '#26b45c');
+  c.fillStyle = g;
+  c.beginPath(); c.ellipse(0, s * 0.6 * (1 - squash), s * 0.85, s * 0.6 * squash, -crouch * 0.12, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = 'rgba(20,110,60,.4)';
+  for (const [sx, sy, sr] of [[-0.35, -0.25, 0.09], [-0.05, -0.42, 0.07], [-0.55, 0.0, 0.06]]) {
+    c.beginPath(); c.ellipse(s * sx, s * sy, s * sr, s * sr * 0.7, 0.3, 0, 7); c.fill();
+  }
+  c.fillStyle = 'rgba(230,255,235,.5)';
+  c.beginPath(); c.ellipse(s * 0.05, s * 0.24, s * 0.5, s * 0.28 * squash, 0, 0, 7); c.fill();
+  pin(hip[0], hip[1]);
+
+  drawFoot(s * 0.6, s * 0.58, Math.PI * 0.28);
+  c.strokeStyle = '#1f9e54'; c.lineWidth = s * 0.14; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(s * 0.45, s * 0.25); c.lineTo(s * 0.6, s * 0.58); c.stroke();
+
+  if (heavy) {
+    c.save(); c.translate(-s * 0.08, -s * 0.5); c.rotate(-0.1);
+    const bw = s * 0.92, bh = s * 0.3;
+    const cols = [['#e04a3f', '#f0685e'], ['#ffd02e', '#ffe37a']];
+    for (let r = 0; r < 2; r++) {
+      const by = -r * bh;
+      c.fillStyle = cols[r][0];
+      c.fillRect(-bw / 2, by - bh, bw, bh);
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1;
+      c.strokeRect(-bw / 2, by - bh, bw, bh);
+      c.fillStyle = cols[r][1];
+      for (let i = 0; i < 3; i++) {
+        const sx = -bw / 2 + bw * (i + 0.5) / 3;
+        c.fillRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
+        c.strokeRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
+      }
+    }
+    c.restore();
+    c.strokeStyle = 'rgba(25,30,45,.65)'; c.lineWidth = s * 0.06;
+    c.beginPath(); c.moveTo(-s * 0.3, -s * 0.5); c.quadraticCurveTo(s * 0.05, -s * 0.15, s * 0.3, -s * 0.4); c.stroke();
+  }
+
+  for (const ex of [s * 0.28, s * 0.64]) {
+    c.fillStyle = '#f2fff5';
+    c.beginPath(); c.arc(ex, -s * 0.52, s * 0.27, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+    c.fillStyle = '#d9a520';
+    c.beginPath(); c.arc(ex + s * 0.06, -s * 0.5, s * 0.16, 0, 7); c.fill();
+    c.fillStyle = '#0b0f18';
+    c.beginPath(); c.arc(ex + s * 0.08, -s * 0.5, s * 0.09, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.9)';
+    c.beginPath(); c.arc(ex + s * 0.02, -s * 0.57, s * 0.045, 0, 7); c.fill();
+  }
+  c.fillStyle = 'rgba(10,40,20,.6)';
+  c.beginPath(); c.arc(s * 0.72, -s * 0.24, s * 0.025, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(10,40,20,.55)'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(s * 0.42, -s * 0.12, s * 0.32, 0.25, 1.05); c.stroke();
+  c.restore();
+}
+
+/* ── 지렛대 발판 런처 ── */
+function drawLauncher(c, M, s, pressT, snap) {
+  // snap: 0 = 눌린 상태(장전), →1 = 튕김(발사)
+  const bx = M.x(0), by = M.waterY;
+  const Fx = bx - s * 1.35, Fy = by - s * 0.55;   // 받침점(피벗)
+  const Rr = s * 1.75, Rl = s * 1.25;             // 발판(오른)·누름(왼) 팔 길이
+  const tilt = lerp(-0.24 - pressT * 0.14, 0.36, smooth(snap)); // 라디안
+  const ct = Math.cos(tilt), st = Math.sin(tilt);
+  const cupX = Fx + ct * Rr, cupY = Fy - st * Rr;
+  const padX = Fx - ct * Rl, padY = Fy + st * Rl;
+
+  // 받침대(브릭 기둥) + 받침점 삼각형
+  c.fillStyle = '#c94f3f';
+  c.beginPath(); c.roundRect(Fx - s * 0.55, by - s * 0.5, s * 1.1, s * 0.6, 4); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#e06b5c';
+  for (let i = 0; i < 3; i++) {
+    const sx = Fx - s * 0.55 + s * 1.1 * (i + 0.5) / 3;
+    c.beginPath(); c.roundRect(sx - s * 0.11, by - s * 0.5 - s * 0.09, s * 0.22, s * 0.1, 2); c.fill();
+  }
+  c.fillStyle = '#8a95a8';
+  c.beginPath(); c.moveTo(Fx - s * 0.34, by - s * 0.2); c.lineTo(Fx + s * 0.34, by - s * 0.2); c.lineTo(Fx, Fy); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.stroke();
+
+  // 지렛대 빔 (테크닉 빔: 두꺼운 몸통 + 안쪽 라이트)
+  c.strokeStyle = '#3f8fd6'; c.lineWidth = s * 0.24; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(padX, padY); c.lineTo(cupX, cupY); c.stroke();
+  c.strokeStyle = 'rgba(180,225,255,.4)'; c.lineWidth = s * 0.08;
+  c.beginPath(); c.moveTo(padX, padY); c.lineTo(cupX, cupY); c.stroke();
+  // 핀 구멍 몇 개
+  c.fillStyle = '#0d3a5c';
+  for (let i = 0; i <= 5; i++) {
+    const t = i / 5, hx = lerp(padX, cupX, t), hy = lerp(padY, cupY, t);
+    c.beginPath(); c.arc(hx, hy, s * 0.045, 0, 7); c.fill();
+  }
+  // 받침점 핀
+  c.fillStyle = '#0e2f4a'; c.beginPath(); c.arc(Fx, Fy, s * 0.13, 0, 7); c.fill();
+  c.fillStyle = '#5ab0f0'; c.beginPath(); c.arc(Fx, Fy, s * 0.06, 0, 7); c.fill();
+
+  // 발판 컵 (개구리 딛는 판)
+  c.save(); c.translate(cupX, cupY); c.rotate(-tilt);
+  c.fillStyle = '#2f7fbf';
+  c.beginPath(); c.roundRect(-s * 0.5, -s * 0.14, s * 1.0, s * 0.2, 4); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  c.restore();
+
+  // 누름 팔 끝 페달 + 손가락 + 누름 화살표 (장전 상태에서만)
+  c.save(); c.translate(padX, padY); c.rotate(-tilt);
+  c.fillStyle = '#ffb02e';
+  c.beginPath(); c.roundRect(-s * 0.4, -s * 0.12, s * 0.8, s * 0.24, 5); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
+  c.restore();
+  if (snap <= 0.001) {
+    const push = pressT;
+    const ax = padX, ay0 = padY - s * (1.5 + push * 0.5), ay1 = padY - s * 0.35;
+    c.strokeStyle = `rgba(255,${Math.round(176 - push * 120)},${Math.round(46)},0.95)`;
+    c.lineWidth = s * (0.14 + push * 0.1); c.lineCap = 'round';
+    c.beginPath(); c.moveTo(ax, ay0); c.lineTo(ax, ay1); c.stroke();
+    c.fillStyle = c.strokeStyle;
+    c.beginPath(); c.moveTo(ax, ay1 + s * 0.18);
+    c.lineTo(ax - s * 0.22, ay1 - s * 0.16); c.lineTo(ax + s * 0.22, ay1 - s * 0.16);
+    c.closePath(); c.fill();
+    c.font = `bold ${Math.max(11, s * 1.05)}px sans-serif`; c.textAlign = 'center';
+    c.fillStyle = '#ffd27a';
+    c.fillText('누름 ' + (+$('press').value) + '단', ax, ay0 - s * 0.25);
+  }
+  return { cupX, cupY };
+}
+
+function drawPad(c, M, cx, isGoal, isDone) {
+  let bob = 0;
+  const fx = padFx.find(f => f.x === cx);
+  if (fx) bob = Math.sin(fx.t * 12) * 5.5 * Math.exp(-fx.t * 2.6);
+  const px = M.x(cx), py = M.waterY + bob;
+  const rw = PAD_HALF * M.s, rh = Math.max(6, rw * 0.28);
+  c.save();
+  // 목표 발판 강조 링
+  if (isGoal) {
+    const pr = 0.5 + 0.5 * Math.sin(clock * 4);
+    c.strokeStyle = `rgba(255,208,46,${0.35 + 0.4 * pr})`;
+    c.lineWidth = 2.5;
+    c.beginPath(); c.ellipse(px, py, rw + 6 + pr * 4, rh + 4 + pr * 3, 0, 0, 7); c.stroke();
+  }
+  c.fillStyle = 'rgba(0,0,0,.35)';
+  c.beginPath(); c.ellipse(px + 3, py + 4, rw, rh, 0, 0, 7); c.fill();
+  const g = c.createRadialGradient(px - rw * 0.3, py - 3, 2, px, py, rw);
+  g.addColorStop(0, '#3fae5e'); g.addColorStop(1, '#1d7a3c');
+  c.fillStyle = g;
+  c.beginPath(); c.ellipse(px, py, rw, rh, 0, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 1.5; c.stroke();
+  c.strokeStyle = 'rgba(12,55,28,.5)'; c.lineWidth = 1;
+  const vcx = px - rw * 0.12, vcy = py;
+  for (let i = 0; i < 8; i++) {
+    const a = Math.PI * 2 * i / 8 + 0.35;
+    c.beginPath(); c.moveTo(vcx, vcy);
+    c.quadraticCurveTo(vcx + Math.cos(a) * rw * 0.45, vcy + Math.sin(a) * rh * 0.5,
+      vcx + Math.cos(a) * rw * 0.82, vcy + Math.sin(a) * rh * 0.8);
+    c.stroke();
+  }
+  c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.9, py - rh * 0.5); c.stroke();
+  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.95, py - rh * 0.1); c.stroke();
+  const wob = Math.sin(clock * 1.6 + cx * 0.05) * 2.5;
+  c.fillStyle = 'rgba(63,174,94,.13)';
+  c.beginPath(); c.ellipse(px + wob, py + rh * 2.4 + 4, rw * 0.85, rh * 0.65, 0, 0, 7); c.fill();
+  if (isDone) { c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#eafff0'; c.fillText('✓', px, py - 7); }
+  else if (isGoal) { c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillText('⭐', px, py - rh - 8); }
+  c.restore();
+}
+/* ── 배경 디테일 ── */
+function drawCattail(c, x, baseY, h, ph) {
+  c.save(); c.translate(x, baseY);
+  const tip = Math.sin(clock * 0.9 + ph) * 4;
+  c.strokeStyle = '#3f6d35'; c.lineWidth = 2.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(tip * 0.4, -h * 0.55, tip, -h); c.stroke();
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(2, 0); c.quadraticCurveTo(-10, -h * 0.42, -15 + tip * 0.4, -h * 0.66); c.stroke();
+  c.beginPath(); c.moveTo(-2, 0); c.quadraticCurveTo(12, -h * 0.3, 15 + tip * 0.4, -h * 0.5); c.stroke();
+  c.fillStyle = '#7a4a2b';
+  c.beginPath(); c.roundRect(tip - 3.5, -h, 7, h * 0.3, 4); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#c9a86a';
+  c.fillRect(tip - 1, -h - 6, 2, 6);
+  c.restore();
+}
+function drawDragonfly(c, W, H) {
+  const x = W * (0.4 + 0.22 * Math.sin(clock * 0.21));
+  const y = H * 0.2 + Math.sin(clock * 0.85) * 16;
+  const dir = Math.cos(clock * 0.21) >= 0 ? 1 : -1;
+  c.save(); c.translate(x, y); c.scale(dir, 1);
+  const flap = Math.sin(clock * 26);
+  c.fillStyle = 'rgba(190,230,255,.3)';
+  for (const wd of [-1, 1]) {
+    c.save(); c.rotate(wd * (0.55 + flap * 0.4));
+    c.beginPath(); c.ellipse(-8, -1, 10, 2.8, 0, 0, 7); c.fill(); c.restore();
+  }
+  c.strokeStyle = '#5ad0e0'; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-12, 0); c.lineTo(3, 0); c.stroke();
+  c.fillStyle = '#2fa8c0';
+  c.beginPath(); c.arc(5.5, 0, 2.8, 0, 7); c.fill();
+  c.fillStyle = '#0b2a33';
+  c.beginPath(); c.arc(6.5, -1, 1.1, 0, 7); c.fill();
+  c.restore();
+}
+function drawFireflies(c, W, waterY) {
+  for (let i = 0; i < 10; i++) {
+    const sp = 0.11 + (i % 5) * 0.04;
+    const x = W * (0.5 + 0.46 * Math.sin(clock * sp + i * 2.4));
+    const y = waterY - 16 - (26 + (i * 37) % 95) - Math.sin(clock * 0.7 + i * 1.3) * 12;
+    const tw = 0.5 + 0.5 * Math.sin(clock * 2.3 + i * 1.9);
+    c.save();
+    c.globalAlpha = 0.2 + 0.6 * tw;
+    c.fillStyle = '#d9ff7c'; c.shadowColor = '#c8ff5e'; c.shadowBlur = 9;
+    c.beginPath(); c.arc(x, y, 1.9, 0, 7); c.fill();
+    c.restore();
+  }
+}
+function draw() {
+  const { c, W, H } = fit();
+  const M = mapper(W, H);
+  const sky = c.createLinearGradient(0, 0, 0, M.waterY);
+  sky.addColorStop(0, '#0a101f'); sky.addColorStop(1, '#14203a');
+  c.fillStyle = sky; c.fillRect(0, 0, W, M.waterY);
+  c.fillStyle = '#f5e9c8';
+  c.beginPath(); c.arc(W * 0.86, H * 0.13, 22, 0, 7); c.fill();
+  c.fillStyle = '#0a101f';
+  c.beginPath(); c.arc(W * 0.86 - 9, H * 0.13 - 4, 18, 0, 7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.5)';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 137.5) % W, y = ((i * 89.7) % (M.waterY * 0.75));
+    const tw = 0.5 + 0.5 * Math.sin(clock * 2 + i);
+    c.globalAlpha = 0.25 + 0.45 * tw;
+    c.fillRect(x, y, 2, 2);
+  }
+  c.globalAlpha = 1;
+  const wat = c.createLinearGradient(0, M.waterY, 0, H);
+  wat.addColorStop(0, '#12305a'); wat.addColorStop(1, '#081428');
+  c.fillStyle = wat; c.fillRect(0, M.waterY, W, H - M.waterY);
+  c.strokeStyle = 'rgba(120,190,255,.25)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(0, M.waterY); c.lineTo(W, M.waterY); c.stroke();
+  const mx = W * 0.86;
+  for (let i = 0; i < 8; i++) {
+    const yy = M.waterY + 10 + i * 10;
+    if (yy > H - 4) break;
+    const wb = Math.sin(clock * 1.7 + i * 1.3) * 7;
+    c.fillStyle = `rgba(245,233,200,${0.11 - i * 0.012})`;
+    c.fillRect(mx - 14 + wb, yy, 28 - i * 2.4, 2.5);
+  }
+  c.strokeStyle = 'rgba(120,190,255,.1)';
+  for (let i = 0; i < 5; i++) {
+    const y = M.waterY + 16 + i * 22;
+    if (y > H - 6) break;
+    c.beginPath();
+    for (let x = 0; x <= W; x += 8) {
+      const yy = y + Math.sin(x * 0.03 + clock * 1.4 + i * 2) * 2.5;
+      x === 0 ? c.moveTo(x, yy) : c.lineTo(x, yy);
+    }
+    c.stroke();
+  }
+  // 거리 눈금 (30cm)
+  c.font = '10px sans-serif'; c.textAlign = 'center';
+  for (let d = 0; d <= 210; d += 30) {
+    c.strokeStyle = 'rgba(140,165,200,.22)';
+    c.beginPath(); c.moveTo(M.x(d), M.waterY); c.lineTo(M.x(d), M.waterY + 7); c.stroke();
+    c.fillStyle = 'rgba(140,165,200,.4)';
+    c.fillText(d + '', M.x(d), M.waterY + 19);
+  }
+  // 왼쪽 출발 둑 + 오른쪽 도착 둑
+  for (const [x0, x1, label] of [[WORLD_L, -6, '출발'], [212, WORLD_R, '도착 🏁']]) {
+    const px0 = M.x(x0), px1 = M.x(x1);
+    const g = c.createLinearGradient(0, M.waterY - 14, 0, H);
+    g.addColorStop(0, '#3b7a3d'); g.addColorStop(0.25, '#2b4a34'); g.addColorStop(1, '#17242c');
+    c.fillStyle = g;
+    c.beginPath(); c.roundRect(px0 - 8, M.waterY - 12, px1 - px0 + 16, H - M.waterY + 20, 8); c.fill();
+    c.fillStyle = 'rgba(200,230,210,.55)'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
+    c.fillText(label, (px0 + px1) / 2, M.waterY + 8);
+  }
+  drawCattail(c, M.x(-52), M.waterY - 8, 62, 0);
+  drawCattail(c, M.x(-42), M.waterY - 6, 46, 1.7);
+  drawCattail(c, M.x(222), M.waterY - 8, 58, 3.1);
+  drawCattail(c, M.x(228), M.waterY - 5, 44, 4.6);
+  drawDragonfly(c, W, H);
+  drawFireflies(c, W, M.waterY);
+  // 연잎 발판
+  PADS.forEach((p, i) => drawPad(c, M, p, i === goalIdx && !cleared, i < goalIdx));
+  // 착지 물결 링
+  rings.forEach(r => {
+    for (let k = 0; k < 3; k++) {
+      const rr = (r.t - k * 0.16) * 105;
+      if (rr <= 0) continue;
+      const a = Math.max(0, 0.55 - r.t * 0.42) * (1 - k * 0.3);
+      c.strokeStyle = `rgba(150,232,182,${a})`;
+      c.lineWidth = 2;
+      c.beginPath(); c.ellipse(M.x(r.x), M.waterY + 3, rr, rr * 0.22, 0, 0, 7); c.stroke();
+    }
+  });
+  // 지난 궤적
+  pastTrails.forEach((tr, i) => {
+    const a = 0.08 + 0.14 * (i + 1) / pastTrails.length;
+    c.strokeStyle = tr.ok ? `rgba(46,224,111,${a})` : `rgba(255,90,82,${a})`;
+    c.lineWidth = 1.5; c.setLineDash([4, 5]);
+    c.beginPath();
+    tr.pts.forEach(([x, y], k) => k ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y)));
+    c.stroke(); c.setLineDash([]);
+  });
+  // 예측 데모 궤적
+  if (demo) {
+    const dr = (traj, color, frac, label) => {
+      if (frac <= 0) return;
+      const n = Math.max(2, Math.floor(traj.pts.length * Math.min(1, frac)));
+      c.strokeStyle = color; c.lineWidth = 2.5;
+      c.save(); c.shadowColor = color; c.shadowBlur = 8;
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const [x, y] = traj.pts[i];
+        i ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y));
+      }
+      c.stroke(); c.restore();
+      if (frac >= 1) {
+        c.fillStyle = color; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+        c.fillText(label + ' → ' + Math.round(traj.dist) + 'cm', M.x(traj.pts[0][0] + traj.dist), M.waterY - 14);
+      }
+    };
+    dr(demo.t1, '#ffb02e', demo.progress, '누름 ' + demo.base + '단');
+    dr(demo.t2, '#c792ea', demo.progress - 1, '누름 ' + demo.base * 2 + '단');
+  }
+  // ⚡ 자동 실험 궤적 시연
+  if (auto && auto.traj) {
+    const traj = auto.traj, frac = Math.min(1, auto.progress);
+    const n = Math.max(2, Math.floor(traj.pts.length * frac));
+    c.strokeStyle = '#ffd02e'; c.lineWidth = 2.5;
+    c.save(); c.shadowColor = '#ffd02e'; c.shadowBlur = 8;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const [x, y] = traj.pts[i];
+      i ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y));
+    }
+    c.stroke(); c.restore();
+    c.fillStyle = '#ffd02e'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
+    c.fillText(`누름 ${auto.cur[0]}단 · ${ANG_NAME[auto.cur[1]]} → ${Math.round(traj.dist)}cm`,
+      M.x(traj.pts[0][0] + traj.dist / 2), M.y(traj.peak) - 10);
+  }
+  // 현재 비행 궤적
+  if (flight) {
+    c.strokeStyle = '#4da3ff'; c.lineWidth = 2.5;
+    c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 8;
+    c.beginPath();
+    flight.pts.forEach(([x, y], k) => k ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y)));
+    c.stroke(); c.restore();
+  }
+  // 개구리 + 런처
+  const frogSize = Math.max(12, 9 * M.s);
+  if (state === 'fly' && flight) {
+    drawLauncher(c, M, frogSize, (params().press - 1) / (PULL_MAX - 1), 1);
+    const last = flight.pts[flight.pts.length - 1];
+    const flyT = flight.t / (2 * flight.vy / G);
+    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx), flyT);
+    c.save();
+    c.font = 'bold 17px "Cascadia Mono", Consolas, monospace'; c.textAlign = 'center';
+    c.fillStyle = '#ffd02e'; c.shadowColor = 'rgba(0,0,0,.9)'; c.shadowBlur = 5;
+    c.fillText('▸ ' + Math.round(last[0] - flight.x0) + ' cm', M.x(last[0]), M.y(last[1]) - frogSize * 2.0);
+    c.restore();
+  } else if (state !== 'splash') {
+    const pNow = params();
+    const pressT = (pNow.press - 1) / (PULL_MAX - 1);
+    const snap = state === 'load' ? smooth(loadT / LOAD_DUR) : 0;
+    const cup = drawLauncher(c, M, frogSize, pressT, snap);
+    // 개구리 — 발판 컵 위에 (장전 땐 웅크림, 스냅 땐 튕겨 오름)
+    const crouchT = state === 'load' ? Math.max(0, 1 - snap * 1.6) : pressT;
+    drawFrog(c, cup.cupX, cup.cupY - frogSize * 0.35, frogSize, 'sit', weight === 2, 0, crouchT);
+    // 조준 화살표 + 각도 호 (발판 각도)
+    if (state === 'ready' && !cleared) {
+      const rad = pNow.angDeg * Math.PI / 180;
+      const len = 40 + pNow.press * 9;
+      const fx = cup.cupX, fy = cup.cupY - frogSize * 0.2;
+      const tx = fx + Math.cos(rad) * len, ty = fy - Math.sin(rad) * len;
+      c.strokeStyle = 'rgba(255,176,46,.4)'; c.lineWidth = 1.5; c.setLineDash([3, 4]);
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + 46, fy); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = 'rgba(255,176,46,.7)'; c.lineWidth = 2;
+      c.beginPath(); c.arc(fx, fy, 32, -rad, 0); c.stroke();
+      c.strokeStyle = 'rgba(255,176,46,.9)'; c.lineWidth = 3.5;
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke();
+      c.fillStyle = 'rgba(255,176,46,.9)';
+      const ha = Math.atan2(fy - ty, tx - fx);
+      c.beginPath();
+      c.moveTo(tx, ty);
+      c.lineTo(tx - Math.cos(ha - 0.4) * 13, ty + Math.sin(ha - 0.4) * 13);
+      c.lineTo(tx - Math.cos(ha + 0.4) * 13, ty + Math.sin(ha + 0.4) * 13);
+      c.fill();
+      c.font = 'bold 15px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#ffb02e';
+      c.fillText(pNow.angDeg + '°', tx + 8, ty + 2);
+    }
+  }
+  // 클리어 연출
+  if (celebrate) {
+    const ct = celebrate.t;
+    const ease = Math.min(1, ct * 0.9);
+    const cxp = M.x(110), cyp = M.waterY + 8;
+    const R0 = Math.min(W * 0.42, M.waterY * 0.94);
+    const cols = ['255,90,90', '255,170,60', '255,228,80', '110,230,130', '95,180,255', '190,145,255'];
+    c.save();
+    c.globalAlpha = 0.34 * ease;
+    c.lineCap = 'butt';
+    cols.forEach((col, i) => {
+      c.strokeStyle = `rgba(${col},1)`; c.lineWidth = Math.max(4, R0 * 0.035);
+      c.beginPath(); c.arc(cxp, cyp, R0 * (1 - i * 0.038), Math.PI, Math.PI * 2); c.stroke();
+    });
+    c.restore();
+    for (let i = 0; i < 24; i++) {
+      const ph = i * 1.7;
+      const rise = (ct * (22 + (i * 13) % 34) + (i * 41) % 90) % 175;
+      const px = M.x(190) + Math.sin(clock * 1.1 + ph) * (16 + (i * 7) % 42) - 20;
+      const py = M.waterY - 12 - rise;
+      const tw = 0.5 + 0.5 * Math.sin(clock * 3 + ph);
+      c.save();
+      c.globalAlpha = (0.25 + 0.65 * tw) * ease;
+      c.fillStyle = '#ffe98a'; c.shadowColor = '#ffd94e'; c.shadowBlur = 10;
+      c.beginPath(); c.arc(px, py, 2.3, 0, 7); c.fill();
+      c.restore();
+    }
+  }
+  // 착지 거리 팝업
+  if (distPop) {
+    const a = distPop.t < 1.3 ? Math.min(1, distPop.t * 4) : Math.max(0, 1 - (distPop.t - 1.3) / 0.6);
+    c.save();
+    c.globalAlpha = a; c.textAlign = 'center';
+    c.font = 'bold 27px "Cascadia Mono", Consolas, monospace';
+    c.fillStyle = '#ffb02e'; c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowBlur = 7;
+    c.fillText(Math.round(distPop.dist) + ' cm', M.x(distPop.x), M.waterY - 48 - distPop.t * 15);
+    c.restore();
+  }
+  // 첨벙
+  if (splash) {
+    c.fillStyle = 'rgba(140,200,255,.8)';
+    splash.drops.forEach(d => { c.beginPath(); c.arc(M.x(d.x) + d.dx, M.y(d.y), 2.5, 0, 7); c.fill(); });
+    const rr = splash.t * 90;
+    c.strokeStyle = `rgba(140,200,255,${Math.max(0, 0.6 - splash.t * 0.6)})`;
+    c.lineWidth = 2;
+    c.beginPath(); c.ellipse(M.x(splash.x), M.waterY + 2, rr, rr * 0.25, 0, 0, 7); c.stroke();
+  }
+}
+
+/* ── 메인 루프 ── */
+let lastTs = null;
+function loop(ts) {
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  clock += dt;
+  if (state === 'load') {
+    loadT += dt;
+    if (loadT >= LOAD_DUR) launchNow();
+  } else if (state === 'fly' && flight) {
+    flight.t += dt * SLOWMO;
+    const t = flight.t;
+    const y = flight.vy * t - 0.5 * G * t * t;
+    if (y <= 0 && flight.vy - G * t < 0) {
+      const xLand = flight.x0 + flight.vx * (2 * flight.vy / G);
+      flight.peak = flight.vy * flight.vy / (2 * G);
+      flight.pts.push([xLand, 0]);
+      landAt(xLand);
+    } else {
+      flight.peak = Math.max(flight.peak, y);
+      flight.pts.push([flight.x0 + flight.vx * t, y]);
+      $('hud_last').textContent = Math.round(flight.vx * t) + ' cm';
+    }
+  } else if (state === 'splash' && splash) {
+    splash.t += dt;
+    splash.drops.forEach(d => {
+      d.dx = (d.dx || 0) + d.vx * dt * 0.4;
+      d.y += d.vy * dt; d.vy -= G * dt * 0.6;
+    });
+    if (splash.t > 1.1) {
+      splash = null;
+      state = 'ready';
+      $('btnJump').disabled = false;
+      setStatus('', '다시 튕겨 — 이번엔 잘할 수 있어!');
+      refreshHud();
+    }
+  } else if (state === 'demo' && demo) {
+    demo.progress += dt * 1.1;
+    if (demo.progress > 2.6) {
+      state = 'ready';
+      const d = demo; demo = null;
+      pastTrails.push({ pts: d.t1.pts, ok: true }, { pts: d.t2.pts, ok: true });
+      if (pastTrails.length > 8) pastTrails.splice(0, pastTrails.length - 8);
+      $('btnJump').disabled = cleared;
+      setStatus('done', '확인 끝! 누름 2배 = 거리 약 4배');
+    }
+  } else if (state === 'auto' && auto) {
+    if (!auto.traj) {
+      const [pu, a] = auto.combos[auto.i];
+      auto.cur = [pu, a];
+      auto.traj = buildTraj(START_X, pu, a, weight === 1 ? 0.1 : 0.2);
+      auto.progress = 0; auto.logged = false;
+    }
+    auto.progress += dt * 3.4;
+    if (auto.progress >= 1 && !auto.logged) {
+      auto.logged = true;
+      grid[weight][auto.cur[0] + '|' + auto.cur[1]] = auto.traj.dist;
+      drawGrid();
+    }
+    if (auto.progress >= 1.25) {
+      auto.traj = null;
+      if (++auto.i >= auto.combos.length) {
+        auto = null;
+        state = 'ready';
+        $('btnJump').disabled = cleared;
+        setStatus('done', '자동 실험 끝! 표에서 제일 멀리 간 조합을 찾아봐');
+      }
+    }
+  }
+  padFx.forEach(f => f.t += dt); padFx = padFx.filter(f => f.t < 1.6);
+  rings.forEach(r => r.t += dt); rings = rings.filter(r => r.t < 1.5);
+  if (distPop && (distPop.t += dt) > 1.9) distPop = null;
+  if (celebrate) celebrate.t += dt;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ── 이벤트 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('game').classList.toggle('on', b.dataset.tab === 'game');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+});
+$('btnJump').onclick = doJump;
+$('btnRestart').onclick = () => { pastTrails = []; restart(); };
+$('press').addEventListener('input', () => { refreshReadouts(); drawGrid(); });
+$('pressDn').onclick = () => { $('press').value = Math.max(1, +$('press').value - 1); $('press').dispatchEvent(new Event('input')); };
+$('pressUp').onclick = () => { $('press').value = Math.min(PULL_MAX, +$('press').value + 1); $('press').dispatchEvent(new Event('input')); };
+$('pickAng').querySelectorAll('button').forEach(b => b.onclick = () => {
+  angDeg = +b.dataset.a;
+  $('pickAng').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  refreshReadouts(); drawGrid();
+});
+$('pickWt').querySelectorAll('button').forEach(b => b.onclick = () => {
+  weight = +b.dataset.w;
+  $('pickWt').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('v_wt').textContent = weight === 1 ? '가벼움' : '무거움';
+  refreshReadouts(); drawGrid();
+});
+$('btnAuto').onclick = startAuto;
+$('btnClearTb').onclick = () => { grid[weight] = Object.create(null); drawGrid(); };
+$('btnO').onclick = () => { if (state === 'ready') runPredict(true); };
+$('btnX').onclick = () => { if (state === 'ready') runPredict(false); };
+cv.addEventListener('pointerdown', () => { if (state === 'ready' && !cleared) doJump(); });
+window.addEventListener('resize', draw);
+
+refreshReadouts();
+refreshHud();
+drawGrid();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

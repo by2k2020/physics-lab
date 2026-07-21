@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미스터 윈 휠러 — 관성 주행 자동차 · 브릭큐 프라임</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.on { display: inline-flex; background: rgba(20,50,70,.78); color: var(--accent); border: 1.5px solid rgba(77,163,255,.6); box-shadow: 0 0 24px rgba(77,163,255,.25); }
+
+  .side { width: 344px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .side h3 span { color: #5a6a85; font-weight: 400; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pick button { flex: 1; min-width: 34px; padding: 8px 0; font-size: 13px; font-family: var(--mono); border-radius: 8px; }
+  .pick.floor button, .pick.mass button { font-family: 'Malgun Gothic', sans-serif; font-size: 12.5px; flex: 1; min-width: 60px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+  .pick.floor button.on { border-color: var(--amber); color: var(--amber); background: rgba(255,176,46,.1); }
+  .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); }
+  .speed-row button { padding: 4px 11px; font-size: 12px; border-radius: 7px; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+  .dist-hero { background: linear-gradient(135deg, rgba(77,163,255,.14), rgba(46,224,111,.14)); border: 1.5px solid rgba(77,163,255,.5); border-radius: 12px; padding: 10px 14px 9px; margin: 6px 0 10px; text-align: center; box-shadow: 0 0 18px rgba(77,163,255,.12) inset; }
+  .dist-hero .k { font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .dist-hero .v { font-family: var(--mono); font-size: 34px; font-weight: 800; color: #fff; letter-spacing: 1px; line-height: 1.15; }
+  .dist-hero .sub { font-size: 11.5px; color: var(--green); font-weight: 700; margin-top: 2px; }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); } .readout .v.c { color: var(--purple); }
+  canvas.graph { display: block; width: 100%; height: 250px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  .graph-hint { font-size: 10.5px; color: var(--dim); text-align: right; margin: 4px 2px 10px; }
+  #zoom { display: none; position: fixed; inset: 0; background: rgba(4,8,16,.92); z-index: 50; cursor: zoom-out; }
+  #zoom.on { display: block; }
+  #zoom .zbox { position: absolute; inset: 4% 5% 8%; background: #0b101d; border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+  #zoom canvas { width: 100%; height: 100%; display: block; }
+  #zoom .hint { position: absolute; bottom: 2.4%; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 13px; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.mx th, table.mx td { border: 1px solid var(--border); text-align: center; padding: 6px 2px; }
+  table.mx th { background: var(--panel2); color: var(--dim); font-weight: 600; font-size: 11px; }
+  table.mx td { font-family: var(--mono); color: #c6d2e6; }
+  table.mx td.lab { font-family: 'Malgun Gothic', sans-serif; color: var(--dim); font-size: 11px; }
+  table.mx td.empty { color: #38445c; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table.log { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  table.log th, table.log td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  table.log th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  table.log td { font-family: var(--mono); color: #c6d2e6; }
+  table.log td.cond { font-family: inherit; }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { border: 1px solid var(--border); padding: 7px 10px; text-align: center; }
+  .theory-box th { background: var(--panel2); color: var(--dim); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 52vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
+      <div class="title">🏎️ 미스터 윈 휠러 — 관성 주행 자동차</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp">실험 · 관성 주행</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 실험 · 관성 주행 ══════ -->
+  <section class="exp on" id="exp">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">현재 속도 (관성)</span><span id="hud_v">0.0 m/s</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">이동 거리</span><span id="hud_d">0.00 m</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="run">👉 자동차 밀기</button>
+        <button id="reset">↺</button>
+      </div>
+
+      <h3>실험 조건</h3>
+      <div class="param"><label>👉 미는 힘 (밀어주는 세기) <b id="v_p">4단계</b></label>
+        <div class="pick" id="pickP">
+          <button data-p="1">1</button><button data-p="2">2</button>
+          <button data-p="3">3</button><button data-p="4" class="on">4</button>
+          <button data-p="5">5</button><button data-p="6">6</button>
+          <button data-p="7">7</button><button data-p="8">8</button>
+        </div>
+      </div>
+      <div class="param"><label>🛣️ 바닥 (붙잡는 힘 = 마찰력) <b id="v_f">보통</b></label>
+        <div class="pick floor" id="pickF">
+          <button data-f="smooth">매끈</button>
+          <button data-f="normal" class="on">보통</button>
+          <button data-f="rough">거침</button>
+        </div>
+      </div>
+      <div class="param"><label>⚖️ 자동차 무게 <b id="v_m">가벼움</b></label>
+        <div class="pick mass" id="pickM">
+          <button data-m="light" class="on">가벼움</button>
+          <button data-m="heavy">무거움</button>
+        </div>
+      </div>
+      <div class="speed-row"><span>재생 속도</span>
+        <button class="on" id="spa">1×</button>
+        <button id="spb">0.5×</button>
+        <button id="spc">0.25×</button>
+      </div>
+
+      <h3>측정값</h3>
+      <div class="dist-hero"><div class="k">🏁 도달 거리 (얼마나 굴러갔나)</div><div class="v" id="ro_dist">—</div><div class="sub" id="ro_sub"></div></div>
+      <div class="readouts">
+        <div class="readout"><div class="k">밀린 직후 속도 (관성)</div><div class="v a" id="ro_v0">—</div></div>
+        <div class="readout"><div class="k">붙잡는 힘 = 감속도</div><div class="v b" id="ro_a">—</div></div>
+        <div class="readout"><div class="k">멈출 때까지 시간</div><div class="v c" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">움직임 상태</div><div class="v" id="ro_state" style="font-size:14px">준비</div></div>
+      </div>
+
+      <h3>속도–시간 그래프 <span>(관성 → 마찰로 감속)</span></h3>
+      <canvas class="graph" id="gr" height="250"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
+
+      <h3>격자 결과표 · 미는 힘 × 바닥 <span>(도달 거리 m)</span></h3>
+      <div class="ctl-row">
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 이 무게로 표 전부 채우기</button>
+        <button id="clearMx">지우기</button>
+      </div>
+      <table class="mx" id="matrix"></table>
+
+      <details style="margin-top:12px">
+        <summary>📋 실험 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table class="log" id="logtb">
+            <thead><tr><th>#</th><th>힘</th><th>바닥</th><th>무게</th><th>초속</th><th>거리</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>관성</b>과 <b>마찰력</b>을 배웁니다. 자동차를 손으로 한 번 밀고 놓으면, 아무도 밀지 않는데도 계속 굴러가다(관성) 바닥이 붙잡는 힘(마찰) 때문에 서서히 멈춥니다.
+        아이는 미는 세기·바닥 종류·무게를 바꿔가며 "얼마나 멀리 갈까?"를 예측하고, 격자 결과표로 규칙을 스스로 찾아냅니다. 레고에듀케이션 브릭큐 프라임의 실물 관성 자동차 실험과 같은 원리입니다.
+      </div>
+
+      <h2>🏎️ 손을 놓았는데 왜 계속 굴러갈까?</h2>
+      <p style="font-size:16px">한 번 세게 밀어주면 자동차는 <b>움직이려는 성질(관성)</b>을 얻어 손을 놓아도 계속 굴러간다. 하지만 바닥이 바퀴를 살짝 <b>붙잡는 힘(마찰력)</b> 때문에 속도가 조금씩 줄다가 결국 멈춘다.</p>
+
+      <h2 style="margin-top:22px">🤔 굴러가는 힘 vs 붙잡는 힘</h2>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        굴러가게 하는 힘 = <b>관성</b> · 멈추게 하는 힘 = <b>마찰력</b> → 관성이 마찰에 다 붙잡히는 순간 자동차가 <b>정지</b>한다.
+      </p>
+      <ul>
+        <li>세게 밀수록 <b>운동 에너지</b>가 커져 → 더 멀리 간다</li>
+        <li>바닥이 거칠수록 <b>마찰력</b>이 커져 → 빨리 멈춰 덜 간다</li>
+        <li>무거운 차는 같은 힘으로 밀면 <b>느리게 출발</b>해 → 덜 굴러간다</li>
+      </ul>
+
+      <table>
+        <thead><tr><th>바꾼 것</th><th>커지면</th><th>도달 거리</th></tr></thead>
+        <tbody>
+          <tr><td>미는 힘 👉</td><td>관성 ↑ (운동 에너지 ↑)</td><td style="color:var(--green)">멀어진다 ▲</td></tr>
+          <tr><td>바닥 거칠기 🛣️</td><td>마찰력 ↑</td><td style="color:var(--red)">짧아진다 ▼</td></tr>
+          <tr><td>자동차 무게 ⚖️</td><td>같은 힘엔 느리게 출발</td><td style="color:var(--red)">짧아진다 ▼</td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--green)">관성 (굴러가는 힘)</b> — 움직이던 물체가 계속 움직이려는 성질. 손을 놓아도 자동차가 굴러가는 이유예요.<br>
+        <b style="color:var(--accent)">운동 에너지</b> — 움직이는 물체가 가진 힘. 세게 밀수록 커져서 더 멀리 굴러가요.<br>
+        <b style="color:var(--amber)">마찰력 (붙잡는 힘)</b> — 바닥이 바퀴를 붙잡아 방해하는 힘. 거친 바닥일수록 커져서 빨리 멈춰요.<br>
+        <b style="color:var(--purple)">감속 (등가속 운동)</b> — 속도가 일정한 비율로 줄어드는 것. 그래서 속도–시간 그래프가 <b>곧은 내리막 직선</b>이 돼요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (4단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 밀어보기</b> — 미는 힘 4, 바닥 보통으로 "밀기"를 눌러 자동차가 굴러가다 멈추는 걸 관찰</li>
+        <li><b>② 힘 실험</b> — 바닥 고정, 미는 힘을 2→4→6→8로 올리며 "더 멀리 가네!" (격자 표에 기록)</li>
+        <li><b>③ 바닥 실험</b> — 힘 고정, 바닥을 매끈→보통→거침으로 바꾸며 "거칠면 빨리 멈춰!"</li>
+        <li><b>④ 자동 실험</b> — ⚡버튼으로 표를 한 번에 채우고, 가장 멀리 가는 조합 찾기</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 레고 브릭큐 실험 팁</b><br>
+        · 실물 관성 자동차를 바닥에 놓고 <b>같은 세기로 밀어</b> 도달 거리를 줄자로 재기 — 시뮬 예측과 비교<br>
+        · 바닥을 바꿔보기: 마룻바닥(매끈) → 카펫(거침) 위에서 굴려 거리 차이 확인<br>
+        · 차 위에 브릭을 더 얹어 무겁게 만든 뒤 같은 힘으로 밀어보기 — "왜 덜 갈까?" 이야기<br>
+        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → 격자 표 비교하며 "왜 다르지?"
+      </div>
+
+      <details style="margin-top:18px">
+        <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div class="inner" style="padding:12px 16px; line-height:2">
+          손을 놓은 뒤에는 마찰만 작용해 <b>일정하게 감속</b>합니다: 감속도 <span class="eq">a = μg</span> (μ=마찰계수, g=9.8).<br>
+          미는 힘이 준 운동 에너지 <span class="eq">E</span>에서 초기 속도 <span class="eq">v₀ = √(2E/m)</span>, 도달 거리 <span class="eq">d = v₀² ÷ (2a)</span>.<br>
+          정리하면 <span class="eq">d = E ÷ (m·μ·g)</span> — 미는 힘(E)에 비례, 무게(m)·마찰(μ)에 반비례합니다.<br>
+          속도–시간 그래프가 곧은 직선인 이유는 감속도 a가 일정(등가속)하기 때문입니다.
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 물리 상수·매핑 ── */
+const G = 9.8;
+const E0 = 0.9;                                          // 미는 힘 1단계당 운동 에너지 계수
+const MU = { smooth: 0.12, normal: 0.22, rough: 0.38 };  // 붙잡는 힘(마찰) 계수
+const MASS = { light: 1.0, heavy: 1.7 };
+const FLOOR_KO = { smooth: '매끈', normal: '보통', rough: '거침' };
+const MASS_KO = { light: '가벼움', heavy: '무거움' };
+const TRACK_M = 7;                                       // 화면 트랙 길이(m)
+const WHEEL_M = 0.16;                                    // 바퀴 반지름(m) — 회전 표시용
+
+function physics(p, floor, massKey) {
+  const m = MASS[massKey], mu = MU[floor];
+  const a = mu * G;                     // 감속도 (붙잡는 힘)
+  const v0 = Math.sqrt(2 * E0 * p / m); // 밀린 직후 속도 (관성)
+  const dist = v0 * v0 / (2 * a);       // 도달 거리
+  const tStop = v0 / a;                 // 멈출 때까지 시간
+  return { m, mu, a, v0, dist, tStop };
+}
+
+/* ── 캔버스 헬퍼 (기어비 시뮬 공용) ── */
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function niceStep(max) {
+  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
+  return 10 * p;
+}
+function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  const { c, W, H } = fit(cv);
+  if (W < 20) return;
+  const fs = Math.max(13, Math.round(Math.min(W, H) / 20));
+  const L = fs * 3.6, R = fs, T = fs * 2.2, B = fs * 3.1;
+  c.clearRect(0, 0, W, H);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = fs + 'px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) {
+    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + fs * 1.35);
+  }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - fs * 0.5, py(v) + fs * 0.35);
+  }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center'; c.font = fs + 'px sans-serif';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.5);
+  c.save(); c.translate(fs * 0.95, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
+  if (tNow > 0 && tNow < tMax) {
+    c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
+    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
+  }
+  series.forEach(s => {
+    if (s.pts.length < 2) return;
+    c.save();
+    if (s.dash) c.setLineDash([6, 5]); else { c.shadowColor = s.color; c.shadowBlur = 8; }
+    c.strokeStyle = s.color; c.lineWidth = Math.max(2.5, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
+    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke();
+    c.setLineDash([]);
+    if (!s.dash) {
+      const last = s.pts[s.pts.length - 1];
+      c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4, fs * 0.32), 0, 7); c.fill();
+    }
+    c.restore();
+  });
+  let lx = fs;
+  c.font = 'bold ' + fs + 'px sans-serif';
+  series.forEach(s => {
+    c.fillStyle = s.color; c.fillRect(lx, fs * 0.7, fs * 1.4, fs * 0.34);
+    c.fillStyle = '#d7e1f2'; c.textAlign = 'left'; c.fillText(s.name, lx + fs * 1.75, fs * 1.25);
+    lx += fs * 1.75 + c.measureText(s.name).width + fs;
+  });
+}
+/* 그래프 클릭 확대 */
+let zoomArgs = null, zoomOn = false;
+function drawGraph(series, tMax, vMax, tNow, yLabel) {
+  renderGraph($('gr'), series, tMax, vMax, tNow, yLabel);
+  zoomArgs = [series, tMax, vMax, tNow, yLabel];
+  if (zoomOn) renderGraph($('zoomCv'), ...zoomArgs);
+}
+$('gr').addEventListener('click', () => {
+  zoomOn = true; $('zoom').classList.add('on');
+  requestAnimationFrame(() => { if (zoomArgs) renderGraph($('zoomCv'), ...zoomArgs); });
+});
+$('zoom').onclick = () => { zoomOn = false; $('zoom').classList.remove('on'); };
+
+/* ── 애니메이션 엔진 (기어비 시뮬 공용) ── */
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const real = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    o.step(real * o.scale());
+    o.draw();
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    stop() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : '');
+    txt.textContent = m === 'run' ? '굴러가는 중' : m === 'done' ? '정지 (완료)' : '준비';
+  };
+}
+function speedCtl(btns) {
+  let v = 1; const vals = [1, 0.5, 0.25];
+  btns.forEach((b, i) => b.onclick = () => { v = vals[i]; btns.forEach((x, k) => x.classList.toggle('on', k === i)); });
+  return () => v;
+}
+function pick(container, attr, onChange) {
+  const btns = [...container.querySelectorAll('button')];
+  let val = container.querySelector('button.on').dataset[attr];
+  btns.forEach(b => b.onclick = () => {
+    val = b.dataset[attr];
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    onChange && onChange(val);
+  });
+  return () => val;
+}
+
+/* ── 배경 (바닥 종류별) ── */
+function drawScene(c, W, H, S) {
+  const skyTop = '#0a101f', skyBot = '#101a30';
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, skyTop); bg.addColorStop(1, skyBot);
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+
+  const groundY = H * 0.72;
+  const x0 = 62, xr = W - 26;
+  const pxPerM = (xr - x0) / TRACK_M;
+  const mx = m => x0 + m * pxPerM;
+
+  // 바닥 띠
+  const floor = S.P.floor;
+  const floorCol = { smooth: '#25405f', normal: '#3a3f4c', rough: '#4a3626' };
+  const floorTop = { smooth: '#3a5f88', normal: '#565d6e', rough: '#6b4e33' };
+  const gg = c.createLinearGradient(0, groundY, 0, H);
+  gg.addColorStop(0, floorTop[floor]); gg.addColorStop(1, floorCol[floor]);
+  c.fillStyle = gg; c.fillRect(0, groundY, W, H - groundY);
+  // 바닥 표면 질감
+  if (floor === 'smooth') {
+    c.strokeStyle = 'rgba(180,220,255,.35)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(0, groundY + 2); c.lineTo(W, groundY + 2); c.stroke();
+    c.strokeStyle = 'rgba(180,220,255,.12)';
+    for (let x = 0; x < W; x += 46) { c.beginPath(); c.moveTo(x, groundY + 10); c.lineTo(x + 24, groundY + 10); c.stroke(); }
+  } else if (floor === 'normal') {
+    c.fillStyle = 'rgba(200,210,230,.10)';
+    for (let x = 8; x < W; x += 15) for (let y = groundY + 8; y < H; y += 13) { c.beginPath(); c.arc(x, y, 1.3, 0, 7); c.fill(); }
+  } else {
+    c.strokeStyle = 'rgba(255,220,180,.16)'; c.lineWidth = 1.4;
+    for (let x = 0; x < W; x += 11) { c.beginPath(); c.moveTo(x, groundY + 6); c.lineTo(x + 6, groundY + 16); c.stroke(); }
+    c.fillStyle = 'rgba(30,18,8,.5)';
+    for (let x = 6; x < W; x += 26) { c.beginPath(); c.arc(x, groundY + 9 + (x % 13), 2.4, 0, 7); c.fill(); }
+  }
+
+  // 거리 눈금자
+  c.fillStyle = '#9aa8bf'; c.font = '11px sans-serif'; c.textAlign = 'center';
+  c.strokeStyle = 'rgba(150,170,210,.35)'; c.lineWidth = 1;
+  for (let m = 0; m <= TRACK_M; m++) {
+    const x = mx(m);
+    c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - (m % 1 === 0 ? 10 : 5)); c.stroke();
+    c.fillText(m + 'm', x, groundY - 15);
+  }
+  // 출발선
+  c.strokeStyle = 'rgba(46,224,111,.8)'; c.lineWidth = 2; c.setLineDash([5, 4]);
+  c.beginPath(); c.moveTo(mx(0), groundY - 60); c.lineTo(mx(0), groundY); c.stroke(); c.setLineDash([]);
+  c.fillStyle = 'var(--green)'; c.fillStyle = '#2ee06f'; c.textAlign = 'left';
+  c.fillText('출발', mx(0) + 4, groundY - 48);
+
+  // 예상 도달선 (완료 후) / 실제 정지 깃발
+  if (S.showTarget && S.target != null) {
+    const tx = mx(Math.min(S.target, TRACK_M));
+    c.strokeStyle = 'rgba(77,163,255,.65)'; c.lineWidth = 2; c.setLineDash([6, 5]);
+    c.beginPath(); c.moveTo(tx, groundY - 78); c.lineTo(tx, groundY); c.stroke(); c.setLineDash([]);
+    // 깃발
+    c.fillStyle = '#ff5a52'; c.beginPath();
+    c.moveTo(tx, groundY - 78); c.lineTo(tx + 22, groundY - 70); c.lineTo(tx, groundY - 62); c.closePath(); c.fill();
+    c.fillStyle = '#dbe6f7'; c.textAlign = 'center'; c.font = 'bold 12px sans-serif';
+    c.fillText('🏁 ' + S.target.toFixed(2) + 'm', tx, groundY - 84);
+  }
+
+  // 자동차
+  const carX = mx(Math.min(S.pos, TRACK_M));
+  drawCar(c, carX, groundY, S);
+
+  // 밀기 손 (출발 순간)
+  if (S.pushPhase > 0) {
+    const hx = carX - 46 - S.pushPhase * 8, hy = groundY - 26;
+    c.font = '30px sans-serif'; c.textAlign = 'center';
+    c.globalAlpha = Math.min(1, S.pushPhase);
+    c.fillText('👉', hx, hy);
+    c.globalAlpha = 1;
+    // 힘 화살표
+    c.strokeStyle = '#2ee06f'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(hx + 16, hy - 6); c.lineTo(carX - 26, hy - 6); c.stroke(); c.lineCap = 'butt';
+  }
+
+  // 모션 라인 (빠를수록 길게)
+  if (S.v > 0.15) {
+    const len = 10 + Math.min(40, S.v * 12);
+    c.strokeStyle = `rgba(150,220,255,${Math.min(.6, .18 + S.v / 8)})`; c.lineWidth = 2; c.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      const yy = groundY - 20 - k * 12;
+      c.beginPath(); c.moveTo(carX - 32 - k * 6, yy); c.lineTo(carX - 32 - len - k * 6, yy); c.stroke();
+    }
+    c.lineCap = 'butt';
+  }
+
+  return { groundY, mx, pxPerM };
+}
+
+function drawCar(c, x, groundY, S) {
+  const wheelR = 13;
+  const bodyH = 26, bodyW = 62;
+  const cy = groundY - wheelR - bodyH / 2;
+  c.save(); c.translate(x, 0);
+  // 그림자
+  c.fillStyle = 'rgba(0,0,0,.35)';
+  c.beginPath(); c.ellipse(0, groundY - 1, bodyW * 0.55, 5, 0, 0, 7); c.fill();
+  // 차체
+  const heavy = S.P.massKey === 'heavy';
+  const col1 = heavy ? '#b8402f' : '#2f9fe0', col2 = heavy ? '#7d2418' : '#1c6fa8';
+  const body = c.createLinearGradient(0, cy - bodyH / 2, 0, cy + bodyH / 2);
+  body.addColorStop(0, col1); body.addColorStop(1, col2);
+  c.fillStyle = body;
+  c.beginPath(); c.roundRect(-bodyW / 2, cy - bodyH / 2, bodyW, bodyH, 6); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.4; c.stroke();
+  // 캐빈
+  const cabW = 30, cabH = 16;
+  c.fillStyle = heavy ? '#d86a55' : '#5cc0f5';
+  c.beginPath(); c.roundRect(-cabW / 2 - 4, cy - bodyH / 2 - cabH + 3, cabW, cabH, 5); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.stroke();
+  // 창문
+  c.fillStyle = 'rgba(220,245,255,.85)';
+  c.beginPath(); c.roundRect(-cabW / 2 - 1, cy - bodyH / 2 - cabH + 6, 11, 9, 2); c.fill();
+  c.beginPath(); c.roundRect(-cabW / 2 + 13, cy - bodyH / 2 - cabH + 6, 9, 9, 2); c.fill();
+  // 무게 표시(무거우면 벽돌 스터드)
+  if (heavy) {
+    c.fillStyle = '#ffd23e';
+    for (let k = -1; k <= 1; k++) { c.beginPath(); c.arc(k * 12, cy - bodyH / 2 - cabH - 1, 3, 0, 7); c.fill(); }
+  }
+  // 헤드라이트
+  c.fillStyle = '#fff4c2'; c.beginPath(); c.arc(bodyW / 2 - 4, cy + 2, 3.5, 0, 7); c.fill();
+  // 바퀴 2개 (회전)
+  const ang = S.pos / WHEEL_M;
+  [-bodyW / 2 + 15, bodyW / 2 - 15].forEach(wx => {
+    c.save(); c.translate(wx, groundY - wheelR);
+    c.fillStyle = '#14181f'; c.beginPath(); c.arc(0, 0, wheelR, 0, 7); c.fill();
+    c.strokeStyle = '#3a4150'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#8b98ad'; c.beginPath(); c.arc(0, 0, wheelR * 0.42, 0, 7); c.fill();
+    c.rotate(ang);
+    c.strokeStyle = '#c6d2e6'; c.lineWidth = 2;
+    for (let k = 0; k < 4; k++) { c.rotate(Math.PI / 2); c.beginPath(); c.moveTo(0, 0); c.lineTo(wheelR * 0.85, 0); c.stroke(); }
+    c.restore();
+  });
+  c.restore();
+}
+
+/* ═════════ 실험 로직 ═════════ */
+const cv = $('cv');
+let t = 0, pos = 0, v = 0, pushPhase = 0, finished = false, samples = [], prevSamples = [], prevLabel = '';
+let cur = null, runCount = 0;
+let P = {};
+
+const getP = pick($('pickP'), 'p', onParam);
+const getF = pick($('pickF'), 'f', onParam);
+const getM = pick($('pickM'), 'm', onParam);
+
+function readParams() {
+  P = { p: +getP(), floor: getF(), massKey: getM() };
+  cur = physics(P.p, P.floor, P.massKey);
+}
+function preview() {
+  $('v_p').textContent = P.p + '단계';
+  $('v_f').textContent = FLOOR_KO[P.floor] + ' (μ ' + cur.mu.toFixed(2) + ')';
+  $('v_m').textContent = MASS_KO[P.massKey];
+  $('ro_v0').textContent = cur.v0.toFixed(2) + ' m/s';
+  $('ro_a').textContent = '−' + cur.a.toFixed(2) + ' m/s²';
+  $('ro_dist').textContent = cur.dist.toFixed(2) + ' m';
+  $('ro_time').textContent = cur.tStop.toFixed(2) + ' s';
+  $('ro_sub').textContent = '이 조건의 예상 거리';
+  $('ro_state').textContent = '준비';
+}
+function reset() {
+  readParams();
+  t = 0; pos = 0; v = 0; pushPhase = 0; finished = false; samples = [];
+  preview();
+  $('bd').className = 'badge';
+  draw(); drawG();
+  markMatrix();
+}
+function onParam() {
+  if (!eng.running) { reset(); setSt('ready'); $('run').disabled = false; }
+}
+function step(dt) {
+  if (finished) return;
+  if (pushPhase < 1 && pos === 0) {
+    // 짧은 밀기 연출
+    pushPhase += dt * 4;
+    if (pushPhase >= 1) pushPhase = 1;
+    v = cur.v0 * pushPhase;
+    return;
+  }
+  t += dt;
+  v = cur.v0 - cur.a * t;
+  if (v <= 0 || t >= cur.tStop) { v = 0; t = cur.tStop; pos = cur.dist; finished = true; }
+  else pos = cur.v0 * t - 0.5 * cur.a * t * t;
+  if (samples.length === 0 || t - samples[samples.length - 1][0] > 0.03)
+    samples.push([t, Math.max(0, v)]);
+}
+function draw() {
+  const { c, W, H } = fit(cv);
+  if (W < 60 || H < 60) return;
+  const S = { P, pos, v, pushPhase: (pushPhase < 1 && pos === 0 && eng.running) ? pushPhase : 0,
+    showTarget: finished, target: finished ? cur.dist : null };
+  drawScene(c, W, H, S);
+  $('hud_t').textContent = t.toFixed(1) + ' s';
+  $('hud_v').textContent = Math.max(0, v).toFixed(1) + ' m/s';
+  $('hud_d').textContent = pos.toFixed(2) + ' m';
+  $('ro_state').textContent = finished ? '정지 🛑' : (eng.running ? '굴러가는 중 🏎️' : '준비');
+}
+function drawG() {
+  const vMax = Math.max(1, cur ? cur.v0 : 1, ...samples.map(s => s[1]), ...prevSamples.map(s => s[1])) * 1.18;
+  const tMax = Math.max(0.5, cur ? cur.tStop : 1, samples.length ? samples[samples.length - 1][0] : 0) * 1.08;
+  const series = [];
+  if (prevSamples.length > 1) series.push({ name: '이전: ' + prevLabel, color: '#8b98ad', dash: true, pts: prevSamples.slice() });
+  series.push({ name: '현재 속도', color: '#2ee06f', pts: samples.slice() });
+  drawGraph(series, tMax, vMax, finished ? 0 : t, '속도 (m/s)');
+}
+function onDone() {
+  results[matKey(P.p, P.floor)] = cur.dist;
+  buildMatrix();
+  const bd = $('bd');
+  bd.className = 'badge on';
+  bd.textContent = `🏁 ${cur.dist.toFixed(2)}m 이동 — 관성으로 ${cur.tStop.toFixed(1)}s 굴러가다 마찰로 정지`;
+  $('ro_sub').textContent = '✓ 방금 측정한 거리';
+  // 기록
+  const tb = $('logtb').querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${++runCount}</td><td>${P.p}</td><td class="cond">${FLOOR_KO[P.floor]}</td>` +
+    `<td class="cond">${MASS_KO[P.massKey]}</td><td>${cur.v0.toFixed(2)}</td><td>${cur.dist.toFixed(2)}</td>`;
+  tb.prepend(tr);
+  while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+  // 이전 곡선 저장(비교용)
+  prevSamples = samples.slice(); prevLabel = `${P.p}·${FLOOR_KO[P.floor]}`;
+  $('run').disabled = false;
+  drawG();
+}
+
+const setSt = statusUI($('led'), $('st'));
+const scale = speedCtl([$('spa'), $('spb'), $('spc')]);
+const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
+
+$('run').onclick = () => { if (finished) reset(); eng.start(); $('run').disabled = true; };
+$('reset').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run').disabled = false; };
+
+/* ── 격자 결과표 ── */
+const FORCES = [1, 2, 3, 4, 5, 6, 7, 8];
+const FLOORS = ['smooth', 'normal', 'rough'];
+const results = {};                       // key: `${p}|${floor}` → dist (현재 무게 기준)
+const matKey = (p, f) => p + '|' + f;
+function distColor(d) {
+  const t = Math.min(1, d / 6);
+  const r = Math.round(255 - t * 210), g = Math.round(90 + t * 130), b = Math.round(80 + t * 30);
+  return `rgba(${r},${g},${b},${0.14 + t * 0.22})`;
+}
+function buildMatrix() {
+  const el = $('matrix');
+  let html = '<thead><tr><th>힘＼바닥</th>' + FLOORS.map(f => `<th>${FLOOR_KO[f]}</th>`).join('') + '</tr></thead><tbody>';
+  for (const p of FORCES) {
+    html += `<tr><td class="lab">${p}</td>`;
+    for (const f of FLOORS) {
+      const d = results[matKey(p, f)];
+      const isCur = (P && +P.p === p && P.floor === f);
+      if (d == null) html += `<td class="empty${isCur ? ' cur' : ''}">·</td>`;
+      else html += `<td class="${isCur ? 'cur' : ''}" style="background:${distColor(d)}">${d.toFixed(2)}</td>`;
+    }
+    html += '</tr>';
+  }
+  el.innerHTML = html + '</tbody>';
+}
+function markMatrix() { buildMatrix(); }
+$('autoScan').onclick = () => {
+  if (eng.running) return;
+  for (const p of FORCES) for (const f of FLOORS)
+    results[matKey(p, f)] = physics(p, f, P.massKey).dist;
+  buildMatrix();
+  $('bd').className = 'badge on';
+  $('bd').textContent = `⚡ 자동 실험 완료 — ${MASS_KO[P.massKey]} 무게로 8×3 = 24칸 채움`;
+};
+$('clearMx').onclick = () => { for (const k in results) delete results[k]; buildMatrix(); };
+
+$('pickM').addEventListener('click', () => {
+  // 무게가 바뀌면 표는 무게 종속이라 초기화
+  for (const k in results) delete results[k];
+  buildMatrix();
+});
+
+/* ── 탭 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('exp').classList.toggle('on', b.dataset.tab === 'exp');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  if (b.dataset.tab === 'exp') requestAnimationFrame(() => { if (!eng.running) { draw(); drawG(); } });
+});
+
+window.addEventListener('resize', () => { if (!eng.running) { draw(); drawG(); } });
+buildMatrix();
+requestAnimationFrame(() => reset());
+</script>
+</body>
+</html>

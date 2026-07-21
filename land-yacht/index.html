@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>육상용 요트 시뮬레이션 — 브릭큐 프라임 · 코딩더메이커</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .t2d { font-size: 10px; background: linear-gradient(135deg,#0e7d5a,#2ee06f); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.go { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.slow { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.stuck { display: inline-flex; background: rgba(70,20,20,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 358px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .side h3 small { text-transform: none; color: #5a6a85; letter-spacing: 0; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #0e9e63, #2ee06f); border-color: #2ee06f; font-weight: 700; flex: 1; color: #06210f; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.12); font-weight: 700; }
+  .pick.ang button { font-family: var(--mono); }
+  .pick.ang button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.12); }
+  .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); }
+  .speed-row button { padding: 4px 11px; font-size: 12px; border-radius: 7px; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.g { color: var(--green); } .readout .v.r { color: var(--red); }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 66px; flex: none; }
+  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+  .bar-row .val { width: 44px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  table.mx { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 8px 0; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 11.5px; font-weight: 700; padding: 6px 0; }
+  table.mx td.rlab { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 12px; font-weight: 700; }
+  table.mx td.best { background: rgba(46,224,111,.2); color: var(--green); font-weight: 800; }
+  table.mx td.zero { color: #55617a; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.mx td.empty { color: #38445c; }
+  canvas.graph { display: block; width: 100%; height: 250px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  .graph-hint { font-size: 10.5px; color: var(--dim); text-align: right; margin: 4px 2px 0; }
+  #zoom { display: none; position: fixed; inset: 0; background: rgba(4,8,16,.92); z-index: 50; cursor: zoom-out; }
+  #zoom.on { display: block; }
+  #zoom .zbox { position: absolute; inset: 4% 5% 8%; background: #0b101d; border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+  #zoom canvas { width: 100%; height: 100%; display: block; }
+  #zoom .hint { position: absolute; bottom: 2.4%; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 13px; }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { border: 1px solid var(--border); padding: 7px 10px; text-align: center; }
+  .theory-box th { background: var(--panel2); color: var(--dim); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 54vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
+      <div class="title">⛵ 육상용 요트 시뮬레이션<span class="t2d">2D</span></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp">실험 · 육상 요트</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 실험 · 육상 요트 ══════ -->
+  <section class="exp on" id="exp">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">현재 속도</span><span id="hud_v">0.0 m/s</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">주행 거리</span><span id="hud_d">0.0 m</span></div>
+      </div>
+      <div class="cam-row">
+        <button id="camTop" class="on">🕊 위에서</button>
+        <button id="camSide">👁 옆에서</button>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="run">▶ 출발!</button>
+        <button id="pause" disabled>⏸</button>
+        <button id="reset">↺</button>
+      </div>
+
+      <h3>실험 조건</h3>
+      <div class="param"><label>바람 힘 (추진력의 원천) <b id="v_wind">중</b></label>
+        <div class="pick" id="pickWind">
+          <button data-w="약">약풍</button>
+          <button data-w="중" class="on">중풍</button>
+          <button data-w="강">강풍</button>
+        </div>
+      </div>
+      <div class="param"><label>돛 각도 (바람에 대한 받음각) <b id="v_ang">45°</b></label>
+        <div class="pick ang" id="pickAng">
+          <button data-a="0">15°</button>
+          <button data-a="1">30°</button>
+          <button data-a="2" class="on">45°</button>
+          <button data-a="3">60°</button>
+          <button data-a="4">75°</button>
+        </div>
+      </div>
+      <div class="param"><label>돛 크기 (받는 넓이) <b id="v_sail">큰 돛</b></label>
+        <div class="pick" id="pickSail">
+          <button data-s="소">작은 돛</button>
+          <button data-s="대" class="on">큰 돛</button>
+        </div>
+      </div>
+      <div class="speed-row"><span>재생 속도</span>
+        <button class="on" id="spa">1×</button>
+        <button id="spb">0.5×</button>
+        <button id="spc">0.25×</button>
+      </div>
+
+      <h3>추진력 vs 마찰</h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">추진력 (앞으로)</span><div class="bar-track"><div class="bar-fill" id="barThr" style="background:linear-gradient(90deg,#0e9e63,#2ee06f);width:20%"></div></div><span class="val" id="valThr">—</span></div>
+        <div class="bar-row"><span class="lab">마찰 (뒤로)</span><div class="bar-track"><div class="bar-fill" id="barFric" style="background:linear-gradient(90deg,#8a2a24,#ff5a52);width:20%"></div></div><span class="val" id="valFric">—</span></div>
+      </div>
+
+      <h3>측정값</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">추진력 (앞 성분)</div><div class="v g" id="ro_thr">—</div></div>
+        <div class="readout"><div class="k">돛 효율 f(각도)</div><div class="v a" id="ro_eff">—</div></div>
+        <div class="readout"><div class="k">최고 속도</div><div class="v b" id="ro_vmax">—</div></div>
+        <div class="readout"><div class="k">주행 거리</div><div class="v" id="ro_dist" style="color:#fff">—</div></div>
+      </div>
+
+      <h3>격자 결과표 <small>(바람 × 돛 각도 → 거리 m · 초록 = 최적 각도)</small></h3>
+      <table class="mx" id="matrix"></table>
+      <div class="ctl-row" style="margin-top:10px">
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 표 전부 채우기</button>
+        <button id="clearMx">지우기</button>
+      </div>
+
+      <h3>속도–시간 그래프</h3>
+      <canvas class="graph" id="gr" height="250"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 눈에 보이지 않는 <b>바람의 힘</b>이 떨어져 있는 돛을 밀어 물체를 움직이는 <b>원거리 작용</b>과,
+        그 힘을 앞으로 나아가게 바꿔 주는 <b>돛 각도(받음각)</b>의 원리를 배웁니다.
+        아이는 바람 세기와 돛 각도를 바꿔 가며 "어떤 각도에서 가장 멀리 갈까?"를 예측 → 실험 → 격자표 비교로 직접 찾아냅니다.
+        레고에듀케이션 공식 레슨 <b>Land Yacht</b>와 같은 개념으로, 45° 부근의 <b>스위트스폿</b>을 스스로 발견하는 것이 목표입니다.
+      </div>
+
+      <h2>⛵ 바람은 어떻게 요트를 밀까?</h2>
+      <p style="font-size:16px">요트를 미는 건 <b>바람이 돛을 때리는 힘</b>이다. 바람은 돛에 닿지 않아도 멀리서 불어와 돛을 밀어 준다 — 이것이 <b>원거리 작용</b>(멀리서 작용하는 힘)이다.</p>
+
+      <h2 style="margin-top:22px">🤔 왜 각도가 중요할까?</h2>
+      <p>돛을 바람과 <b>나란히</b> 세우면(받음각이 너무 작으면) 바람이 옆으로 스쳐 지나가 힘을 거의 못 받는다.
+        반대로 돛을 바람에 <b>정면으로</b> 딱 막아 세우면(받음각이 너무 크면) 힘은 세지만 대부분 <b>옆으로</b> 밀려 앞으로 못 간다.
+        그 사이 <b>45° 부근</b>에서 바람 힘의 <b>앞으로 가는 성분</b>이 가장 커진다 — 이것을 <b>스위트스폿</b>이라 한다.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        앞으로 미는 힘 = <span class="eq">바람 힘 × 돛 효율 f(각도) − 마찰</span><br>
+        추진력이 마찰보다 <b>작으면 요트는 아예 출발하지 못한다.</b>
+      </p>
+
+      <table>
+        <thead><tr><th>돛 각도 (받음각)</th><th>바람 받는 모양</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>15° (너무 눕힘)</td><td>바람이 스쳐 지나감</td><td>힘 약함 → 잘 못 감</td></tr>
+          <tr><td>30°</td><td>비스듬히 받음</td><td>제법 나아감</td></tr>
+          <tr style="background:rgba(46,224,111,.08)"><td><b>45° (스위트스폿)</b></td><td>앞 성분 최대</td><td><b>가장 멀리 · 가장 빠름</b></td></tr>
+          <tr><td>60°</td><td>비스듬히 받음</td><td>제법 나아감</td></tr>
+          <tr><td>75° (너무 세움)</td><td>거의 정면으로 막음</td><td>옆으로만 밀림 → 잘 못 감</td></tr>
+        </tbody>
+      </table>
+      <p><b>맞바람(정면 바람)은?</b> 바람이 요트 앞에서 정면으로 불면 돛을 어떻게 세워도 <b>앞으로 미는 힘이 생기지 않는다.</b> 그래서 요트는 바람을 <b>옆에서(가로바람)</b> 받아야 달릴 수 있다.</p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--green)">바람 힘 (추진력)</b> — 바람이 돛을 밀어 요트를 앞으로 나아가게 하는 힘. 바람이 셀수록, 돛이 클수록 커져요.<br>
+        <b style="color:var(--purple)">원거리 작용</b> — 물체에 직접 닿지 않아도 멀리서 미치는 힘. 바람·자석·중력이 그래요.<br>
+        <b style="color:var(--amber)">받음각 (돛 각도)</b> — 돛이 바람을 받는 기울기. 이 각도에 따라 앞으로 가는 힘이 달라져요.<br>
+        <b style="color:var(--accent)">스위트스폿</b> — 가장 좋은 결과가 나오는 지점. 이 요트에선 45° 부근이에요.<br>
+        <b style="color:var(--red)">마찰</b> — 바퀴와 땅 사이에서 움직임을 방해하는 힘. 추진력이 마찰보다 커야 출발해요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — "돛을 몇 도로 하면 가장 멀리 갈까?" 아이들에게 손들어 예측하게 하기</li>
+        <li><b>② 각도 실험</b> — 바람 세기·돛 크기 고정, 돛 각도만 15°→75°로 바꿔 출발 (격자표에 거리 기록)</li>
+        <li><b>③ 스위트스폿 발견</b> — 표에서 초록 칸(최대) 찾기 → "45°가 제일 멀리 가네!"</li>
+        <li><b>④ 바람 세기</b> — 45° 고정, 약풍→강풍으로 올리며 "세게 불수록 더 멀리·더 빨리"</li>
+        <li><b>⑤ 반전</b> — 약풍 + 15°(또는 75°)로 두면 "출발 못 함" — 추진력이 마찰보다 약한 경우 확인</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 레고 브릭큐 실험 팁</b><br>
+        · 실물 육상 요트에 돛(범포)을 붙이고 <b>선풍기</b>로 가로바람을 불어 준다 — 시뮬의 바람 세기 = 선풍기 세기<br>
+        · 돛 각도를 15°·30°·45°·60°·75°로 바꿔 가며 <b>같은 출발선에서 몇 칸 가는지</b> 측정해 표와 비교<br>
+        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → 격자표 비교하며 "왜 45°가 제일 멀지?" 이야기<br>
+        · 돛을 바람과 나란히(눕혀) 두면 안 움직인다 — 이것도 "각도가 힘을 정한다"는 증거!
+      </div>
+
+      <details style="margin-top:18px; border:1px solid var(--border); border-radius:10px; background:#0c1220">
+        <summary style="padding:9px 13px; font-size:12.5px; color:#c6d2e6; cursor:pointer; font-weight:700">🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div style="padding:12px 16px; line-height:2; font-size:13px">
+          가로바람을 받는 평판 돛의 추진력은 <span class="eq">F = 바람힘 × 돛넓이 × sin(2 × 돛각도)</span> 로 근사됩니다.<br>
+          <span class="eq">sin(2θ)</span> 는 θ=45°에서 최대(=1)이므로, 45°가 앞으로 가는 힘이 가장 큰 <b>스위트스폿</b>이 됩니다.<br>
+          여기서 <span class="eq">마찰</span>을 뺀 것이 실제 가속에 쓰이고, 속도가 붙으면 공기저항이 커져 <b>일정한 최고 속도</b>에 도달합니다.<br>
+          <span style="color:var(--dim)">이 차시는 레고에듀케이션 공식 레슨 Land Yacht(바람 힘·원거리 작용)와 같은 원리입니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 물리 상수 ── */
+const T_RUN = 12;                       // 측정 시간(초)
+const TRACK = 60;                       // 트랙 길이(m) — 최대 주행 ~43m라 완주 캡 없음
+const WINDF = { '약': 3, '중': 5, '강': 7 };
+const SAILA = { '소': 0.7, '대': 1.0 };
+const ANGLES = [15, 30, 45, 60, 75];    // 돛 각도(받음각) 5단
+const FRIC = 1.5, DRAG = 1.4, MASS = 1;
+const eff = deg => Math.sin(2 * deg * Math.PI / 180);   // 돛 효율 (45°에서 1)
+const thrustOf = (windKey, sailKey, deg) => WINDF[windKey] * SAILA[sailKey] * eff(deg);
+
+/* 한 판 시뮬 결과 계산 (애니메이션과 동일한 적분) */
+function computeRun(windKey, sailKey, deg) {
+  const Fd = thrustOf(windKey, sailKey, deg);
+  let v = 0, x = 0, mv = 0; const dt = 0.02;
+  for (let tt = 0; tt < T_RUN; tt += dt) {
+    let a = (v <= 1e-4 && Fd <= FRIC) ? 0 : (Fd - FRIC - DRAG * v) / MASS;
+    v = Math.max(0, v + a * dt);
+    x += v * dt; if (v > mv) mv = v;
+    if (x >= TRACK) { x = TRACK; break; }
+  }
+  return { dist: x, vmax: mv, thrust: Fd };
+}
+
+/* ── 캔버스 공용 ── */
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function niceStep(max) {
+  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
+  return 10 * p;
+}
+function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  const { c, W, H } = fit(cv);
+  if (W < 20) return;
+  const fs = Math.max(13, Math.round(Math.min(W, H) / 20));
+  const L = fs * 3.4, R = fs, T = fs * 1.8, B = fs * 3.0;
+  c.clearRect(0, 0, W, H);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = fs + 'px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) {
+    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText(t.toFixed(0), px(t), H - B + fs * 1.3);
+  }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - fs * 0.5, py(v) + fs * 0.35);
+  }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.4);
+  c.save(); c.translate(fs * 0.9, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
+  if (tNow > 0 && tNow < tMax) {
+    c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
+    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
+  }
+  series.forEach(s => {
+    if (s.pts.length < 2) return;
+    c.save(); c.shadowColor = s.color; c.shadowBlur = 8;
+    c.strokeStyle = s.color; c.lineWidth = Math.max(3, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
+    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke();
+    const last = s.pts[s.pts.length - 1];
+    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4, fs * 0.3), 0, 7); c.fill();
+    c.restore();
+  });
+}
+const graphArgs = new Map(); let zoomSrc = null;
+function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  renderGraph(cv, series, tMax, vMax, tNow, yLabel);
+  graphArgs.set(cv, [series, tMax, vMax, tNow, yLabel]);
+  if (zoomSrc === cv) renderGraph($('zoomCv'), series, tMax, vMax, tNow, yLabel);
+}
+$('gr').addEventListener('click', () => {
+  zoomSrc = $('gr'); $('zoom').classList.add('on');
+  requestAnimationFrame(() => { const a = graphArgs.get(zoomSrc); if (a) renderGraph($('zoomCv'), ...a); });
+});
+$('zoom').onclick = () => { zoomSrc = null; $('zoom').classList.remove('on'); };
+
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const real = Math.min((ts - lastTs) / 1000, 0.05); lastTs = ts;
+    o.step(real * o.scale()); o.draw();
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); o.setStatus('pause'); },
+    stop() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : m === 'pause' ? 'pause' : '');
+    txt.textContent = m === 'run' ? '주행 중' : m === 'done' ? '완료' : m === 'pause' ? '일시정지' : '준비';
+  };
+}
+function speedCtl(btns) {
+  let v = 1; const vals = [1, 0.5, 0.25];
+  btns.forEach((b, i) => b.onclick = () => { v = vals[i]; btns.forEach((x, k) => x.classList.toggle('on', k === i)); });
+  return () => v;
+}
+function pick(container, attr, onChange) {
+  const btns = [...container.querySelectorAll('button')];
+  let val = container.querySelector('button.on').dataset[attr];
+  btns.forEach(b => b.onclick = () => {
+    val = b.dataset[attr];
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    onChange && onChange(val);
+  });
+  return () => val;
+}
+
+/* ── 씬 그리기 헬퍼 ── */
+function drawWindArrowsTop(c, W, H, phase, strength) {
+  // 위에서 본 가로바람 — 위→아래로 흐르는 파란 화살 (셀수록 진하고 많음)
+  const cols = 5 + strength * 2;
+  c.save(); c.strokeStyle = 'rgba(90,170,255,.45)'; c.fillStyle = 'rgba(90,170,255,.5)';
+  c.lineWidth = 1.5 + strength * 0.4; c.lineCap = 'round';
+  for (let i = 0; i < cols; i++) {
+    const x = (i + 0.5) / cols * W;
+    const len = 26 + strength * 10;
+    const y0 = ((phase * (40 + strength * 30) + i * 57) % (H + 80)) - 40;
+    c.globalAlpha = 0.5 + strength * 0.12;
+    c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y0 + len); c.stroke();
+    c.beginPath(); c.moveTo(x, y0 + len + 6); c.lineTo(x - 4, y0 + len - 3); c.lineTo(x + 4, y0 + len - 3); c.closePath(); c.fill();
+  }
+  c.restore();
+  // 바람 방향 라벨
+  c.save(); c.fillStyle = 'rgba(120,180,255,.9)'; c.font = 'bold 13px "Malgun Gothic",sans-serif';
+  c.textAlign = 'left'; c.fillText('💨 바람 ↓ (가로바람)', 14, 24); c.restore();
+}
+function drawYachtTop(c, x, y, deg, size, moving) {
+  // 위에서 본 육상 요트 — 진행방향 +x(오른쪽)
+  c.save(); c.translate(x, y);
+  // 그림자
+  c.fillStyle = 'rgba(0,0,0,.28)';
+  c.beginPath(); c.ellipse(0, size * 0.5, size * 1.5, size * 0.5, 0, 0, 7); c.fill();
+  // 3바퀴 (뒤 2 · 앞 1)
+  c.fillStyle = '#1b2436';
+  [[-size * 0.9, -size * 0.8], [-size * 0.9, size * 0.8], [size * 1.15, 0]].forEach(p => {
+    c.save(); c.translate(p[0], p[1]); c.fillStyle = '#0e1626';
+    c.beginPath(); c.roundRect(-size * 0.34, -size * 0.16, size * 0.68, size * 0.32, size * 0.1); c.fill();
+    c.strokeStyle = 'rgba(150,180,220,.3)'; c.lineWidth = 1.4; c.stroke(); c.restore();
+  });
+  // 섀시 (삼각 하이). 앞이 뾰족
+  const hull = c.createLinearGradient(-size, 0, size * 1.4, 0);
+  hull.addColorStop(0, '#3a465e'); hull.addColorStop(1, '#5b6c8c');
+  c.fillStyle = hull;
+  c.beginPath();
+  c.moveTo(size * 1.5, 0); c.lineTo(-size, -size * 0.7); c.lineTo(-size, size * 0.7); c.closePath();
+  c.fill(); c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5; c.stroke();
+  // 조종석(빨강 브릭)
+  c.fillStyle = '#ff5a52';
+  c.beginPath(); c.roundRect(-size * 0.5, -size * 0.28, size * 0.5, size * 0.56, size * 0.12); c.fill();
+  // 마스트(중심) + 돛
+  const mastX = size * 0.15, mastY = 0;
+  const L = size * 1.65;                          // 돛 길이
+  const dr = deg * Math.PI / 180;
+  const dx = Math.cos(dr), dy = Math.sin(dr);     // 돛 방향(트랙 기준 각)
+  // 돛 (바람 방향 +y로 살짝 부풂)
+  c.save(); c.translate(mastX, mastY);
+  const ax = -dx * L / 2, ay = -dy * L / 2, bx = dx * L / 2, by = dy * L / 2;
+  const mx = (ax + bx) / 2, my = (ay + by) / 2 + L * 0.22;   // 아래(바람쪽)로 부픔
+  const sailGrad = c.createLinearGradient(ax, ay, bx, by);
+  sailGrad.addColorStop(0, '#eaf1fb'); sailGrad.addColorStop(1, '#b9c9e0');
+  c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx, my, bx, by);
+  c.lineWidth = Math.max(5, size * 0.34); c.strokeStyle = sailGrad; c.lineCap = 'round'; c.stroke();
+  // 돛 테두리
+  c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx, my, bx, by);
+  c.lineWidth = 1.5; c.strokeStyle = 'rgba(40,70,120,.5)'; c.stroke();
+  // 마스트
+  c.fillStyle = '#2b3550'; c.beginPath(); c.arc(0, 0, Math.max(3.5, size * 0.16), 0, 7); c.fill();
+  c.restore();
+  // 추진력(초록·앞) / 바람이 미는 힘(파랑) 화살 — 움직일 때만
+  if (moving) {
+    // 앞으로 미는 힘
+    c.strokeStyle = '#2ee06f'; c.fillStyle = '#2ee06f'; c.lineWidth = 3.5; c.lineCap = 'round';
+    const fl = size * 1.4;
+    c.beginPath(); c.moveTo(size * 1.6, 0); c.lineTo(size * 1.6 + fl, 0); c.stroke();
+    c.beginPath(); c.moveTo(size * 1.6 + fl + 8, 0); c.lineTo(size * 1.6 + fl - 3, -6); c.lineTo(size * 1.6 + fl - 3, 6); c.closePath(); c.fill();
+    c.fillStyle = '#8affbb'; c.font = 'bold 11px "Malgun Gothic",sans-serif'; c.textAlign = 'center';
+    c.fillText('추진력', size * 1.6 + fl / 2, -10);
+  }
+  c.restore();
+}
+function drawYachtSide(c, x, groundY, size, deg, moving, phase) {
+  c.save(); c.translate(x, groundY);
+  // 그림자
+  c.fillStyle = 'rgba(0,0,0,.3)';
+  c.beginPath(); c.ellipse(size * 0.2, 4, size * 1.6, size * 0.34, 0, 0, 7); c.fill();
+  // 바퀴 2개
+  [[-size * 0.9, 0], [size * 1.05, 0]].forEach(p => {
+    c.save(); c.translate(p[0], -size * 0.4);
+    c.fillStyle = '#0e1626'; c.beginPath(); c.arc(0, 0, size * 0.42, 0, 7); c.fill();
+    c.strokeStyle = '#4a5878'; c.lineWidth = 3; c.stroke();
+    c.strokeStyle = 'rgba(150,180,220,.4)'; c.lineWidth = 1.4;
+    const wa = moving ? phase * 6 : 0;
+    for (let k = 0; k < 4; k++) { const a = wa + k * Math.PI / 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * size * 0.36, Math.sin(a) * size * 0.36); c.stroke(); }
+    c.restore();
+  });
+  // 섀시
+  c.fillStyle = '#4a5878';
+  c.beginPath(); c.roundRect(-size * 1.1, -size * 0.72, size * 2.3, size * 0.34, size * 0.1); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4; c.stroke();
+  // 조종석 빨강 브릭 + 미니피겨 머리
+  c.fillStyle = '#ff5a52'; c.beginPath(); c.roundRect(-size * 0.9, -size * 1.05, size * 0.7, size * 0.4, size * 0.1); c.fill();
+  c.fillStyle = '#ffd23e'; c.beginPath(); c.arc(-size * 0.55, -size * 1.2, size * 0.2, 0, 7); c.fill();
+  // 마스트 + 삼각 돛 (기울기 = 돛 각도 시각화)
+  const lean = (deg - 45) / 45 * 0.5;   // 각도에 따라 돛 기울기 살짝 변화
+  c.save(); c.translate(size * 0.15, -size * 0.72);
+  const mastH = size * 2.5;
+  c.strokeStyle = '#cbd5e6'; c.lineWidth = Math.max(3, size * 0.14); c.lineCap = 'round';
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.sin(lean) * mastH, -mastH); c.stroke();
+  // 돛(삼각)
+  const tx = Math.sin(lean) * mastH, ty = -mastH;
+  const sailGrad = c.createLinearGradient(0, 0, size * 1.3, ty * 0.5);
+  sailGrad.addColorStop(0, '#eaf1fb'); sailGrad.addColorStop(1, '#b9c9e0');
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(tx, ty); c.lineTo(size * 1.25, -size * 0.2); c.closePath();
+  c.fillStyle = sailGrad; c.fill(); c.strokeStyle = 'rgba(40,70,120,.5)'; c.lineWidth = 1.4; c.stroke();
+  c.restore();
+  c.restore();
+}
+function drawWindArrowsSide(c, W, y, phase, strength) {
+  // 옆에서 — 가로로 흐르는 바람 속도선 (왼→오)
+  c.save(); c.strokeStyle = 'rgba(90,170,255,.4)'; c.lineWidth = 1.5 + strength * 0.4; c.lineCap = 'round';
+  const rows = 3 + strength;
+  for (let i = 0; i < rows; i++) {
+    const yy = y - 20 - i * 34;
+    const len = 30 + strength * 12;
+    const x0 = ((phase * (60 + strength * 40) + i * 90) % (W + 120)) - 120;
+    c.globalAlpha = 0.4 + strength * 0.1;
+    c.beginPath(); c.moveTo(x0, yy); c.lineTo(x0 + len, yy); c.stroke();
+    c.fillStyle = 'rgba(90,170,255,.5)';
+    c.beginPath(); c.moveTo(x0 + len + 6, yy); c.lineTo(x0 + len - 3, yy - 4); c.lineTo(x0 + len - 3, yy + 4); c.closePath(); c.fill();
+  }
+  c.restore();
+  c.save(); c.fillStyle = 'rgba(120,180,255,.9)'; c.font = 'bold 13px "Malgun Gothic",sans-serif';
+  c.textAlign = 'left'; c.fillText('💨 바람 →', 14, 24); c.restore();
+}
+function drawTrackMarks(c, xOf, yBase, top) {
+  // 거리 눈금 포스트 (0,10,...,60m)
+  c.save();
+  for (let d = 0; d <= TRACK; d += 10) {
+    const x = xOf(d);
+    c.strokeStyle = 'rgba(120,150,200,.25)'; c.lineWidth = 1.5;
+    if (top) { c.beginPath(); c.moveTo(x, yBase - 4); c.lineTo(x, yBase + 4); c.stroke(); }
+    else { c.beginPath(); c.moveTo(x, yBase); c.lineTo(x, yBase + 8); c.stroke(); }
+    c.fillStyle = 'rgba(150,175,210,.7)'; c.font = '11px var(--mono, monospace)'; c.textAlign = 'center';
+    c.fillText(d + 'm', x, top ? yBase + 18 : yBase + 22);
+  }
+  c.restore();
+}
+
+/* ═════════ 실험 · 육상 요트 ═════════ */
+(() => {
+  const cv = $('cv');
+  let t = 0, pos = 0, vel = 0, vmax = 0, finished = false, samples = [];
+  let phase = 0, view = 'top';
+  let P = {};
+  // 격자: grids[sailKey][windKey][angleIdx] = 거리
+  const grids = { '소': {}, '대': {} };
+  ['소', '대'].forEach(s => ['약', '중', '강'].forEach(w => grids[s][w] = [null, null, null, null, null]));
+
+  const getWind = pick($('pickWind'), 'w', onParam);
+  const getAng = pick($('pickAng'), 'a', onParam);
+  const getSail = pick($('pickSail'), 's', onParam);
+
+  function readParams() {
+    const w = getWind(), s = getSail(), ai = +getAng(), deg = ANGLES[ai];
+    P = { w, s, ai, deg, thrust: thrustOf(w, s, deg), eff: eff(deg) };
+  }
+  function preview() {
+    const thr = P.thrust, net = Math.max(0, thr - FRIC);
+    $('ro_thr').textContent = thr.toFixed(2);
+    $('ro_eff').textContent = P.eff.toFixed(2);
+    const scale = WINDF['강'] * SAILA['대'];   // 최대 추진력 기준
+    $('barThr').style.width = Math.min(100, thr / scale * 100) + '%';
+    $('barFric').style.width = Math.min(100, FRIC / scale * 100) + '%';
+    $('valThr').textContent = thr.toFixed(1);
+    $('valFric').textContent = FRIC.toFixed(1);
+  }
+  function reset() {
+    readParams();
+    t = 0; pos = 0; vel = 0; vmax = 0; finished = false; samples = [];
+    $('v_wind').textContent = { '약': '약', '중': '중', '강': '강' }[P.w];
+    $('v_ang').textContent = P.deg + '°';
+    $('v_sail').textContent = P.s === '대' ? '큰 돛' : '작은 돛';
+    $('ro_vmax').textContent = '—'; $('ro_dist').textContent = '—';
+    $('bd').className = 'badge';
+    preview(); renderGrid(); draw(); drawG();
+  }
+  function onParam() {
+    $('v_wind').textContent = getWind();
+    $('v_ang').textContent = ANGLES[+getAng()] + '°';
+    $('v_sail').textContent = getSail() === '대' ? '큰 돛' : '작은 돛';
+    if (!eng.running) { reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; }
+  }
+  function step(dt) {
+    if (finished) return;
+    t += dt; phase += dt;
+    const Fd = P.thrust;
+    let a = (vel <= 1e-4 && Fd <= FRIC) ? 0 : (Fd - FRIC - DRAG * vel) / MASS;
+    vel = Math.max(0, vel + a * dt);
+    pos += vel * dt; if (vel > vmax) vmax = vel;
+    if (pos >= TRACK) { pos = TRACK; finished = true; }
+    if (t >= T_RUN) { t = T_RUN; finished = true; }
+    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.06)
+      samples.push({ t, v: vel });
+  }
+  function xOfTop(W) { const L = W * 0.08, R = W * 0.9; return d => L + (d / TRACK) * (R - L); }
+  function draw() {
+    const { c, W, H } = fit(cv);
+    if (W < 60 || H < 60) return;
+    // 배경
+    const bg = c.createLinearGradient(0, 0, 0, H);
+    if (view === 'top') { bg.addColorStop(0, '#0c1424'); bg.addColorStop(1, '#0a1120'); }
+    else { bg.addColorStop(0, '#0b1730'); bg.addColorStop(0.62, '#0d2038'); bg.addColorStop(0.62, '#12200f'); bg.addColorStop(1, '#0e1a0b'); }
+    c.fillStyle = bg; c.fillRect(0, 0, W, H);
+    const strength = WINDF[P.w];
+    const sIdx = P.w === '약' ? 1 : P.w === '중' ? 2 : 3;
+    const xOf = xOfTop(W);
+    const px = xOf(pos);
+
+    if (view === 'top') {
+      // 트랙 밴드
+      const ty = H * 0.5, bandH = Math.min(H * 0.44, 240);
+      c.fillStyle = 'rgba(30,44,68,.55)';
+      c.fillRect(xOf(0), ty - bandH / 2, xOf(TRACK) - xOf(0), bandH);
+      c.strokeStyle = 'rgba(120,150,200,.3)'; c.lineWidth = 2;
+      c.strokeRect(xOf(0), ty - bandH / 2, xOf(TRACK) - xOf(0), bandH);
+      // 차선 점선
+      c.strokeStyle = 'rgba(255,255,255,.14)'; c.setLineDash([12, 14]); c.lineWidth = 2;
+      c.beginPath(); c.moveTo(xOf(0), ty); c.lineTo(xOf(TRACK), ty); c.stroke(); c.setLineDash([]);
+      drawWindArrowsTop(c, W, H, phase, sIdx);
+      drawTrackMarks(c, xOf, ty + bandH / 2 - 6, true);
+      // 출발선
+      c.strokeStyle = 'rgba(46,224,111,.6)'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(xOf(0), ty - bandH / 2); c.lineTo(xOf(0), ty + bandH / 2); c.stroke();
+      const size = Math.min(30, bandH * 0.16);
+      drawYachtTop(c, px, ty, P.deg, size, vel > 0.05);
+    } else {
+      const gy = H * 0.72;
+      // 하늘/땅 이미 배경. 땅선
+      c.strokeStyle = 'rgba(120,150,90,.5)'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+      c.fillStyle = 'rgba(40,60,30,.5)'; c.fillRect(0, gy, W, H - gy);
+      drawWindArrowsSide(c, W, gy, phase, sIdx);
+      drawTrackMarks(c, xOf, gy + 2, false);
+      c.strokeStyle = 'rgba(46,224,111,.6)'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(xOf(0), gy); c.lineTo(xOf(0), gy - 120); c.stroke();
+      const size = 30;
+      drawYachtSide(c, px, gy, size, P.deg, vel > 0.05, phase);
+    }
+    // HUD
+    $('hud_t').textContent = t.toFixed(1) + ' s';
+    $('hud_v').textContent = vel.toFixed(2) + ' m/s';
+    $('hud_d').textContent = pos.toFixed(1) + ' m';
+  }
+  function drawG() {
+    const vM = Math.max(1, ...samples.map(s => s.v)) * 1.2;
+    drawGraph($('gr'), [{ name: '속도', color: '#2ee06f', pts: samples.map(s => [s.t, s.v]) }],
+      T_RUN * 1.02, vM, t, '속도 (m/s)');
+  }
+  function renderGrid() {
+    const g = grids[P.s];
+    let html = '<thead><tr><th>바람\\돛각</th>';
+    ANGLES.forEach(a => html += `<th>${a}°</th>`);
+    html += '</tr></thead><tbody>';
+    ['약', '중', '강'].forEach(w => {
+      const row = g[w];
+      const filled = row.filter(v => v != null);
+      const best = filled.length ? Math.max(...filled) : null;
+      html += `<tr><td class="rlab">${w === '약' ? '약풍' : w === '중' ? '중풍' : '강풍'}</td>`;
+      row.forEach((v, i) => {
+        const cur = (w === P.w && i === P.ai) ? ' cur' : '';
+        if (v == null) html += `<td class="empty${cur}">·</td>`;
+        else if (v < 0.3) html += `<td class="zero${cur}">0</td>`;
+        else html += `<td class="${best != null && v === best ? 'best' : ''}${cur}">${v.toFixed(0)}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody>';
+    $('matrix').innerHTML = html;
+  }
+  function onDone() {
+    $('ro_vmax').textContent = vmax.toFixed(2) + ' m/s';
+    $('ro_dist').textContent = pos.toFixed(1) + ' m';
+    grids[P.s][P.w][P.ai] = pos;
+    renderGrid();
+    const bd = $('bd');
+    if (pos < 0.3) { bd.className = 'badge stuck'; bd.textContent = `✗ 출발 못 함 — 추진력(${P.thrust.toFixed(1)})이 마찰(${FRIC})보다 약해요`; }
+    else if (P.deg === 45) { bd.className = 'badge go'; bd.textContent = `✓ 스위트스폿! 45° — ${pos.toFixed(1)}m 주행 (최고 ${vmax.toFixed(1)} m/s)`; }
+    else { bd.className = 'badge slow'; bd.textContent = `△ ${P.deg}° — ${pos.toFixed(1)}m 주행 · 45°로 바꾸면 더 멀리!`; }
+    $('pause').disabled = true; $('run').disabled = false;
+    drawG();
+  }
+  const setSt = statusUI($('led'), $('st'));
+  const scale = speedCtl([$('spa'), $('spb'), $('spc')]);
+  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
+
+  $('run').onclick = () => { if (finished) reset(); eng.start(); $('run').disabled = true; $('pause').disabled = false; $('pause').textContent = '⏸'; };
+  $('pause').onclick = () => {
+    if (eng.running) { eng.pause(); $('pause').textContent = '▶'; }
+    else { eng.start(); $('pause').textContent = '⏸'; }
+  };
+  $('reset').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; $('pause').textContent = '⏸'; };
+
+  $('autoScan').onclick = () => {
+    const s = getSail();
+    ['약', '중', '강'].forEach(w => ANGLES.forEach((deg, i) => { grids[s][w][i] = computeRun(w, s, deg).dist; }));
+    renderGrid();
+    const bd = $('bd'); bd.className = 'badge go';
+    bd.textContent = `⚡ 자동 실험 완료 — ${getSail() === '대' ? '큰' : '작은'} 돛: 모든 바람에서 45°가 최고!`;
+  };
+  $('clearMx').onclick = () => {
+    const s = getSail();
+    ['약', '중', '강'].forEach(w => grids[s][w] = [null, null, null, null, null]);
+    renderGrid();
+  };
+
+  $('camTop').onclick = () => { view = 'top'; $('camTop').classList.add('on'); $('camSide').classList.remove('on'); draw(); };
+  $('camSide').onclick = () => { view = 'side'; $('camSide').classList.add('on'); $('camTop').classList.remove('on'); draw(); };
+
+  const redraw = () => { if (!eng.running) { draw(); drawG(); } };
+  window.addEventListener('resize', redraw);
+
+  // 탭 전환
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+    $('exp').classList.toggle('on', b.dataset.tab === 'exp');
+    $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+    if (b.dataset.tab === 'exp') requestAnimationFrame(redraw);
+  });
+
+  requestAnimationFrame(() => reset());
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청소차 시뮬레이션 — 브릭 프라임 · 코딩더메이커</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; touch-action: manipulation; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.same { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.diff { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+
+  .side { width: 344px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; line-height: 1.35; }
+  .pick button small { display: block; font-size: 10px; color: var(--dim); font-family: var(--mono); }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+  .pick button.on small { color: var(--accent); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout.wide { grid-column: 1 / -1; }
+  .eff-hero { background: linear-gradient(135deg, rgba(46,224,111,.14), rgba(255,176,46,.14)); border: 1.5px solid rgba(46,224,111,.5); border-radius: 12px; padding: 10px 14px 9px; margin: 6px 0 10px; text-align: center; box-shadow: 0 0 18px rgba(46,224,111,.12) inset; }
+  .eff-hero .k { font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .eff-hero .v { font-family: var(--mono); font-size: 38px; font-weight: 800; color: #fff; letter-spacing: 1px; line-height: 1.12; }
+  .eff-hero .sub { font-size: 12px; color: var(--amber); font-weight: 700; margin-top: 3px; }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 68px; flex: none; }
+  .bar-track { flex: 1; height: 12px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+  .bar-row .val { width: 54px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  canvas.graph { display: block; width: 100%; height: 240px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  .graph-hint { font-size: 10.5px; color: var(--dim); text-align: right; margin: 4px 2px 0; }
+  #zoom { display: none; position: fixed; inset: 0; background: rgba(4,8,16,.92); z-index: 50; cursor: zoom-out; }
+  #zoom.on { display: block; }
+  #zoom .zbox { position: absolute; inset: 4% 5% 8%; background: #0b101d; border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+  #zoom canvas { width: 100%; height: 100%; display: block; }
+  #zoom .hint { position: absolute; bottom: 2.4%; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 13px; }
+  .grid-wrap { margin: 4px 0 10px; }
+  .grid-wrap .auto-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .grid-wrap .auto-row button { flex: 1; font-size: 12.5px; }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.grid th, table.grid td { border: 1px solid var(--border); padding: 7px 4px; text-align: center; }
+  table.grid th { background: var(--panel2); color: var(--dim); font-weight: 600; font-size: 11px; }
+  table.grid td { font-family: var(--mono); color: #c6d2e6; font-size: 14px; font-weight: 700; }
+  table.grid td.rowlab { font-family: 'Malgun Gothic', sans-serif; color: #c6d2e6; font-size: 11.5px; font-weight: 600; }
+  table.grid td.best { background: rgba(46,224,111,.16); color: var(--green); box-shadow: inset 0 0 0 1px rgba(46,224,111,.4); }
+  table.grid td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table.log { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  table.log th, table.log td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
+  table.log th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  table.log td { font-family: var(--mono); color: #c6d2e6; }
+  table.log td.cond { font-family: inherit; }
+  table.log tbody tr:first-child td { background: rgba(77,163,255,.06); }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; width: 100%; border-collapse: collapse; }
+  .theory-box th, .theory-box td { padding: 7px 10px; border: 1px solid var(--border); text-align: center; }
+  .theory-box th { background: var(--panel2); color: var(--dim); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 52vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정 · 16차시</div>
+      <div class="title">🧹 청소차 시뮬레이션 — 기어로 브러시 돌리기</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp1">🚛 청소 실험</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 청소 실험 ══════ -->
+  <section class="exp on" id="exp1">
+    <div class="stage">
+      <canvas class="scene" id="cv1"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">진행</span><span id="hud_prog">0 %</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">브러시 회전속도</span><span id="hud_rpm">0 RPM</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">돌리는 힘 (토크)</span><span id="hud_trq">0</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">쓸어담음</span><span id="hud_cap">0 / 0</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led1"></span><span class="status-txt" id="st1">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="run1">▶ 청소 시작</button>
+        <button id="pause1" disabled>⏸</button>
+        <button id="reset1">↺</button>
+      </div>
+
+      <h3>① 기어비 — 속도와 힘의 맞바꿈</h3>
+      <div class="param">
+        <div class="pick" id="pickGear">
+          <button data-k="speed"><b>속도형</b><small>40T→8T 가속</small></button>
+          <button data-k="balance" class="on"><b>균형형</b><small>24T→24T 1:1</small></button>
+          <button data-k="power"><b>힘형</b><small>8T→40T 감속</small></button>
+        </div>
+      </div>
+
+      <h3>② 주행 속도</h3>
+      <div class="param">
+        <div class="pick" id="pickDrive">
+          <button data-k="slow"><b>느리게</b><small>꼼꼼히</small></button>
+          <button data-k="normal" class="on"><b>보통</b></button>
+          <button data-k="fast"><b>빠르게</b><small>후딱</small></button>
+        </div>
+      </div>
+
+      <h3>③ 쓰레기 종류</h3>
+      <div class="param">
+        <div class="pick" id="pickDebris">
+          <button data-k="dust" class="on"><b>가벼운 먼지</b><small>힘 조금</small></button>
+          <button data-k="pellet"><b>무거운 알갱이</b><small>힘 많이</small></button>
+        </div>
+      </div>
+
+      <h3>예측 → 측정</h3>
+      <div class="eff-hero"><div class="k">청소 효율 (예측)</div><div class="v" id="effV">—</div><div class="sub" id="effSub"></div></div>
+      <div class="readouts">
+        <div class="readout"><div class="k">브러시 회전속도</div><div class="v a" id="roRpm">—</div></div>
+        <div class="readout"><div class="k">브러시 힘 (토크)</div><div class="v b" id="roTrq">—</div></div>
+        <div class="readout"><div class="k">완료 예상 시간</div><div class="v" id="roTime" style="color:var(--purple)">—</div></div>
+        <div class="readout"><div class="k">쓸어담은 쓰레기</div><div class="v" id="roCap" style="color:var(--green)">—</div></div>
+      </div>
+
+      <h3>브러시가 얻은 것 ↔ 잃은 것</h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">회전 속도</span><div class="bar-track"><div class="bar-fill" id="barSpd" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:20%"></div></div><span class="val" id="valSpd">—</span></div>
+        <div class="bar-row"><span class="lab">돌리는 힘</span><div class="bar-track"><div class="bar-fill" id="barTrq" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:20%"></div></div><span class="val" id="valTrq">—</span></div>
+      </div>
+
+      <h3>격자 결과표 — 기어비 × 쓰레기</h3>
+      <div class="grid-wrap">
+        <div class="auto-row">
+          <button id="autoBtn">⚡ 자동 실험 (6칸 채우기)</button>
+          <button id="gridClear" style="flex:0 0 auto">지우기</button>
+        </div>
+        <table class="grid" id="gridTbl">
+          <thead><tr><th>기어비 \ 쓰레기</th><th>가벼운 먼지</th><th>무거운 알갱이</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">속도형</td><td data-g="speed" data-d="dust">—</td><td data-g="speed" data-d="pellet">—</td></tr>
+            <tr><td class="rowlab">균형형</td><td data-g="balance" data-d="dust">—</td><td data-g="balance" data-d="pellet">—</td></tr>
+            <tr><td class="rowlab">힘형</td><td data-g="power" data-d="dust">—</td><td data-g="power" data-d="pellet">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>쓸어담은 쓰레기 – 시간 그래프</h3>
+      <canvas class="graph" id="gr1" height="240"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
+
+      <details open>
+        <summary>📋 실험 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table class="log" id="tb1">
+            <thead><tr><th>#</th><th>기어비</th><th>주행</th><th>쓰레기</th><th>효율</th><th>시간</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>기어비</b>가 <b>회전속도</b>와 <b>돌리는 힘(토크)</b>을 서로 맞바꾸는 원리를 배웁니다.
+        청소차의 회전 브러시를 어떤 기어로 연결하느냐에 따라, 브러시가 <b>빠르게 돌지</b> 아니면 <b>힘차게 돌지</b>가 달라집니다.
+        가벼운 먼지는 빠른 브러시(속도형)가, 무거운 알갱이는 힘센 브러시(힘형)가 잘 쓸어담는다는 것을 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
+        아이는 예측 → 실험 → 격자표 비교의 과학적 방법을 놀이처럼 익히며, 레고에듀케이션 공식 레슨과 같은 개념을 배웁니다.
+      </div>
+
+      <h2>🧹 기어 하나로 브러시를 빠르게? 아니면 힘차게?</h2>
+      <p>청소차 브러시는 <b>모터의 힘을 기어로 전달</b>받아 돈다. 그런데 기어의 잇수를 바꾸면
+        브러시가 <b>빨리 돌지</b> 아니면 <b>천천히 대신 힘차게 돌지</b>가 정해진다. 둘을 동시에 크게 만들 수는 없다 — 이것이 <b>맞바꿈(트레이드오프)</b>이다.</p>
+      <ul>
+        <li>회전속도: <span class="eq">브러시 RPM = 모터 RPM ÷ 기어비</span></li>
+        <li>돌리는 힘: <span class="eq">브러시 토크 = 모터 토크 × 기어비</span> — 속도를 잃은 만큼 힘을 얻는다</li>
+      </ul>
+
+      <table>
+        <thead><tr><th>기어 조합 (모터→브러시)</th><th>기어비</th><th>브러시 결과</th><th>잘 쓰는 쓰레기</th></tr></thead>
+        <tbody>
+          <tr><td>40T → 8T</td><td>1:5 가속</td><td>속도 5배 · 힘 ⅕ (속도형)</td><td>가벼운 먼지 💨</td></tr>
+          <tr><td>24T → 24T</td><td>1:1</td><td>변화 없음 (균형형)</td><td>둘 다 보통</td></tr>
+          <tr><td>8T → 40T</td><td>5:1 감속</td><td>속도 ⅕ · 힘 5배 (힘형)</td><td>무거운 알갱이 🪨</td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top:22px">🤔 왜 무거운 쓰레기엔 힘형이 이길까?</h2>
+      <p>무거운 알갱이를 튕겨 올리려면 브러시가 <b>큰 힘</b>으로 밀어야 한다. 속도형 브러시는 빠르지만 힘이 약해 알갱이를 밀지 못하고 <b>그냥 지나쳐</b> 버린다.
+        반대로 가벼운 먼지는 힘이 거의 필요 없으니, <b>빨리 여러 번 쓸어담는</b> 속도형이 유리하다.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        빠른 브러시 = <b>가벼운 것 많이</b> · 힘센 브러시 = <b>무거운 것 확실히</b> → 쓰레기에 맞는 기어를 골라야 한다.
+      </p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--accent)">기어비 (gear ratio)</b> — 맞물린 두 기어의 잇수 비율. 이 비율이 속도와 힘을 바꿔요.<br>
+        <b style="color:var(--orange)">돌리는 힘 (토크, torque)</b> — 물체를 돌리거나 밀어내는 힘. 무거운 것을 튕기려면 커야 해요.<br>
+        <b style="color:var(--purple)">회전속도 (RPM)</b> — 1분에 몇 바퀴 도는지. 브러시가 빠를수록 먼지를 자주 쓸어요.<br>
+        <b style="color:var(--green)">맞바꿈 (트레이드오프)</b> — 속도를 얻으면 힘을 잃고, 힘을 얻으면 속도를 잃는 관계예요. 둘 다 크게는 못 해요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — 쓰레기를 "무거운 알갱이"로 두고, 어떤 기어비가 잘 쓸까 손들기</li>
+        <li><b>② 속도형 실험</b> — 속도형으로 청소 시작 → 알갱이를 밀지 못해 남는 것 확인 (효율 낮음)</li>
+        <li><b>③ 힘형 실험</b> — 힘형으로 바꿔 다시 청소 → 알갱이가 쓸려 담긴다 ("힘이 있어야 하는구나!")</li>
+        <li><b>④ 반전</b> — 쓰레기를 "가벼운 먼지"로 바꾸면? 이번엔 속도형이 더 잘 쓴다 (격자표로 비교)</li>
+        <li><b>⑤ 자동 실험</b> — ⚡ 자동 실험으로 6칸을 채워 대각선으로 최적이 갈리는 것을 한눈에 확인</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 실제 레고 브릭큐 실험 팁</b><br>
+        · 스파이크/브릭큐 기어: 8T·16T·24T·40T — 모터축과 브러시축을 서로 다른 조합으로 연결<br>
+        · 브러시 축에 표시 테이프를 붙여 <b>10초 동안 회전수를 직접 세기</b> — 속도형이 훨씬 많이 돈다<br>
+        · 가벼운 종이조각과 무거운 콩·구슬을 바닥에 뿌리고, 기어비를 바꿔가며 무엇이 잘 쓸리는지 관찰<br>
+        · 힘형은 브러시가 느려도 무거운 것을 <b>밀어낼 힘</b>이 있다 — 속도만 빠른 게 최고가 아니라는 증거!
+      </div>
+
+      <details style="margin-top:18px">
+        <summary>🔎 효율을 어떻게 계산했나 (선생님용)</summary>
+        <div class="inner" style="padding:12px 16px; line-height:2">
+          청소 효율 = <span class="eq">힘 조건 × 속도 조건</span> 으로 계산합니다.<br>
+          · 힘 조건 = 브러시 토크 ÷ 쓰레기가 필요로 하는 힘 (1을 넘으면 1) — 무거운 알갱이엔 힘형이 유리<br>
+          · 속도 조건 = 브러시 회전속도 ÷ 필요 회전속도, 주행이 빠를수록 조금 낮아짐 — 가벼운 먼지엔 속도형이 유리<br>
+          <span style="color:var(--dim)">두 조건을 곱하므로, 쓰레기에 딱 맞는 기어를 골라야 효율이 높아집니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const redraws = {};
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('exp1').classList.toggle('on', b.dataset.tab === 'exp1');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  if (redraws[b.dataset.tab]) requestAnimationFrame(redraws[b.dataset.tab]);
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function niceStep(max) {
+  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
+  return 10 * p;
+}
+function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  const { c, W, H } = fit(cv);
+  const fs = Math.max(13, Math.round(Math.min(W, H) / 18));
+  const L = fs * 3.2, R = fs, T = fs * 2.2, B = fs * 3.1;
+  c.clearRect(0, 0, W, H);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = fs + 'px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) {
+    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + fs * 1.35);
+  }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - fs * 0.5, py(v) + fs * 0.35);
+  }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center'; c.font = fs + 'px sans-serif';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.5);
+  c.save(); c.translate(fs * 0.9, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
+  if (tNow > 0 && tNow < tMax) {
+    c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
+    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
+  }
+  series.forEach(s => {
+    if (s.pts.length < 2) return;
+    c.save(); c.shadowColor = s.color; c.shadowBlur = 8;
+    c.strokeStyle = s.color; c.lineWidth = Math.max(3, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
+    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke();
+    const last = s.pts[s.pts.length - 1];
+    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4.5, fs * 0.33), 0, 7); c.fill();
+    c.restore();
+  });
+  let lx = fs;
+  c.font = 'bold ' + fs + 'px sans-serif';
+  series.forEach(s => {
+    c.fillStyle = s.color; c.fillRect(lx, fs * 0.7, fs * 1.4, fs * 0.34);
+    c.fillStyle = '#d7e1f2'; c.textAlign = 'left'; c.fillText(s.name, lx + fs * 1.75, fs * 1.25);
+    lx += fs * 1.75 + c.measureText(s.name).width + fs;
+  });
+}
+const graphArgs = new Map();
+let zoomSrc = null;
+function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  renderGraph(cv, series, tMax, vMax, tNow, yLabel);
+  graphArgs.set(cv, [series, tMax, vMax, tNow, yLabel]);
+  if (zoomSrc === cv) renderGraph($('zoomCv'), series, tMax, vMax, tNow, yLabel);
+}
+$('gr1').addEventListener('click', () => {
+  zoomSrc = $('gr1');
+  $('zoom').classList.add('on');
+  requestAnimationFrame(() => { const a = graphArgs.get(zoomSrc); if (a) renderGraph($('zoomCv'), ...a); });
+});
+$('zoom').onclick = () => { zoomSrc = null; $('zoom').classList.remove('on'); };
+
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const real = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    o.step(real);
+    o.draw(real);
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); o.setStatus('pause'); },
+    stop()  { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : m === 'pause' ? 'pause' : '');
+    txt.textContent = m === 'run' ? '실행 중' : m === 'done' ? '완료' : m === 'pause' ? '일시정지' : '준비';
+  };
+}
+function picker(container, onChange) {
+  const btns = [...container.querySelectorAll('button')];
+  let val = container.querySelector('button.on').dataset.k;
+  btns.forEach(b => b.onclick = () => {
+    val = b.dataset.k;
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    onChange && onChange(val);
+  });
+  return { get: () => val, set: k => { val = k; btns.forEach(x => x.classList.toggle('on', x.dataset.k === k)); } };
+}
+
+/* ── 물리 모델 ── */
+const GEARS = {
+  speed:   { label: '속도형', gearRatio: 0.2, brushRPM: 150, torque: 25,  color: '#4da3ff' },
+  balance: { label: '균형형', gearRatio: 1.0, brushRPM: 90,  torque: 60,  color: '#c792ea' },
+  power:   { label: '힘형',   gearRatio: 5.0, brushRPM: 45,  torque: 120, color: '#ff9046' },
+};
+const DRIVE = {
+  slow:   { label: '느리게', f: 0.8, dur: 8.0 },
+  normal: { label: '보통',   f: 1.0, dur: 5.5 },
+  fast:   { label: '빠르게', f: 1.3, dur: 3.6 },
+};
+const DEBRIS = {
+  dust:   { label: '가벼운 먼지', reqT: 20,  needRPM: 110, color: '#cfd8e6', r: 3.4, emoji: '💨' },
+  pellet: { label: '무거운 알갱이', reqT: 100, needRPM: 35,  color: '#b07a4a', r: 5.6, emoji: '🪨' },
+};
+const clamp01 = v => Math.max(0, Math.min(1, v));
+function computeEff(gk, dk, drk) {
+  const g = GEARS[gk], d = DEBRIS[dk], dr = DRIVE[drk];
+  const torqueF = clamp01(g.torque / d.reqT);
+  const speedF = clamp01((g.brushRPM / d.needRPM) / dr.f);
+  return { eff: torqueF * speedF, torqueF, speedF, brushRPM: g.brushRPM, torque: g.torque };
+}
+
+/* ═════════ 청소 실험 ═════════ */
+(() => {
+  const cv = $('cv1');
+  const TOTAL = 12;
+  let t = 0, dur = 5.5, carX = 0, brushAng = 0, wheelAng = 0, finished = false;
+  let pieces = [], captured = 0, samples = [], runCount = 0;
+  let P = {}, layout = null;
+
+  const gearPick = picker($('pickGear'), onParam);
+  const drivePick = picker($('pickDrive'), onParam);
+  const debrisPick = picker($('pickDebris'), onParam);
+
+  function readParams() {
+    const gk = gearPick.get(), dk = debrisPick.get(), drk = drivePick.get();
+    P = { gk, dk, drk, ...computeEff(gk, dk, drk) };
+    P.gear = GEARS[gk]; P.debris = DEBRIS[dk]; P.drive = DRIVE[drk];
+    dur = P.drive.dur;
+  }
+  function makePieces() {
+    pieces = [];
+    for (let i = 0; i < TOTAL; i++) {
+      pieces.push({ frac: 0.10 + (i + 0.5) / TOTAL * 0.82, judged: false, captured: false, jt: 0, yoff: 0 });
+    }
+  }
+  function preview() {
+    const pct = Math.round(P.eff * 100);
+    $('effV').textContent = pct + ' %';
+    $('effSub').textContent = pct >= 80 ? '👍 이 쓰레기엔 잘 맞는 기어!' : pct >= 50 ? '보통 — 더 나은 기어가 있을 수도' : '⚠ 이 쓰레기엔 안 맞아요';
+    $('roRpm').textContent = P.gear.brushRPM + ' RPM';
+    $('roTrq').textContent = P.gear.torque;
+    $('roTime').textContent = P.drive.dur.toFixed(1) + ' s';
+    $('roCap').textContent = '—';
+    const spd = Math.min(100, P.gear.brushRPM / 150 * 100), trq = Math.min(100, P.gear.torque / 120 * 100);
+    $('barSpd').style.width = spd + '%'; $('valSpd').textContent = P.gear.brushRPM + ' RPM';
+    $('barTrq').style.width = trq + '%'; $('valTrq').textContent = '×' + P.gear.gearRatio.toFixed(P.gear.gearRatio < 1 ? 1 : 0);
+    markCurGrid();
+  }
+  function reset() {
+    readParams(); makePieces();
+    t = 0; carX = 0; brushAng = 0; wheelAng = 0; finished = false; captured = 0; samples = [{ t: 0, cap: 0 }];
+    preview();
+    $('bd1').className = 'badge';
+    draw(); drawG();
+  }
+  function onParam() { if (!eng.running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; } }
+
+  function step(dt) {
+    if (finished) return;
+    t += dt;
+    if (t >= dur) { t = dur; finished = true; }
+    const prog = t / dur;
+    // 브러시 접촉점 위치 (화면 좌표는 draw에서, 여기선 진행 비율로 판정)
+    const brushFrac = prog;
+    brushAng += P.gear.brushRPM / 60 * Math.PI * 2 * dt;
+    wheelAng += 3 * dt;
+    pieces.forEach(pc => {
+      if (!pc.judged && brushFrac >= pc.frac) {
+        pc.judged = true;
+        // 힘·속도 조건 곱을 조각별 확률로 사용
+        pc.captured = Math.random() < P.eff;
+        if (pc.captured) { captured++; pc.jt = t; }
+      }
+    });
+    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.1)
+      samples.push({ t, cap: captured });
+  }
+
+  function computeLayout(W, H) {
+    const yG = H * 0.80;                 // 바닥선
+    const margin = W * 0.09;
+    const trackL = margin, trackR = W - margin;
+    return { yG, trackL, trackR, W, H };
+  }
+  function pieceX(pc) { return layout.trackL + pc.frac * (layout.trackR - layout.trackL); }
+
+  function drawScene(c, W, H) {
+    // 배경 (실내 바닥 + 벽)
+    const bg = c.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0b1120'); bg.addColorStop(1, '#101a30');
+    c.fillStyle = bg; c.fillRect(0, 0, W, H);
+    layout = computeLayout(W, H);
+    const { yG, trackL, trackR } = layout;
+    // 바닥
+    const fg = c.createLinearGradient(0, yG, 0, H);
+    fg.addColorStop(0, '#1b2740'); fg.addColorStop(1, '#0c1220');
+    c.fillStyle = fg; c.fillRect(0, yG, W, H - yG);
+    c.strokeStyle = 'rgba(120,150,200,.35)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(0, yG); c.lineTo(W, yG); c.stroke();
+    // 바닥 타일 눈금
+    c.strokeStyle = 'rgba(120,150,200,.10)'; c.lineWidth = 1;
+    for (let x = 20; x < W; x += 40) { c.beginPath(); c.moveTo(x, yG); c.lineTo(x - 14, H); c.stroke(); }
+    // 청소 구역 표시
+    c.fillStyle = 'rgba(46,224,111,.05)'; c.fillRect(trackL, yG - 4, trackR - trackL, 4);
+  }
+
+  function drawPiece(c, pc, yG) {
+    const d = P.debris;
+    let x = pieceX(pc), y = yG - d.r;
+    let alpha = 1;
+    if (pc.judged && pc.captured) {
+      const dt = t - pc.jt;
+      if (dt < 0.7) {
+        // 브러시가 튕겨 통으로 날림 (포물선)
+        const k = dt / 0.7;
+        const tx = carX - 4, ty = layout.yG - 74;   // 통 입구
+        x = x + (tx - x) * k;
+        y = (yG - d.r) + (ty - (yG - d.r)) * k - Math.sin(k * Math.PI) * 46;
+        alpha = 1 - k * 0.15;
+      } else return; // 통 안 — 안 그림
+    } else if (pc.judged && !pc.captured) {
+      alpha = 0.5;   // 못 쓸고 남은 것
+    }
+    c.save(); c.globalAlpha = alpha;
+    c.fillStyle = d.color;
+    if (P.dk === 'pellet') {
+      c.beginPath(); c.arc(x, y, d.r, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.arc(x - d.r * 0.3, y - d.r * 0.3, d.r * 0.35, 0, 7); c.fill();
+    } else {
+      for (let k = 0; k < 3; k++) {
+        c.beginPath(); c.arc(x + (k - 1) * 3.4, y + (k % 2) * 1.5, d.r * 0.75, 0, 7); c.fill();
+      }
+    }
+    c.restore();
+  }
+
+  function drawTruck(c) {
+    const { yG } = layout;
+    const cx = carX;
+    const bodyW = 108, bodyH = 42;
+    const wheelR = 15;
+    const bodyBottom = yG - wheelR - 2;
+    const bodyTop = bodyBottom - bodyH;
+    // 바퀴 2개
+    [cx - bodyW * 0.30, cx + bodyW * 0.32].forEach(wx => {
+      c.save(); c.translate(wx, yG - wheelR);
+      c.fillStyle = '#1a2030'; c.beginPath(); c.arc(0, 0, wheelR, 0, 7); c.fill();
+      c.strokeStyle = '#3a4661'; c.lineWidth = 3; c.stroke();
+      c.rotate(wheelAng);
+      c.strokeStyle = '#55617a'; c.lineWidth = 2;
+      for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * wheelR * 0.8, Math.sin(a) * wheelR * 0.8); c.stroke(); }
+      c.fillStyle = '#8b98ad'; c.beginPath(); c.arc(0, 0, 3.5, 0, 7); c.fill();
+      c.restore();
+    });
+    // 차체
+    const bg = c.createLinearGradient(0, bodyTop, 0, bodyBottom);
+    bg.addColorStop(0, '#2f7d3e'); bg.addColorStop(1, '#1c5127');
+    c.fillStyle = bg;
+    c.beginPath(); c.roundRect(cx - bodyW / 2, bodyTop, bodyW, bodyH, 8); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5; c.stroke();
+    // 운전석 창
+    c.fillStyle = '#8fd0ff';
+    c.beginPath(); c.roundRect(cx + bodyW * 0.16, bodyTop + 6, bodyW * 0.28, bodyH * 0.5, 4); c.fill();
+    // 쓰레기 통 (호퍼) — 채워지는 정도 표시
+    const hopX = cx - bodyW * 0.42, hopW = bodyW * 0.5, hopY = bodyTop - 30, hopH = 34;
+    c.fillStyle = '#13233a';
+    c.beginPath(); c.roundRect(hopX, hopY, hopW, hopH, 5); c.fill();
+    c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5; c.stroke();
+    const fillFrac = TOTAL ? captured / TOTAL : 0;
+    c.fillStyle = 'rgba(46,224,111,.55)';
+    const fh = (hopH - 6) * fillFrac;
+    c.fillRect(hopX + 3, hopY + hopH - 3 - fh, hopW - 6, fh);
+    c.fillStyle = '#9aa8bf'; c.font = 'bold 9px sans-serif'; c.textAlign = 'center';
+    c.fillText('쓰레기통', hopX + hopW / 2, hopY - 4);
+    // 기어박스 (모터→브러시 링크) — 작은 기어 2개 표시
+    const gearY = bodyBottom + 2, gLeft = cx - bodyW * 0.5;
+    const gr = GEARS[P.gk].gearRatio;
+    drawMiniGear(c, gLeft, gearY - 6, 9, wheelAng * 2, '#4da3ff');
+    drawMiniGear(c, gLeft - 15, gearY + 4, gr >= 1 ? 13 : 6, -brushAng * 0.3, '#ff9046');
+    // 브러시 (앞쪽 아래, 바닥 접촉)
+    const brX = cx - bodyW * 0.5 - 6, brR = 20;
+    const brY = yG - brR + 4;
+    // 브러시 지지 암
+    c.strokeStyle = '#3a4661'; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(cx - bodyW * 0.4, bodyBottom); c.lineTo(brX, brY); c.stroke();
+    drawBrush(c, brX, brY, brR, brushAng, GEARS[P.gk]);
+    // 방향/속도 표시
+    return { brX, brY, brR };
+  }
+
+  function drawMiniGear(c, x, y, r, ang, color) {
+    const N = 8;
+    c.save(); c.translate(x, y); c.rotate(ang);
+    c.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * Math.PI * 2, a1 = (i + 0.5) / N * Math.PI * 2;
+      c.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
+      c.lineTo(Math.cos(a1) * r * 0.72, Math.sin(a1) * r * 0.72);
+    }
+    c.closePath(); c.fillStyle = color; c.fill();
+    c.fillStyle = 'rgba(0,0,0,.5)'; c.beginPath(); c.arc(0, 0, r * 0.28, 0, 7); c.fill();
+    c.restore();
+  }
+
+  function drawBrush(c, x, y, r, ang, gear) {
+    c.save(); c.translate(x, y);
+    // 회전 속도감 글로우 (빠를수록 진함)
+    const glow = Math.min(0.4, gear.brushRPM / 150 * 0.4);
+    c.save(); c.shadowColor = gear.color; c.shadowBlur = gear.brushRPM / 6;
+    c.fillStyle = `rgba(77,163,255,${glow * 0.15})`; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.restore();
+    c.rotate(ang);
+    // 솔 (털) — 힘형은 두껍고 굵게, 속도형은 가늘고 많이
+    const nB = gear.brushRPM > 100 ? 16 : gear.brushRPM > 60 ? 12 : 9;
+    const lw = gear.torque > 90 ? 4 : gear.torque > 50 ? 3 : 2;
+    c.strokeStyle = '#e8c07a'; c.lineWidth = lw; c.lineCap = 'round';
+    for (let k = 0; k < nB; k++) {
+      const a = k / nB * Math.PI * 2;
+      c.beginPath(); c.moveTo(Math.cos(a) * r * 0.35, Math.sin(a) * r * 0.35);
+      c.lineTo(Math.cos(a) * r, Math.sin(a) * r); c.stroke();
+    }
+    // 허브
+    c.fillStyle = '#5b6982'; c.beginPath(); c.arc(0, 0, r * 0.34, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
+    c.restore();
+    // 회전 방향 화살
+    c.save(); c.translate(x, y);
+    c.strokeStyle = gear.color; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.arc(0, 0, r + 7, -2.2, -0.9); c.stroke();
+    const tip = -0.9, tx = Math.cos(tip) * (r + 7), ty = Math.sin(tip) * (r + 7), tang = tip + Math.PI / 2;
+    c.fillStyle = gear.color; c.beginPath();
+    c.moveTo(tx + Math.cos(tang) * 8, ty + Math.sin(tang) * 8);
+    c.lineTo(tx + Math.cos(tang + 2.4) * 6, ty + Math.sin(tang + 2.4) * 6);
+    c.lineTo(tx + Math.cos(tang - 2.4) * 6, ty + Math.sin(tang - 2.4) * 6);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+
+  function draw() {
+    const { c, W, H } = fit(cv);
+    if (W < 60 || H < 60) return;
+    drawScene(c, W, H);
+    const { yG, trackL, trackR } = layout;
+    // 청소차 위치 (브러시가 trackL→trackR 이동)
+    carX = trackL + (t / dur) * (trackR - trackL);
+    // 쓰레기 먼저
+    pieces.forEach(pc => drawPiece(c, pc, yG));
+    // 청소차
+    drawTruck(c);
+    // HUD
+    $('hud_prog').textContent = Math.round(t / dur * 100) + ' %';
+    $('hud_rpm').textContent = P.gear.brushRPM + ' RPM';
+    $('hud_trq').textContent = P.gear.torque;
+    $('hud_cap').textContent = captured + ' / ' + TOTAL;
+  }
+  function drawG() {
+    const vMax = Math.max(2, TOTAL) * 1.1;
+    drawGraph($('gr1'), [
+      { name: '쓸어담은 쓰레기', color: '#2ee06f', pts: samples.map(s => [s.t, s.cap]) },
+    ], Math.max(1, dur) * 1.04, vMax, t, '쓰레기 (개)');
+  }
+  function onDone() {
+    const effPct = Math.round(captured / TOTAL * 100);
+    $('roCap').textContent = captured + ' / ' + TOTAL;
+    const bd = $('bd1');
+    if (effPct >= 75) { bd.className = 'badge same'; bd.textContent = `✓ 청소 효율 ${effPct}% — ${P.gear.label} 기어가 ${P.debris.label}에 잘 맞아요!`; }
+    else if (effPct >= 45) { bd.className = 'badge diff'; bd.textContent = `△ 청소 효율 ${effPct}% — 더 맞는 기어가 있을 거예요`; }
+    else { bd.className = 'badge diff'; bd.textContent = `⚠ 청소 효율 ${effPct}% — ${P.debris.label}엔 이 기어가 안 맞아요 (${P.dk === 'pellet' ? '힘형' : '속도형'} 시도!)`; }
+    // 격자 기록 (분석값 저장 — 노이즈 없는 예측값)
+    recordGrid(P.gk, P.dk, Math.round(P.eff * 100));
+    // 로그
+    const tb = $('tb1').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.gear.label}</td><td class="cond">${P.drive.label}</td>` +
+      `<td class="cond">${P.dk === 'dust' ? '먼지' : '알갱이'}</td><td>${effPct}%</td><td>${dur.toFixed(1)}s</td>`;
+    tb.prepend(tr);
+    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    $('pause1').disabled = true; $('run1').disabled = false;
+    drawG();
+  }
+
+  /* ── 격자 결과표 ── */
+  function markCurGrid() {
+    $('gridTbl').querySelectorAll('td[data-g]').forEach(td => {
+      td.classList.toggle('cur', td.dataset.g === gearPick.get() && td.dataset.d === debrisPick.get());
+    });
+  }
+  function recordGrid(gk, dk, pct) {
+    const td = $('gridTbl').querySelector(`td[data-g="${gk}"][data-d="${dk}"]`);
+    if (td) td.textContent = pct + '%';
+    refreshBest();
+  }
+  function refreshBest() {
+    ['dust', 'pellet'].forEach(dk => {
+      const cells = [...$('gridTbl').querySelectorAll(`td[data-d="${dk}"]`)];
+      let best = -1, bestCell = null;
+      cells.forEach(td => { const v = parseInt(td.textContent); if (!isNaN(v) && v > best) { best = v; bestCell = td; } });
+      cells.forEach(td => td.classList.remove('best'));
+      if (bestCell && best > 0) bestCell.classList.add('best');
+    });
+  }
+  $('gridClear').onclick = () => {
+    $('gridTbl').querySelectorAll('td[data-g]').forEach(td => { td.textContent = '—'; td.classList.remove('best'); });
+  };
+  $('autoBtn').onclick = () => {
+    if (eng.running) return;
+    const drk = drivePick.get();
+    const combos = [];
+    ['speed', 'balance', 'power'].forEach(gk => ['dust', 'pellet'].forEach(dk => combos.push([gk, dk])));
+    $('autoBtn').disabled = true;
+    let i = 0;
+    const tick = () => {
+      if (i >= combos.length) { $('autoBtn').disabled = false; return; }
+      const [gk, dk] = combos[i++];
+      const { eff } = computeEff(gk, dk, drk);
+      const td = $('gridTbl').querySelector(`td[data-g="${gk}"][data-d="${dk}"]`);
+      td.style.transition = 'background .2s'; td.style.background = 'rgba(77,163,255,.25)';
+      td.textContent = Math.round(eff * 100) + '%';
+      setTimeout(() => { td.style.background = ''; refreshBest(); }, 260);
+      setTimeout(tick, 320);
+    };
+    tick();
+  };
+
+  const setSt = statusUI($('led1'), $('st1'));
+  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt });
+
+  $('run1').onclick = () => { if (finished) reset(); eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸'; };
+  $('pause1').onclick = () => {
+    if (eng.running) { eng.pause(); $('pause1').textContent = '▶'; }
+    else { eng.start(); $('pause1').textContent = '⏸'; }
+  };
+  $('reset1').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸'; };
+
+  redraws.exp1 = () => { if (!eng.running) { draw(); drawG(); } };
+  window.addEventListener('resize', redraws.exp1);
+  requestAnimationFrame(() => reset());
+})();
+</script>
+</body>
+</html>

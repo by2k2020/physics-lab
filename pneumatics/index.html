@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공압장치 시뮬레이션 — 브릭 프라임 · 코딩더메이커</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --air: #58d3ff;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.ok  { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.no  { display: inline-flex; background: rgba(70,50,10,.78); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.warn{ display: inline-flex; background: rgba(70,20,18,.82); color: var(--red); border: 1.5px solid rgba(255,90,82,.7); box-shadow: 0 0 26px rgba(255,90,82,.3); }
+
+  .side { width: 344px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 6px 0 10px; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button.pump { background: linear-gradient(135deg, #0b7a53, #16a06b); border-color: #16a06b; font-weight: 800; flex: 2; font-size: 15px; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.warn { background: var(--red); box-shadow: 0 0 8px rgba(255,90,82,.8); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
+  .pump-count { display: flex; align-items: center; justify-content: center; gap: 4px; background: linear-gradient(135deg, rgba(88,211,255,.12), rgba(31,94,255,.1)); border: 1.5px solid rgba(88,211,255,.4); border-radius: 12px; padding: 8px 10px; margin: 2px 0 12px; }
+  .pump-count .n { font-family: var(--mono); font-size: 34px; font-weight: 800; color: #fff; line-height: 1; }
+  .pump-count .u { font-size: 12px; color: var(--dim); margin-top: 12px; }
+  .dots { display: flex; gap: 4px; margin-left: 8px; flex-wrap: wrap; max-width: 96px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; background: #1e2942; border: 1px solid #2c3a58; }
+  .dot.on { background: var(--air); border-color: var(--air); box-shadow: 0 0 6px rgba(88,211,255,.6); }
+  .dot.over { background: var(--red); border-color: var(--red); box-shadow: 0 0 6px rgba(255,90,82,.7); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .readout .v.a { color: var(--air); } .readout .v.b { color: var(--orange); } .readout .v.g { color: var(--green); }
+  .readout.wide { grid-column: 1 / -1; }
+  .hero { background: linear-gradient(135deg, rgba(88,211,255,.14), rgba(255,144,70,.12)); border: 1.5px solid rgba(88,211,255,.5); border-radius: 12px; padding: 10px 14px 9px; margin: 6px 0 10px; text-align: center; box-shadow: 0 0 18px rgba(88,211,255,.12) inset; }
+  .hero .k { font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .hero .v { font-family: var(--mono); font-size: 34px; font-weight: 800; color: #fff; letter-spacing: 1px; line-height: 1.15; }
+  .hero .sub { font-size: 12px; color: var(--amber); font-weight: 700; margin-top: 3px; }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 72px; flex: none; }
+  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+  .bar-row .val { width: 46px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
+  details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
+  details .inner { padding: 0 12px 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th, td { border: 1px solid var(--border); padding: 5px 4px; text-align: center; }
+  th { background: var(--panel2); color: var(--dim); font-weight: 600; }
+  td { font-family: var(--mono); color: #c6d2e6; }
+  td.cond { font-family: inherit; }
+  .grid-tb td.hit { color: #fff; font-weight: 700; }
+  .grid-tb td.vent { color: var(--red); background: rgba(255,90,82,.08); }
+  .grid-tb td.hi { box-shadow: inset 0 0 0 2px rgba(46,224,111,.6); }
+  .grid-tb thead th { font-size: 10.5px; }
+  .grid-tb .rowh { background: var(--panel2); color: var(--dim); font-family: inherit; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin: 4px 0 10px; }
+  .legend span b { font-family: var(--mono); }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 780px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { padding: 7px 10px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 54vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정 · 14차시</div>
+      <div class="title">💨 공압장치 (pneumatics) 시뮬레이션</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp1">실험 1 · 공압 리프트</button>
+      <button class="tab" data-tab="exp2">실험 2 · 굵기 격자실험</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 실험 1 · 공압 리프트 ══════ -->
+  <section class="exp on" id="exp1">
+    <div class="stage">
+      <canvas class="scene" id="cv1"></canvas>
+      <div class="hud">
+        <div class="chip" style="color:var(--air)"><span class="lab">압력 게이지 (공기압)</span><span id="hud_p">0.0 bar</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">밀어올리는 힘 (공기압)</span><span id="hud_f">0.0 kg</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">들어올린 높이</span><span id="hud_h">0.0 cm</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led1"></span><span class="status-txt" id="st1">준비</span></div>
+      <div class="ctl-row">
+        <button class="pump" id="pump1">🔧 펌프질 (+1)</button>
+        <button id="unpump1">−1</button>
+        <button id="reset1">↺</button>
+      </div>
+
+      <h3>펌프질 (공기 압축) 횟수 · 1~8회</h3>
+      <div class="pump-count">
+        <span class="n" id="pnum">0</span><span class="u">회</span>
+        <div class="dots" id="pdots"></div>
+      </div>
+
+      <h3>실린더 굵기 (피스톤 면적)</h3>
+      <div class="param">
+        <div class="pick" id="pickCyl">
+          <button data-i="0">가는</button>
+          <button data-i="1" class="on">보통</button>
+          <button data-i="2">굵은</button>
+        </div>
+      </div>
+
+      <h3>들 물건 무게</h3>
+      <div class="param">
+        <div class="pick" id="pickWt">
+          <button data-i="0">가벼움</button>
+          <button data-i="1" class="on">보통</button>
+          <button data-i="2">무거움</button>
+        </div>
+      </div>
+
+      <h3>압력 = 힘 ÷ 면적 → 측정</h3>
+      <div class="hero"><div class="k">밀어올리는 힘 (공기압)</div><div class="v" id="forceHero">— kg</div><div class="sub" id="forceSub"></div></div>
+      <div class="readouts">
+        <div class="readout"><div class="k">압력 (bar)</div><div class="v a" id="ro_p">—</div></div>
+        <div class="readout"><div class="k">피스톤 면적 (cm²)</div><div class="v" id="ro_a">—</div></div>
+        <div class="readout"><div class="k">물건 무게 (kg)</div><div class="v b" id="ro_w">—</div></div>
+        <div class="readout"><div class="k">들어올린 높이 (cm)</div><div class="v g" id="ro_h">—</div></div>
+      </div>
+
+      <h3>밀어올리는 힘 ↔ 물건 무게</h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">공기압 힘</span><div class="bar-track"><div class="bar-fill" id="barF" style="background:linear-gradient(90deg,#16a06b,#2ee06f);width:0%"></div></div><span class="val" id="valF">0kg</span></div>
+        <div class="bar-row"><span class="lab">물건 무게</span><div class="bar-track"><div class="bar-fill" id="barW" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:0%"></div></div><span class="val" id="valW">0kg</span></div>
+      </div>
+
+      <details open>
+        <summary>📋 실험 기록 (최근 8회)</summary>
+        <div class="inner">
+          <table id="tb1">
+            <thead><tr><th>#</th><th>펌프</th><th>실린더</th><th>압력</th><th>힘</th><th>물건</th><th>판정</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════ 실험 2 · 굵기 격자 ══════ -->
+  <section class="exp" id="exp2">
+    <div class="stage">
+      <canvas class="scene" id="cv2"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">진행 펌프질</span><span id="hud_pp">0 회</span></div>
+        <div class="chip" style="color:var(--air)"><span class="lab">압력 (bar)</span><span id="hud_pb">0.0</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd2"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led2"></span><span class="status-txt" id="st2">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="auto2">⚡ 자동 실험 (1→8 펌프)</button>
+        <button id="reset2">↺</button>
+      </div>
+      <h3>격자 결과표 — 펌프 횟수 × 실린더 굵기</h3>
+      <p style="font-size:11.5px;color:var(--dim);margin:-4px 0 8px">칸의 숫자 = 그 조건에서 <b style="color:#fff">최대로 들 수 있는 무게 (kg)</b> = 압력 × 면적</p>
+      <table class="grid-tb" id="tb2">
+        <thead><tr><th>펌프</th><th>압력</th><th>가는<br>(2cm²)</th><th>보통<br>(4cm²)</th><th>굵은<br>(7cm²)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="legend">
+        <span>🟩 <b>초록칸</b> = 안전 범위</span>
+        <span>🟥 <b>빨강칸</b> = 안전밸브 열림(과압)</span>
+      </div>
+
+      <h3>실린더별 최대 힘 (안전 6펌프 기준)</h3>
+      <canvas id="gr2" height="230" style="display:block;width:100%;border:1px solid var(--border);border-radius:10px;background:#0b101d"></canvas>
+      <p style="font-size:11.5px;color:var(--dim);margin:8px 2px 0">점선 = 물건 무게(가벼움 3 · 보통 8 · 무거움 15kg). 막대가 점선을 넘으면 그 물건을 들 수 있어요.</p>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>공기압(pneumatics)</b>의 원리를 배웁니다. 펌프로 공기를 <b>압축</b>하면 압력이 커지고,
+        그 압력이 <b>피스톤</b>을 밀어 무거운 물건을 들어올립니다.
+        아이는 "펌프를 더 하면?", "실린더를 굵게 하면?"을 직접 바꿔 보며 <b>압력 = 힘 ÷ 면적</b>이라는
+        핵심 공식을 시뮬레이션과 레고 브릭큐 공압 모델로 놀이처럼 익힙니다.
+        너무 세게 압축하면 <b>안전밸브</b>가 공기를 빼내는 것도 함께 배워, 안전 개념까지 다룹니다.
+      </div>
+
+      <h2>💨 펌프를 많이 하면 더 무거운 걸 들까?</h2>
+      <p style="font-size:16px">물건을 들어올리는 건 <b>압축된 공기의 압력</b>이다. 펌프질을 많이 할수록 공기가 더 <b>압축</b>되어 압력이 커지고,
+        그 압력이 피스톤을 더 세게 밀어 <b>더 무거운 물건</b>을 든다.</p>
+
+      <h2 style="margin-top:22px">🤔 그런데 펌프질만 답이 아니다</h2>
+      <p>같은 압력이라도 <b>굵은 실린더</b>(피스톤 면적이 넓음)는 훨씬 큰 힘을 낸다.
+        힘은 <b>압력 × 면적</b>이기 때문이다. 가는 실린더로 아무리 펌프질해도 못 드는 무거운 물건을,
+        굵은 실린더는 같은 펌프질로 번쩍 들어올린다.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        <b>펌프질 ↑</b> → 압력 ↑ · <b>실린더 굵기 ↑</b> → 면적 ↑ → <b>밀어올리는 힘(공기압) = 압력 × 면적</b>
+      </p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--air)">공기압 (pneumatics)</b> — 압축한 공기가 물건을 밀거나 들어올리는 힘. 이 힘으로 움직이는 장치가 공압장치예요.<br>
+        <b style="color:var(--accent)">압력 = 힘 ÷ 면적</b> — 좁은 곳에 힘이 몰릴수록 압력이 커져요. 바꿔 말하면 <b>힘 = 압력 × 면적</b>.<br>
+        <b style="color:var(--green)">피스톤 (piston)</b> — 실린더 안에서 공기에 밀려 오르내리는 원판. 이게 물건을 밀어올려요.<br>
+        <b style="color:var(--purple)">압축 (compression)</b> — 공기를 좁은 공간에 밀어 넣어 압력을 높이는 것. 펌프질이 곧 압축이에요.<br>
+        <b style="color:var(--red)">안전밸브 (safety valve)</b> — 압력이 너무 높아지면 자동으로 공기를 빼내 터짐을 막는 안전장치예요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — 펌프질하기 전 "몇 번 펌프하면 물건이 뜰까?" 손들기</li>
+        <li><b>② 펌프 실험</b> — 🔧 펌프질을 눌러 게이지 바늘과 피스톤이 오르는 걸 관찰. 예측과 비교</li>
+        <li><b>③ 굵기 반전</b> — 무거움 물건을 가는 실린더로 시도 → 안 뜸. 굵은 실린더로 바꾸면? 번쩍! "면적이 힘이다"</li>
+        <li><b>④ 격자 실험</b> — 실험 2에서 ⚡자동 실험으로 8×3 표를 채우고, 어디서 어떤 물건을 드는지 규칙 찾기</li>
+        <li><b>⑤ 안전 배우기</b> — 7~8번 과하게 펌프 → 빨간 경고 + 안전밸브 "치익!" 공기 빠짐. "왜 더 안 세지지?"</li>
+      </ul>
+
+      <table>
+        <thead><tr><th>조건</th><th>압력</th><th>힘 = 압력×면적</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>가는(2) · 8펌프</td><td>3.0 bar*</td><td>6 kg</td><td>가벼움만 든다</td></tr>
+          <tr><td>보통(4) · 6펌프</td><td>3.0 bar</td><td>12 kg</td><td>보통까지 든다</td></tr>
+          <tr><td>굵은(7) · 6펌프</td><td>3.0 bar</td><td>21 kg</td><td>무거움도 든다!</td></tr>
+          <tr><td>아무거나 · 7~8펌프</td><td>3.0 bar*</td><td>더 안 늘어남</td><td>안전밸브가 벤트</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12.5px;color:var(--dim)">* 안전밸브는 3.0 bar에서 열려 그 이상은 공기를 빼낸다 — 그래서 7·8펌프는 6펌프와 힘이 같다.</p>
+
+      <div class="tip">
+        <b>🧱 레고 브릭큐 공압 실험 팁</b><br>
+        · 브릭큐 프라임 공압 부품: 손펌프 + 에어탱크 + 실린더(굵기 다른 것) + 튜브로 조립<br>
+        · 시뮬로 "6펌프·굵은 실린더면 무거운 블록이 뜬다" 예측 → 실물로 확인<br>
+        · 확장미션: 같은 무게 블록을 <b>가장 적은 펌프질</b>로 드는 실린더 굵기 찾기<br>
+        · 튜브를 손으로 살짝 눌러 새게 하면(누출) 압력이 안 올라간다 — "공기가 새면 힘도 샌다!"
+      </div>
+
+      <details style="margin-top:18px">
+        <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div class="inner" style="padding:12px 16px; line-height:2">
+          압력의 정의: <span class="eq">P = F / A</span> → 힘으로 풀면 <span class="eq">F = P × A</span><br>
+          이 시뮬은 1펌프 = 0.5 bar로 공기를 압축하고, 힘(kgf) ≈ 압력(bar) × 면적(cm²)로 계산합니다 (1 bar ≈ 1 kgf/cm²).<br>
+          안전밸브는 3.0 bar에서 열려 초과분을 배출하므로, 6펌프를 넘겨도 힘이 더 커지지 않습니다.<br>
+          <span style="color:var(--dim)">공기는 압축되는 유체라 힘 전달에 약간의 지연·완충이 있습니다 — 유압(기름)과 달리 부드럽게 밀리는 이유입니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const redraws = {};
+
+/* ── 공유 물리 상수 ── */
+const PSTEP = 0.5;      // 1펌프당 압력 (bar)
+const PSAFE = 3.0;      // 안전밸브 개방 압력 (bar)
+const PMAXG = 4.0;      // 게이지 최대 눈금
+const PUMP_MAX = 8;
+const CYL = [
+  { name: '가는', A: 2, w: 46, light: '#7db4ff', body: '#2563eb' },
+  { name: '보통', A: 4, w: 68, light: '#7db4ff', body: '#2563eb' },
+  { name: '굵은', A: 7, w: 98, light: '#7db4ff', body: '#2563eb' },
+];
+const WT = [
+  { name: '가벼움', kg: 3,  box: 50 },
+  { name: '보통',   kg: 8,  box: 66 },
+  { name: '무거움', kg: 15, box: 86 },
+];
+function calc(pumps, A) {
+  const rawP = pumps * PSTEP;
+  const over = rawP > PSAFE + 1e-9;
+  const effP = Math.min(rawP, PSAFE);
+  return { rawP, effP, over, F: effP * A };
+}
+
+/* ── 탭 전환 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  ['exp1', 'exp2'].forEach(id => $(id).classList.toggle('on', b.dataset.tab === id));
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  if (redraws[b.dataset.tab]) requestAnimationFrame(redraws[b.dataset.tab]);
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function roundRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
+
+function drawBench(c, W, H) {
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(120,145,190,.07)';
+  for (let x = 20; x < W; x += 26)
+    for (let y = 20; y < H; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+}
+function drawFloor(c, W, y) {
+  const g = c.createLinearGradient(0, y, 0, y + 26);
+  g.addColorStop(0, '#2b3550'); g.addColorStop(1, 'rgba(20,26,40,0)');
+  c.fillStyle = g; c.fillRect(0, y, W, 26);
+  c.strokeStyle = '#3a4661'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
+}
+
+/* ── 압력 게이지 (반원 다이얼) ── */
+function drawGauge(c, x, y, r, p) {
+  c.save(); c.translate(x, y);
+  // 페이스
+  c.beginPath(); c.arc(0, 0, r, Math.PI, 2 * Math.PI); c.closePath();
+  const fg = c.createRadialGradient(0, -r * 0.2, r * 0.1, 0, 0, r);
+  fg.addColorStop(0, '#f2f6ff'); fg.addColorStop(1, '#c3ccdd');
+  c.fillStyle = fg; c.fill();
+  c.strokeStyle = '#1a2438'; c.lineWidth = Math.max(3, r * 0.09); c.stroke();
+  // 안전/위험 존
+  c.lineWidth = r * 0.13; c.lineCap = 'butt';
+  c.strokeStyle = '#1f9e57'; c.beginPath(); c.arc(0, 0, r * 0.8, Math.PI, Math.PI + (PSAFE / PMAXG) * Math.PI); c.stroke();
+  c.strokeStyle = '#d63a32'; c.beginPath(); c.arc(0, 0, r * 0.8, Math.PI + (PSAFE / PMAXG) * Math.PI, 2 * Math.PI); c.stroke();
+  // 눈금 + 숫자
+  c.fillStyle = '#1a2438'; c.font = 'bold ' + Math.round(r * 0.16) + 'px sans-serif'; c.textAlign = 'center';
+  for (let i = 0; i <= PMAXG; i++) {
+    const a = Math.PI + (i / PMAXG) * Math.PI;
+    c.strokeStyle = '#1a2438'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62); c.lineTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); c.stroke();
+    c.fillText(i, Math.cos(a) * r * 0.48, Math.sin(a) * r * 0.48 + r * 0.05);
+  }
+  // 바늘
+  const pc = Math.max(0, Math.min(PMAXG, p));
+  const a = Math.PI + (pc / PMAXG) * Math.PI;
+  c.save(); c.rotate(a);
+  c.fillStyle = '#e0342b';
+  c.beginPath(); c.moveTo(-r * 0.06, 0); c.lineTo(0, -r * 0.05); c.lineTo(r * 0.74, 0); c.lineTo(0, r * 0.05); c.closePath(); c.fill();
+  c.restore();
+  c.beginPath(); c.arc(0, 0, r * 0.1, 0, 7); c.fillStyle = '#1a2438'; c.fill();
+  c.strokeStyle = '#7a869e'; c.lineWidth = 1.5; c.stroke();
+  c.restore();
+  // 디지털 표시
+  c.fillStyle = pc > PSAFE - 0.05 ? '#ff5a52' : '#58d3ff';
+  c.font = 'bold ' + Math.round(r * 0.24) + 'px "Cascadia Mono", monospace'; c.textAlign = 'center';
+  c.fillText(p.toFixed(1) + ' bar', x, y + r * 0.42);
+}
+
+/* ── 손펌프 ── */
+function drawPump(c, x, groundY, bob, fill) {
+  const bodyW = 46, bodyH = 118, bx = x - bodyW / 2, by = groundY - bodyH;
+  // 베이스
+  c.fillStyle = '#232b3e'; roundRect(c, x - 40, groundY - 10, 80, 12, 5); c.fill();
+  // 원통 몸체
+  const g = c.createLinearGradient(bx, 0, bx + bodyW, 0);
+  g.addColorStop(0, '#3a4661'); g.addColorStop(0.5, '#4a566f'); g.addColorStop(1, '#2a3348');
+  c.fillStyle = g; roundRect(c, bx, by, bodyW, bodyH, 8); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
+  // 압축된 공기 표시 (아래에서 차오름)
+  const fh = (bodyH - 12) * Math.min(1, fill);
+  c.save(); roundRect(c, bx + 3, by + 3, bodyW - 6, bodyH - 6, 6); c.clip();
+  const ag = c.createLinearGradient(0, groundY, 0, groundY - fh);
+  ag.addColorStop(0, 'rgba(88,211,255,.55)'); ag.addColorStop(1, 'rgba(88,211,255,.12)');
+  c.fillStyle = ag; c.fillRect(bx + 3, groundY - 6 - fh, bodyW - 6, fh);
+  c.restore();
+  // 플런저 로드 + 손잡이 (bob=1 눌림)
+  const travel = 34, rodTop = by - 42 + bob * travel;
+  c.strokeStyle = '#8592ab'; c.lineWidth = 8; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x, by + 6); c.lineTo(x, rodTop + 8); c.stroke();
+  c.fillStyle = '#1f5eff'; roundRect(c, x - 34, rodTop, 68, 15, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4; c.stroke();
+  c.lineCap = 'butt';
+  // 라벨
+  c.fillStyle = '#9aa8bf'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
+  c.fillText('손펌프', x, groundY + 24);
+}
+
+function drawTag(c, x, y, text, color) {
+  c.font = 'bold 13px "Malgun Gothic", sans-serif';
+  const w = c.measureText(text).width + 22;
+  c.fillStyle = 'rgba(8,12,22,.82)'; roundRect(c, x - w / 2, y - 13, w, 26, 13); c.fill();
+  c.strokeStyle = color; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = color; c.textAlign = 'center'; c.fillText(text, x, y + 4.5);
+}
+function arrowV(c, x, yTip, len, up, color, lw) {
+  c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw; c.lineCap = 'round';
+  const dir = up ? -1 : 1, yTail = yTip + len * -dir;
+  c.beginPath(); c.moveTo(x, yTail); c.lineTo(x, yTip); c.stroke();
+  const h = Math.max(8, lw * 2.4);
+  c.beginPath(); c.moveTo(x, yTip); c.lineTo(x - h * 0.6, yTip + dir * h); c.lineTo(x + h * 0.6, yTip + dir * h); c.closePath(); c.fill();
+  c.restore();
+}
+
+/* ═════════ 실험 1 · 공압 리프트 ═════════ */
+(() => {
+  const cv = $('cv1');
+  let pumps = 0, cylIdx = 1, wtIdx = 1, runCount = 0;
+  let aP = 0, aLift = 0, aHandle = 0, aFill = 0, hiss = 0, lastTs = null;
+  let particles = [];
+
+  function state() {
+    const cyl = CYL[cylIdx], wt = WT[wtIdx];
+    const r = calc(pumps, cyl.A);
+    const lifted = r.F >= wt.kg - 1e-9;
+    const liftFrac = lifted ? Math.min(1, 0.32 + (r.F - wt.kg) / (2 * wt.kg)) : 0;
+    return { cyl, wt, ...r, lifted, liftFrac, heightCm: liftFrac * 8 };
+  }
+  function updateUI() {
+    const s = state();
+    $('pnum').textContent = pumps;
+    // 도트
+    const dots = $('pdots'); dots.innerHTML = '';
+    for (let i = 1; i <= PUMP_MAX; i++) {
+      const d = document.createElement('span');
+      d.className = 'dot' + (i <= pumps ? (i * PSTEP > PSAFE ? ' over' : ' on') : '');
+      dots.appendChild(d);
+    }
+    $('forceHero').textContent = s.F.toFixed(1) + ' kg';
+    $('forceSub').textContent = s.over ? '⚠ 과압 — 안전밸브 열림 (힘 고정)'
+      : `압력 ${s.effP.toFixed(1)} × 면적 ${s.cyl.A} = ${s.F.toFixed(1)}kg`;
+    $('ro_p').textContent = s.effP.toFixed(1);
+    $('ro_a').textContent = s.cyl.A;
+    $('ro_w').textContent = s.wt.kg;
+    $('ro_h').textContent = s.heightCm.toFixed(1);
+    const maxRef = 24;
+    $('barF').style.width = Math.min(100, s.F / maxRef * 100) + '%'; $('valF').textContent = s.F.toFixed(0) + 'kg';
+    $('barW').style.width = Math.min(100, s.wt.kg / maxRef * 100) + '%'; $('valW').textContent = s.wt.kg + 'kg';
+    // 상태 + 배지
+    const bd = $('bd1'), led = $('led1'), st = $('st1');
+    if (s.over) { bd.className = 'badge warn'; bd.textContent = '⚠ 과압! 안전밸브가 "치익—" 공기를 빼냄'; led.className = 'led warn'; st.textContent = '과압 경고'; }
+    else if (pumps === 0) { bd.className = 'badge'; led.className = 'led'; st.textContent = '준비'; }
+    else if (s.lifted) { bd.className = 'badge ok'; bd.textContent = `✓ ${s.wt.name}(${s.wt.kg}kg) 들어올림! 힘 ${s.F.toFixed(1)}kg ≥ ${s.wt.kg}kg`; led.className = 'led done'; st.textContent = '성공'; }
+    else { bd.className = 'badge no'; bd.textContent = `△ 힘 부족 — ${s.F.toFixed(1)}kg < ${s.wt.kg}kg. 더 펌프하거나 굵은 실린더로!`; led.className = 'led run'; st.textContent = '충전 중'; }
+  }
+  function logRow() {
+    const s = state();
+    const tb = $('tb1').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${++runCount}</td><td>${pumps}</td><td class="cond">${s.cyl.name}</td>` +
+      `<td>${s.effP.toFixed(1)}</td><td>${s.F.toFixed(1)}</td><td class="cond">${s.wt.name}</td>` +
+      `<td class="cond" style="color:${s.over ? '#ff5a52' : s.lifted ? '#2ee06f' : '#ffb02e'}">${s.over ? '과압' : s.lifted ? '성공' : '부족'}</td>`;
+    tb.prepend(tr);
+    while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+  }
+  function pump(delta) {
+    const np = Math.max(0, Math.min(PUMP_MAX, pumps + delta));
+    if (np === pumps) return;
+    pumps = np;
+    if (delta > 0) {
+      aHandle = 1;
+      const s = state();
+      for (let i = 0; i < 7; i++) particles.push({ t: -i * 0.05, over: s.over });
+      if (s.over) hiss = 1;
+    }
+    updateUI(); logRow();
+  }
+  function reset() {
+    pumps = 0; aP = 0; aLift = 0; aFill = 0; hiss = 0; particles = [];
+    updateUI();
+  }
+
+  function draw() {
+    const { c, W, H } = fit(cv);
+    if (W < 60 || H < 60) return;
+    drawBench(c, W, H);
+    const groundY = H * 0.82;
+    drawFloor(c, W, groundY);
+    const s = state();
+    const pumpX = W * 0.19;
+    const cylX = W * 0.6;
+    const barrelH = H * 0.5;
+    const barrelW = s.cyl.w;
+    const stroke = barrelH * 0.46;
+
+    // 튜브 (펌프 바닥 → 실린더 바닥)
+    const p0x = pumpX + 24, p0y = groundY - 4;
+    const p2x = cylX, p2y = groundY - 6;
+    c.strokeStyle = '#3a4661'; c.lineWidth = 11; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(p0x, p0y); c.lineTo(p2x - barrelW * 0.5 - 6, p0y); c.lineTo(p2x, p2y); c.stroke();
+    c.strokeStyle = '#586a8c'; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(p0x, p0y); c.lineTo(p2x - barrelW * 0.5 - 6, p0y); c.lineTo(p2x, p2y); c.stroke();
+    c.lineCap = 'butt';
+    // 공기 입자
+    const path = [[p0x, p0y], [p2x - barrelW * 0.5 - 6, p0y], [p2x, p2y]];
+    const segLen = [Math.hypot(path[1][0] - path[0][0], path[1][1] - path[0][1]), Math.hypot(path[2][0] - path[1][0], path[2][1] - path[1][1])];
+    const totLen = segLen[0] + segLen[1];
+    particles.forEach(pt => {
+      if (pt.t < 0 || pt.t > 1) return;
+      let d = pt.t * totLen, seg = 0;
+      if (d > segLen[0]) { d -= segLen[0]; seg = 1; }
+      const a = path[seg], b = path[seg + 1], f = d / segLen[seg];
+      const px = a[0] + (b[0] - a[0]) * f, py = a[1] + (b[1] - a[1]) * f;
+      c.beginPath(); c.arc(px, py, 3.2, 0, 7);
+      c.fillStyle = pt.over ? 'rgba(255,120,110,.9)' : 'rgba(120,225,255,.9)'; c.fill();
+    });
+
+    // 펌프
+    drawPump(c, pumpX, groundY, aHandle, aFill);
+    // 게이지
+    drawGauge(c, W * 0.37, H * 0.24, Math.min(78, H * 0.16), aP);
+
+    // ── 실린더 ──
+    const bx = cylX - barrelW / 2, byTop = groundY - barrelH;
+    // 바깥 벽
+    const wall = c.createLinearGradient(bx, 0, bx + barrelW, 0);
+    wall.addColorStop(0, 'rgba(90,105,135,.45)'); wall.addColorStop(0.5, 'rgba(150,170,205,.28)'); wall.addColorStop(1, 'rgba(60,72,95,.5)');
+    c.fillStyle = wall; roundRect(c, bx, byTop, barrelW, barrelH, 10); c.fill();
+    c.strokeStyle = '#6b7896'; c.lineWidth = 2.5; c.stroke();
+    // 내부 공기 압력 채움 (피스톤 아래)
+    const pistonY = groundY - 18 - aLift * stroke;   // 피스톤 윗면
+    c.save(); roundRect(c, bx + 4, byTop + 4, barrelW - 8, barrelH - 8, 7); c.clip();
+    const airG = c.createLinearGradient(0, groundY, 0, pistonY);
+    const inten = Math.min(1, aP / PSAFE);
+    airG.addColorStop(0, `rgba(88,211,255,${0.25 + 0.45 * inten})`);
+    airG.addColorStop(1, `rgba(88,211,255,${0.08 + 0.2 * inten})`);
+    c.fillStyle = airG; c.fillRect(bx + 4, pistonY, barrelW - 8, groundY - pistonY);
+    // 압력 점 애니메이션
+    c.fillStyle = `rgba(180,240,255,${0.4 * inten})`;
+    for (let i = 0; i < Math.round(pumps * 2.5); i++) {
+      const px = bx + 8 + Math.random() * (barrelW - 16);
+      const py = pistonY + 6 + Math.random() * Math.max(4, groundY - pistonY - 10);
+      c.beginPath(); c.arc(px, py, 1.6, 0, 7); c.fill();
+    }
+    c.restore();
+    // 피스톤 원판
+    const pistG = c.createLinearGradient(0, pistonY - 8, 0, pistonY + 12);
+    pistG.addColorStop(0, '#e6ebf5'); pistG.addColorStop(1, '#8b97ad');
+    c.fillStyle = pistG; roundRect(c, bx + 4, pistonY, barrelW - 8, 14, 4); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.2; c.stroke();
+    // 로드 (피스톤 → 위 플랫폼)
+    const platY = byTop - 30;
+    c.strokeStyle = '#9aa6bd'; c.lineWidth = 10; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cylX, pistonY); c.lineTo(cylX, platY + 8); c.stroke();
+    c.lineCap = 'butt';
+    // 플랫폼
+    c.fillStyle = '#4a566f'; roundRect(c, cylX - barrelW * 0.55, platY, barrelW * 1.1, 12, 5); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4; c.stroke();
+
+    // 물건 (상자)
+    const box = s.wt.box, boxY = platY - box;
+    const boxG = c.createLinearGradient(0, boxY, 0, boxY + box);
+    boxG.addColorStop(0, '#e08a3c'); boxG.addColorStop(1, '#a85a1c');
+    c.fillStyle = boxG; roundRect(c, cylX - box / 2, boxY, box, box, 8); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 2; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(cylX - box / 2 + 6, boxY + 8); c.lineTo(cylX + box / 2 - 6, boxY + 8); c.stroke();
+    c.fillStyle = '#fff'; c.font = 'bold ' + Math.max(13, box * 0.24) + 'px sans-serif'; c.textAlign = 'center';
+    c.fillText(s.wt.kg + 'kg', cylX, boxY + box / 2 + box * 0.09);
+
+    // 힘 화살표 (밀어올리는 공기압 vs 무게)
+    const lwF = Math.max(3, Math.min(11, s.F * 0.6));
+    arrowV(c, cylX - box / 2 - 22, boxY + box * 0.5, Math.min(60, 14 + s.F * 2.2), true, '#2ee06f', lwF);
+    arrowV(c, cylX + box / 2 + 22, boxY + box * 0.5, Math.min(60, 14 + s.wt.kg * 2.2), false, '#ff9046', Math.max(3, Math.min(11, s.wt.kg * 0.55)));
+
+    // 안전밸브 (실린더 상단 우측)
+    const vX = bx + barrelW + 2, vY = byTop + 16;
+    c.fillStyle = s.over ? '#ff5a52' : '#4a566f';
+    roundRect(c, vX - 4, vY - 6, 16, 12, 3); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.2; c.stroke();
+    if (s.over && hiss > 0.02) {
+      c.fillStyle = `rgba(255,255,255,${0.5 * hiss})`;
+      for (let i = 0; i < 6; i++) {
+        const a = -0.4 + Math.random() * 0.8;
+        c.beginPath(); c.arc(vX + 14 + i * 3 + Math.random() * 6, vY + Math.sin(a) * 14, 2.4, 0, 7); c.fill();
+      }
+      c.fillStyle = 'rgba(255,90,82,.9)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'left';
+      c.fillText('치익—', vX + 16, vY - 8);
+    }
+
+    // 라벨
+    drawTag(c, cylX, boxY - 22, `${s.wt.name} · ${s.wt.kg}kg`, '#ff9046');
+    drawTag(c, cylX, groundY + 24, `${s.cyl.name} 실린더 · 면적 ${s.cyl.A}cm²`, '#58d3ff');
+    // 눈금자 (높이)
+    const rulerX = cylX + barrelW * 0.7 + 20;
+    c.strokeStyle = 'rgba(150,170,205,.4)'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(rulerX, platY); c.lineTo(rulerX, platY - stroke); c.stroke();
+    c.fillStyle = '#8fa0ba'; c.font = '11px sans-serif'; c.textAlign = 'left';
+    for (let cm = 0; cm <= 8; cm += 2) {
+      const yy = platY - (cm / 8) * stroke;
+      c.beginPath(); c.moveTo(rulerX - 3, yy); c.lineTo(rulerX + 4, yy); c.stroke();
+      c.fillText(cm + 'cm', rulerX + 7, yy + 3.5);
+    }
+
+    // HUD
+    $('hud_p').textContent = aP.toFixed(1) + ' bar';
+    $('hud_f').textContent = s.F.toFixed(1) + ' kg';
+    $('hud_h').textContent = s.heightCm.toFixed(1) + ' cm';
+  }
+
+  function loop(ts) {
+    if (lastTs == null) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000); lastTs = ts;
+    const s = state();
+    aP += (s.effP - aP) * Math.min(1, dt * 6);
+    aLift += (s.liftFrac - aLift) * Math.min(1, dt * 5);
+    aFill += (Math.min(1, pumps / PUMP_MAX) - aFill) * Math.min(1, dt * 6);
+    aHandle = Math.max(0, aHandle - dt * 4);
+    hiss = s.over ? Math.min(1, hiss + dt * 3) : Math.max(0, hiss - dt * 2);
+    particles.forEach(p => p.t += dt * 0.9);
+    particles = particles.filter(p => p.t < 1.05);
+    if (s.over && Math.random() < 0.15) particles.push({ t: 0.55, over: true });
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // 컨트롤
+  const pickCyl = $('pickCyl').querySelectorAll('button');
+  const pickWt = $('pickWt').querySelectorAll('button');
+  pickCyl.forEach(b => b.onclick = () => { cylIdx = +b.dataset.i; pickCyl.forEach(x => x.classList.toggle('on', x === b)); updateUI(); });
+  pickWt.forEach(b => b.onclick = () => { wtIdx = +b.dataset.i; pickWt.forEach(x => x.classList.toggle('on', x === b)); updateUI(); });
+  $('pump1').onclick = () => pump(+1);
+  $('unpump1').onclick = () => pump(-1);
+  $('reset1').onclick = () => reset();
+  redraws.exp1 = () => draw();
+  window.addEventListener('resize', () => draw());
+  updateUI();
+  requestAnimationFrame(loop);
+})();
+
+/* ═════════ 실험 2 · 굵기 격자실험 ═════════ */
+(() => {
+  const cv = $('cv2');
+  let aFill = 0, targetPumps = 0, running = false, lastTs = null, autoIdx = 0, autoTimer = null;
+
+  function buildGrid(upto) {
+    const tb = $('tb2').querySelector('tbody');
+    tb.innerHTML = '';
+    for (let n = 1; n <= PUMP_MAX; n++) {
+      const tr = document.createElement('tr');
+      const shown = n <= upto;
+      const rp = (n * PSTEP).toFixed(1);
+      let cells = `<td class="rowh">${n}</td><td>${shown ? rp : '·'}</td>`;
+      CYL.forEach(cyl => {
+        if (!shown) { cells += '<td>·</td>'; return; }
+        const r = calc(n, cyl.A);
+        const best = r.F >= 21 - 1e-9;
+        cells += `<td class="hit${r.over ? ' vent' : ''}${best ? ' hi' : ''}">${r.F.toFixed(1)}${r.over ? '⚠' : ''}</td>`;
+      });
+      tr.innerHTML = cells;
+      tb.appendChild(tr);
+    }
+  }
+  function drawBarChart() {
+    const cv2 = $('gr2'); const { c, W, H } = fit(cv2);
+    c.clearRect(0, 0, W, H);
+    const pad = 34, base = H - 30, top = 16;
+    const maxKg = 24;
+    // 무게 기준 점선
+    c.font = '11px sans-serif';
+    WT.forEach(w => {
+      const y = base - (w.kg / maxKg) * (base - top);
+      c.strokeStyle = 'rgba(255,144,70,.5)'; c.setLineDash([4, 4]); c.lineWidth = 1;
+      c.beginPath(); c.moveTo(pad, y); c.lineTo(W - 8, y); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#ff9046'; c.textAlign = 'left'; c.fillText(w.name + ' ' + w.kg, W - 78, y - 3);
+    });
+    // 막대 (6펌프 안전 기준)
+    const bw = (W - pad - 20) / CYL.length;
+    CYL.forEach((cyl, i) => {
+      const F = calc(6, cyl.A).F;
+      const x = pad + i * bw + bw * 0.2, ww = bw * 0.6;
+      const h = (F / maxKg) * (base - top);
+      const g = c.createLinearGradient(0, base - h, 0, base);
+      g.addColorStop(0, '#58d3ff'); g.addColorStop(1, '#1f5eff');
+      c.fillStyle = g; roundRect(c, x, base - h, ww, h, 5); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 13px "Cascadia Mono", monospace'; c.textAlign = 'center';
+      c.fillText(F.toFixed(0) + 'kg', x + ww / 2, base - h - 6);
+      c.fillStyle = '#c6d2e6'; c.font = '12px sans-serif';
+      c.fillText(cyl.name + '(' + cyl.A + ')', x + ww / 2, base + 16);
+    });
+    c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(pad, top); c.lineTo(pad, base); c.lineTo(W - 8, base); c.stroke();
+  }
+
+  function draw() {
+    const { c, W, H } = fit(cv);
+    if (W < 60 || H < 60) return;
+    drawBench(c, W, H);
+    const groundY = H * 0.82;
+    drawFloor(c, W, groundY);
+    const nShown = aFill;
+    const barrelH = H * 0.5, stroke = barrelH * 0.42;
+    CYL.forEach((cyl, i) => {
+      const cx = W * (0.24 + i * 0.26);
+      const bw = cyl.w, bx = cx - bw / 2, byTop = groundY - barrelH;
+      const r = calc(Math.round(nShown), cyl.A);
+      const inten = Math.min(1, (nShown * PSTEP) / PSAFE);
+      const liftFrac = Math.min(1, r.F / 24);
+      const pistonY = groundY - 16 - liftFrac * stroke;
+      // 벽
+      const wall = c.createLinearGradient(bx, 0, bx + bw, 0);
+      wall.addColorStop(0, 'rgba(90,105,135,.45)'); wall.addColorStop(0.5, 'rgba(150,170,205,.26)'); wall.addColorStop(1, 'rgba(60,72,95,.5)');
+      c.fillStyle = wall; roundRect(c, bx, byTop, bw, barrelH, 9); c.fill();
+      c.strokeStyle = r.over ? '#ff5a52' : '#6b7896'; c.lineWidth = 2.5; c.stroke();
+      // 공기
+      c.save(); roundRect(c, bx + 4, byTop + 4, bw - 8, barrelH - 8, 6); c.clip();
+      const airG = c.createLinearGradient(0, groundY, 0, pistonY);
+      airG.addColorStop(0, `rgba(88,211,255,${0.25 + 0.45 * inten})`); airG.addColorStop(1, `rgba(88,211,255,${0.08 + 0.18 * inten})`);
+      c.fillStyle = airG; c.fillRect(bx + 4, pistonY, bw - 8, groundY - pistonY);
+      c.restore();
+      // 피스톤 + 로드 + 플랫폼
+      c.fillStyle = '#c3cddc'; roundRect(c, bx + 4, pistonY, bw - 8, 12, 4); c.fill();
+      c.strokeStyle = '#8b97ad'; c.lineWidth = 8; c.lineCap = 'round';
+      const platY = byTop - 22;
+      c.beginPath(); c.moveTo(cx, pistonY); c.lineTo(cx, platY + 6); c.stroke(); c.lineCap = 'butt';
+      c.fillStyle = '#4a566f'; roundRect(c, cx - bw * 0.55, platY, bw * 1.1, 10, 4); c.fill();
+      // 힘 라벨
+      drawTag(c, cx, platY - 20, `${r.F.toFixed(1)}kg`, r.over ? '#ff5a52' : '#2ee06f');
+      drawTag(c, cx, groundY + 22, `${cyl.name} · ${cyl.A}cm²`, '#58d3ff');
+      if (r.over) { c.fillStyle = 'rgba(255,90,82,.9)'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center'; c.fillText('안전밸브 열림', cx, byTop - 34); }
+    });
+    $('hud_pp').textContent = Math.round(nShown) + ' 회';
+    $('hud_pb').textContent = Math.min(PSAFE, Math.round(nShown) * PSTEP).toFixed(1);
+  }
+
+  function loop(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000); lastTs = ts;
+    aFill += (targetPumps - aFill) * Math.min(1, dt * 4);
+    draw();
+    if (Math.abs(targetPumps - aFill) > 0.02 || autoTimer) requestAnimationFrame(loop);
+    else running = false;
+  }
+  function kick() { if (!running) { running = true; lastTs = null; requestAnimationFrame(loop); } }
+
+  function auto() {
+    clearInterval(autoTimer);
+    autoIdx = 0; targetPumps = 0; aFill = 0; buildGrid(0);
+    $('led2').className = 'led run'; $('st2').textContent = '자동 실험 중';
+    $('bd2').className = 'badge'; autoTimer = 1;
+    kick();
+    autoTimer = setInterval(() => {
+      autoIdx++;
+      targetPumps = autoIdx; buildGrid(autoIdx); kick();
+      if (autoIdx >= PUMP_MAX) {
+        clearInterval(autoTimer); autoTimer = null;
+        $('led2').className = 'led done'; $('st2').textContent = '완료';
+        const bd = $('bd2'); bd.className = 'badge ok';
+        bd.textContent = '✓ 굵은 실린더(21kg)만 무거움 15kg을 든다 — 면적이 힘을 키운다!';
+        drawBarChart();
+      }
+    }, 620);
+  }
+  function reset() {
+    clearInterval(autoTimer); autoTimer = null; running = false;
+    autoIdx = 0; targetPumps = 0; aFill = 0;
+    buildGrid(0); draw(); drawBarChart();
+    $('led2').className = 'led'; $('st2').textContent = '준비'; $('bd2').className = 'badge';
+  }
+
+  $('auto2').onclick = auto;
+  $('reset2').onclick = reset;
+  redraws.exp2 = () => { draw(); drawBarChart(); };
+  window.addEventListener('resize', () => { draw(); drawBarChart(); });
+  buildGrid(0);
+  requestAnimationFrame(() => { draw(); drawBarChart(); });
+})();
+</script>
+</body>
+</html>

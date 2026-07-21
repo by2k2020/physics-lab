@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>라인 워크 시뮬레이션 — 브릭큐 프라임 · 코딩더메이커</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 18px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 22px; font-size: 15px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.ok { display: inline-flex; background: rgba(20,60,35,.78); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.fall { display: inline-flex; background: rgba(70,20,18,.78); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 350px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 6px 0 10px; }
+  .side h3 .sub { text-transform: none; color: #5a6a85; font-weight: 400; letter-spacing: 0; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; font-weight: 700; flex: 1; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.12); font-weight: 700; }
+  .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); }
+  .speed-row button { padding: 4px 11px; font-size: 12px; border-radius: 7px; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+
+  .margin-box { background: #0c1220; border: 1px solid var(--border); border-radius: 11px; padding: 10px 13px; margin: 4px 0 12px; }
+  .margin-box .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .margin-box .k { font-size: 11.5px; color: var(--dim); }
+  .margin-box .v { font-family: var(--mono); font-size: 22px; font-weight: 800; }
+  .mtrack { position: relative; height: 14px; background: linear-gradient(90deg, rgba(255,90,82,.25), rgba(255,176,46,.18) 50%, rgba(46,224,111,.25)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mtrack .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.35); }
+  .mfill { position: absolute; top: 0; bottom: 0; left: 50%; border-radius: 4px; }
+
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.g { color: var(--green); } .readout .v.r { color: var(--red); }
+
+  table.mx { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 9px 2px; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-weight: 700; font-size: 11.5px; }
+  table.mx td.lab { background: var(--panel2); color: #b9c6da; font-weight: 700; font-size: 11.5px; }
+  table.mx td.ok { background: rgba(46,224,111,.16); color: var(--green); font-weight: 800; font-family: var(--mono); }
+  table.mx td.fall { background: rgba(255,90,82,.14); color: #ff8079; font-weight: 800; font-family: var(--mono); }
+  table.mx td.empty { color: #38445c; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.mx td small { display: block; font-size: 9.5px; font-weight: 400; opacity: .8; font-family: 'Malgun Gothic',sans-serif; }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { font-size: 13px; margin: 10px 0; width: 100%; border-collapse: collapse; }
+  .theory-box th, .theory-box td { padding: 7px 10px; border: 1px solid var(--border); text-align: center; }
+  .theory-box th { background: var(--panel2); color: var(--dim); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 54vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
+      <div class="title">🚶 라인 워크 시뮬레이션</div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp">실험 · 두 다리 보행</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <section class="exp on" id="exp">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">걸은 거리</span><span id="hud_dist">0 cm</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">안정 여유</span><span id="hud_marg">—</span></div>
+      </div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="run">▶ 걷기 시작</button>
+        <button id="pause" disabled>⏸</button>
+        <button id="reset">↺</button>
+      </div>
+
+      <h3>실험 조건 <span class="sub">(단계 선택)</span></h3>
+      <div class="param"><label>보폭 <span style="color:#5a6a85">(다리 링크 길이)</span> <b id="v_stride">보통</b></label>
+        <div class="pick" id="pickStride">
+          <button data-i="0">짧게</button><button data-i="1" class="on">보통</button><button data-i="2">길게</button>
+        </div>
+      </div>
+      <div class="param"><label>무게중심 높이 <b id="v_com">보통</b></label>
+        <div class="pick" id="pickCom">
+          <button data-i="0">낮게</button><button data-i="1" class="on">보통</button><button data-i="2">높게</button>
+        </div>
+      </div>
+      <div class="speed-row" style="border-top:none;padding-top:0">
+        <span>걷는 속도</span>
+        <button data-i="0" id="spd0">느리게</button>
+        <button data-i="1" class="on" id="spd1">보통</button>
+        <button data-i="2" id="spd2">빠르게</button>
+      </div>
+
+      <h3>안정 여유 <span class="sub">(무게중심이 발 안에 있으면 +, 벗어나면 −)</span></h3>
+      <div class="margin-box">
+        <div class="top"><span class="k">지지면(발 넓이) 대비 무게중심 위치</span><span class="v" id="marg2">—</span></div>
+        <div class="mtrack"><div class="mid"></div><div class="mfill" id="mfill"></div></div>
+      </div>
+
+      <h3>측정값</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">결과</div><div class="v" id="ro_result">—</div></div>
+        <div class="readout"><div class="k">걸은 거리</div><div class="v b" id="ro_dist">—</div></div>
+        <div class="readout"><div class="k">넘어짐까지 시간</div><div class="v r" id="ro_falltime">—</div></div>
+        <div class="readout"><div class="k">불안정 지수</div><div class="v a" id="ro_inst">—</div></div>
+      </div>
+
+      <div class="ctl-row">
+        <button id="auto" style="flex:1">⚡ 자동 실험 — 이 속도로 표 전부 채우기</button>
+        <button id="clearMx">지우기</button>
+      </div>
+      <h3>격자 결과표 <span class="sub" id="gridLab">(보폭 × 무게중심 · 속도: 보통)</span></h3>
+      <table class="mx" id="matrix"></table>
+    </div>
+  </section>
+
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 두 다리로 걷는 로봇을 통해 <b>무게중심</b>과 <b>지지면(발이 닿는 넓이)</b>이 균형에 어떻게 작용하는지 배웁니다.
+        보폭과 무게중심 높이를 바꿔가며, 무게중심이 발 밖으로 벗어나면 로봇이 넘어진다는 <b>안정성의 원리</b>를 예측·실험·기록으로 확인합니다.
+        아이는 "낮고 넓을수록 안정하다"는 규칙을 놀이처럼 발견하며, 실제 레고 보행 링키지 모형과 같은 개념을 익힙니다.
+      </div>
+
+      <h2>🚶 왜 어떤 로봇은 넘어질까?</h2>
+      <p style="font-size:16px">두 다리로 선 물체는 <b>무게중심에서 내린 수직선(추선)</b>이 <b>지지면(발이 바닥에 닿는 넓이)</b> 안에 있으면 서 있고,
+        그 선이 지지면 <b>밖으로 벗어나는 순간 넘어진다.</b></p>
+
+      <h2 style="margin-top:22px">🤔 걸을 때 무슨 일이 생길까?</h2>
+      <p>걸음마다 몸이 좌우·앞뒤로 흔들리면서 무게중심이 발 위를 왔다 갔다 한다.
+        <b>보폭이 길수록</b> 무게중심이 발에서 더 멀리 벗어나고, <b>무게중심이 높을수록</b> 조금만 기울어도 넘어가는 힘(회전 모멘트)이 커진다.
+        <b>빠르게</b> 걸으면 관성 때문에 더 크게 흔들려 넘어지기 쉽다.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        낮은 무게중심 + 짧은 보폭 + 넓은 발 = <b style="color:var(--green)">안정</b> ·
+        높은 무게중심 + 긴 보폭 + 빠른 걸음 = <b style="color:var(--red)">불안정(넘어짐)</b>
+      </p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--amber)">무게중심</b> — 물체의 무게가 한 점에 모여 있다고 볼 수 있는 균형의 중심점. 여기서 내린 수직선이 중요해요.<br>
+        <b style="color:var(--accent)">지지면 (발이 닿는 넓이)</b> — 바닥에 닿아 몸을 받쳐 주는 영역. 넓을수록 잘 안 넘어져요.<br>
+        <b style="color:var(--green)">균형</b> — 무게중심의 수직선이 지지면 안에 있어 넘어지지 않고 버티는 상태예요.<br>
+        <b style="color:var(--purple)">안정성</b> — 흔들려도 다시 균형으로 돌아오려는 성질. 낮고 넓을수록 안정성이 커져요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — 표를 보기 전에 "보폭을 길게 하면 넘어질까?" 손들기</li>
+        <li><b>② 기준 실험</b> — 보폭·무게중심 모두 "보통"으로 걷기 시작 → 무게중심 추선이 발 안에 머무는지 관찰</li>
+        <li><b>③ 무게중심 올리기</b> — 높이를 "높게"로 바꿔 다시 걷기 → 추선이 발 밖으로 나가 넘어지는 순간 확인</li>
+        <li><b>④ 격자 채우기</b> — ⚡자동 실험으로 9칸을 채우고 "안정 ✅"이 어디 몰려 있는지 찾기 (왼쪽 아래!)</li>
+        <li><b>⑤ 속도 반전</b> — 속도를 "빠르게"로 바꿔 표를 다시 채우기 → 안정 칸이 줄어드는 것 확인</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 레고 보행 링키지 실험 팁</b><br>
+        · 시뮬의 3단계(짧게/보통/길게)는 실제 다리 링크 길이 조절과 <b>같은 개념</b> — 시뮬로 예측하고 실물로 확인<br>
+        · 무게추(배터리·브릭)를 <b>다리 쪽 아래로</b> 내리면 무게중심이 낮아져 훨씬 안정해진다<br>
+        · 발판(발 브릭)을 넓게 붙이면 지지면이 커져 같은 보폭에서도 안 넘어진다 — "왜 그럴까?" 이야기하기
+      </div>
+
+      <details style="margin-top:18px; border:1px solid var(--border); border-radius:10px; background:#0c1220">
+        <summary style="padding:9px 13px; font-size:12.5px; color:#c6d2e6; cursor:pointer; font-weight:700">🔎 원리가 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div style="padding:12px 16px; line-height:2">
+          넘어지려는 힘(전도 모멘트)은 대략 <span class="eq">무게중심 높이 × 흔들림 거리</span>에 비례하고,
+          버티는 힘은 <span class="eq">지지면 절반 폭</span>에 비례합니다.<br>
+          흔들림 거리는 보폭에, 그리고 속도(관성)에 비례해 커지므로 —
+          <span class="eq">불안정 지수 = (보폭 × 무게중심높이 × 속도) ÷ 지지면</span> 이 1을 넘으면 추선이 발 밖으로 나가 넘어집니다.<br>
+          <span style="color:var(--dim)">이 차시는 로봇공학의 정적 안정성(static stability)·ZMP 개념을 초등 수준으로 다룬 것입니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ── 단계 → 물리량 매핑 ── */
+const STRIDE = [0.7, 1.0, 1.4];      // 보폭 상대값 (짧/보통/길)
+const HEIGHT = [0.7, 1.0, 1.4];      // 무게중심 높이 상대값 (낮/보통/높)
+const SPEED  = [0.72, 1.0, 1.4];     // 속도(관성) 상대값 (느/보통/빠)
+const STRIDE_CM = [14, 20, 28];      // 한 걸음 거리(cm)
+const CADENCE   = [1.0, 1.5, 2.1];   // 걸음/초 (애니메이션용)
+const COM_PX    = [24, 46, 72];      // 무게중심 그림 높이(px)
+const TH = 1.05, FULL = 300;         // 임계 불안정지수 · 목표 거리(cm)
+const STRIDE_NM = ['짧게', '보통', '길게'], COM_NM = ['낮게', '보통', '높게'], SPD_NM = ['느리게', '보통', '빠르게'];
+
+function calc(st, ht, sp) {
+  const inst = STRIDE[st] * HEIGHT[ht] * SPEED[sp] / TH;
+  const stable = inst < 1;
+  const dist = stable ? FULL : Math.max(30, Math.round(FULL * Math.pow(1 / inst, 1.3)));
+  return { inst, stable, dist, margin: 1 - inst };
+}
+
+/* ── 탭 전환 ── */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('exp').classList.toggle('on', b.dataset.tab === 'exp');
+  $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+  if (b.dataset.tab === 'exp') requestAnimationFrame(redraw);
+});
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+
+/* ── 엔진 (기어비 시뮬과 동일 패턴) ── */
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const real = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    o.step(real * o.scale());
+    o.draw();
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); o.setStatus('pause'); },
+    stop()  { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : m === 'pause' ? 'pause' : '');
+    txt.textContent = m === 'run' ? '걷는 중' : m === 'done' ? '완료' : m === 'pause' ? '일시정지' : '준비';
+  };
+}
+function pick3(container, onChange) {
+  const btns = [...container.querySelectorAll('button')];
+  let val = +(container.querySelector('button.on') || btns[1]).dataset.i;
+  btns.forEach(b => b.onclick = () => {
+    val = +b.dataset.i;
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    onChange && onChange(val);
+  });
+  return () => val;
+}
+
+/* ═════════ 라인 워크 시뮬 ═════════ */
+const cv = $('cv');
+let st = 1, ht = 1, sp = 1;
+let dist = 0, t = 0, phase = 0, tilt = 0, fallen = false, finished = false, celebrate = 0;
+let P = calc(1, 1, 1);
+let lastGeom = { comX: 0, stanceFootX: 0 };
+const grid = {};   // key `${sp}-${st}-${ht}` → {stable,dist}
+
+const getStride = pick3($('pickStride'), i => { st = i; $('v_stride').textContent = STRIDE_NM[i]; onParam(); });
+const getCom    = pick3($('pickCom'),    i => { ht = i; $('v_com').textContent = COM_NM[i]; onParam(); });
+const spBtns = [$('spd0'), $('spd1'), $('spd2')];
+spBtns.forEach(b => b.onclick = () => {
+  sp = +b.dataset.i; spBtns.forEach(x => x.classList.toggle('on', x === b));
+  $('gridLab').textContent = `(보폭 × 무게중심 · 속도: ${SPD_NM[sp]})`;
+  renderGrid(); onParam();
+});
+
+function onParam() {
+  P = calc(st, ht, sp);
+  renderGrid();
+  if (!eng.running) { reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; }
+}
+function reset() {
+  P = calc(st, ht, sp);
+  dist = 0; t = 0; phase = 0; tilt = 0; fallen = false; finished = false; celebrate = 0;
+  $('ro_result').textContent = '—'; $('ro_result').className = 'v';
+  $('ro_dist').textContent = '—'; $('ro_falltime').textContent = '—';
+  $('ro_inst').textContent = P.inst.toFixed(2);
+  $('bd').className = 'badge';
+  updateMargin();
+  draw();
+}
+function updateMargin() {
+  const m = P.margin;                       // +면 안정, -면 넘어짐
+  const pct = Math.round(m * 100);
+  const txt = (pct >= 0 ? '+' : '') + pct + '%';
+  const col = m >= 0 ? 'var(--green)' : 'var(--red)';
+  $('hud_marg').textContent = txt; $('hud_marg').style.color = col;
+  $('marg2').textContent = txt; $('marg2').style.color = col;
+  const f = $('mfill');
+  const w = Math.min(50, Math.abs(m) * 55);  // 반폭(%)
+  if (m >= 0) { f.style.left = '50%'; f.style.right = 'auto'; f.style.background = 'var(--green)'; }
+  else { f.style.left = 'auto'; f.style.right = '50%'; f.style.background = 'var(--red)'; }
+  f.style.width = w + '%';
+}
+
+/* ── 로봇(측면 링키지 보행 모형) 그리기 ── */
+function drawRobot(c, x, groundY, ph, tiltRad, comPx, strideRel, celeb) {
+  const L1 = 40, L2 = 40, footLen = 52, footHalf = footLen / 2;
+  const swingAmp = 0.28 * strideRel + 0.14;
+  const legs = [];
+  for (let i = 0; i < 2; i++) {
+    const p = ph + i * Math.PI;
+    const a1 = swingAmp * Math.sin(p);
+    const bend = Math.max(0, 0.95 * Math.sin(p - 0.5)) * (0.4 + strideRel * 0.4);
+    const kneeX = L1 * Math.sin(a1), kneeY = L1 * Math.cos(a1);
+    const footX = kneeX + L2 * Math.sin(a1 - bend), footY = kneeY + L2 * Math.cos(a1 - bend);
+    legs.push({ a1, bend, kneeX, kneeY, footX, footY });
+  }
+  const maxFootY = Math.max(legs[0].footY, legs[1].footY);
+  const hipY = groundY - maxFootY;                      // 낮은 발이 바닥에 닿게
+  const stanceI = legs[0].footY >= legs[1].footY ? 0 : 1;
+  const stanceFootX = x + legs[stanceI].footX;
+
+  // 무게중심 흔들림: 지지면 절반폭 × 불안정지수 만큼 좌우로 (추선이 발을 벗어나면 넘어짐)
+  const swayPeak = footHalf * P.inst;
+  const sway = swayPeak * Math.sin(ph);
+  const comX = x + sway;
+  const bodyTop = hipY - 60;                             // 몸통 위
+  const comY = bodyTop - comPx;                          // 무게중심 높이(선택값)
+
+  c.save();
+  c.translate(stanceFootX, groundY);
+  c.rotate(tiltRad);                                     // 넘어질 때 지지발 기준 회전
+  c.translate(-stanceFootX, -groundY);
+
+  // 지지면(발 닿는 넓이) 하이라이트 바
+  const inSupport = Math.abs(comX - stanceFootX) <= footHalf;
+  c.fillStyle = inSupport ? 'rgba(46,224,111,.22)' : 'rgba(255,90,82,.22)';
+  c.strokeStyle = inSupport ? 'rgba(46,224,111,.7)' : 'rgba(255,90,82,.8)';
+  c.lineWidth = 2;
+  c.beginPath(); c.roundRect(stanceFootX - footHalf, groundY - 5, footLen, 10, 4); c.fill(); c.stroke();
+
+  // 다리 2개
+  for (let i = 0; i < 2; i++) {
+    const lg = legs[i];
+    const hx = x, hy = hipY;
+    const kx = x + lg.kneeX, ky = hipY + lg.kneeY;
+    const fx = x + lg.footX, fy = hipY + lg.footY;
+    c.strokeStyle = i === stanceI ? '#3d8bff' : '#5b8fd6';
+    c.lineWidth = 11; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(hx, hy); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+    // 관절 핀
+    [[hx, hy], [kx, ky]].forEach(pt => { c.beginPath(); c.arc(pt[0], pt[1], 5, 0, 7); c.fillStyle = '#0c1322'; c.fill(); c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = 1.5; c.stroke(); });
+    // 발
+    c.fillStyle = '#22304c'; c.strokeStyle = '#0c1322'; c.lineWidth = 1.5;
+    c.beginPath(); c.roundRect(fx - footHalf, fy - 3, footLen, 12, 3); c.fill(); c.stroke();
+  }
+
+  // 몸통(무게추 브릭 느낌) + 머리
+  const bodyH = comPx + 28;
+  c.fillStyle = '#ff8a3d'; c.strokeStyle = '#c2410c'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x - 20, comY - 8, 40, bodyH, 7); c.fill(); c.stroke();
+  // 스터드
+  c.fillStyle = '#ffb27d';
+  for (let k = -1; k <= 1; k++) { c.beginPath(); c.arc(x + k * 12, comY - 8, 4, 0, 7); c.fill(); }
+  // 팔 (완료 시 만세)
+  c.strokeStyle = '#ff8a3d'; c.lineWidth = 8; c.lineCap = 'round';
+  const armA = celeb > 0 ? -1.1 : 0.5 + 0.3 * Math.sin(ph);
+  [[-1], [1]].forEach(([s]) => {
+    c.beginPath(); c.moveTo(x + s * 16, comY + 6);
+    c.lineTo(x + s * (16 + 22 * Math.cos(armA)), comY + 6 - 22 * Math.sin(armA));
+    c.stroke();
+  });
+  // 머리
+  const headY = comY - 24;
+  c.fillStyle = '#ffd23e'; c.strokeStyle = '#c2410c'; c.lineWidth = 2;
+  c.beginPath(); c.arc(x, headY, 15, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#1a1a1a';
+  c.beginPath(); c.arc(x + 5, headY - 2, 2.4, 0, 7); c.fill();
+  c.beginPath(); c.arc(x - 3, headY - 2, 2.4, 0, 7); c.fill();
+
+  // 무게중심 마커 + 추선 (지지발까지)
+  c.setLineDash([5, 5]); c.lineWidth = 2;
+  c.strokeStyle = inSupport ? 'rgba(46,224,111,.85)' : 'rgba(255,90,82,.95)';
+  c.beginPath(); c.moveTo(comX, comY + bodyH / 2); c.lineTo(comX, groundY); c.stroke();
+  c.setLineDash([]);
+  c.beginPath(); c.arc(comX, comY + bodyH / 2 - 6, 8, 0, 7);
+  c.fillStyle = '#ff5a52'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center';
+  c.fillText('무게중심', comX, comY + bodyH / 2 - 20);
+
+  c.restore();
+  return { footHalf, comX, stanceFootX, inSupport };
+}
+
+function draw() {
+  const { c, W, H } = fit(cv);
+  if (W < 60 || H < 60) return;
+  const groundY = H * 0.74, robotX = W * 0.42;
+  const PXCM = 2.0;
+  // 배경
+  const bg = c.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  // 점 격자
+  c.fillStyle = 'rgba(120,145,190,.07)';
+  for (let gx = 20; gx < W; gx += 26) for (let gy = 20; gy < groundY; gy += 26) { c.beginPath(); c.arc(gx, gy, 1.2, 0, 7); c.fill(); }
+  // 바닥
+  c.fillStyle = '#16213a'; c.fillRect(0, groundY + 6, W, H - groundY);
+  // 걷는 선 (라인)
+  c.strokeStyle = '#4da3ff'; c.lineWidth = 3; c.setLineDash([14, 10]); c.lineDashOffset = -dist * PXCM % 24;
+  c.beginPath(); c.moveTo(0, groundY + 3); c.lineTo(W, groundY + 3); c.stroke(); c.setLineDash([]);
+  // 거리 눈금 (스크롤)
+  c.font = '11px sans-serif'; c.textAlign = 'center';
+  const startCm = Math.floor((dist - robotX / PXCM) / 50) * 50;
+  for (let cm = startCm; cm <= dist + (W - robotX) / PXCM; cm += 50) {
+    if (cm < 0) continue;
+    const sx = robotX + (cm - dist) * PXCM;
+    if (sx < 0 || sx > W) continue;
+    c.strokeStyle = 'rgba(120,145,190,.3)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(sx, groundY + 6); c.lineTo(sx, groundY + 18); c.stroke();
+    c.fillStyle = '#7a8aa5'; c.fillText(cm + '', sx, groundY + 32);
+  }
+  // 목표 깃발
+  const goalX = robotX + (FULL - dist) * PXCM;
+  if (goalX > -20 && goalX < W + 20) {
+    c.strokeStyle = '#8fa0ba'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(goalX, groundY); c.lineTo(goalX, groundY - 50); c.stroke();
+    c.fillStyle = '#2ee06f'; c.beginPath(); c.moveTo(goalX, groundY - 50); c.lineTo(goalX + 26, groundY - 42); c.lineTo(goalX, groundY - 34); c.closePath(); c.fill();
+    c.fillStyle = '#cfe0ff'; c.font = 'bold 11px sans-serif'; c.fillText('목표 ' + FULL + 'cm', goalX + 10, groundY - 56);
+  }
+
+  lastGeom = drawRobot(c, robotX, groundY, phase, tilt, COM_PX[ht], STRIDE[st], celebrate);
+
+  // HUD
+  $('hud_dist').textContent = Math.round(Math.min(dist, P.stable ? FULL : P.dist)) + ' cm';
+  $('hud_t').textContent = t.toFixed(1) + ' s';
+}
+
+function step(dt) {
+  if (finished) return;
+  t += dt;
+  const cadence = CADENCE[sp], strideCm = STRIDE_CM[st];
+  const cmPerSec = cadence * strideCm;
+  const target = P.stable ? FULL : P.dist;
+
+  if (!fallen) {
+    dist += cmPerSec * dt;
+    phase += cadence * Math.PI * dt;
+    if (dist >= target) {
+      dist = target;
+      if (P.stable) { finished = true; celebrate = 1; }
+      else { fallen = true; }                 // 넘어지기 시작
+    }
+  } else {
+    // 넘어짐 애니메이션 — 무게중심이 벗어난 쪽으로 지지발 기준 회전
+    const dir = lastGeom.comX >= lastGeom.stanceFootX ? 1 : -1;
+    tilt += dt * 3.0 * dir;
+    phase += cadence * Math.PI * dt * 0.2;
+    if (Math.abs(tilt) >= 1.45) { tilt = Math.sign(tilt) * 1.45; finished = true; }
+  }
+}
+
+function onDone() {
+  const res = $('ro_result');
+  if (P.stable) {
+    res.textContent = '✅ 안정'; res.className = 'v g';
+    $('bd').className = 'badge ok'; $('bd').textContent = `✅ 안정하게 ${FULL}cm 완주! (${STRIDE_NM[st]}·${COM_NM[ht]}·${SPD_NM[sp]})`;
+    $('ro_falltime').textContent = '—';
+  } else {
+    res.textContent = '❌ 넘어짐'; res.className = 'v r';
+    $('bd').className = 'badge fall'; $('bd').textContent = `❌ ${Math.round(P.dist)}cm에서 넘어짐 — 무게중심이 발 밖으로!`;
+    $('ro_falltime').textContent = (P.dist / (CADENCE[sp] * STRIDE_CM[st])).toFixed(1) + ' s';
+  }
+  $('ro_dist').textContent = Math.round(P.stable ? FULL : P.dist) + ' cm';
+  $('ro_inst').textContent = P.inst.toFixed(2);
+  grid[`${sp}-${st}-${ht}`] = { stable: P.stable, dist: P.stable ? FULL : P.dist };
+  renderGrid();
+  $('pause').disabled = true; $('run').disabled = false;
+}
+
+/* ── 격자 결과표 ── */
+function renderGrid() {
+  let h = '<tr><th>보폭＼무게중심</th>' + COM_NM.map(n => `<th>${n}</th>`).join('') + '</tr>';
+  for (let s = 0; s < 3; s++) {
+    h += '<tr><td class="lab">' + STRIDE_NM[s] + '</td>';
+    for (let hi = 0; hi < 3; hi++) {
+      const rec = grid[`${sp}-${s}-${hi}`];
+      const cur = (s === st && hi === ht) ? ' cur' : '';
+      if (!rec) h += `<td class="empty${cur}">·</td>`;
+      else if (rec.stable) h += `<td class="ok${cur}">✅<small>완주</small></td>`;
+      else h += `<td class="fall${cur}">❌<small>${Math.round(rec.dist)}cm</small></td>`;
+    }
+    h += '</tr>';
+  }
+  $('matrix').innerHTML = h;
+}
+
+$('auto').onclick = () => {
+  if (eng.running) return;
+  for (let s = 0; s < 3; s++) for (let h = 0; h < 3; h++) {
+    const r = calc(s, h, sp);
+    grid[`${sp}-${s}-${h}`] = { stable: r.stable, dist: r.stable ? FULL : r.dist };
+  }
+  renderGrid();
+};
+$('clearMx').onclick = () => { for (const k in grid) delete grid[k]; renderGrid(); };
+
+const setSt = statusUI($('led'), $('st'));
+let scaleVal = 1;
+const eng = makeEngine({ step, draw, isDone: () => finished, onDone, setStatus: setSt, scale: () => scaleVal });
+
+$('run').onclick = () => { if (finished) reset(); eng.start(); $('run').disabled = true; $('pause').disabled = false; $('pause').textContent = '⏸'; };
+$('pause').onclick = () => {
+  if (eng.running) { eng.pause(); $('pause').textContent = '▶'; }
+  else { eng.start(); $('pause').textContent = '⏸'; }
+};
+$('reset').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; $('pause').textContent = '⏸'; };
+
+function redraw() { if (!eng.running) draw(); }
+window.addEventListener('resize', redraw);
+
+renderGrid();
+requestAnimationFrame(() => { reset(); });
+</script>
+</body>
+</html>
