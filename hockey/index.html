@@ -134,6 +134,8 @@
 <script type="importmap">
 { "imports": { "three": "../vendor/three.module.js" } }
 </script>
+<script src="../vendor/ctm-fx.js"></script>
+<script>CtmFX.badgeMap({success:[]})</script>
 </head>
 <body>
 <div class="app">
@@ -944,6 +946,7 @@ for (let i = 0; i < SPRAY_N; i++) { sprayPos[i * 3 + 1] = -10; sprayV.push({ vx:
 // ── 골 부저 (경기장 혼) ──
 let audioCtx = null;
 function buzz() {
+  if (window.CtmFX) CtmFX.confetti();
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const t = audioCtx.currentTime;

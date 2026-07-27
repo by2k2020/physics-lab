@@ -55,6 +55,16 @@
   .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; padding: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
+  table.mx td { font-size: 12px; padding: 8px 2px; }
+  table.mx td.dn { background: rgba(255,144,70,.14); color: var(--orange); font-weight: 700; }
+  table.mx td.up { background: rgba(77,163,255,.14); color: var(--accent); font-weight: 700; }
+  table.mx td.eq { color: var(--dim); font-weight: 700; }
+  table.mx td.empty { color: #38445c; }
   .teeth-pick { display: flex; gap: 6px; }
   .teeth-pick button { flex: 1; padding: 7px 0; font-size: 12.5px; font-family: var(--mono); border-radius: 8px; }
   .teeth-pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
@@ -114,6 +124,7 @@
     .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
   }
 </style>
+<script src="../vendor/ctm-fx.js"></script>
 </head>
 <body>
 <div class="app">
@@ -161,7 +172,7 @@
         </div>
       </div>
       <div class="param"><label>모터 회전 속도 <b id="v_rpm">60 RPM</b></label>
-        <input type="range" id="rpm" min="10" max="120" value="60" step="5"></div>
+        <div class="srow"><button class="step" data-sld="rpm" data-s="-1">◀</button><input type="range" id="rpm" min="10" max="120" value="60" step="10"><button class="step" data-sld="rpm" data-s="1">▶</button></div></div>
       <div class="speed-row"><span>재생 속도</span>
         <button class="on" id="sp1a">1×</button>
         <button id="sp1b">0.5×</button>
@@ -178,6 +189,15 @@
       <div class="bars">
         <div class="bar-row"><span class="lab">출력 속도</span><div class="bar-track"><div class="bar-fill" id="barSpd" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:20%"></div></div><span class="val" id="valSpd">×1.0</span></div>
         <div class="bar-row"><span class="lab">출력 힘</span><div class="bar-track"><div class="bar-fill" id="barTrq" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:20%"></div></div><span class="val" id="valTrq">×1.0</span></div>
+      </div>
+      <h3>📋 드라이버 × 팔로워 기어비표 <span style="text-transform:none;color:#5a6a85">(🐢 감속 = 힘 세짐 · 🐰 가속 = 빨라짐)</span></h3>
+      <table class="mx" id="mx1">
+        <thead><tr><th>드라이버 \ 팔로워</th><th>8T</th><th>16T</th><th>24T</th><th>40T</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="ctl-row" style="margin-top:8px">
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 16가지 조합 표 전부 채우기</button>
+        <button id="clearMx">지우기</button>
       </div>
       <h3>누적 회전수–시간 그래프</h3>
       <canvas class="graph" id="gr1" height="310"></canvas>
@@ -221,7 +241,7 @@
         </div>
       </div>
       <div class="param"><label>모터 회전 속도 <b id="v_rpm2">60 RPM</b></label>
-        <input type="range" id="rpm2" min="10" max="120" value="60" step="5"></div>
+        <div class="srow"><button class="step" data-sld="rpm2" data-s="-1">◀</button><input type="range" id="rpm2" min="10" max="120" value="60" step="10"><button class="step" data-sld="rpm2" data-s="1">▶</button></div></div>
       <div class="speed-row"><span>재생 속도</span>
         <button class="on" id="sp2a">1×</button>
         <button id="sp2b">0.5×</button>
@@ -252,6 +272,13 @@
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 <b>기어비</b>를 배웁니다 — 맞물린 두 기어의 잇수 비율이 <b>회전 속도와 힘(토크)을 맞바꾸는</b> 원리입니다.
+        시뮬레이션으로 기어 조합을 바꿔 가며 10초간 회전수를 측정해 예측과 비교하고, 실제 레고 기어로 같은 실험을 재현합니다.<br>
+        자동차 변속기·자전거 기어·시계가 모두 이 원리로 움직입니다. 아이는 "속도를 잃으면 힘을 얻는다"는
+        <b>에너지 보존</b>의 사고방식을 표와 그래프로 정리하며 익힙니다.
+      </div>
       <h2>📖 기어비 — 속도와 힘을 맞바꾸는 장치</h2>
       <p>맞물린 두 기어는 <b>이(톱니)가 지나가는 개수가 항상 같다.</b> 그래서 잇수가 다르면 회전 속도가 달라진다.</p>
       <ul>
@@ -278,6 +305,24 @@
         · 시뮬 예측값과 실측이 다르면 원인 찾기: 기어 헐거움? 이 빠짐? 세는 실수?<br>
         · 40T→8T 가속 조합은 모터에 힘이 부쳐 멈출 수 있다 — 이것도 "힘을 잃었다"는 증거!
       </div>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--accent)">기어비</b> — 팔로워 잇수 ÷ 드라이버 잇수. 두 기어가 도는 빠르기의 비율이에요.<br>
+        <b style="color:var(--orange)">토크 (돌리는 힘)</b> — 축을 돌리는 힘. 감속하면 속도 대신 토크가 커져요.<br>
+        <b style="color:var(--green)">감속 · 가속</b> — 작은 기어→큰 기어는 느려지고(🐢 힘↑), 큰→작은은 빨라져요(🐰 힘↓).<br>
+        <b style="color:var(--purple)">아이들러 기어</b> — 가운데 낀 기어. 속도는 못 바꾸고 방향만 한 번 더 뒤집어요.<br>
+        <b style="color:var(--amber)">RPM</b> — 1분에 도는 바퀴 수. 회전 속도를 재는 단위예요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 예측</b> — "드라이버 8T가 40T를 돌리면 몇 배 느려질까?" 손들고 답하기 (실행 전!)</li>
+        <li><b>② 측정</b> — ▶ 실행 10초 측정으로 예측 확인. 그래프 기울기 비교</li>
+        <li><b>③ 표 채우기</b> — 조합을 바꿔 가며 기어비표 채우기 (⚡ 자동 실험으로 마무리) — "대각선은 왜 전부 1:1이지?"</li>
+        <li><b>④ 힘 확인</b> — 힘 게이지 비교: "느려진 만큼 힘이 세졌네!" — 무거운 것 끌 땐 어느 조합?</li>
+        <li><b>⑤ 반전</b> — 실험 2 아이들러: "가운데 기어를 40T로 바꾸면 빨라질까?" → 안 변한다! 왜?</li>
+      </ul>
     </div>
   </section>
 </div>
@@ -371,6 +416,48 @@ function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
   requestAnimationFrame(() => { const a = graphArgs.get(zoomSrc); if (a) renderGraph($('zoomCv'), ...a); });
 }));
 $('zoom').onclick = () => { zoomSrc = null; $('zoom').classList.remove('on'); };
+
+/* ── ◀▶ 스텝 버튼 (연속 슬라이더 대신 단계형 조작) ── */
+document.querySelectorAll('button.step').forEach(b => b.onclick = () => {
+  const sld = $(b.dataset.sld);
+  sld.value = Math.max(+sld.min, Math.min(+sld.max, +sld.value + (+sld.step || 1) * +b.dataset.s));
+  sld.dispatchEvent(new Event('input'));
+});
+
+/* ── 드라이버 × 팔로워 기어비 격자표 ── */
+const MX_TEETH = [8, 16, 24, 40];
+(function buildMx() {
+  const tb = $('mx1').querySelector('tbody');
+  tb.innerHTML = MX_TEETH.map(a =>
+    `<tr><th>${a}T</th>` + MX_TEETH.map(b => `<td class="empty" id="mx_${a}_${b}">·</td>`).join('') + '</tr>').join('');
+})();
+function mxFill(a, b) {
+  const cell = $(`mx_${a}_${b}`);
+  if (!cell) return;
+  const r = b / a;
+  const fmt = v => (Math.round(v * 100) / 100 + '').replace(/\.0+$/, '');
+  if (r > 1) { cell.className = 'dn'; cell.textContent = `🐢${fmt(r)}:1`; }
+  else if (r < 1) { cell.className = 'up'; cell.textContent = `🐰1:${fmt(1 / r)}`; }
+  else { cell.className = 'eq'; cell.textContent = '➖1:1'; }
+}
+$('clearMx').onclick = () => MX_TEETH.forEach(a => MX_TEETH.forEach(b => {
+  const cell = $(`mx_${a}_${b}`); cell.className = 'empty'; cell.textContent = '·';
+}));
+$('autoScan').onclick = () => {
+  let k = 0;
+  MX_TEETH.forEach(a => MX_TEETH.forEach(b => {
+    setTimeout(() => {
+      mxFill(a, b);
+      if (window.CtmFX) CtmFX.tick();
+      if (++autoScanDone === 16) {
+        const bd = $('bd1'); bd.className = 'badge same';
+        bd.textContent = '⚡ 자동 실험 완료 — 대각선(같은 잇수)은 전부 1:1, 표에서 규칙을 찾아보자!';
+      }
+    }, k++ * 110);
+  }));
+  autoScanDone = 0;
+};
+let autoScanDone = 0;
 function makeEngine(o) {
   let running = false, raf = null, lastTs = null;
   function frame(ts) {
@@ -689,6 +776,7 @@ function drawBench(c, W, H, yAxis) {
       `<td class="cond">${P.ratio > 1 ? '감속' : P.ratio < 1 ? '가속' : '1:1'}</td>`;
     tb.prepend(tr);
     while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+    mxFill(P.tA, P.tB);   // 실험한 조합은 격자표에도 자동 기록
     $('pause1').disabled = true; $('run1').disabled = false;
     drawG();
   }

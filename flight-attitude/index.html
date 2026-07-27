@@ -72,6 +72,16 @@
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .param.ax-p input[type=range] { accent-color: var(--green); }
   .param.ax-r input[type=range] { accent-color: var(--red); }
+  .srow { display: flex; gap: 6px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  button.step { width: 36px; height: 32px; font-size: 14px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--accent); border-radius: 8px; cursor: pointer; font-family: inherit; flex-shrink: 0; padding: 0; }
+  button.step:hover { border-color: var(--accent); }
+  button.step:active { transform: scale(.94); }
+  table.rec { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); margin-bottom: 12px; }
+  table.rec td, table.rec th { border: 1px solid var(--border); text-align: center; padding: 5px 4px; }
+  table.rec th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-weight: 700; font-size: 11px; }
+  table.rec td.ok { color: var(--green); font-weight: 700; }
+  table.rec td.ng { color: #ff6a5e; }
   .toggle-row { display: flex; gap: 6px; margin-bottom: 12px; }
   .toggle-row button { flex: 1; padding: 7px 0; font-size: 12px; border-radius: 8px; }
   .toggle-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
@@ -111,6 +121,8 @@
     .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
   }
 </style>
+<script src="../vendor/ctm-fx.js"></script>
+<script>CtmFX.badgeMap({fail:['out','fall','bad','fail','crash','no','stuck','diff']})</script>
 </head>
 <body>
 <div class="app">
@@ -142,17 +154,17 @@
       <div class="param ax-y">
         <label><span>🔵 요 Yaw <small style="color:var(--dim)">— 좌우로 고개 돌리기</small></span>
           <span><b id="valY">0°</b><button class="spin" id="spinY">한 바퀴 ▶</button></span></label>
-        <input type="range" id="sldY" min="-180" max="180" step="1" value="0">
+        <div class="srow"><button class="step" data-sld="sldY" data-s="-1">◀</button><input type="range" id="sldY" min="-180" max="180" step="15" value="0"><button class="step" data-sld="sldY" data-s="1">▶</button></div>
       </div>
       <div class="param ax-p">
         <label><span>🟢 피치 Pitch <small style="color:var(--dim)">— 기수 올리고 내리기</small></span>
           <span><b id="valP">0°</b><button class="spin" id="spinP">까딱까딱 ▶</button></span></label>
-        <input type="range" id="sldP" min="-90" max="90" step="1" value="0">
+        <div class="srow"><button class="step" data-sld="sldP" data-s="-1">▼</button><input type="range" id="sldP" min="-90" max="90" step="15" value="0"><button class="step" data-sld="sldP" data-s="1">▲</button></div>
       </div>
       <div class="param ax-r">
         <label><span>🔴 롤 Roll <small style="color:var(--dim)">— 좌우로 기울이기</small></span>
           <span><b id="valR">0°</b><button class="spin" id="spinR">한 바퀴 ▶</button></span></label>
-        <input type="range" id="sldR" min="-180" max="180" step="1" value="0">
+        <div class="srow"><button class="step" data-sld="sldR" data-s="-1">◀</button><input type="range" id="sldR" min="-180" max="180" step="15" value="0"><button class="step" data-sld="sldR" data-s="1">▶</button></div>
       </div>
       <div class="ctl-row">
         <button class="primary" id="btnReset1">↺ 모두 0으로</button>
@@ -216,8 +228,8 @@
         <button id="btnRestart">🔄 다시 시작</button>
       </div>
       <div class="param">
-        <label><span>⚡ 엔진 출력 (속도)</span><b id="valThr" style="color:var(--amber)">24 m/s</b></label>
-        <input type="range" id="sldThr" min="10" max="45" step="1" value="24" style="accent-color: var(--amber)">
+        <label><span>⚡ 엔진 출력 (속도)</span><b id="valThr" style="color:var(--amber)">25 m/s</b></label>
+        <div class="srow"><button class="step" data-sld="sldThr" data-s="-1">◀</button><input type="range" id="sldThr" min="10" max="45" step="5" value="25" style="accent-color: var(--amber)"><button class="step" data-sld="sldThr" data-s="1">▶</button></div>
       </div>
 
       <h3>조종석 계기판</h3>
@@ -227,6 +239,12 @@
         <div class="readout"><div class="k">통과한 링</div><div class="v" id="roScore" style="color:var(--green)">0 / 10</div></div>
         <div class="readout"><div class="k">고도</div><div class="v" id="roAlt" style="color:var(--accent)">20 m</div></div>
       </div>
+
+      <h3>📋 비행 기록표 <span style="text-transform:none;color:#5a6a85">(자동 기록)</span></h3>
+      <table class="rec" id="recTbl">
+        <thead><tr><th>회차</th><th>엔진 출력</th><th>링 통과</th><th>결과</th></tr></thead>
+        <tbody id="recBody"><tr><td colspan="4" style="color:#55617a">아직 기록 없음 — 비행을 시작해 봐!</td></tr></tbody>
+      </table>
 
       <details open>
         <summary>🕹️ 조작법</summary>
@@ -248,6 +266,13 @@
   <!-- ══════ 원리 ══════ -->
   <section id="theory">
     <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 비행기·드론이 하늘에서 자세를 바꾸는 <b>3축 회전 — 요(Yaw)·피치(Pitch)·롤(Roll)</b>을 배웁니다.
+        실험 1에서 세 각도를 한 단계씩 바꿔 보며 각 회전축을 눈으로 확인하고,
+        실험 2에서는 직접 조종해 링 코스를 통과하며 "비행기는 롤로 기울여야 돈다"는 실제 비행 원리를 몸으로 익힙니다.<br>
+        이 3축(오일러 각)은 드론·스마트폰·레고 스파이크 자이로 센서가 모두 쓰는 표준 개념으로, 이후 드론 코딩 수업의 기초가 됩니다.
+      </div>
       <h2>✈️ 요·피치·롤 — 하늘에서 방향을 바꾸는 세 가지 회전</h2>
       <p>
         땅 위의 자동차는 <b>좌우로 도는 것</b> 하나면 충분하지만, 하늘을 나는 비행기와 드론은
@@ -281,6 +306,24 @@
         · <b>스마트폰</b> — 화면 자동 회전, 게임 조종이 모두 이 3축 센서 덕분<br>
         · <b>로켓·배·잠수함</b>도 전부 같은 3축으로 자세를 표현한다
       </div>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:var(--accent)">요 (Yaw)</b> — 위–아래 수직축을 중심으로 기수를 좌우로 돌리는 회전. "아니요~" 고개 젓기.<br>
+        <b style="color:var(--green)">피치 (Pitch)</b> — 날개 방향 가로축을 중심으로 기수를 올리고 내리는 회전. "네~" 끄덕이기.<br>
+        <b style="color:var(--red)">롤 (Roll)</b> — 기수–꼬리 세로축을 중심으로 좌우로 기울이는 회전. 고개 갸웃하기.<br>
+        <b style="color:var(--purple)">자세각 (오일러 각)</b> — 요·피치·롤 세 각도. 이 셋이면 공중 자세를 완벽하게 표현해요.<br>
+        <b style="color:var(--amber)">양력</b> — 날개가 공기를 눌러 비행기를 띄우는 힘. 롤로 기울이면 옆으로도 향해 비행기가 돌아요.
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 몸으로 먼저</b> — 다 같이 일어나서 "아니요(요)·네(피치)·갸웃(롤)"을 몸으로 해 보기</li>
+        <li><b>② 축 하나씩</b> — 실험 1에서 ◀▶ 버튼으로 한 축씩만 15°씩 돌리며 "어느 축을 중심으로 돌까?" 맞히기</li>
+        <li><b>③ 계기판 퀴즈</b> — 요만 돌리면 인공수평의가 왜 안 움직일까? (수평의는 피치·롤 담당!)</li>
+        <li><b>④ 자유 비행</b> — 실험 2에서 링 코스 도전. "롤로 기울인 뒤 피치를 당겨야 돈다"를 직접 체험</li>
+        <li><b>⑤ 기록 비교</b> — 엔진 출력을 바꿔 가며 비행 기록표 비교 — "빠르면 조종이 왜 어려울까?"</li>
+      </ul>
     </div>
   </section>
 </div>
@@ -426,6 +469,13 @@ for (const [id, axis] of [['spinY', 'yaw'], ['spinP', 'pitch'], ['spinR', 'roll'
     st1.anim = { axis, t0: performance.now(), dur: axis === 'pitch' ? 2600 : 3200, from: st1[axis] };
   });
 }
+/* ◀▶ 스텝 버튼 — 슬라이더 한 단계씩 (초1 원칙: 연속 조작 대신 단계형) */
+document.querySelectorAll('button.step').forEach(b => b.addEventListener('click', () => {
+  const sld = $('#' + b.dataset.sld);
+  const step = +sld.step || 1;
+  sld.value = Math.max(+sld.min, Math.min(+sld.max, +sld.value + step * +b.dataset.s));
+  sld.dispatchEvent(new Event('input'));
+}));
 $('#tglAxes').addEventListener('click', e => { st1.showAxes = !st1.showAxes; e.target.classList.toggle('on', st1.showAxes); });
 $('#tglRings').addEventListener('click', e => { st1.showRings = !st1.showRings; e.target.classList.toggle('on', st1.showRings); });
 
@@ -599,7 +649,7 @@ function drawInstruments(cv, yaw, pitch, roll) {
 /* ═════════ 실험 2 · 자유 비행 ═════════ */
 const cv2 = $('#cv2');
 const st2 = {
-  pos: [0, 20, -40], q: [1, 0, 0, 0], thr: 24,
+  pos: [0, 20, -40], q: [1, 0, 0, 0], thr: 25,
   running: false, crashed: false, finished: false,
   rings: [], next: 0, score: 0, camEye: [0, 24, -55],
 };
@@ -622,6 +672,16 @@ function resetFlight() {
   st2.rings = makeRings(); st2.next = 0; st2.score = 0;
   st2.camEye = [0, 24, -55];
   hideBadge();
+}
+
+/* ── 비행 기록표 (회차·출력·통과·결과 자동 기록) ── */
+const flightLog = [];
+function logFlight(result) {
+  flightLog.push({ thr: st2.thr, score: st2.score, total: st2.rings.length, result });
+  const body = $('#recBody');
+  body.innerHTML = flightLog.slice(-8).map((r, i) =>
+    `<tr><td>${flightLog.length - Math.min(8, flightLog.length) + i + 1}</td><td>${r.thr} m/s</td>` +
+    `<td>${r.score} / ${r.total}</td><td class="${r.result === '완주' ? 'ok' : 'ng'}">${r.result}</td></tr>`).join('');
 }
 
 const badge2 = $('#badge2');
@@ -693,6 +753,7 @@ function stepFlight(dt) {
   if (st2.pos[1] < 0.6) {
     st2.crashed = true; st2.running = false;
     showBadge('diff', '💥 추락! 「다시 시작」으로 재이륙');
+    logFlight('추락');
     setFlyUI();
     return;
   }
@@ -713,6 +774,7 @@ function stepFlight(dt) {
       if (st2.next === st2.rings.length) {
         st2.finished = true; st2.running = false;
         showBadge('gold', '🏆 코스 완주! ' + st2.score + ' / ' + st2.rings.length + ' 통과');
+        logFlight('완주');
         setFlyUI();
       }
     } else if (st2.pos[2] > ring.c[2] + 12) {

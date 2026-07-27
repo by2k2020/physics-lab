@@ -23,7 +23,13 @@
   .logo { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, #1f5eff, #4da3ff); display: flex; align-items: center; justify-content: center; font-size: 23px; box-shadow: 0 4px 18px rgba(45,120,255,.35); }
   header h1 { font-size: 23px; letter-spacing: -0.5px; }
   header .sub { color: var(--dim); font-size: 13px; margin-top: 3px; }
-  .intro { background: linear-gradient(90deg, rgba(77,163,255,.10), rgba(77,163,255,.02)); border: 1px solid rgba(77,163,255,.25); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #cfdcef; margin: 16px 0 28px; line-height: 1.6; }
+  .intro { background: linear-gradient(90deg, rgba(77,163,255,.10), rgba(77,163,255,.02)); border: 1px solid rgba(77,163,255,.25); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #cfdcef; margin: 16px 0 14px; line-height: 1.6; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 12px; }
+  .stat { flex: 1; min-width: 130px; background: linear-gradient(180deg, #131a2b, #101626); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; text-align: center; }
+  .stat .n { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #4da3ff, #c792ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat .k { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .parent-note { background: linear-gradient(90deg, rgba(199,146,234,.10), rgba(199,146,234,.02)); border: 1px solid rgba(199,146,234,.3); border-radius: 12px; padding: 12px 16px; font-size: 13px; color: #d8cbe8; margin: 0 0 28px; line-height: 1.7; }
+  .parent-note b { color: #e4d5f5; }
   .course { margin-bottom: 34px; }
   .course-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   .course-head h2 { font-size: 17px; }
@@ -61,6 +67,19 @@
     시뮬레이터는 계속 추가된다.
   </div>
 
+  <div class="stats">
+    <div class="stat"><div class="n" id="statSims">29</div><div class="k">직접 개발한 시뮬레이터</div></div>
+    <div class="stat"><div class="n">40+</div><div class="k">배우는 물리 개념</div></div>
+    <div class="stat"><div class="n">100%</div><div class="k">실제 레고 수업 연동</div></div>
+    <div class="stat"><div class="n">3D</div><div class="k">물리 엔진 시뮬레이션</div></div>
+  </div>
+
+  <div class="parent-note">
+    👨‍👩‍👧 <b>학부모님께</b> — 이곳의 모든 시뮬레이터는 코딩더메이커가 수업에 맞춰 <b>직접 개발</b>했습니다.
+    각 시뮬레이터의 <b>📖 원리 탭</b>에서 이번 차시에 배우는 물리 개념 안내(학부모 브리핑)와
+    <b>🎓 오늘 배운 물리 용어</b>를 보실 수 있어요. 아이에게 용어의 뜻을 물어봐 주시면 최고의 복습이 됩니다.
+  </div>
+
   <div id="courses"></div>
 
   <footer>코딩더메이커 가상실험실 · 시뮬레이터는 수업 진도에 맞춰 계속 추가됩니다</footer>
@@ -91,7 +110,7 @@ const COURSES = [
         id: 'gear-ratio', icon: '⚙️', title: '슬로우 무버 (기어비) 시뮬레이션',
         lesson: '4차시 · 기어와 회전 속도',
         desc: '드라이버·팔로워 기어 잇수를 바꾸면 속도와 힘이 어떻게 변할까? 아이들러 기어를 끼우면? — 속도와 힘의 맞바꿈을 눈으로 확인한다.',
-        tags: ['8·16·24·40T', '아이들러 실험', '회전수 그래프'],
+        tags: ['8·16·24·40T', '기어비 격자표', '⚡ 자동 실험'],
         ready: true,
       },
       {
@@ -283,7 +302,7 @@ const COURSES = [
         id: 'flight-attitude', icon: '✈️', title: '요·피치·롤 비행 시뮬레이션',
         lesson: '3축 회전과 비행기 조종',
         desc: '비행기는 어떻게 방향을 바꿀까? 요·피치·롤 세 회전을 축별로 돌려 보고, 직접 조종해서 링 10개를 통과한다 — 드론과 스파이크 허브 자이로 센서의 3축이 바로 이것.',
-        tags: ['3D · 카메라 회전', '자유 비행 모드', '인공수평의'],
+        tags: ['3D · 카메라 회전', '자유 비행 모드', '비행 기록표'],
         ready: true,
       },
     ],
@@ -298,6 +317,7 @@ const COURSES = [
 
 const root = document.getElementById('courses');
 renderStatic();
+document.getElementById('statSims').textContent = COURSES.reduce((n, c) => n + c.sims.filter(s => s.ready).length, 0);
 
 /* ── 수업 시뮬레이터(AI 생성) — 수업 PT 서버(:9410, 게이트웨이 /lessons/)에서 동적 로드 ── */
 const LESSONS_BASE = 'https://hub.ctmrobotics.com/lessons/';
