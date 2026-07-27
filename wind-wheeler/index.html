@@ -23,6 +23,11 @@
   .tabs { display: flex; gap: 6px; margin-left: auto; }
   .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
   .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
 
   section.exp { flex: 1; display: none; min-height: 0; }
   section.exp.on { display: flex; }
@@ -116,13 +121,16 @@
 </style>
 <script src="../vendor/ctm-fx.js"></script>
 <script>CtmFX.badgeMap({pop:['on']})</script>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🏎️ 미스터 윈 휠러 — 관성 주행 자동차</div>
+      <div class="title">🏎️ 미스터 윈 휠러 — 관성 주행 자동차<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp">실험 · 관성 주행</button>
@@ -139,6 +147,13 @@
         <div class="chip" style="color:var(--green)"><span class="lab">현재 속도 (관성)</span><span id="hud_v">0.0 m/s</span></div>
         <div class="chip" style="color:var(--accent)"><span class="lab">이동 거리</span><span id="hud_d">0.00 m</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+        <button id="camFollow">🏎️ 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -278,8 +293,10 @@
 
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
+         grassGround, dirtTrack, distanceRuler, makeCar, makeTree, makeCloud, makeRock, makeFlag } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -421,143 +438,91 @@ function pick(container, attr, onChange) {
   return () => val;
 }
 
-/* ── 배경 (바닥 종류별) ── */
-function drawScene(c, W, H, S) {
-  const skyTop = '#0a101f', skyBot = '#101a30';
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, skyTop); bg.addColorStop(1, skyBot);
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-
-  const groundY = H * 0.72;
-  const x0 = 62, xr = W - 26;
-  const pxPerM = (xr - x0) / TRACK_M;
-  const mx = m => x0 + m * pxPerM;
-
-  // 바닥 띠
-  const floor = S.P.floor;
-  const floorCol = { smooth: '#25405f', normal: '#3a3f4c', rough: '#4a3626' };
-  const floorTop = { smooth: '#3a5f88', normal: '#565d6e', rough: '#6b4e33' };
-  const gg = c.createLinearGradient(0, groundY, 0, H);
-  gg.addColorStop(0, floorTop[floor]); gg.addColorStop(1, floorCol[floor]);
-  c.fillStyle = gg; c.fillRect(0, groundY, W, H - groundY);
-  // 바닥 표면 질감
-  if (floor === 'smooth') {
-    c.strokeStyle = 'rgba(180,220,255,.35)'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(0, groundY + 2); c.lineTo(W, groundY + 2); c.stroke();
-    c.strokeStyle = 'rgba(180,220,255,.12)';
-    for (let x = 0; x < W; x += 46) { c.beginPath(); c.moveTo(x, groundY + 10); c.lineTo(x + 24, groundY + 10); c.stroke(); }
-  } else if (floor === 'normal') {
-    c.fillStyle = 'rgba(200,210,230,.10)';
-    for (let x = 8; x < W; x += 15) for (let y = groundY + 8; y < H; y += 13) { c.beginPath(); c.arc(x, y, 1.3, 0, 7); c.fill(); }
-  } else {
-    c.strokeStyle = 'rgba(255,220,180,.16)'; c.lineWidth = 1.4;
-    for (let x = 0; x < W; x += 11) { c.beginPath(); c.moveTo(x, groundY + 6); c.lineTo(x + 6, groundY + 16); c.stroke(); }
-    c.fillStyle = 'rgba(30,18,8,.5)';
-    for (let x = 6; x < W; x += 26) { c.beginPath(); c.arc(x, groundY + 9 + (x % 13), 2.4, 0, 7); c.fill(); }
-  }
-
-  // 거리 눈금자
-  c.fillStyle = '#9aa8bf'; c.font = '11px sans-serif'; c.textAlign = 'center';
-  c.strokeStyle = 'rgba(150,170,210,.35)'; c.lineWidth = 1;
-  for (let m = 0; m <= TRACK_M; m++) {
-    const x = mx(m);
-    c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - (m % 1 === 0 ? 10 : 5)); c.stroke();
-    c.fillText(m + 'm', x, groundY - 15);
-  }
-  // 출발선
-  c.strokeStyle = 'rgba(46,224,111,.8)'; c.lineWidth = 2; c.setLineDash([5, 4]);
-  c.beginPath(); c.moveTo(mx(0), groundY - 60); c.lineTo(mx(0), groundY); c.stroke(); c.setLineDash([]);
-  c.fillStyle = 'var(--green)'; c.fillStyle = '#2ee06f'; c.textAlign = 'left';
-  c.fillText('출발', mx(0) + 4, groundY - 48);
-
-  // 예상 도달선 (완료 후) / 실제 정지 깃발
-  if (S.showTarget && S.target != null) {
-    const tx = mx(Math.min(S.target, TRACK_M));
-    c.strokeStyle = 'rgba(77,163,255,.65)'; c.lineWidth = 2; c.setLineDash([6, 5]);
-    c.beginPath(); c.moveTo(tx, groundY - 78); c.lineTo(tx, groundY); c.stroke(); c.setLineDash([]);
-    // 깃발
-    c.fillStyle = '#ff5a52'; c.beginPath();
-    c.moveTo(tx, groundY - 78); c.lineTo(tx + 22, groundY - 70); c.lineTo(tx, groundY - 62); c.closePath(); c.fill();
-    c.fillStyle = '#dbe6f7'; c.textAlign = 'center'; c.font = 'bold 12px sans-serif';
-    c.fillText('🏁 ' + S.target.toFixed(2) + 'm', tx, groundY - 84);
-  }
-
-  // 자동차
-  const carX = mx(Math.min(S.pos, TRACK_M));
-  drawCar(c, carX, groundY, S);
-
-  // 밀기 손 (출발 순간)
-  if (S.pushPhase > 0) {
-    const hx = carX - 46 - S.pushPhase * 8, hy = groundY - 26;
-    c.font = '30px sans-serif'; c.textAlign = 'center';
-    c.globalAlpha = Math.min(1, S.pushPhase);
-    c.fillText('👉', hx, hy);
-    c.globalAlpha = 1;
-    // 힘 화살표
-    c.strokeStyle = '#2ee06f'; c.lineWidth = 3; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(hx + 16, hy - 6); c.lineTo(carX - 26, hy - 6); c.stroke(); c.lineCap = 'butt';
-  }
-
-  // 모션 라인 (빠를수록 길게)
-  if (S.v > 0.15) {
-    const len = 10 + Math.min(40, S.v * 12);
-    c.strokeStyle = `rgba(150,220,255,${Math.min(.6, .18 + S.v / 8)})`; c.lineWidth = 2; c.lineCap = 'round';
-    for (let k = 0; k < 3; k++) {
-      const yy = groundY - 20 - k * 12;
-      c.beginPath(); c.moveTo(carX - 32 - k * 6, yy); c.lineTo(carX - 32 - len - k * 6, yy); c.stroke();
-    }
-    c.lineCap = 'butt';
-  }
-
-  return { groundY, mx, pxPerM };
+/* ═════════ 3D 무대 (야외 잔디 + 흙길 트랙) ═════════ */
+const stage = document.querySelector('.stage');
+const cv3 = $('cv');
+const renderer = makeRenderer(cv3);
+const scene = makeScene('day', 30, 220);
+stdLights(scene, { pos: [-5, 9, 6], shadowArea: 12 });
+const { camera, controls } = makeCamera(cv3, { maxD: 40 });
+grassGround(scene, { size: 80, x: 3.5 });
+// 바닥 3종 — 매끈(아이스 블루) / 보통(흙) / 거침(자갈 브라운) 트랙을 겹쳐 두고 토글
+const tracks = {
+  smooth: dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#a9cfe8' }),
+  normal: dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#b39268' }),
+  rough:  dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#8a6a44' }),
+};
+distanceRuler(scene, { from: 0, to: 7, step: 1, z: 1.45, unit: 'm', labCol: '#eaf2ff' });
+// 출발선
+{
+  const line = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.014, 2.3), new THREE.MeshBasicMaterial({ color: 0x2ee06f }));
+  line.position.set(0, 0.035, 0); scene.add(line);
+  const lab = textSprite('출발', { size: 36, color: '#b8ffd2', bg: 'rgba(8,30,16,.65)', scale: 0.004 });
+  lab.position.set(0, 0.62, -1.3); scene.add(lab);
 }
-
-function drawCar(c, x, groundY, S) {
-  const wheelR = 13;
-  const bodyH = 26, bodyW = 62;
-  const cy = groundY - wheelR - bodyH / 2;
-  c.save(); c.translate(x, 0);
-  // 그림자
-  c.fillStyle = 'rgba(0,0,0,.35)';
-  c.beginPath(); c.ellipse(0, groundY - 1, bodyW * 0.55, 5, 0, 0, 7); c.fill();
-  // 차체
-  const heavy = S.P.massKey === 'heavy';
-  const col1 = heavy ? '#b8402f' : '#2f9fe0', col2 = heavy ? '#7d2418' : '#1c6fa8';
-  const body = c.createLinearGradient(0, cy - bodyH / 2, 0, cy + bodyH / 2);
-  body.addColorStop(0, col1); body.addColorStop(1, col2);
-  c.fillStyle = body;
-  c.beginPath(); c.roundRect(-bodyW / 2, cy - bodyH / 2, bodyW, bodyH, 6); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.4; c.stroke();
-  // 캐빈
-  const cabW = 30, cabH = 16;
-  c.fillStyle = heavy ? '#d86a55' : '#5cc0f5';
-  c.beginPath(); c.roundRect(-cabW / 2 - 4, cy - bodyH / 2 - cabH + 3, cabW, cabH, 5); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.3)'; c.stroke();
-  // 창문
-  c.fillStyle = 'rgba(220,245,255,.85)';
-  c.beginPath(); c.roundRect(-cabW / 2 - 1, cy - bodyH / 2 - cabH + 6, 11, 9, 2); c.fill();
-  c.beginPath(); c.roundRect(-cabW / 2 + 13, cy - bodyH / 2 - cabH + 6, 9, 9, 2); c.fill();
-  // 무게 표시(무거우면 벽돌 스터드)
-  if (heavy) {
-    c.fillStyle = '#ffd23e';
-    for (let k = -1; k <= 1; k++) { c.beginPath(); c.arc(k * 12, cy - bodyH / 2 - cabH - 1, 3, 0, 7); c.fill(); }
-  }
-  // 헤드라이트
-  c.fillStyle = '#fff4c2'; c.beginPath(); c.arc(bodyW / 2 - 4, cy + 2, 3.5, 0, 7); c.fill();
-  // 바퀴 2개 (회전)
-  const ang = S.pos / WHEEL_M;
-  [-bodyW / 2 + 15, bodyW / 2 - 15].forEach(wx => {
-    c.save(); c.translate(wx, groundY - wheelR);
-    c.fillStyle = '#14181f'; c.beginPath(); c.arc(0, 0, wheelR, 0, 7); c.fill();
-    c.strokeStyle = '#3a4150'; c.lineWidth = 2; c.stroke();
-    c.fillStyle = '#8b98ad'; c.beginPath(); c.arc(0, 0, wheelR * 0.42, 0, 7); c.fill();
-    c.rotate(ang);
-    c.strokeStyle = '#c6d2e6'; c.lineWidth = 2;
-    for (let k = 0; k < 4; k++) { c.rotate(Math.PI / 2); c.beginPath(); c.moveTo(0, 0); c.lineTo(wheelR * 0.85, 0); c.stroke(); }
-    c.restore();
-  });
-  c.restore();
+// 소품 — 나무·바위·구름
+// 나무는 배경(z−)과 트랙 양끝 밖에만 — 카메라 시야(z+)를 가리지 않게
+[[-1.5, -2.6, 1.0], [8.6, -2.9, 1.25], [2.2, -3.5, 0.9], [5.8, -2.5, 1.15], [0.5, -4.6, 1.3], [-2.8, 2.4, 0.95], [10.2, 2.8, 1.2]]
+  .forEach(([x, z, s]) => { const tr = makeTree(s); tr.position.set(x, 0, z); scene.add(tr); });
+[[-2.2, 1.9, 1], [9.3, 1.7, 1.4], [1.2, -2.2, 0.8]].forEach(([x, z, s]) => { const r = makeRock(s); r.position.set(x, 0, z); scene.add(r); });
+const clouds = [];
+[[-4, 5.6, -14, 1.6], [3, 6.6, -16, 2.2], [9, 5.9, -13, 1.4]].forEach(([x, y, z, s]) => {
+  const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
+});
+// 자동차 + 무게추 브릭
+const car = makeCar({ body: 0x2f9fe0 });
+car.castShadow = true; scene.add(car);
+const heavyBrick = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.13, 0.24),
+  new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.45 }));
+heavyBrick.position.set(0.16, 0.31, 0); heavyBrick.castShadow = true; heavyBrick.visible = false; car.add(heavyBrick);
+// 밀기 손
+const hand = textSprite('👉', { size: 72, scale: 0.006 });
+hand.visible = false; scene.add(hand);
+// 정지 깃발
+let flag = null;
+function setFlag(dist) {
+  if (flag) scene.remove(flag);
+  flag = makeFlag('🏁 ' + dist.toFixed(2) + 'm', 0xff5a52);
+  flag.position.set(Math.min(dist, TRACK_M + 1.5), 0, -1.15);
+  scene.add(flag);
 }
+function clearFlag() { if (flag) { scene.remove(flag); flag = null; } }
+// 카메라 프리셋 + 따라가기
+camPresets(camera, controls, {
+  camSide: { pos: [3.5, 1.7, 7.6], target: [3.2, 0.4, 0] },
+  camDiag: { pos: [-3.4, 3.4, 5.6], target: [3.0, 0.3, 0] },
+  camTop:  { pos: [3.5, 10.5, 0.02], target: [3.5, 0, 0] },
+}, 'camSide');
+let followMode = false;
+['camSide', 'camDiag', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
+  followMode = false; $('camFollow').classList.remove('on');
+}));
+$('camFollow').onclick = () => {
+  followMode = true;
+  ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).classList.remove('on'));
+  $('camFollow').classList.add('on');
+};
+/* 씬 갱신 + 렌더 루프 (탐색·회전은 항상 살아있게 상시 렌더) */
+let lastRT = performance.now();
+function animate(now) {
+  const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+  const x = Math.min(pos, TRACK_M + 1.5);
+  car.position.x = x;
+  const ang = pos / WHEEL_M;
+  car.userData.wheels.forEach(w => w.rotation.z = -ang);
+  const pushing = pushPhase > 0 && pushPhase < 1 && pos === 0 && eng.running;
+  hand.visible = pushing;
+  if (pushing) hand.position.set(x - 0.72 + pushPhase * 0.25, 0.38, 0.1);
+  clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 17) cl.position.x = -11; });
+  if (followMode) {
+    controls.target.lerp(new THREE.Vector3(x, 0.35, 0), 1 - Math.exp(-4 * rdt));
+    camera.position.lerp(new THREE.Vector3(x - 1.3, 1.15, 3.3), 1 - Math.exp(-3 * rdt));
+  }
+  controls.update();
+  if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 
 /* ═════════ 실험 로직 ═════════ */
 const cv = $('cv');
@@ -589,6 +554,12 @@ function reset() {
   t = 0; pos = 0; v = 0; pushPhase = 0; finished = false; samples = [];
   preview();
   $('bd').className = 'badge';
+  // 3D 씬 상태 반영 — 바닥·차 색·무게추·깃발
+  for (const k in tracks) tracks[k].visible = (k === P.floor);
+  const heavy = P.massKey === 'heavy';
+  car.userData.body.material.color.set(heavy ? 0xb8402f : 0x2f9fe0);
+  heavyBrick.visible = heavy;
+  clearFlag();
   draw(); drawG();
   markMatrix();
 }
@@ -612,15 +583,7 @@ function step(dt) {
     samples.push([t, Math.max(0, v)]);
 }
 function draw() {
-  const { c, W, H } = fit(cv);
-  if (W < 60 || H < 60) return;
-  const S = { P, pos, v, pushPhase: (pushPhase < 1 && pos === 0 && eng.running) ? pushPhase : 0,
-    showTarget: finished, target: finished ? cur.dist : null };
-  // 화면 높이 비례 확대 — 큰 화면에서도 자동차가 주인공
-  const K = Math.max(1, H / 430);
-  c.save(); c.scale(K, K);
-  drawScene(c, W / K, H / K, S);
-  c.restore();
+  // 3D 씬은 상시 렌더 루프가 그린다 — 여기선 HUD만 갱신
   $('hud_t').textContent = t.toFixed(1) + ' s';
   $('hud_v').textContent = Math.max(0, v).toFixed(1) + ' m/s';
   $('hud_d').textContent = pos.toFixed(2) + ' m';
@@ -637,6 +600,7 @@ function drawG() {
 function onDone() {
   results[matKey(P.p, P.floor)] = cur.dist;
   buildMatrix();
+  setFlag(cur.dist);
   const bd = $('bd');
   bd.className = 'badge on';
   bd.textContent = `🏁 ${cur.dist.toFixed(2)}m 이동 — 관성으로 ${cur.tStop.toFixed(1)}s 굴러가다 마찰로 정지`;

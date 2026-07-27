@@ -112,13 +112,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🚀 내보내줘 — 스프링 발사 장치</div>
+      <div class="title">🚀 내보내줘 — 스프링 발사 장치<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp">실험 · 발사</button>
@@ -135,6 +145,12 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">수평 거리</span><span id="hud_x">0.00 m</span></div>
         <div class="chip" style="color:var(--accent)"><span class="lab">현재 높이</span><span id="hud_y">0.00 m</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -267,8 +283,10 @@
 
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
+         grassGround, distanceRuler, makeTree, makeCloud, makeRock, makeFlag } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -449,6 +467,7 @@ function pick(container, onChange) {
     preview();
     $('bd').className = 'badge';
     setHud(0, 0, 0);
+    syncScene(); clearFlag3d(); syncTrace();
     draw(); drawTraj(predPts, null);
     renderGrid();
   }
@@ -472,118 +491,121 @@ function pick(container, onChange) {
     setHud(t, x, y);
   }
 
-  // ── 장면 그리기 ──
-  function worldFit(W, H) {
-    const mL = 58, mR = 24, mT = 30, mB = 46;
-    const s = Math.min((W - mL - mR) / WORLD_X, (H - mT - mB) / WORLD_Y);
-    const originX = mL, groundY = H - mB;
-    return { s, originX, groundY };
+  /* ═════════ 3D 무대 (야외 발사장) ═════════ */
+  const stage = document.querySelector('.stage');
+  const renderer = makeRenderer(cv);
+  const scene = makeScene('day', 32, 240);
+  stdLights(scene, { pos: [-5, 9, 6], shadowArea: 13 });
+  const { camera, controls } = makeCamera(cv, { maxD: 45 });
+  grassGround(scene, { size: 90, x: 4.5 });
+  distanceRuler(scene, { from: 0, to: 10, step: 1, z: 1.2, unit: 'm', labCol: '#eaf2ff' });
+  /* 발사기 (스프링 대포) */
+  const launcher = new THREE.Group(); scene.add(launcher);
+  {
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.6 }));
+    base.position.y = 0.08; base.castShadow = true; launcher.add(base);
   }
+  const barrel = new THREE.Group(); barrel.position.y = 0.2; launcher.add(barrel);
+  {
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.72, 16, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0x525d74, roughness: 0.4, metalness: 0.3, side: THREE.DoubleSide }));
+    tube.rotation.z = Math.PI / 2; tube.position.x = 0.3; tube.castShadow = true; barrel.add(tube);
+  }
+  const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.3, 12),
+    new THREE.MeshStandardMaterial({ color: 0x2ee06f, roughness: 0.5 }));
+  spring.rotation.z = Math.PI / 2; barrel.add(spring);
+  const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 14),
+    new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.45 }));
+  piston.rotation.z = Math.PI / 2; barrel.add(piston);
+  const launcherLab = textSprite('발사기', { size: 32, color: '#cfe0ff', bg: 'rgba(8,12,22,.6)', scale: 0.0038 });
+  launcherLab.position.set(0, 1.0, 0); launcher.add(launcherLab);
+  /* 발사체 (가벼움 파랑 / 무거움 주황) */
+  const balls = {
+    light: new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 16),
+      new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35 })),
+    heavy: new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16),
+      new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.35 })),
+  };
+  for (const k in balls) { balls[k].castShadow = true; balls[k].visible = false; scene.add(balls[k]); }
+  /* 예측(점선)·실제 궤적 라인 */
+  const predLine = new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineDashedMaterial({ color: 0xffb02e, dashSize: 0.14, gapSize: 0.1, transparent: true, opacity: 0.7 }));
+  scene.add(predLine);
+  const traceLine = new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0x6db8ff }));
+  scene.add(traceLine);
+  /* 예측 착지 마커 */
+  const marker = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.22, 10),
+    new THREE.MeshStandardMaterial({ color: 0xffb02e, roughness: 0.5 }));
+  marker.position.y = 0.11; scene.add(marker);
+  let flag3d = null;
+  function setFlag3d(d) {
+    if (flag3d) scene.remove(flag3d);
+    flag3d = makeFlag('🏁 ' + d.toFixed(2) + 'm', 0x2ee06f);
+    flag3d.position.set(Math.min(d, 10.6), 0, -0.95); scene.add(flag3d);
+  }
+  function clearFlag3d() { if (flag3d) { scene.remove(flag3d); flag3d = null; } }
+  /* 소품 */
+  [[-2.4, -2.8, 1.05], [3.0, -3.5, 0.95], [6.8, -2.8, 1.2], [10.6, -3.1, 1.0], [-2.9, 2.5, 0.9], [11.8, 2.7, 1.15]]
+    .forEach(([x, z, s]) => { const t = makeTree(s); t.position.set(x, 0, z); scene.add(t); });
+  [[1.8, -2.3, 0.9], [8.8, 2.0, 1.2]].forEach(([x, z, s]) => { const r = makeRock(s); r.position.set(x, 0, z); scene.add(r); });
+  const clouds = [];
+  [[-4, 5.6, -14, 1.7], [4, 6.6, -16, 2.3], [10, 5.9, -13, 1.5]].forEach(([x, y, z, s]) => {
+    const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
+  });
+  camPresets(camera, controls, {
+    camSide: { pos: [4.3, 2.6, 9.2], target: [4.0, 1.1, 0] },
+    camDiag: { pos: [-3.8, 4.0, 6.6], target: [3.6, 0.8, 0] },
+    camTop:  { pos: [4.5, 12.5, 0.02], target: [4.5, 0, 0] },
+  }, 'camSide');
+  const BALL_Y0 = 0.2;   // 발사 높이(시각 오프셋)
+  function syncScene() {
+    // 각도·스프링 압축 반영
+    barrel.rotation.z = P.th;
+    const springLen = 0.34 - P.comp * 0.045;
+    spring.scale.y = springLen / 0.3;
+    spring.position.x = springLen / 2 - 0.05;
+    piston.position.x = springLen - 0.03;
+    // 예측 궤적·마커
+    predLine.geometry.setFromPoints(predPts.map(p => new THREE.Vector3(p[0], p[1] + BALL_Y0, 0)));
+    predLine.computeLineDistances();
+    marker.position.x = P.range;
+    // 공 표시
+    for (const k in balls) balls[k].visible = (k === P.mass);
+  }
+  function syncTrace() {
+    traceLine.geometry.setFromPoints(tracePts.map(p => new THREE.Vector3(p[0], p[1] + BALL_Y0, 0)));
+  }
+  let lastRT = performance.now();
+  function animate(now) {
+    const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+    const ball = balls[P ? P.mass : 'light'];
+    if (P && ball) {
+      if (launched && !finished) {
+        const x = P.v0 * Math.cos(P.th) * t, y = Math.max(0, P.v0 * Math.sin(P.th) * t - 0.5 * G * t * t);
+        ball.position.set(x, y + BALL_Y0, 0);
+      } else if (finished) {
+        ball.position.set(P.range, 0.12, 0);
+      } else {
+        const tip = 0.55;
+        ball.position.set(Math.cos(P.th) * tip, 0.2 + Math.sin(P.th) * tip, 0);
+      }
+    }
+    clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 17) cl.position.x = -11; });
+    controls.update();
+    if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
   function draw() {
-    let { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;
-    // 화면 높이 비례 확대 — 고정픽셀 스프라이트가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
-    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
-    // 배경 하늘
-    const sky = c.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#0c1428'); sky.addColorStop(1, '#132038');
-    c.fillStyle = sky; c.fillRect(0, 0, W, H);
-    const { s, originX, groundY } = worldFit(W, H);
-    const wx = x => originX + x * s, wy = y => groundY - y * s;
-    // 점 격자
-    c.fillStyle = 'rgba(120,145,190,.07)';
-    for (let x = 0; x <= WORLD_X; x += 1) for (let y = 0; y <= WORLD_Y; y += 0.5) { c.beginPath(); c.arc(wx(x), wy(y), 1.1, 0, 7); c.fill(); }
-    // 땅
-    c.fillStyle = '#1b2b1e'; c.fillRect(0, groundY, W, H - groundY);
-    c.strokeStyle = '#3ba05a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, groundY); c.lineTo(W, groundY); c.stroke();
-    // 거리 눈금
-    c.font = '11px var(--mono, monospace)'; c.textAlign = 'center';
-    for (let x = 0; x <= WORLD_X; x += 1) {
-      c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(wx(x), groundY); c.lineTo(wx(x), groundY + (x % 2 ? 4 : 8)); c.stroke();
-      if (x % 2 === 0) { c.fillStyle = '#7d8ba3'; c.fillText(x + 'm', wx(x), groundY + 20); }
-    }
-    // 예측 궤적(점선)
-    if (predPts.length > 1) {
-      c.setLineDash([5, 6]); c.strokeStyle = 'rgba(255,176,46,.45)'; c.lineWidth = 2; c.beginPath();
-      predPts.forEach((p, i) => { i ? c.lineTo(wx(p[0]), wy(p[1])) : c.moveTo(wx(p[0]), wy(p[1])); });
-      c.stroke(); c.setLineDash([]);
-    }
-    // 착지 목표 마커 (예측 사거리)
-    c.fillStyle = 'rgba(255,176,46,.9)';
-    c.beginPath(); c.moveTo(wx(P.range), groundY); c.lineTo(wx(P.range) - 6, groundY - 12); c.lineTo(wx(P.range) + 6, groundY - 12); c.closePath(); c.fill();
-    // 발사기 (스프링 대포)
-    drawLauncher(c, wx(0), groundY, s, P);
-    // 실제 궤적 트레일
-    if (tracePts.length > 1) {
-      c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 7;
-      c.strokeStyle = '#6db8ff'; c.lineWidth = 2.6; c.lineJoin = 'round'; c.beginPath();
-      tracePts.forEach((p, i) => { i ? c.lineTo(wx(p[0]), wy(p[1])) : c.moveTo(wx(p[0]), wy(p[1])); });
-      c.stroke(); c.restore();
-    }
-    // 발사체
-    if (launched && !finished) {
-      const x = P.v0 * Math.cos(P.th) * t, y = Math.max(0, P.v0 * Math.sin(P.th) * t - 0.5 * G * t * t);
-      drawBall(c, wx(x), wy(y), P.mass);
-    } else if (finished) {
-      drawBall(c, wx(P.range), wy(0) - (P.mass === 'heavy' ? 13 : 10), P.mass);
-    } else {
-      // 발사 전: 발사구에 장전
-      const bx = originX + Math.cos(P.th) * (36 + P.comp * 4);
-      const by = groundY - 22 - Math.sin(P.th) * (36 + P.comp * 4);
-      drawBall(c, bx, by, P.mass);
-    }
-  }
-  function drawBall(c, x, y, mass) {
-    const r = mass === 'heavy' ? 13 : 9.5;
-    const g = c.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.2, x, y, r);
-    if (mass === 'heavy') { g.addColorStop(0, '#ffb27d'); g.addColorStop(1, '#c2410c'); }
-    else { g.addColorStop(0, '#a9d4ff'); g.addColorStop(1, '#2563eb'); }
-    c.save(); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 6; c.shadowOffsetY = 3;
-    c.beginPath(); c.arc(x, y, r, 0, 7); c.fillStyle = g; c.fill(); c.restore();
-    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
-  }
-  function drawLauncher(c, ox, groundY, s, P) {
-    const th = P.th;
-    const baseY = groundY - 18;
-    // 받침대
-    c.fillStyle = '#39435c';
-    c.beginPath(); c.roundRect(ox - 26, groundY - 16, 52, 16, 4); c.fill();
-    c.strokeStyle = '#5b6982'; c.lineWidth = 1.2; c.stroke();
-    // 발사 트랙(각도)
-    c.save(); c.translate(ox, baseY); c.rotate(-th);
-    const barLen = 62, barW = 22;
-    // 트랙 몸통
-    const bg = c.createLinearGradient(0, -barW / 2, 0, barW / 2);
-    bg.addColorStop(0, '#525d74'); bg.addColorStop(1, '#232b3e');
-    c.fillStyle = bg;
-    c.beginPath(); c.roundRect(-6, -barW / 2, barLen, barW, 6); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.4; c.stroke();
-    // 스프링 (압축 단계 = 코일 압축 정도)
-    const comp = P.comp;
-    const springStart = 2, springEnd = 12 + (5 - comp) * 7;   // 많이 누를수록 짧게(압축)
-    const coils = 7;
-    c.strokeStyle = '#2ee06f'; c.lineWidth = 3; c.lineCap = 'round';
-    c.beginPath();
-    for (let i = 0; i <= coils; i++) {
-      const xx = springStart + (springEnd - springStart) * i / coils;
-      const yy = (i % 2 ? -1 : 1) * (barW / 2 - 5);
-      i ? c.lineTo(xx, yy) : c.moveTo(xx, yy);
-    }
-    c.stroke(); c.lineCap = 'butt';
-    // 밀판(피스톤)
-    c.fillStyle = '#ff5a52';
-    c.beginPath(); c.roundRect(springEnd, -barW / 2 + 2, 6, barW - 4, 2); c.fill();
-    // 압축 화살표 표시
-    c.fillStyle = '#2ee06f'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
-    c.fillText(comp + '단', springEnd - (springEnd - springStart) / 2, 0);
-    c.restore();
-    // 라벨
-    c.fillStyle = '#9aa8bf'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
-    c.fillText('발사기', ox, groundY + 20 < groundY ? groundY : groundY - 2);
+    // 3D 씬은 상시 렌더 루프가 그린다 — 실시간 궤적 라인만 갱신
+    if (launched) syncTrace();
   }
 
   function onDone() {
+    setFlag3d(P.range);
     // 격자 기록
     const ai = ANGLES.indexOf(P.ang);
     grid[P.mass][P.comp - 1][ai] = P.range;

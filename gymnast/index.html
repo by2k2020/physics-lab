@@ -113,13 +113,23 @@
 </style>
 <script src="../vendor/ctm-fx.js"></script>
 <script>CtmFX.badgeMap({success:['in','ok','good','go','gold','best','win'],pop:['same']})</script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정</div>
-      <div class="title">🤸 체조선수 시뮬레이션</div>
+      <div class="title">🤸 체조선수 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp">실험 · 크게 돌기로 차 달리기</button>
@@ -136,6 +146,13 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">자동차 속도</span><span id="hud_spd">0.0 m/s</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">달린 거리</span><span id="hud_dist">0.0 m</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+        <button id="camFollow">🏎️ 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -247,8 +264,10 @@
 
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas><div id="zoomTbl" style="display:none"></div></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
+         grassGround, dirtTrack, distanceRuler, makeCar, makeMinifig, makeTree, makeCloud, makeRock, makeFlag } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -351,139 +370,106 @@ $('matrix').addEventListener('click', () => {
 });
 $('zoom').onclick = () => { zoomMode = null; $('zoom').classList.remove('on'); };
 
-/* ── 그림 헬퍼 ── */
-function drawGymnast(c, cx, cy, ang, len, col) {
-  // 철봉 그립(cx,cy)을 중심으로 회전하는 체조선수
-  const hx = cx + Math.cos(ang) * len, hy = cy + Math.sin(ang) * len;   // 엉덩이
-  const perp = ang + Math.PI / 2;
-  c.save();
-  c.lineCap = 'round';
-  // 팔 (그립 → 어깨)
-  const shX = cx + Math.cos(ang) * len * 0.45, shY = cy + Math.sin(ang) * len * 0.45;
-  c.strokeStyle = '#e8c9a0'; c.lineWidth = 5;
-  c.beginPath(); c.moveTo(cx, cy); c.lineTo(shX, shY); c.stroke();
-  // 몸통 (어깨 → 엉덩이)
-  c.strokeStyle = col; c.lineWidth = 9;
-  c.beginPath(); c.moveTo(shX, shY); c.lineTo(hx, hy); c.stroke();
-  // 머리
-  const headX = cx + Math.cos(ang) * len * 0.24, headY = cy + Math.sin(ang) * len * 0.24;
-  c.fillStyle = '#f3d3ad';
-  c.beginPath(); c.arc(headX, headY, 9, 0, 7); c.fill();
-  c.strokeStyle = '#c99a63'; c.lineWidth = 1.4; c.stroke();
-  // 다리 두 개 (엉덩이에서 뻗음, 살짝 벌림)
-  c.strokeStyle = '#274b8f'; c.lineWidth = 6;
-  const legL = len * 0.62;
-  for (const d of [-0.28, 0.28]) {
-    const lx = hx + Math.cos(ang + d) * legL, ly = hy + Math.sin(ang + d) * legL;
-    c.beginPath(); c.moveTo(hx, hy); c.lineTo(lx, ly); c.stroke();
-  }
-  c.restore();
+/* ═════════ 3D 무대 (야외 철봉 + 주행 트랙) ═════════ */
+const stage = document.querySelector('.stage');
+const cv3 = $('cv');
+const renderer = makeRenderer(cv3);
+const scene = makeScene('day', 32, 240);
+stdLights(scene, { pos: [-5, 9, 6], shadowArea: 14 });
+const { camera, controls } = makeCamera(cv3, { maxD: 45 });
+grassGround(scene, { size: 90, x: 4.5 });
+const tracks3d = {
+  0: dirtTrack(scene, { len: 13.5, w: 2.3, x: 5.0, base: '#a9cfe8' }),   // 매끈함
+  1: dirtTrack(scene, { len: 13.5, w: 2.3, x: 5.0, base: '#8a6a44' }),   // 거침
+};
+distanceRuler(scene, { from: 0, to: 10, step: 1, z: 1.45, unit: 'm', labCol: '#eaf2ff' });
+/* 철봉 */
+const BAR_X = -0.9, BAR_Y = 1.25;
+{
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x4a5a7c, roughness: 0.5 });
+  [-0.55, 0.55].forEach(z => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, BAR_Y, 12), postMat);
+    p.position.set(BAR_X, BAR_Y / 2, z); p.castShadow = true; scene.add(p);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.3), postMat);
+    base.position.set(BAR_X, 0.03, z); scene.add(base);
+  });
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 12),
+    new THREE.MeshStandardMaterial({ color: 0xaab4c8, roughness: 0.3, metalness: 0.4 }));
+  bar.rotation.x = Math.PI / 2; bar.position.set(BAR_X, BAR_Y, 0); bar.castShadow = true; scene.add(bar);
 }
-function drawCar(c, x, y, wheelAng, scale) {
-  c.save();
-  c.translate(x, y);
-  const bw = 66 * scale, bh = 26 * scale, wr = 13 * scale;
-  // 차체
-  const g = c.createLinearGradient(0, -bh, 0, 6);
-  g.addColorStop(0, '#ff9c5a'); g.addColorStop(1, '#c2410c');
-  c.fillStyle = g; c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4;
-  c.beginPath(); c.roundRect(-bw / 2, -bh, bw, bh, 6 * scale); c.fill(); c.stroke();
-  // 캐빈
-  c.fillStyle = '#7db4ff';
-  c.beginPath(); c.roundRect(-bw * 0.18, -bh - 15 * scale, bw * 0.5, 16 * scale, 4 * scale); c.fill(); c.stroke();
-  // 바퀴 2개
-  for (const wx of [-bw * 0.3, bw * 0.3]) {
-    c.save(); c.translate(wx, 0); c.rotate(wheelAng);
-    c.fillStyle = '#1a2234'; c.strokeStyle = '#55617a'; c.lineWidth = 2;
-    c.beginPath(); c.arc(0, 0, wr, 0, 7); c.fill(); c.stroke();
-    c.fillStyle = '#8b98ad';
-    c.beginPath(); c.arc(0, 0, wr * 0.3, 0, 7); c.fill();
-    c.strokeStyle = '#c6d2e6'; c.lineWidth = 2;
-    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * wr * 0.8, Math.sin(a) * wr * 0.8); c.stroke(); }
-    c.restore();
-  }
-  c.restore();
+/* 스윙 궤적 링 */
+const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.012, 8, 48),
+  new THREE.MeshBasicMaterial({ color: 0xc792ea, transparent: true, opacity: 0 }));
+ring.position.set(BAR_X, BAR_Y, 0); scene.add(ring);
+/* 체조선수 미니피겨 2종 (가벼움/무거움) — 봉 피벗에 매달림 */
+const pivot = new THREE.Group(); pivot.position.set(BAR_X, BAR_Y, 0); scene.add(pivot);
+const figs = [0, 1].map(w => {
+  const f = makeMinifig({ shirt: w ? 0xc2410c : 0xc792ea, pants: 0x22304c });
+  f.userData.arms.rotation.z = Math.PI;      // 만세 자세로 봉 잡기
+  const s = w ? 1.12 : 0.95;
+  f.scale.setScalar(s);
+  f.position.y = -0.62 * s;
+  f.visible = false; pivot.add(f);
+  return f;
+});
+/* 자동차 + 깃발 */
+const car = makeCar({ body: 0xff8a3d, roof: 0xffd9b8, len: 0.66 });
+scene.add(car);
+let flag3d = null;
+function setFlag3d(d) {
+  if (flag3d) scene.remove(flag3d);
+  flag3d = makeFlag('🏁 ' + d.toFixed(2) + 'm', 0x2ee06f);
+  flag3d.position.set(Math.min(d, 10.8) + 0.3, 0, -1.15); scene.add(flag3d);
 }
-function drawScene() {
-  const info = fit($('cv'));
-  const { c, W, H } = info;
-  if (W < 60 || H < 60) return;
-  // 화면 높이에 맞춰 장면 전체 확대 — 큰 화면에서도 선수·차가 주인공
-  const S = Math.max(1, H / 430);
-  const VW = W / S, VH = H / S;
-  c.save(); c.scale(S, S);
-  // 배경
-  const sky = c.createLinearGradient(0, 0, 0, VH);
-  sky.addColorStop(0, '#0a1327'); sky.addColorStop(1, '#0f1d38');
-  c.fillStyle = sky; c.fillRect(0, 0, VW, VH);
-  const groundY = VH * 0.74;
-  // 바닥
-  const gr = c.createLinearGradient(0, groundY, 0, VH);
-  const rough = P.f === 1;
-  gr.addColorStop(0, rough ? '#3a2a1c' : '#16233c'); gr.addColorStop(1, rough ? '#241a12' : '#0d1526');
-  c.fillStyle = gr; c.fillRect(0, groundY, VW, VH - groundY);
-  c.strokeStyle = rough ? '#6b4a2c' : '#31456b'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(0, groundY); c.lineTo(VW, groundY); c.stroke();
-  // 거친 바닥 질감
-  if (rough) {
-    c.fillStyle = 'rgba(160,110,60,.35)';
-    for (let x = 8; x < VW; x += 15) { c.beginPath(); c.arc(x, groundY + 6 + (x % 30 === 0 ? 4 : 0), 2, 0, 7); c.fill(); }
+function clearFlag3d() { if (flag3d) { scene.remove(flag3d); flag3d = null; } }
+/* 소품 */
+[[-2.6, -2.8, 1.05], [3.2, -3.4, 0.95], [7.0, -2.7, 1.2], [10.8, -3.0, 1.0], [-3.2, 2.5, 0.9], [12.4, 2.7, 1.15]]
+  .forEach(([x, z, s]) => { const t = makeTree(s); t.position.set(x, 0, z); scene.add(t); });
+[[1.6, -2.2, 0.9], [9.2, 1.9, 1.2]].forEach(([x, z, s]) => { const r = makeRock(s); r.position.set(x, 0, z); scene.add(r); });
+const clouds = [];
+[[-4, 5.6, -14, 1.7], [4, 6.6, -16, 2.3], [11, 5.9, -13, 1.5]].forEach(([x, y, z, s]) => {
+  const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
+});
+camPresets(camera, controls, {
+  camSide: { pos: [4.2, 2.0, 9.0], target: [3.8, 0.6, 0] },
+  camDiag: { pos: [-4.2, 3.8, 6.4], target: [3.6, 0.5, 0] },
+  camTop:  { pos: [4.5, 12.5, 0.02], target: [4.5, 0, 0] },
+}, 'camSide');
+let followMode = false;
+['camSide', 'camDiag', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
+  followMode = false; $('camFollow').classList.remove('on');
+}));
+$('camFollow').onclick = () => {
+  followMode = true;
+  ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).classList.remove('on'));
+  $('camFollow').classList.add('on');
+};
+let lastRT = performance.now();
+function animate(now) {
+  const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+  pivot.rotation.z = swingAng + Math.PI / 2;
+  figs.forEach((f, w) => f.visible = (w === cfg.w));
+  ring.material.opacity = phase === 'swing' ? Math.min(0.5, 0.1 + tSim / SWING_DUR * 0.4) : (phase === 'drive' ? 0.12 : 0);
+  const x = 0.35 + carDist;
+  car.position.x = x;
+  car.userData.wheels.forEach(w => w.rotation.z = -carDist / car.userData.wheelR);
+  clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 18) cl.position.x = -11; });
+  if (followMode) {
+    controls.target.lerp(new THREE.Vector3(x, 0.4, 0), 1 - Math.exp(-4 * rdt));
+    camera.position.lerp(new THREE.Vector3(x - 1.4, 1.25, 3.4), 1 - Math.exp(-3 * rdt));
   }
-  // 좌표: 철봉 그립 위치 + 미터 스케일
-  const barX = VW * 0.16, gripY = groundY - ARM * 118 - 40;
-  const pxPerM = Math.max(24, (VW * 0.9 - barX) / 11);
-  // 거리 눈금자
-  c.font = '11px var(--mono, monospace)'; c.textAlign = 'center';
-  for (let m = 0; m <= 11; m++) {
-    const x = barX + m * pxPerM;
-    if (x > VW) break;
-    c.strokeStyle = 'rgba(140,160,200,.22)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY + 9); c.stroke();
-    c.fillStyle = '#6a7791'; c.fillText(m + 'm', x, groundY + 22);
-  }
-  // 철봉 (수평바 · 옆에서 본 기둥 + 그립)
-  c.strokeStyle = '#4a5a7c'; c.lineWidth = 7; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(barX, gripY); c.lineTo(barX, groundY); c.stroke();
-  c.beginPath(); c.moveTo(barX - 34, gripY + 8); c.lineTo(barX, gripY); c.lineTo(barX - 34, groundY); c.stroke();  // 뒤 지지대
-  c.lineCap = 'butt';
-  c.fillStyle = '#8b98ad';
-  c.beginPath(); c.arc(barX, gripY, 6, 0, 7); c.fill();
-  c.strokeStyle = '#c6d2e6'; c.lineWidth = 1.5; c.stroke();
-  // 체조선수
-  const glow = phase === 'swing' ? Math.min(1, tSim / SWING_DUR) : 1;
-  if (phase === 'swing' && P.om > 0) {
-    c.save(); c.strokeStyle = 'rgba(199,146,234,' + (0.15 + glow * 0.35) + ')'; c.lineWidth = 3;
-    c.beginPath(); c.arc(barX, gripY, ARM * 118, 0, 7); c.stroke(); c.restore();
-  }
-  drawGymnast(c, barX, gripY, swingAng, ARM * 118, '#c792ea');
-  // 자동차
-  const carY = groundY - 13;
-  const carX = barX + 30 + carDist * pxPerM;
-  const wheelAng = carDist * pxPerM / 13;
-  drawCar(c, carX, carY, wheelAng, 1);
-  // 속도선
-  if (carV > 0.3) {
-    c.strokeStyle = 'rgba(255,144,70,' + Math.min(0.6, carV / 8) + ')'; c.lineWidth = 2.4; c.lineCap = 'round';
-    for (let k = 0; k < 3; k++) { const yy = carY - 6 - k * 8; c.beginPath(); c.moveTo(carX - 40 - k * 6, yy); c.lineTo(carX - 40 - k * 6 - Math.min(40, carV * 6), yy); c.stroke(); }
-    c.lineCap = 'butt';
-  }
-  // 도달 지점 깃발 (완료 시)
-  if (phase === 'done' && P.dist > 0) {
-    const fx = barX + 30 + P.dist * pxPerM;
-    c.strokeStyle = '#2ee06f'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(fx, groundY); c.lineTo(fx, groundY - 40); c.stroke();
-    c.fillStyle = '#2ee06f';
-    c.beginPath(); c.moveTo(fx, groundY - 40); c.lineTo(fx + 18, groundY - 34); c.lineTo(fx, groundY - 28); c.fill();
-    c.font = 'bold 12px sans-serif'; c.fillStyle = '#2ee06f'; c.textAlign = 'left';
-    c.fillText(P.dist.toFixed(2) + 'm', fx + 4, groundY - 46);
-  }
-  c.restore();
-  // HUD
+  controls.update();
+  if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+function draw() {
+  // 3D 씬은 상시 렌더 루프가 그린다 — HUD만 갱신
   $('hud_rev').textContent = revCount.toFixed(1) + ' 바퀴';
   $('hud_spd').textContent = carV.toFixed(1) + ' m/s';
   $('hud_dist').textContent = carDist.toFixed(1) + ' m';
 }
-function draw() { drawScene(); }
+
 
 /* ── 상태 ── */
 let P = physics(3, 0, 0);
@@ -519,6 +505,8 @@ function reset() {
   samples = [];
   $('bd').className = 'badge';
   preview();
+  for (const k in tracks3d) tracks3d[k].visible = (+k === cfg.f);
+  clearFlag3d();
   drawMatrix();
   draw(); drawG();
 }
@@ -544,6 +532,7 @@ function step(dt) {
 
 /* ── 완료 ── */
 function onDone() {
+  setFlag3d(P.dist);
   $('ro_vmax').textContent = P.vmax.toFixed(1) + ' m/s';
   $('ro_dist').textContent = P.dist.toFixed(2) + ' m';
   $('heroDist').textContent = P.dist.toFixed(2) + ' m';
