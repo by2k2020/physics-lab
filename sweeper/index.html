@@ -122,13 +122,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정 · 16차시</div>
-      <div class="title">🧹 청소차 시뮬레이션 — 기어로 브러시 돌리기</div>
+      <div class="title">🧹 청소차 시뮬레이션 — 기어로 브러시 돌리기<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">🚛 청소 실험</button>
@@ -146,6 +156,13 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">돌리는 힘 (토크)</span><span id="hud_trq">0</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">쓸어담음</span><span id="hud_cap">0 / 0</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+        <button id="camFollow">🧹 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -304,8 +321,10 @@
 
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
+         grassGround, dirtTrack, distanceRuler, makeCar, makeTree, makeCloud, makeRock } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const redraws = {};
@@ -495,6 +514,7 @@ function computeEff(gk, dk, drk) {
     t = 0; carX = 0; brushAng = 0; wheelAng = 0; finished = false; captured = 0; samples = [{ t: 0, cap: 0 }];
     preview();
     $('bd1').className = 'badge';
+    syncPieces();
     draw(); drawG();
   }
   function onParam() { if (!eng.running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; } }
@@ -519,181 +539,133 @@ function computeEff(gk, dk, drk) {
       samples.push({ t, cap: captured });
   }
 
-  function computeLayout(W, H) {
-    const yG = H * 0.80;                 // 바닥선
-    const margin = Math.max(W * 0.09, 150);   // 차체+브러시가 왼쪽에서 잘리지 않게 최소 확보
-    const trackL = margin, trackR = W - margin;
-    return { yG, trackL, trackR, W, H };
-  }
-  function pieceX(pc) { return layout.trackL + pc.frac * (layout.trackR - layout.trackL); }
-
-  function drawScene(c, W, H) {
-    // 배경 (실내 바닥 + 벽)
-    const bg = c.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0b1120'); bg.addColorStop(1, '#101a30');
-    c.fillStyle = bg; c.fillRect(0, 0, W, H);
-    layout = computeLayout(W, H);
-    const { yG, trackL, trackR } = layout;
-    // 바닥
-    const fg = c.createLinearGradient(0, yG, 0, H);
-    fg.addColorStop(0, '#1b2740'); fg.addColorStop(1, '#0c1220');
-    c.fillStyle = fg; c.fillRect(0, yG, W, H - yG);
-    c.strokeStyle = 'rgba(120,150,200,.35)'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(0, yG); c.lineTo(W, yG); c.stroke();
-    // 바닥 타일 눈금
-    c.strokeStyle = 'rgba(120,150,200,.10)'; c.lineWidth = 1;
-    for (let x = 20; x < W; x += 40) { c.beginPath(); c.moveTo(x, yG); c.lineTo(x - 14, H); c.stroke(); }
-    // 청소 구역 표시
-    c.fillStyle = 'rgba(46,224,111,.05)'; c.fillRect(trackL, yG - 4, trackR - trackL, 4);
-  }
-
-  function drawPiece(c, pc, yG) {
-    const d = P.debris;
-    let x = pieceX(pc), y = yG - d.r;
-    let alpha = 1;
-    if (pc.judged && pc.captured) {
-      const dt = t - pc.jt;
-      if (dt < 0.7) {
-        // 브러시가 튕겨 통으로 날림 (포물선)
-        const k = dt / 0.7;
-        const tx = carX - 4, ty = layout.yG - 74;   // 통 입구
-        x = x + (tx - x) * k;
-        y = (yG - d.r) + (ty - (yG - d.r)) * k - Math.sin(k * Math.PI) * 46;
-        alpha = 1 - k * 0.15;
-      } else return; // 통 안 — 안 그림
-    } else if (pc.judged && !pc.captured) {
-      alpha = 0.5;   // 못 쓸고 남은 것
+  /* ═════════ 3D 무대 (마당 청소 코스) ═════════ */
+  const stage = document.querySelector('.stage');
+  const renderer = makeRenderer(cv);
+  const scene = makeScene('day', 30, 220);
+  stdLights(scene, { pos: [-5, 9, 6], shadowArea: 12 });
+  const { camera, controls } = makeCamera(cv, { maxD: 40 });
+  grassGround(scene, { size: 80, x: 3 });
+  dirtTrack(scene, { len: 8.6, w: 2.1, x: 2.9, base: '#9aa3ad' });   // 회색 포장 마당
+  distanceRuler(scene, { from: 0, to: 6, step: 1, z: 1.35, unit: 'm', labCol: '#eaf2ff' });
+  [[-1.8, -2.6, 1.0], [7.6, -2.9, 1.25], [2.4, -3.5, 0.9], [5.2, -2.5, 1.1], [-2.6, 2.4, 0.95], [8.6, 2.7, 1.2]]
+    .forEach(([x, z, s]) => { const tr = makeTree(s); tr.position.set(x, 0, z); scene.add(tr); });
+  [[1.0, -2.2, 0.9], [7.8, 1.9, 1.2]].forEach(([x, z, s]) => { const r = makeRock(s); r.position.set(x, 0, z); scene.add(r); });
+  const clouds = [];
+  [[-4, 5.4, -13, 1.6], [2.5, 6.4, -15, 2.2], [8, 5.7, -12, 1.4]].forEach(([x, y, z, s]) => {
+    const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
+  });
+  /* 청소차 (초록) + 쓰레기통 + 브러시 */
+  const car = makeCar({ body: 0x2f7d3e, roof: 0x8fd0ff, len: 0.8, wid: 0.4 });
+  scene.add(car);
+  const hopper = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.28, 0.32),
+    new THREE.MeshStandardMaterial({ color: 0x13233a, roughness: 0.6 }));
+  hopper.position.set(-0.2, 0.42, 0); hopper.castShadow = true; car.add(hopper);
+  const hopperFill = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.26),
+    new THREE.MeshStandardMaterial({ color: 0x2ee06f, roughness: 0.7, transparent: true, opacity: 0.85 }));
+  hopperFill.position.set(-0.2, 0.33, 0); hopperFill.scale.y = 0.02; car.add(hopperFill);
+  const hopperLab = textSprite('쓰레기통', { size: 28, color: '#cfe0ff', bg: 'rgba(8,12,22,.6)', scale: 0.0034 });
+  hopperLab.position.set(-0.2, 0.72, 0); car.add(hopperLab);
+  // 지지 암 + 회전 브러시 (앞쪽 바닥)
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.045, 0.045),
+    new THREE.MeshStandardMaterial({ color: 0x3a4661, roughness: 0.5 }));
+  arm.position.set(0.5, 0.22, 0); arm.rotation.z = -0.35; car.add(arm);
+  const brush = new THREE.Group();
+  brush.position.set(0.64, 0.15, 0); car.add(brush);
+  {
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 12),
+      new THREE.MeshStandardMaterial({ color: 0x5b6982, roughness: 0.4 }));
+    hub.rotation.x = Math.PI / 2; brush.add(hub);
+    const bristleMat = new THREE.MeshStandardMaterial({ color: 0xe8c07a, roughness: 0.8 });
+    for (let k = 0; k < 8; k++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.28), bristleMat);
+      b.rotation.z = k * Math.PI / 8; brush.add(b);
     }
-    c.save(); c.globalAlpha = alpha;
-    c.fillStyle = d.color;
-    if (P.dk === 'pellet') {
-      c.beginPath(); c.arc(x, y, d.r, 0, 7); c.fill();
-      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-      c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.arc(x - d.r * 0.3, y - d.r * 0.3, d.r * 0.35, 0, 7); c.fill();
-    } else {
-      for (let k = 0; k < 3; k++) {
-        c.beginPath(); c.arc(x + (k - 1) * 3.4, y + (k % 2) * 1.5, d.r * 0.75, 0, 7); c.fill();
-      }
-    }
-    c.restore();
   }
-
-  function drawTruck(c) {
-    const { yG } = layout;
-    const cx = carX;
-    const bodyW = 108, bodyH = 42;
-    const wheelR = 15;
-    const bodyBottom = yG - wheelR - 2;
-    const bodyTop = bodyBottom - bodyH;
-    // 바퀴 2개
-    [cx - bodyW * 0.30, cx + bodyW * 0.32].forEach(wx => {
-      c.save(); c.translate(wx, yG - wheelR);
-      c.fillStyle = '#1a2030'; c.beginPath(); c.arc(0, 0, wheelR, 0, 7); c.fill();
-      c.strokeStyle = '#3a4661'; c.lineWidth = 3; c.stroke();
-      c.rotate(wheelAng);
-      c.strokeStyle = '#55617a'; c.lineWidth = 2;
-      for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * wheelR * 0.8, Math.sin(a) * wheelR * 0.8); c.stroke(); }
-      c.fillStyle = '#8b98ad'; c.beginPath(); c.arc(0, 0, 3.5, 0, 7); c.fill();
-      c.restore();
+  /* 쓰레기 12개 (먼지 클러스터 / 알갱이) */
+  const X_OF = frac => 0.5 + frac * 5.2;                  // frac → 월드 x (판정과 동일 비율)
+  const dustMat = new THREE.MeshStandardMaterial({ color: 0xcfd8e6, roughness: 0.9, transparent: true });
+  const pelletMat = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: 0.7, transparent: true });
+  const pieceMeshes = [];
+  for (let i = 0; i < 12; i++) {
+    const g = new THREE.Group();
+    const dust = new THREE.Group();
+    [[-0.05, 0, 0.03], [0.04, 0, -0.04], [0, 0, 0.05]].forEach(([dx, dy, dz]) => {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), dustMat.clone());
+      s.position.set(dx, 0.04, dz); dust.add(s);
     });
-    // 차체
-    const bg = c.createLinearGradient(0, bodyTop, 0, bodyBottom);
-    bg.addColorStop(0, '#2f7d3e'); bg.addColorStop(1, '#1c5127');
-    c.fillStyle = bg;
-    c.beginPath(); c.roundRect(cx - bodyW / 2, bodyTop, bodyW, bodyH, 8); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.5; c.stroke();
-    // 운전석 창
-    c.fillStyle = '#8fd0ff';
-    c.beginPath(); c.roundRect(cx + bodyW * 0.16, bodyTop + 6, bodyW * 0.28, bodyH * 0.5, 4); c.fill();
-    // 쓰레기 통 (호퍼) — 채워지는 정도 표시
-    const hopX = cx - bodyW * 0.42, hopW = bodyW * 0.5, hopY = bodyTop - 30, hopH = 34;
-    c.fillStyle = '#13233a';
-    c.beginPath(); c.roundRect(hopX, hopY, hopW, hopH, 5); c.fill();
-    c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5; c.stroke();
-    const fillFrac = TOTAL ? captured / TOTAL : 0;
-    c.fillStyle = 'rgba(46,224,111,.55)';
-    const fh = (hopH - 6) * fillFrac;
-    c.fillRect(hopX + 3, hopY + hopH - 3 - fh, hopW - 6, fh);
-    c.fillStyle = '#9aa8bf'; c.font = 'bold 9px sans-serif'; c.textAlign = 'center';
-    c.fillText('쓰레기통', hopX + hopW / 2, hopY - 4);
-    // 기어박스 (모터→브러시 링크) — 작은 기어 2개 표시
-    const gearY = bodyBottom + 2, gLeft = cx - bodyW * 0.5;
-    const gr = GEARS[P.gk].gearRatio;
-    drawMiniGear(c, gLeft, gearY - 6, 9, wheelAng * 2, '#4da3ff');
-    drawMiniGear(c, gLeft - 15, gearY + 4, gr >= 1 ? 13 : 6, -brushAng * 0.3, '#ff9046');
-    // 브러시 (앞쪽 아래, 바닥 접촉)
-    const brX = cx - bodyW * 0.5 - 6, brR = 20;
-    const brY = yG - brR + 4;
-    // 브러시 지지 암
-    c.strokeStyle = '#3a4661'; c.lineWidth = 4;
-    c.beginPath(); c.moveTo(cx - bodyW * 0.4, bodyBottom); c.lineTo(brX, brY); c.stroke();
-    drawBrush(c, brX, brY, brR, brushAng, GEARS[P.gk]);
-    // 방향/속도 표시
-    return { brX, brY, brR };
+    g.add(dust);
+    const pellet = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), pelletMat.clone());
+    pellet.position.y = 0.07; pellet.castShadow = true; g.add(pellet);
+    g.userData = { dust, pellet };
+    scene.add(g); pieceMeshes.push(g);
   }
-
-  function drawMiniGear(c, x, y, r, ang, color) {
-    const N = 8;
-    c.save(); c.translate(x, y); c.rotate(ang);
-    c.beginPath();
-    for (let i = 0; i < N; i++) {
-      const a0 = i / N * Math.PI * 2, a1 = (i + 0.5) / N * Math.PI * 2;
-      c.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
-      c.lineTo(Math.cos(a1) * r * 0.72, Math.sin(a1) * r * 0.72);
+  function syncPieces() {
+    pieces.forEach((pc, i) => {
+      const g = pieceMeshes[i];
+      g.visible = true;
+      g.position.set(X_OF(pc.frac), 0, (i % 3 - 1) * 0.42);
+      g.userData.dust.visible = (P.dk === 'dust');
+      g.userData.pellet.visible = (P.dk === 'pellet');
+      g.traverse(o => { if (o.material) o.material.opacity = 1; });
+    });
+  }
+  camPresets(camera, controls, {
+    camSide: { pos: [3.2, 1.7, 7.2], target: [2.9, 0.4, 0] },
+    camDiag: { pos: [-3.2, 3.3, 5.3], target: [2.7, 0.3, 0] },
+    camTop:  { pos: [3.2, 10, 0.02], target: [3.2, 0, 0] },
+  }, 'camSide');
+  let followMode = false;
+  ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
+    followMode = false; $('camFollow').classList.remove('on');
+  }));
+  $('camFollow').onclick = () => {
+    followMode = true;
+    ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).classList.remove('on'));
+    $('camFollow').classList.add('on');
+  };
+  let lastRT = performance.now();
+  function animate(now) {
+    const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+    const prog = dur ? Math.min(1, t / dur) : 0;
+    const brushX = X_OF(prog);
+    car.position.x = brushX - 0.64;                      // 브러시 접촉점 기준
+    car.userData.wheels.forEach(w => w.rotation.z = -car.position.x / car.userData.wheelR);
+    brush.rotation.z = -brushAng;
+    const fillK = Math.max(0.02, captured / TOTAL);
+    hopperFill.scale.y = fillK;
+    hopperFill.position.y = 0.3 + 0.11 * fillK;
+    // 쓰레기 상태 반영 (포획 → 통으로 포물선, 실패 → 반투명 잔류)
+    pieces.forEach((pc, i) => {
+      const g = pieceMeshes[i];
+      if (!pc.judged) return;
+      if (pc.captured) {
+        const dtc = t - pc.jt;
+        if (dtc < 0.7) {
+          const k = dtc / 0.7;
+          const sx = X_OF(pc.frac), tx = car.position.x - 0.2, ty = 0.62;
+          g.position.x = sx + (tx - sx) * k;
+          g.position.y = ty * k + Math.sin(k * Math.PI) * 0.5;
+          g.position.z *= (1 - k);
+        } else g.visible = false;
+      } else {
+        g.traverse(o => { if (o.material) o.material.opacity = 0.35; });
+      }
+    });
+    clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 15) cl.position.x = -10; });
+    if (followMode) {
+      controls.target.lerp(new THREE.Vector3(brushX, 0.3, 0), 1 - Math.exp(-4 * rdt));
+      camera.position.lerp(new THREE.Vector3(brushX - 1.2, 1.1, 3.1), 1 - Math.exp(-3 * rdt));
     }
-    c.closePath(); c.fillStyle = color; c.fill();
-    c.fillStyle = 'rgba(0,0,0,.5)'; c.beginPath(); c.arc(0, 0, r * 0.28, 0, 7); c.fill();
-    c.restore();
+    controls.update();
+    if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+    requestAnimationFrame(animate);
   }
-
-  function drawBrush(c, x, y, r, ang, gear) {
-    c.save(); c.translate(x, y);
-    // 회전 속도감 글로우 (빠를수록 진함)
-    const glow = Math.min(0.4, gear.brushRPM / 150 * 0.4);
-    c.save(); c.shadowColor = gear.color; c.shadowBlur = Math.min(24, gear.brushRPM / 8);
-    c.fillStyle = `rgba(77,163,255,${glow * 0.15})`; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.restore();
-    c.rotate(ang);
-    // 솔 (털) — 힘형은 두껍고 굵게, 속도형은 가늘고 많이
-    const nB = gear.brushRPM > 100 ? 16 : gear.brushRPM > 60 ? 12 : 9;
-    const lw = gear.torque > 90 ? 4 : gear.torque > 50 ? 3 : 2;
-    c.strokeStyle = '#e8c07a'; c.lineWidth = lw; c.lineCap = 'round';
-    for (let k = 0; k < nB; k++) {
-      const a = k / nB * Math.PI * 2;
-      c.beginPath(); c.moveTo(Math.cos(a) * r * 0.35, Math.sin(a) * r * 0.35);
-      c.lineTo(Math.cos(a) * r, Math.sin(a) * r); c.stroke();
-    }
-    // 허브
-    c.fillStyle = '#5b6982'; c.beginPath(); c.arc(0, 0, r * 0.34, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
-    c.restore();
-    // 회전 방향 화살
-    c.save(); c.translate(x, y);
-    c.strokeStyle = gear.color; c.lineWidth = 2.5; c.lineCap = 'round';
-    c.beginPath(); c.arc(0, 0, r + 7, -2.2, -0.9); c.stroke();
-    const tip = -0.9, tx = Math.cos(tip) * (r + 7), ty = Math.sin(tip) * (r + 7), tang = tip + Math.PI / 2;
-    c.fillStyle = gear.color; c.beginPath();
-    c.moveTo(tx + Math.cos(tang) * 8, ty + Math.sin(tang) * 8);
-    c.lineTo(tx + Math.cos(tang + 2.4) * 6, ty + Math.sin(tang + 2.4) * 6);
-    c.lineTo(tx + Math.cos(tang - 2.4) * 6, ty + Math.sin(tang - 2.4) * 6);
-    c.closePath(); c.fill();
-    c.restore();
-  }
+  requestAnimationFrame(animate);
 
   function draw() {
-    let { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;
-    // 화면 높이 비례 확대 — 고정픽셀 스프라이트가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
-    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
-    drawScene(c, W, H);
-    const { yG, trackL, trackR } = layout;
-    // 청소차 위치 (브러시가 trackL→trackR 이동)
-    carX = trackL + (t / dur) * (trackR - trackL);
-    // 쓰레기 먼저
-    pieces.forEach(pc => drawPiece(c, pc, yG));
-    // 청소차
-    drawTruck(c);
-    // HUD
-    $('hud_prog').textContent = Math.round(t / dur * 100) + ' %';
+    // 3D 씬은 상시 렌더 루프가 그린다 — HUD만 갱신
+    $('hud_prog').textContent = Math.round((dur ? t / dur : 0) * 100) + ' %';
     $('hud_rpm').textContent = P.gear.brushRPM + ' RPM';
     $('hud_trq').textContent = P.gear.torque;
     $('hud_cap').textContent = captured + ' / ' + TOTAL;
