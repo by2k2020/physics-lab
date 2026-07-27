@@ -521,7 +521,7 @@ function computeEff(gk, dk, drk) {
 
   function computeLayout(W, H) {
     const yG = H * 0.80;                 // 바닥선
-    const margin = W * 0.09;
+    const margin = Math.max(W * 0.09, 150);   // 차체+브러시가 왼쪽에서 잘리지 않게 최소 확보
     const trackL = margin, trackR = W - margin;
     return { yG, trackL, trackR, W, H };
   }
@@ -680,8 +680,10 @@ function computeEff(gk, dk, drk) {
   }
 
   function draw() {
-    const { c, W, H } = fit(cv);
+    let { c, W, H } = fit(cv);
     if (W < 60 || H < 60) return;
+    // 화면 높이 비례 확대 — 고정픽셀 스프라이트가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
+    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
     drawScene(c, W, H);
     const { yG, trackL, trackR } = layout;
     // 청소차 위치 (브러시가 trackL→trackR 이동)

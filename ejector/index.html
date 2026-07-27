@@ -480,8 +480,10 @@ function pick(container, onChange) {
     return { s, originX, groundY };
   }
   function draw() {
-    const { c, W, H } = fit(cv);
+    let { c, W, H } = fit(cv);
     if (W < 60 || H < 60) return;
+    // 화면 높이 비례 확대 — 고정픽셀 스프라이트가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
+    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
     // 배경 하늘
     const sky = c.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, '#0c1428'); sky.addColorStop(1, '#132038');

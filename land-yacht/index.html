@@ -463,7 +463,7 @@ function drawWindArrowsTop(c, W, H, phase, strength) {
   c.restore();
   // 바람 방향 라벨
   c.save(); c.fillStyle = 'rgba(120,180,255,.9)'; c.font = 'bold 13px "Malgun Gothic",sans-serif';
-  c.textAlign = 'left'; c.fillText('💨 바람 ↓ (가로바람)', 14, 24); c.restore();
+  c.textAlign = 'left'; c.fillText('💨 바람 ↓ (가로바람)', 14, 64); c.restore();
 }
 function drawYachtTop(c, x, y, deg, size, vel) {
   const moving = Math.abs(vel) > 0.05;
@@ -671,8 +671,10 @@ function drawTrackMarks(c, xOf, yBase, top) {
   }
   function xOfTop(W) { const L = W * 0.30, R = W * 0.92; return d => L + (d / TRACK) * (R - L); }
   function draw() {
-    const { c, W, H } = fit(cv);
+    let { c, W, H } = fit(cv);
     if (W < 60 || H < 60) return;
+    // 화면 높이 비례 확대 — 고정픽셀 스프라이트가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
+    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
     // 배경
     const bg = c.createLinearGradient(0, 0, 0, H);
     if (view === 'top') { bg.addColorStop(0, '#0c1424'); bg.addColorStop(1, '#0a1120'); }

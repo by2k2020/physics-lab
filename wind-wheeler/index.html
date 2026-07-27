@@ -616,7 +616,11 @@ function draw() {
   if (W < 60 || H < 60) return;
   const S = { P, pos, v, pushPhase: (pushPhase < 1 && pos === 0 && eng.running) ? pushPhase : 0,
     showTarget: finished, target: finished ? cur.dist : null };
-  drawScene(c, W, H, S);
+  // 화면 높이 비례 확대 — 큰 화면에서도 자동차가 주인공
+  const K = Math.max(1, H / 430);
+  c.save(); c.scale(K, K);
+  drawScene(c, W / K, H / K, S);
+  c.restore();
   $('hud_t').textContent = t.toFixed(1) + ' s';
   $('hud_v').textContent = Math.max(0, v).toFixed(1) + ' m/s';
   $('hud_d').textContent = pos.toFixed(2) + ' m';

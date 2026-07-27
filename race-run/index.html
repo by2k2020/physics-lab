@@ -944,7 +944,9 @@ function pickCtl(container, attr, onChange) {
   }
 
   function draw() {
-    const { c, W, H } = fit(cv);
+    let { c, W, H } = fit(cv);
+    // 화면 높이 비례 확대 — 고정픽셀 선수·트랙 요소가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
+    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
     const scene = trackScene(c, W, H, me.trackKey, fx.tapeAge);
     if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
     fxDrawGround(c, fx);
@@ -1132,7 +1134,9 @@ function pickCtl(container, attr, onChange) {
     if (postT < 3.2 && state === 'done') raf = requestAnimationFrame(postFrame);
   }
   function draw() {
-    const { c, W, H } = fit(cv);
+    let { c, W, H } = fit(cv);
+    // 화면 높이 비례 확대 (fit()이 매 프레임 transform 리셋)
+    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
     const scene = trackScene(c, W, H, QUESTIONS[qi].track, fx.tapeAge);
     if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
     fxDrawGround(c, fx);

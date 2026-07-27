@@ -457,34 +457,78 @@ function drawRobot(c, x, groundY, ph, tiltRad, comPx, strideRel, celeb) {
 function draw() {
   const { c, W, H } = fit(cv);
   if (W < 60 || H < 60) return;
-  const groundY = H * 0.74, robotX = W * 0.42;
+  // 화면 높이에 맞춰 장면 전체 확대 — 로봇이 큰 화면에서도 주인공이 되도록
+  const S = Math.max(1, H / 430);
+  const VW = W / S, VH = H / S;
+  c.save(); c.scale(S, S);
+  const groundY = VH * 0.74, robotX = VW * 0.42;
   const PXCM = 2.0;
-  // 배경
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  // 점 격자
-  c.fillStyle = 'rgba(120,145,190,.07)';
-  for (let gx = 20; gx < W; gx += 26) for (let gy = 20; gy < groundY; gy += 26) { c.beginPath(); c.arc(gx, gy, 1.2, 0, 7); c.fill(); }
+  // 하늘 배경
+  const bg = c.createLinearGradient(0, 0, 0, VH);
+  bg.addColorStop(0, '#0a101f'); bg.addColorStop(0.7, '#101a30'); bg.addColorStop(1, '#13203a');
+  c.fillStyle = bg; c.fillRect(0, 0, VW, VH);
+  // 별 (고정 의사난수 배치)
+  c.fillStyle = 'rgba(210,225,255,.5)';
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 137.5) % VW, sy = ((i * 89.3) % (groundY * 0.55));
+    const tw = 0.5 + 0.5 * Math.sin(t * 1.4 + i * 2.1);
+    c.globalAlpha = 0.18 + 0.3 * tw;
+    c.beginPath(); c.arc(sx, sy, i % 5 === 0 ? 1.8 : 1.1, 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+  // 달
+  c.fillStyle = '#f4ecd7'; c.beginPath(); c.arc(VW * 0.86, groundY * 0.2, 22, 0, 7); c.fill();
+  c.fillStyle = '#0a101f'; c.globalAlpha = 0.25;
+  [[8, -5, 4], [-6, 6, 3], [2, 9, 2.4]].forEach(([dx, dy, r]) => { c.beginPath(); c.arc(VW * 0.86 + dx, groundY * 0.2 + dy, r, 0, 7); c.fill(); });
+  c.globalAlpha = 1;
+  // 언덕 실루엣 2겹 (패럴랙스 — 걸으면 흐른다)
+  const hill = (speed, base, amp, col, period) => {
+    const off = (dist * PXCM * speed) % period;
+    c.fillStyle = col; c.beginPath(); c.moveTo(0, groundY + 6);
+    for (let x = -period; x <= VW + period; x += 8) {
+      const k = (x + off) / period * Math.PI * 2;
+      c.lineTo(x, groundY - base - amp * (0.6 * Math.sin(k) + 0.4 * Math.sin(k * 2.3 + 1.7)));
+    }
+    c.lineTo(VW, groundY + 6); c.closePath(); c.fill();
+  };
+  hill(0.12, 64, 34, 'rgba(22,34,62,.75)', 520);
+  hill(0.28, 26, 26, 'rgba(28,42,74,.85)', 340);
+  // 구름 (패럴랙스)
+  c.fillStyle = 'rgba(170,190,225,.13)';
+  for (let i = 0; i < 4; i++) {
+    const cw = 90 + i * 28, cx0 = ((i * 400 + 120 - dist * PXCM * (0.15 + i * 0.04)) % (VW + cw + 200)) - cw;
+    const cy = 40 + (i * 53) % Math.max(60, groundY * 0.32);
+    c.beginPath();
+    c.ellipse(cx0, cy, cw * 0.5, 15, 0, 0, 7);
+    c.ellipse(cx0 + cw * 0.26, cy - 9, cw * 0.3, 13, 0, 0, 7);
+    c.ellipse(cx0 - cw * 0.24, cy - 5, cw * 0.26, 11, 0, 0, 7);
+    c.fill();
+  }
   // 바닥
-  c.fillStyle = '#16213a'; c.fillRect(0, groundY + 6, W, H - groundY);
+  const gnd = c.createLinearGradient(0, groundY, 0, VH);
+  gnd.addColorStop(0, '#1a2745'); gnd.addColorStop(1, '#131d36');
+  c.fillStyle = gnd; c.fillRect(0, groundY + 6, VW, VH - groundY);
+  // 바닥 타일 줄눈 (스크롤 — 이동감)
+  c.strokeStyle = 'rgba(120,145,190,.14)'; c.lineWidth = 1.5;
+  const tileOff = (dist * PXCM) % 52;
+  for (let x = -tileOff; x < VW; x += 52) { c.beginPath(); c.moveTo(x, groundY + 6); c.lineTo(x - 26, VH); c.stroke(); }
   // 걷는 선 (라인)
   c.strokeStyle = '#4da3ff'; c.lineWidth = 3; c.setLineDash([14, 10]); c.lineDashOffset = -dist * PXCM % 24;
-  c.beginPath(); c.moveTo(0, groundY + 3); c.lineTo(W, groundY + 3); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.moveTo(0, groundY + 3); c.lineTo(VW, groundY + 3); c.stroke(); c.setLineDash([]);
   // 거리 눈금 (스크롤)
   c.font = '11px sans-serif'; c.textAlign = 'center';
   const startCm = Math.floor((dist - robotX / PXCM) / 50) * 50;
-  for (let cm = startCm; cm <= dist + (W - robotX) / PXCM; cm += 50) {
+  for (let cm = startCm; cm <= dist + (VW - robotX) / PXCM; cm += 50) {
     if (cm < 0) continue;
     const sx = robotX + (cm - dist) * PXCM;
-    if (sx < 0 || sx > W) continue;
+    if (sx < 0 || sx > VW) continue;
     c.strokeStyle = 'rgba(120,145,190,.3)'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(sx, groundY + 6); c.lineTo(sx, groundY + 18); c.stroke();
     c.fillStyle = '#7a8aa5'; c.fillText(cm + '', sx, groundY + 32);
   }
   // 목표 깃발
   const goalX = robotX + (FULL - dist) * PXCM;
-  if (goalX > -20 && goalX < W + 20) {
+  if (goalX > -20 && goalX < VW + 20) {
     c.strokeStyle = '#8fa0ba'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(goalX, groundY); c.lineTo(goalX, groundY - 50); c.stroke();
     c.fillStyle = '#2ee06f'; c.beginPath(); c.moveTo(goalX, groundY - 50); c.lineTo(goalX + 26, groundY - 42); c.lineTo(goalX, groundY - 34); c.closePath(); c.fill();
@@ -492,6 +536,7 @@ function draw() {
   }
 
   lastGeom = drawRobot(c, robotX, groundY, phase, tilt, COM_PX[ht], STRIDE[st], celebrate);
+  c.restore();
 
   // HUD
   $('hud_dist').textContent = Math.round(Math.min(dist, P.stable ? FULL : P.dist)) + ' cm';

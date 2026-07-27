@@ -408,31 +408,35 @@ function drawScene() {
   const info = fit($('cv'));
   const { c, W, H } = info;
   if (W < 60 || H < 60) return;
+  // 화면 높이에 맞춰 장면 전체 확대 — 큰 화면에서도 선수·차가 주인공
+  const S = Math.max(1, H / 430);
+  const VW = W / S, VH = H / S;
+  c.save(); c.scale(S, S);
   // 배경
-  const sky = c.createLinearGradient(0, 0, 0, H);
+  const sky = c.createLinearGradient(0, 0, 0, VH);
   sky.addColorStop(0, '#0a1327'); sky.addColorStop(1, '#0f1d38');
-  c.fillStyle = sky; c.fillRect(0, 0, W, H);
-  const groundY = H * 0.74;
+  c.fillStyle = sky; c.fillRect(0, 0, VW, VH);
+  const groundY = VH * 0.74;
   // 바닥
-  const gr = c.createLinearGradient(0, groundY, 0, H);
+  const gr = c.createLinearGradient(0, groundY, 0, VH);
   const rough = P.f === 1;
   gr.addColorStop(0, rough ? '#3a2a1c' : '#16233c'); gr.addColorStop(1, rough ? '#241a12' : '#0d1526');
-  c.fillStyle = gr; c.fillRect(0, groundY, W, H - groundY);
+  c.fillStyle = gr; c.fillRect(0, groundY, VW, VH - groundY);
   c.strokeStyle = rough ? '#6b4a2c' : '#31456b'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(0, groundY); c.lineTo(W, groundY); c.stroke();
+  c.beginPath(); c.moveTo(0, groundY); c.lineTo(VW, groundY); c.stroke();
   // 거친 바닥 질감
   if (rough) {
     c.fillStyle = 'rgba(160,110,60,.35)';
-    for (let x = 8; x < W; x += 15) { c.beginPath(); c.arc(x, groundY + 6 + (x % 30 === 0 ? 4 : 0), 2, 0, 7); c.fill(); }
+    for (let x = 8; x < VW; x += 15) { c.beginPath(); c.arc(x, groundY + 6 + (x % 30 === 0 ? 4 : 0), 2, 0, 7); c.fill(); }
   }
   // 좌표: 철봉 그립 위치 + 미터 스케일
-  const barX = W * 0.16, gripY = groundY - ARM * 118 - 40;
-  const pxPerM = Math.max(24, (W * 0.9 - barX) / 11);
+  const barX = VW * 0.16, gripY = groundY - ARM * 118 - 40;
+  const pxPerM = Math.max(24, (VW * 0.9 - barX) / 11);
   // 거리 눈금자
   c.font = '11px var(--mono, monospace)'; c.textAlign = 'center';
   for (let m = 0; m <= 11; m++) {
     const x = barX + m * pxPerM;
-    if (x > W) break;
+    if (x > VW) break;
     c.strokeStyle = 'rgba(140,160,200,.22)'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY + 9); c.stroke();
     c.fillStyle = '#6a7791'; c.fillText(m + 'm', x, groundY + 22);
@@ -473,6 +477,7 @@ function drawScene() {
     c.font = 'bold 12px sans-serif'; c.fillStyle = '#2ee06f'; c.textAlign = 'left';
     c.fillText(P.dist.toFixed(2) + 'm', fx + 4, groundY - 46);
   }
+  c.restore();
   // HUD
   $('hud_rev').textContent = revCount.toFixed(1) + ' 바퀴';
   $('hud_spd').textContent = carV.toFixed(1) + ' m/s';
