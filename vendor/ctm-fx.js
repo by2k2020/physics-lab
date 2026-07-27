@@ -231,7 +231,89 @@
     document.body.appendChild(b);
   }
 
-  function init() { watchBadges(); makeMuteBtn(); }
+  /* ── 결과표 크게 보기 (수업 발표용) ──
+     자체 확대(cursor:zoom-in)가 없는 모든 표에 클릭 확대를 붙인다.
+     열려 있는 동안 0.5초마다 원본을 다시 복제 → 자동 실험이 큰 화면에서 라이브로 채워진다. */
+  var tblOv = null, tblBox = null, tblTitle = null, tblSrc = null, tblTimer = 0;
+  function ensureTblOv() {
+    if (tblOv) return;
+    tblOv = document.createElement('div');
+    tblOv.id = 'ctmfxTblOv';
+    tblOv.style.cssText = 'display:none;position:fixed;inset:0;z-index:9997;background:rgba(4,8,16,.92);' +
+      'backdrop-filter:blur(3px);flex-direction:column;align-items:center;justify-content:center;' +
+      'cursor:zoom-out;padding:3vh 3vw;gap:14px';
+    tblTitle = document.createElement('div');
+    tblTitle.style.cssText = 'font-size:clamp(18px,2.6vw,28px);font-weight:800;color:#e8eef7;text-align:center';
+    tblBox = document.createElement('div');
+    tblBox.style.cssText = 'overflow:auto;max-width:94vw;max-height:80vh';
+    var hint = document.createElement('div');
+    hint.textContent = '화면을 클릭하면 닫힙니다';
+    hint.style.cssText = 'font-size:13px;color:#8b98ad';
+    tblOv.appendChild(tblTitle); tblOv.appendChild(tblBox); tblOv.appendChild(hint);
+    tblOv.addEventListener('click', closeTblOv);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeTblOv(); });
+    document.body.appendChild(tblOv);
+  }
+  function tblHeading(t) {
+    // 표 직전의 h3/summary 제목을 오버레이 타이틀로
+    var el = t.previousElementSibling, hops = 0;
+    while (el && hops++ < 4) {
+      if (/^(H[1-4]|SUMMARY)$/.test(el.tagName)) return el.textContent.trim();
+      el = el.previousElementSibling;
+    }
+    var d = t.closest('details');
+    if (d) { var s = d.querySelector('summary'); if (s) return s.textContent.trim(); }
+    return '📋 결과표';
+  }
+  function renderTblOv() {
+    if (!tblSrc || !document.contains(tblSrc)) { closeTblOv(); return; }
+    var clone = tblSrc.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.style.cursor = 'default';
+    var w = tblSrc.offsetWidth || 300, h = tblSrc.offsetHeight || 150;
+    var k = Math.min(innerWidth * 0.92 / w, innerHeight * 0.76 / h, 4);
+    if (k < 1) k = 1;
+    clone.style.transform = 'scale(' + k + ')';
+    clone.style.transformOrigin = 'top left';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'width:' + (w * k) + 'px;height:' + (h * k) + 'px';
+    wrap.appendChild(clone);
+    tblBox.innerHTML = '';
+    tblBox.appendChild(wrap);
+  }
+  function openTblOv(t) {
+    ensureTblOv();
+    tblSrc = t;
+    tblTitle.textContent = tblHeading(t);
+    renderTblOv();
+    tblOv.style.display = 'flex';
+    clearInterval(tblTimer);
+    tblTimer = setInterval(renderTblOv, 500);
+  }
+  function closeTblOv() {
+    if (!tblOv) return;
+    tblOv.style.display = 'none';
+    tblSrc = null;
+    clearInterval(tblTimer);
+  }
+  function tagTables() {
+    document.querySelectorAll('table').forEach(function (t) {
+      if (t.dataset.ctmzoom) return;
+      if (t.closest('#ctmfxTblOv')) return;
+      if (t.closest('#theory, .theory-box')) return;                      // 원리 탭은 이미 큰 화면
+      if (getComputedStyle(t).cursor === 'zoom-in') { t.dataset.ctmzoom = 'self'; return; }  // 자체 확대 보유
+      t.dataset.ctmzoom = '1';
+      t.style.cursor = 'zoom-in';
+      t.title = '클릭하면 크게 보기';
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    var t = e.target.closest('table[data-ctmzoom="1"]');
+    if (t) openTblOv(t);
+  });
+
+  function init() { watchBadges(); makeMuteBtn(); tagTables(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
@@ -246,7 +328,7 @@
     cheer: function () { sounds.cheer(); },
     fanfare: guarded(function () { sounds.fanfare(); sounds.cheer(); burst(0.3); burst(0.7); }),
     confetti: function (xr, yr, n) { burst(xr, yr, n); },
-    rewatch: watchBadges,           // 배지를 동적 생성하는 시뮬용
+    rewatch: function () { watchBadges(); tagTables(); },   // 배지·표를 동적 생성하는 시뮬용
     badgeMap: function (m) {        // 시뮬별 클래스 어휘 오버라이드 (지정 키만 교체)
       for (var k in m) if (MAP[k]) MAP[k] = m[k];
     },
