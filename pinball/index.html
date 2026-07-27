@@ -104,13 +104,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🎯 핀볼 게임 시뮬레이션</div>
+      <div class="title">🎯 핀볼 게임 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">실험 · 핀볼</button>
@@ -128,6 +138,12 @@
         <div class="chip" style="color:var(--green)"><span class="lab">경사 가속도 a=g·sinθ</span><span id="hud_a">0</span></div>
         <div class="chip" style="color:var(--purple)"><span class="lab">범퍼 히트</span><span id="hud_hit">0</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camFront" class="on">🎯 정면</button>
+        <button id="camSide">▶ 옆</button>
+        <button id="camTop">⬇ 위</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -241,8 +257,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -412,141 +429,140 @@ function launchReach(power, tiltIdx) {
     }
   }
 
-  /* ── 렌더 ── */
-  let VW = 0, VH = 0, sc = 1, ox = 0, oy = 0;
-  function fit() {
-    const w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) { cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR); }
-    const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
-    VW = w; VH = h;
-    sc = Math.min(w / FW, h / FH) * 0.96;
-    ox = (w - FW * sc) / 2; oy = (h - FH * sc) / 2;
-    return c;
+  /* ═════════ 3D 무대 (기울어진 핀볼 머신) ═════════ */
+  const stage = document.querySelector('.stage');
+  const renderer = makeRenderer(cv);
+  const scene = makeScene('indoor', 10, 70);
+  stdLights(scene, { dark: true, pos: [-3, 8, 5], shadowArea: 9 });
+  const { camera, controls } = makeCamera(cv, { maxD: 25 });
+  // 아케이드 바닥 (체커 카펫)
+  {
+    const tex = canvasTex(256, 256, (c) => {
+      c.fillStyle = '#161e30'; c.fillRect(0, 0, 256, 256);
+      c.fillStyle = '#1f2a42';
+      for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) if ((i + j) % 2) c.fillRect(i * 32, j * 32, 32, 32);
+    }, [7, 7]);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(34, 0.2, 34),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92 }));
+    floor.position.y = -1.6; floor.receiveShadow = true; scene.add(floor);
   }
-  const X = x => ox + x * sc, Y = y => oy + y * sc, S = v => v * sc;
+  /* 보드 그룹 — 로컬: X=좌우, Y=판 위 방향, Z=법선. tilt만큼 세워 눕힘 */
+  const U = v => v / 20;
+  const LX = x2 => U(x2 - 50), LY = y2 => U(150 - y2) - U(75);
+  const boardGrp = new THREE.Group();
+  boardGrp.position.y = 1.0; scene.add(boardGrp);
+  // 판 몸체 + 점 패턴
+  {
+    const tex = canvasTex(256, 384, (c) => {
+      const g = c.createLinearGradient(0, 0, 0, 384);
+      g.addColorStop(0, '#16223c'); g.addColorStop(1, '#1f3050');
+      c.fillStyle = g; c.fillRect(0, 0, 256, 384);
+      c.fillStyle = 'rgba(120,150,200,.14)';
+      for (let i = 16; i < 256; i += 22) for (let j = 16; j < 384; j += 22) { c.beginPath(); c.arc(i, j, 1.6, 0, 7); c.fill(); }
+    });
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(U(96), U(150), 0.14),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }));
+    plate.position.set(0, 0, -0.08); plate.receiveShadow = true; boardGrp.add(plate);
+    // 캐비닛 옆판
+    const cabMat = new THREE.MeshStandardMaterial({ color: 0x7a2e2e, roughness: 0.55 });
+    [-1, 1].forEach(s => {
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.14, U(150) + 0.2, 0.6), cabMat);
+      side.position.set(s * (U(96) / 2 + 0.08), 0, 0.05); side.castShadow = true; boardGrp.add(side);
+    });
+    const head = new THREE.Mesh(new THREE.BoxGeometry(U(96) + 0.44, 0.16, 0.6), cabMat);
+    head.position.set(0, U(75) + 0.08, 0.05); boardGrp.add(head);
+  }
+  // 벽 세그먼트
+  {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a4a6a, roughness: 0.4, metalness: 0.2 });
+    SEGS.forEach(s => {
+      const x1 = LX(s[0]), y1 = LY(s[1]), x2 = LX(s[2]), y2 = LY(s[3]);
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const w = new THREE.Mesh(new THREE.BoxGeometry(len, 0.09, 0.24), wallMat);
+      w.position.set((x1 + x2) / 2, (y1 + y2) / 2, 0.1);
+      w.rotation.z = Math.atan2(y2 - y1, x2 - x1);
+      w.castShadow = true; boardGrp.add(w);
+    });
+  }
+  // OUT 라벨
+  {
+    const out = textSprite('▼ OUT', { size: 30, color: '#ff8a80', bg: 'rgba(40,10,8,.75)', scale: 0.0035 });
+    out.position.set(0, LY(152), 0.25); boardGrp.add(out);
+  }
+  // 발사 레인 플런저
+  const plungerHead = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.5 }));
+  plungerHead.position.set(LX(PLUNGE_X), LY(PLUNGE_Y) - 0.1, 0.12);
+  plungerHead.rotation.z = LAUNCH_ANG - Math.PI / 2;
+  boardGrp.add(plungerHead);
+  // 범퍼 (프리셋 바뀔 때 재구성)
+  let bumpMeshes = [], bumpPresetRef = -1;
+  function rebuildBumpers() {
+    bumpMeshes.forEach(m => boardGrp.remove(m));
+    bumpMeshes = bumps.map(m => {
+      const R = U(m.target ? TARGET_R : BUMP_R);
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 1.12, 0.2, 20),
+        new THREE.MeshStandardMaterial({
+          color: m.target ? 0xffb02e : 0x3d8bff, roughness: 0.35,
+          emissive: m.target ? 0xffb02e : 0x3d8bff, emissiveIntensity: 0,
+        }));
+      body.rotation.x = Math.PI / 2; body.castShadow = true; g.add(body);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.55, R * 0.55, 0.22, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
+      cap.rotation.x = Math.PI / 2; g.add(cap);
+      if (m.target) {
+        const star = textSprite('★', { size: 40, color: '#7a4a08', scale: 0.003 });
+        star.position.z = 0.16; g.add(star);
+      }
+      g.position.set(LX(m.x), LY(m.y), 0.12);
+      g.userData.body = body;
+      boardGrp.add(g);
+      return g;
+    });
+  }
+  // 공 + 트레일
+  const ball3 = new THREE.Mesh(new THREE.SphereGeometry(U(BALL_R), 18, 14),
+    new THREE.MeshStandardMaterial({ color: 0xdfe6f0, roughness: 0.2, metalness: 0.55 }));
+  ball3.castShadow = true; boardGrp.add(ball3);
+  const trail3 = new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0x78c8ff, transparent: true, opacity: 0.7 }));
+  boardGrp.add(trail3);
+  camPresets(camera, controls, {
+    camFront: { pos: [0, 3.1, 6.8], target: [0, 0.75, 0] },
+    camSide:  { pos: [5.4, 2.0, 2.6], target: [0, 0.9, 0] },
+    camTop:   { pos: [0, 7.6, 2.2], target: [0, 0.8, -0.4] },
+  }, 'camFront');
 
   function draw() {
-    const c = fit();
-    if (VW < 60 || VH < 60) return;
-    c.clearRect(0, 0, VW, VH);
-    c.fillStyle = '#070c18'; c.fillRect(0, 0, VW, VH);
-
-    // 핀볼판 (위=먼 곳 어둡게, 아래=가까운 곳 밝게 → 경사감)
-    c.save();
-    c.beginPath(); c.roundRect(X(2), Y(2), S(96), S(146), S(4)); c.clip();
-    const felt = c.createLinearGradient(0, Y(0), 0, Y(FH));
-    const lit = [0.16, 0.26, 0.4][tiltIdx];      // 가파를수록 더 뚜렷한 명암
-    felt.addColorStop(0, `rgba(26,40,68,1)`);
-    felt.addColorStop(1, `rgba(${18 + lit * 40 | 0},${30 + lit * 60 | 0},${52 + lit * 70 | 0},1)`);
-    c.fillStyle = felt; c.fillRect(X(2), Y(2), S(96), S(146));
-    // 점 격자
-    c.fillStyle = 'rgba(120,150,200,.07)';
-    for (let gx = 8; gx < 96; gx += 8) for (let gy = 8; gy < 146; gy += 8) { c.beginPath(); c.arc(X(gx), Y(gy), Math.max(1, S(0.5)), 0, 7); c.fill(); }
-    c.restore();
-
-    // 벽 세그먼트
-    c.strokeStyle = '#3a4a6a'; c.lineWidth = Math.max(2, S(1.6)); c.lineCap = 'round';
-    c.shadowColor = 'rgba(90,130,200,.4)'; c.shadowBlur = 6;
-    SEGS.forEach(s => { c.beginPath(); c.moveTo(X(s[0]), Y(s[1])); c.lineTo(X(s[2]), Y(s[3])); c.stroke(); });
-    c.shadowBlur = 0;
-
-    // 배수구 (하단 중앙 개구부 x[42..58])
-    c.fillStyle = 'rgba(255,90,82,.14)';
-    c.fillRect(X(42), Y(146), S(16), S(6) + 6);
-    c.fillStyle = 'rgba(255,90,82,.9)'; c.font = `800 ${Math.max(10, S(3.6))}px sans-serif`; c.textAlign = 'center';
-    c.fillText('▼ OUT', X(50), Y(150) + S(1.5));
-
-    // 중력 화살표 (경사 방향 + 크기)
-    const a = accelOf(tiltIdx);
-    const gx0 = X(11), gy0 = Y(12), glen = S(8) + a * 0.16;
-    c.strokeStyle = 'rgba(255,176,46,.9)'; c.fillStyle = 'rgba(255,176,46,.9)'; c.lineWidth = Math.max(2.5, S(1));
-    c.beginPath(); c.moveTo(gx0, gy0); c.lineTo(gx0, gy0 + glen); c.stroke();
-    c.beginPath(); c.moveTo(gx0, gy0 + glen + 2); c.lineTo(gx0 - 5, gy0 + glen - 6); c.lineTo(gx0 + 5, gy0 + glen - 6); c.closePath(); c.fill();
-    c.font = `700 ${Math.max(10, S(3.4))}px sans-serif`; c.textAlign = 'left';
-    c.fillText(`중력 a=${a.toFixed(1)}`, gx0 + 8, gy0 + glen * 0.6);
-
-    // 범퍼 / 타겟
-    bumps.forEach(m => {
-      const R = m.target ? TARGET_R : BUMP_R, cx = X(m.x), cy = Y(m.y), rr = S(R);
-      const fl = m.flash || 0;
-      c.save();
-      if (fl > 0) { c.shadowColor = m.target ? '#ffd166' : '#4da3ff'; c.shadowBlur = 22 * fl; }
-      const g = c.createRadialGradient(cx - rr * 0.3, cy - rr * 0.3, rr * 0.1, cx, cy, rr);
-      if (m.target) { g.addColorStop(0, '#ffe9a8'); g.addColorStop(.6, '#ffb02e'); g.addColorStop(1, '#b9761a'); }
-      else { g.addColorStop(0, '#9fd0ff'); g.addColorStop(.6, '#3d8bff'); g.addColorStop(1, '#1f3f8a'); }
-      c.fillStyle = g; c.beginPath(); c.arc(cx, cy, rr, 0, 7); c.fill();
-      c.lineWidth = Math.max(1.5, S(0.7)); c.strokeStyle = fl > 0 ? '#fff' : 'rgba(0,0,0,.35)'; c.stroke();
-      c.restore();
-      // 안쪽 링
-      c.beginPath(); c.arc(cx, cy, rr * 0.55, 0, 7); c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = Math.max(1, S(0.5)); c.stroke();
-      if (m.target) { c.fillStyle = '#7a4a08'; c.font = `900 ${rr * 1.1}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('★', cx, cy + rr * 0.06); c.textBaseline = 'alphabetic'; }
+    // 3D 씬 동기화 + 렌더 (frame 루프가 매 프레임 호출)
+    boardGrp.rotation.x = -Math.PI / 2 + TILTS[tiltIdx].deg * Math.PI / 180;
+    if (bumpMeshes.length !== bumps.length || bumpPresetRef !== presetIdx) {
+      bumpPresetRef = presetIdx; rebuildBumpers();
+    }
+    bumps.forEach((m, i) => {
+      const g = bumpMeshes[i];
+      if (!g) return;
+      g.position.set(LX(m.x), LY(m.y), 0.12);
+      g.userData.body.material.emissiveIntensity = (m.flash || 0) * 1.4;
+      g.scale.setScalar(1 + (m.flash || 0) * 0.18);
     });
-
-    // 발사 스프링 (레인 하단, 압축량 ∝ 세기)
-    drawPlunger(c);
-
-    // 공 트레일
-    if (trail.length > 1) {
-      for (let i = 1; i < trail.length; i++) {
-        c.strokeStyle = `rgba(120,200,255,${(i / trail.length) * 0.5})`;
-        c.lineWidth = S(BALL_R) * (i / trail.length) * 1.4; c.lineCap = 'round';
-        c.beginPath(); c.moveTo(X(trail[i - 1][0]), Y(trail[i - 1][1])); c.lineTo(X(trail[i][0]), Y(trail[i][1])); c.stroke();
-      }
-    }
-    // 공
     if (ball) {
-      const bx = X(ball.x), by = Y(ball.y), br = S(BALL_R);
-      c.save(); c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 8; c.shadowOffsetY = 3;
-      const bg2 = c.createRadialGradient(bx - br * 0.4, by - br * 0.4, br * 0.15, bx, by, br);
-      bg2.addColorStop(0, '#ffffff'); bg2.addColorStop(.5, '#cfd8e6'); bg2.addColorStop(1, '#6b7688');
-      c.fillStyle = bg2; c.beginPath(); c.arc(bx, by, br, 0, 7); c.fill(); c.restore();
-      c.beginPath(); c.arc(bx - br * 0.35, by - br * 0.35, br * 0.28, 0, 7); c.fillStyle = 'rgba(255,255,255,.9)'; c.fill();
-      // 속도 벡터
-      const sp = Math.hypot(ball.vx, ball.vy);
-      if (phase === 'run' && sp > 4) {
-        const ux = ball.vx / sp, uy = ball.vy / sp, L = Math.min(S(20), S(3) + sp * 0.14);
-        c.strokeStyle = '#4dff9f'; c.lineWidth = Math.max(2, S(0.9)); c.lineCap = 'round';
-        c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + ux * L, by + uy * L); c.stroke();
-        c.fillStyle = '#4dff9f'; const ex = bx + ux * L, ey = by + uy * L, pa = Math.atan2(uy, ux);
-        c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex - Math.cos(pa - 0.4) * 7, ey - Math.sin(pa - 0.4) * 7); c.lineTo(ex - Math.cos(pa + 0.4) * 7, ey - Math.sin(pa + 0.4) * 7); c.closePath(); c.fill();
-        c.fillStyle = '#4dff9f'; c.font = `700 ${Math.max(9, S(3))}px sans-serif`; c.textAlign = 'left'; c.fillText('속도 v', bx + ux * L + 4, by + uy * L);
-      }
-    }
+      ball3.visible = true;
+      ball3.position.set(LX(ball.x), LY(ball.y), 0.02 + U(BALL_R) + 0.07);
+    } else ball3.visible = false;
+    if (trail.length > 1) {
+      trail3.visible = true;
+      trail3.geometry.setFromPoints(trail.map(p => new THREE.Vector3(LX(p[0]), LY(p[1]), 0.12)));
+    } else trail3.visible = false;
+    plungerHead.material.color.set(phase === 'run' ? 0x3d8bff : 0xc2410c);
     // HUD
     $('hud_score').textContent = ball ? ball.score.toLocaleString() : '0';
     $('hud_v').textContent = ball ? Math.hypot(ball.vx, ball.vy).toFixed(0) : '0';
     $('hud_a').textContent = accelOf(tiltIdx).toFixed(1);
     $('hud_hit').textContent = ball ? ball.hits : '0';
-  }
-  function drawPlunger(c) {
-    // 우하단 대각 발사기: 발사 방향(위+좌)으로 스프링 + 조준선
-    const px = X(PLUNGE_X), py = Y(PLUNGE_Y);
-    const dirx = -Math.cos(LAUNCH_ANG), diry = -Math.sin(LAUNCH_ANG);   // 발사 방향 단위벡터
-    const bx = -dirx, by = -diry;                                       // 스프링은 반대(뒤)쪽
-    const comp = (power / 8);
-    // 조준 점선 (준비 상태에서만)
-    if (phase !== 'run') {
-      c.strokeStyle = 'rgba(77,255,159,.5)'; c.lineWidth = Math.max(1.5, S(0.6)); c.setLineDash([S(2), S(2.4)]);
-      c.beginPath(); c.moveTo(px, py); c.lineTo(px + dirx * S(26), py + diry * S(26)); c.stroke(); c.setLineDash([]);
-    }
-    // 스프링 코일 (발사대 뒤쪽으로, 압축량 ∝ 세기)
-    const springLen = S(6) + comp * S(8);
-    c.strokeStyle = '#8b98ad'; c.lineWidth = Math.max(1.5, S(0.7)); c.lineCap = 'round';
-    const perpx = -by, perpy = bx, amp = S(2.2), coils = 5;
-    c.beginPath();
-    for (let i = 0; i <= coils; i++) {
-      const f = i / coils, sgn = i % 2 ? 1 : -1;
-      const cx = px + bx * springLen * f + perpx * amp * sgn;
-      const cy = py + by * springLen * f + perpy * amp * sgn;
-      if (i === 0) c.moveTo(cx, cy); else c.lineTo(cx, cy);
-    }
-    c.stroke();
-    // 발사대 머리
-    c.save(); c.translate(px, py); c.rotate(Math.atan2(diry, dirx));
-    c.fillStyle = phase === 'run' ? '#3d8bff' : '#c2410c';
-    c.beginPath(); c.roundRect(-S(3), -S(2.5), S(6), S(5), S(1.2)); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-    c.restore();
+    controls.update();
+    if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
   }
 
   function renderGrid() {
