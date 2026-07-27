@@ -110,13 +110,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 11차시</div>
-      <div class="title">⛳ 미니골프 시뮬레이션</div>
+      <div class="title">⛳ 미니골프 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp">실험 · 퍼팅</button>
@@ -133,6 +143,12 @@
         <div class="chip" style="color:var(--green)"><span class="lab">홀 거리</span><span id="hud_dist">보통</span></div>
       </div>
       <div class="hint">세기·방향을 고르고 ⛳ 퍼팅!</div>
+      <div class="cam-row">
+        <button id="camBack" class="on">⛳ 뒤에서</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
       <div class="overlay" id="ovl">
         <div class="ovl-panel">
@@ -251,8 +267,10 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex,
+         grassGround, distanceRuler, makeTree, makeCloud } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -307,136 +325,131 @@ function simulate(pw, dir, distIdx) {
   return { scored, path, bounces, minGap, rolled, v0: speed0, D, hx, hy };
 }
 
-/* ── 캔버스 / 좌표 변환 ── */
-const cv = $('cv');
-let VIEW = null;   // {c,W,H, sx,sy scale, offX,offY}
-function fit() {
-  const w = cv.clientWidth, h = cv.clientHeight;
-  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
-    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
-  }
-  const c = cv.getContext('2d');
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  // 코트를 화면에 세로로 채움 (y 위쪽 = 홀 방향)
-  const margin = 46;
-  const availW = w - margin * 2, availH = h - margin * 2;
-  const s = Math.min(availW / (HALFW * 2), availH / LEN);
-  const courtW = HALFW * 2 * s, courtH = LEN * s;
-  const offX = (w - courtW) / 2, offY = (h - courtH) / 2;
-  // 월드(x[-HALFW,HALFW], y[0,LEN]) → 화면. y=LEN 위쪽(작은 화면y).
-  const wx = X => offX + (X + HALFW) * s;
-  const wy = Y => offY + (LEN - Y) * s;
-  VIEW = { c, W: w, H: h, s, offX, offY, courtW, courtH, wx, wy };
-  return VIEW;
-}
-
-/* ── 렌더링 ── */
+/* ── 렌더 상태 ── */
 let anim = { path: null, idx: 0, res: null, done: true, aimOnly: true };
 
+/* ═════════ 3D 무대 (야외 퍼팅 그린) ═════════
+   좌표: 2D(x=좌우, y=진행) → 3D(X=진행, Z=좌우) */
+const cv = $('cv');
+const stage = document.querySelector('.stage');
+const renderer = makeRenderer(cv);
+const scene = makeScene('day', 26, 200);
+stdLights(scene, { pos: [-4, 8, 5], shadowArea: 12 });
+const { camera, controls } = makeCamera(cv, { maxD: 35 });
+grassGround(scene, { size: 70, x: 4.5, base: '#5e8c45' });
+// 퍼팅 그린 코트 (줄무늬)
+{
+  const tex = canvasTex(256, 512, (c) => {
+    for (let k = 0; k < 16; k++) {
+      c.fillStyle = k % 2 ? '#2a9152' : '#248348';
+      c.fillRect(0, k * 32, 256, 32);
+    }
+  });
+  const court = new THREE.Mesh(new THREE.BoxGeometry(LEN + 0.5, 0.12, HALFW * 2 + 0.24),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+  court.position.set(LEN / 2, 0.06, 0); court.receiveShadow = true; scene.add(court);
+  // 나무 펜스 4변
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.7 });
+  const mk = (w, d, x, z) => {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(w, 0.22, d), fenceMat);
+    f.position.set(x, 0.19, z); f.castShadow = true; scene.add(f);
+  };
+  mk(LEN + 0.74, 0.12, LEN / 2, HALFW + 0.18);
+  mk(LEN + 0.74, 0.12, LEN / 2, -HALFW - 0.18);
+  mk(0.12, HALFW * 2 + 0.48, -0.37, 0);
+  mk(0.12, HALFW * 2 + 0.48, LEN + 0.37, 0);
+}
+// 거리 눈금 (1m 간격, 코트 옆)
+distanceRuler(scene, { from: 1, to: 9, step: 1, z: HALFW + 0.55, unit: 'm', labCol: '#eaf2ff' });
+// 홀 + 깃발
+const holeGrp = new THREE.Group(); scene.add(holeGrp);
+{
+  const hole = new THREE.Mesh(new THREE.CylinderGeometry(HOLE_R, HOLE_R, 0.02, 24),
+    new THREE.MeshBasicMaterial({ color: 0x03110a }));
+  hole.position.y = 0.132; holeGrp.add(hole);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(HOLE_R, 0.015, 8, 26),
+    new THREE.MeshStandardMaterial({ color: 0xe8eef7, roughness: 0.5 }));
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.135; holeGrp.add(rim);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 8),
+    new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.35 }));
+  pole.position.y = 0.68; pole.castShadow = true; holeGrp.add(pole);
+  const flagF = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.02),
+    new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.6 }));
+  flagF.position.set(0, 1.08, 0.18); flagF.rotation.y = Math.PI / 2; holeGrp.add(flagF);
+}
+// 공
+const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 20, 16),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 }));
+ball.castShadow = true; scene.add(ball);
+// 조준 화살표
+const aimGrp = new THREE.Group(); scene.add(aimGrp);
+const aimShaft = new THREE.Mesh(new THREE.BoxGeometry(1, 0.03, 0.05),
+  new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9 }));
+aimGrp.add(aimShaft);
+const aimHead = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 10),
+  new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.95 }));
+aimHead.rotation.z = -Math.PI / 2; aimGrp.add(aimHead);
+// 궤적 라인
+const trailLine = new THREE.Line(new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }));
+trailLine.visible = false; scene.add(trailLine);
+// 소품
+[[-1.6, -3.2, 1.0], [3.5, -3.6, 1.2], [8.2, -3.3, 0.95], [11.2, -2.6, 1.1], [-1.9, 3.3, 1.05], [10.8, 3.4, 1.2], [5.4, 4.0, 0.9]]
+  .forEach(([x, z, s]) => { const t = makeTree(s); t.position.set(x, 0, z); scene.add(t); });
+const clouds3 = [];
+[[-3, 5.4, -12, 1.6], [4, 6.4, -14, 2.2], [10, 5.7, -11, 1.4]].forEach(([x, y, z, s]) => {
+  const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds3.push(cl);
+});
+camPresets(camera, controls, {
+  camBack: { pos: [-2.6, 1.7, 0.02], target: [4.5, 0.2, 0] },
+  camDiag: { pos: [-2.2, 3.6, 4.6], target: [4.2, 0.1, 0] },
+  camTop:  { pos: [LEN / 2, 11, 0.02], target: [LEN / 2, 0, 0] },
+}, 'camBack');
+const Y_TOP = 0.135;   // 코트 상면
 function draw() {
-  const v = fit(); const { c, W, H, s, wx, wy, courtW, courtH, offX, offY } = v;
-  if (W < 60 || H < 60) return;
-  c.clearRect(0, 0, W, H);
-  // 배경
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#0c1526');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-
-  // 잔디 코트
-  const grass = c.createLinearGradient(0, offY, 0, offY + courtH);
-  grass.addColorStop(0, '#1f7a43'); grass.addColorStop(1, '#256b3f');
-  c.fillStyle = grass;
-  c.beginPath(); c.roundRect(offX, offY, courtW, courtH, 10); c.fill();
-  // 잔디 줄무늬
-  c.save(); c.beginPath(); c.roundRect(offX, offY, courtW, courtH, 10); c.clip();
-  for (let k = 0; k < LEN; k += 0.66) {
-    c.fillStyle = (Math.round(k / 0.66) % 2) ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)';
-    c.fillRect(offX, wy(k + 0.66), courtW, s * 0.66 + 1);
-  }
-  c.restore();
-  // 펜스(벽)
-  c.lineWidth = 7; c.strokeStyle = '#8a5a2b';
-  c.beginPath(); c.roundRect(offX, offY, courtW, courtH, 10); c.stroke();
-  c.lineWidth = 2.5; c.strokeStyle = 'rgba(210,160,90,.55)';
-  c.beginPath(); c.roundRect(offX, offY, courtW, courtH, 10); c.stroke();
-
-  // 거리 눈금 (좌측)
-  c.fillStyle = 'rgba(230,240,255,.4)'; c.font = '11px var(--mono), monospace'; c.textAlign = 'right';
-  for (let m = 1; m < LEN; m++) {
-    c.fillStyle = 'rgba(255,255,255,.08)';
-    c.fillRect(offX + 3, wy(m), courtW - 6, 1);
-    c.fillStyle = 'rgba(230,240,255,.42)';
-    c.fillText(m + 'm', offX - 6, wy(m) + 4);
-  }
-
-  const D = DIST_PRESETS[cfg.dist], hy0 = BALL_Y0 + D;
-  // 홀
-  const hxp = wx(0), hyp = wy(hy0), hr = HOLE_R * s;
-  c.save();
-  c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 8;
-  c.beginPath(); c.arc(hxp, hyp, hr, 0, 7);
-  const hg = c.createRadialGradient(hxp, hyp, 1, hxp, hyp, hr);
-  hg.addColorStop(0, '#03110a'); hg.addColorStop(0.7, '#04160c'); hg.addColorStop(1, '#0a2416');
-  c.fillStyle = hg; c.fill();
-  c.restore();
-  c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.25)';
-  c.beginPath(); c.arc(hxp, hyp, hr, 0, 7); c.stroke();
-  // 깃발
-  c.strokeStyle = '#d8d8d8'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(hxp, hyp); c.lineTo(hxp, hyp - 34); c.stroke();
-  c.fillStyle = '#ff5a52';
-  c.beginPath(); c.moveTo(hxp, hyp - 34); c.lineTo(hxp + 22, hyp - 29); c.lineTo(hxp, hyp - 24); c.closePath(); c.fill();
-
-  // 조준선 (정지 상태에서만)
+  // 3D 씬 동기화 (렌더는 상시 루프)
+  const D = DIST_PRESETS[cfg.dist];
+  holeGrp.position.set(BALL_Y0 + D, 0, 0);
+  // 조준 화살표
   if (anim.aimOnly) {
+    aimGrp.visible = true;
     const ang = ANGLES[cfg.dir] * Math.PI / 180;
-    const bx = wx(0), by = wy(BALL_Y0);
-    const len = (0.6 + cfg.pw * 0.32) * s;
-    const ex = bx + Math.sin(ang) * len, ey = by - Math.cos(ang) * len;
-    c.save();
-    c.strokeStyle = 'rgba(255,176,46,.85)'; c.lineWidth = 3; c.setLineDash([7, 6]); c.lineCap = 'round';
-    c.beginPath(); c.moveTo(bx, by); c.lineTo(ex, ey); c.stroke();
-    c.setLineDash([]);
-    // 화살촉
-    const a2 = Math.atan2(ey - by, ex - bx);
-    c.fillStyle = 'rgba(255,176,46,.95)';
-    c.beginPath();
-    c.moveTo(ex, ey);
-    c.lineTo(ex - Math.cos(a2 - 0.4) * 13, ey - Math.sin(a2 - 0.4) * 13);
-    c.lineTo(ex - Math.cos(a2 + 0.4) * 13, ey - Math.sin(a2 + 0.4) * 13);
-    c.closePath(); c.fill();
-    c.restore();
-  }
-
-  // 공 궤적 + 공
+    const len = 0.6 + cfg.pw * 0.32;
+    aimGrp.position.set(BALL_Y0, Y_TOP + 0.03, 0);
+    aimGrp.rotation.y = -ang;               // z(좌우) 방향으로 틀기
+    aimShaft.scale.x = len;
+    aimShaft.position.x = len / 2;
+    aimHead.position.x = len + 0.1;
+  } else aimGrp.visible = false;
+  // 공 + 궤적
   let bpos = [0, BALL_Y0];
   if (anim.path) {
     const upto = anim.done ? anim.path.length : Math.min(anim.path.length, Math.floor(anim.idx) + 1);
-    c.save();
-    c.strokeStyle = anim.res && anim.res.scored ? 'rgba(46,224,111,.85)' : 'rgba(255,255,255,.6)';
-    c.lineWidth = 3; c.lineJoin = 'round'; c.lineCap = 'round';
-    c.beginPath();
-    for (let i = 0; i < upto; i++) { const p = anim.path[i]; i ? c.lineTo(wx(p[0]), wy(p[1])) : c.moveTo(wx(p[0]), wy(p[1])); }
-    c.stroke(); c.restore();
+    if (upto > 1) {
+      trailLine.visible = true;
+      trailLine.material.color.set(anim.res && anim.res.scored ? 0x2ee06f : 0xffffff);
+      const pts = [];
+      for (let i = 0; i < upto; i += 2) pts.push(new THREE.Vector3(anim.path[i][1], Y_TOP + 0.015, anim.path[i][0]));
+      trailLine.geometry.setFromPoints(pts);
+    }
     bpos = anim.path[Math.min(upto - 1, anim.path.length - 1)] || [0, BALL_Y0];
-  }
-  // 홀에 빠졌으면 공 숨김(마지막 프레임)
+  } else trailLine.visible = false;
   const inHole = anim.done && anim.res && anim.res.scored;
-  const brp = BALL_R * s;
-  const bx = wx(bpos[0]), by = wy(bpos[1]);
-  c.save();
-  if (inHole) { c.globalAlpha = 0.5; }
-  c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
-  const bgd = c.createRadialGradient(bx - brp * 0.35, by - brp * 0.35, brp * 0.1, bx, by, brp);
-  bgd.addColorStop(0, '#ffffff'); bgd.addColorStop(1, '#c3ccd8');
-  c.beginPath(); c.arc(bx, by, brp, 0, 7); c.fillStyle = bgd; c.fill();
-  c.restore();
-
+  ball.position.set(bpos[1], inHole ? Y_TOP - 0.07 : Y_TOP + BALL_R, bpos[0]);
   // HUD
   $('hud_pw').textContent = cfg.pw;
   $('hud_dir').textContent = DIR_NAMES[cfg.dir];
   $('hud_dist').textContent = DIST_NAMES[cfg.dist];
 }
+let lastRT = performance.now();
+function animate3d(now) {
+  const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+  clouds3.forEach((cl, i) => { cl.position.x += rdt * (0.05 + i * 0.02); if (cl.position.x > 14) cl.position.x = -8; });
+  controls.update();
+  if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+  requestAnimationFrame(animate3d);
+}
+requestAnimationFrame(animate3d);
 
 /* ── 애니메이션 루프 ── */
 let raf = null, lastTs = null;

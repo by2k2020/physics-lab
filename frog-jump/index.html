@@ -123,13 +123,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 19차시</div>
-      <div class="title">🐸 개구리 점프 — 연못 건너기</div>
+      <div class="title">🐸 개구리 점프 — 연못 건너기<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="game">🎮 연못 건너기</button>
@@ -146,6 +156,13 @@
         <div class="chip"><span class="lab">다음 목표까지</span><span id="hud_next">— cm</span></div>
         <div class="chip dist"><span class="lab">점프 거리 (실시간)</span><span id="hud_last" style="color:var(--orange)">— cm</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+        <button id="camFollow">🐸 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -245,8 +262,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeCamera, camPresets, textSprite } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -465,480 +483,248 @@ function startAuto() {
   setStatus('run', '⚡ 자동 실험 중 — 표를 채우고 있어!');
 }
 
-/* ── 좌표 변환 ── */
-function mapper(W, H) {
-  const sx = W / (WORLD_R - WORLD_L);
-  const waterY = H * 0.68;
-  return {
-    x: cm => (cm - WORLD_L) * sx,
-    y: cm => waterY - cm * sx,
-    s: sx, waterY,
-  };
+/* ═════════ 3D 무대 (밤 연못) ═════════ */
+const stage = document.querySelector('.stage');
+const renderer = makeRenderer(cv);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e1830);
+scene.fog = new THREE.Fog(0x0e1830, 9, 30);
+scene.add(new THREE.HemisphereLight(0xaac4ff, 0x1c2a44, 0.95));
+scene.add(new THREE.AmbientLight(0x8fa8ff, 0.4));
+{
+  const moonLight = new THREE.DirectionalLight(0xcfe0ff, 1.1);
+  moonLight.position.set(-4, 8, 5); moonLight.castShadow = true;
+  moonLight.shadow.mapSize.set(2048, 2048);
+  moonLight.shadow.camera.left = -7; moonLight.shadow.camera.right = 7;
+  moonLight.shadow.camera.top = 7; moonLight.shadow.camera.bottom = -7;
+  scene.add(moonLight);
 }
-
-/* ── 그리기 ── */
-function drawFrog(c, px, py, size, phase, heavy, angRad, pullT) {
-  // phase: 'sit' | 'fly' — pullT(0..1)만큼 링키지 다리가 접히며 웅크림
-  pullT = pullT || 0;
-  c.save(); c.translate(px, py);
-  if (phase === 'fly') c.rotate(-angRad * 0.5);
-  const s = size;
-  const crouch = phase === 'sit' ? pullT : 0;
-  c.translate(0, crouch * s * 0.16);
-  const lerp = (a, b, t) => a + (b - a) * t;
-
-  // 물갈퀴 발
-  const drawFoot = (x, y, dir) => {
-    c.save(); c.translate(x, y); c.rotate(dir);
-    const fl = s * 0.36;
-    c.fillStyle = 'rgba(80,214,128,.92)'; c.strokeStyle = '#157a3e'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(0, 0);
-    c.lineTo(Math.cos(-0.55) * fl, Math.sin(-0.55) * fl);
-    c.quadraticCurveTo(fl * 0.55, -fl * 0.1, Math.cos(0) * fl * 1.05, 0);
-    c.quadraticCurveTo(fl * 0.55, fl * 0.1, Math.cos(0.55) * fl, Math.sin(0.55) * fl);
-    c.closePath(); c.fill(); c.stroke();
-    c.fillStyle = '#2fbb63';
-    for (const a of [-0.55, 0, 0.55]) {
-      c.beginPath(); c.arc(Math.cos(a) * fl * (a ? 1 : 1.05), Math.sin(a) * fl, s * 0.05, 0, 7); c.fill();
-    }
-    c.restore();
-  };
-  // 링키지 빔 (테크닉 느낌: 두꺼운 빔 + 안쪽 라이트 + 핀 구멍)
-  const beam = (x1, y1, x2, y2) => {
-    c.strokeStyle = '#1a8a49'; c.lineWidth = s * 0.2; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
-    c.strokeStyle = 'rgba(160,255,190,.35)'; c.lineWidth = s * 0.07;
-    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
-  };
-  const pin = (x, y) => {
-    c.fillStyle = '#0e3f22'; c.beginPath(); c.arc(x, y, s * 0.085, 0, 7); c.fill();
-    c.fillStyle = '#57d689'; c.beginPath(); c.arc(x, y, s * 0.035, 0, 7); c.fill();
-  };
-
-  // 뒷다리 링키지 — 당길수록 접히고, 비행 중엔 쭉 뻗음
-  const hip = [-s * 0.25, s * 0.15];
-  let knee, ankle, footDir;
-  if (phase === 'fly') {
-    // pullT = 비행 진행도(0..1): 발사 뻗기 → 공중 오므리기 → 착지 뻗기 3단계
-    const ft = Math.min(1, Math.max(0, pullT));
-    const P0 = { k: [-0.95, 0.35], a: [-1.5, 0.62], fd: Math.PI + 0.45 };   // 발사: 뒤로 쭉
-    const P1 = { k: [-0.52, 0.0], a: [-0.26, 0.42], fd: Math.PI * 0.92 };   // 공중: 몸 아래로 오므림
-    const P2 = { k: [-0.5, 0.48], a: [-0.92, 0.98], fd: Math.PI * 0.68 };   // 착지: 앞아래로 뻗기
-    const sm = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
-    const mixP = (A, B, t) => ({
-      k: [lerp(A.k[0], B.k[0], t), lerp(A.k[1], B.k[1], t)],
-      a: [lerp(A.a[0], B.a[0], t), lerp(A.a[1], B.a[1], t)],
-      fd: lerp(A.fd, B.fd, t),
-    });
-    const P = mixP(mixP(P0, P1, sm((ft - 0.2) / 0.25)), P2, sm((ft - 0.66) / 0.26));
-    knee = [P.k[0] * s, P.k[1] * s]; ankle = [P.a[0] * s, P.a[1] * s]; footDir = P.fd;
-  } else {
-    knee = [lerp(-s * 0.62, -s * 0.78, pullT), lerp(s * 0.26, -s * 0.08, pullT)];
-    ankle = [lerp(-s * 0.18, -s * 0.34, pullT), lerp(s * 0.5, s * 0.46, pullT)];
-    footDir = Math.PI * 0.94;
-  }
-  drawFoot(ankle[0], ankle[1], footDir);
-  beam(hip[0], hip[1], knee[0], knee[1]);
-  beam(knee[0], knee[1], ankle[0], ankle[1]);
-  pin(knee[0], knee[1]); pin(ankle[0], ankle[1]);
-
-  // 몸통 (웅크릴수록 납작)
-  const squash = 1 - crouch * 0.14;
-  const g = c.createRadialGradient(-s * 0.2, -s * 0.35, s * 0.1, 0, 0, s);
-  g.addColorStop(0, '#6fe89b'); g.addColorStop(1, '#26b45c');
-  c.fillStyle = g;
-  c.beginPath(); c.ellipse(0, s * 0.6 * (1 - squash), s * 0.85, s * 0.6 * squash, -crouch * 0.12, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
-  // 등 반점
-  c.fillStyle = 'rgba(20,110,60,.4)';
-  for (const [sx, sy, sr] of [[-0.35, -0.25, 0.09], [-0.05, -0.42, 0.07], [-0.55, 0.0, 0.06]]) {
-    c.beginPath(); c.ellipse(s * sx, s * sy, s * sr, s * sr * 0.7, 0.3, 0, 7); c.fill();
-  }
-  // 배
-  c.fillStyle = 'rgba(230,255,235,.5)';
-  c.beginPath(); c.ellipse(s * 0.05, s * 0.24, s * 0.5, s * 0.28 * squash, 0, 0, 7); c.fill();
-  pin(hip[0], hip[1]);
-
-  // 앞다리 + 물갈퀴 발
-  drawFoot(s * 0.6, s * 0.58, Math.PI * 0.28);
-  c.strokeStyle = '#1f9e54'; c.lineWidth = s * 0.14; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(s * 0.45, s * 0.25); c.lineTo(s * 0.6, s * 0.58); c.stroke();
-
-  // 무거움: 등에 브릭 배낭 (2단 + 스터드 + 끈)
-  if (heavy) {
-    c.save(); c.translate(-s * 0.08, -s * 0.5); c.rotate(-0.1);
-    const bw = s * 0.92, bh = s * 0.3;
-    const cols = [['#e04a3f', '#f0685e'], ['#ffd02e', '#ffe37a']];
-    for (let r = 0; r < 2; r++) {
-      const by = -r * bh;
-      c.fillStyle = cols[r][0];
-      c.fillRect(-bw / 2, by - bh, bw, bh);
-      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1;
-      c.strokeRect(-bw / 2, by - bh, bw, bh);
-      c.fillStyle = cols[r][1];
-      for (let i = 0; i < 3; i++) {
-        const sx = -bw / 2 + bw * (i + 0.5) / 3;
-        c.fillRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
-        c.strokeRect(sx - s * 0.07, by - bh - s * 0.07, s * 0.14, s * 0.07);
-      }
-    }
-    c.restore();
-    c.strokeStyle = 'rgba(25,30,45,.65)'; c.lineWidth = s * 0.06;
-    c.beginPath(); c.moveTo(-s * 0.3, -s * 0.5); c.quadraticCurveTo(s * 0.05, -s * 0.15, s * 0.3, -s * 0.4); c.stroke();
-  }
-
-  // 왕눈 (큰 흰자 + 금색 홍채 + 하이라이트)
-  for (const ex of [s * 0.28, s * 0.64]) {
-    c.fillStyle = '#f2fff5';
-    c.beginPath(); c.arc(ex, -s * 0.52, s * 0.27, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
-    c.fillStyle = '#d9a520';
-    c.beginPath(); c.arc(ex + s * 0.06, -s * 0.5, s * 0.16, 0, 7); c.fill();
-    c.fillStyle = '#0b0f18';
-    c.beginPath(); c.arc(ex + s * 0.08, -s * 0.5, s * 0.09, 0, 7); c.fill();
-    c.fillStyle = 'rgba(255,255,255,.9)';
-    c.beginPath(); c.arc(ex + s * 0.02, -s * 0.57, s * 0.045, 0, 7); c.fill();
-  }
-  // 콧구멍 + 입
-  c.fillStyle = 'rgba(10,40,20,.6)';
-  c.beginPath(); c.arc(s * 0.72, -s * 0.24, s * 0.025, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(10,40,20,.55)'; c.lineWidth = 1.4;
-  c.beginPath(); c.arc(s * 0.42, -s * 0.12, s * 0.32, 0.25, 1.05); c.stroke();
-  c.restore();
-}
-function drawPad(c, M, cx, isGoalDone) {
-  // 착지 직후 감쇠 출렁임
-  let bob = 0;
-  const fx = padFx.find(f => f.x === cx);
-  if (fx) bob = Math.sin(fx.t * 12) * 5.5 * Math.exp(-fx.t * 2.6);
-  const px = M.x(cx), py = M.waterY + bob;
-  const rw = PAD_HALF * M.s, rh = Math.max(6, rw * 0.28);
-  c.save();
-  c.fillStyle = 'rgba(0,0,0,.35)';
-  c.beginPath(); c.ellipse(px + 3, py + 4, rw, rh, 0, 0, 7); c.fill();
-  const g = c.createRadialGradient(px - rw * 0.3, py - 3, 2, px, py, rw);
-  g.addColorStop(0, '#3fae5e'); g.addColorStop(1, '#1d7a3c');
-  c.fillStyle = g;
-  c.beginPath(); c.ellipse(px, py, rw, rh, 0, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 1.5; c.stroke();
-  // 잎맥 — 중심에서 방사형
-  c.strokeStyle = 'rgba(12,55,28,.5)'; c.lineWidth = 1;
-  const vcx = px - rw * 0.12, vcy = py;
-  for (let i = 0; i < 8; i++) {
-    const a = Math.PI * 2 * i / 8 + 0.35;
-    c.beginPath(); c.moveTo(vcx, vcy);
-    c.quadraticCurveTo(vcx + Math.cos(a) * rw * 0.45, vcy + Math.sin(a) * rh * 0.5,
-      vcx + Math.cos(a) * rw * 0.82, vcy + Math.sin(a) * rh * 0.8);
-    c.stroke();
-  }
-  // 잎 홈 (V자 절개)
-  c.strokeStyle = 'rgba(10,40,20,.6)'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.9, py - rh * 0.5); c.stroke();
-  c.beginPath(); c.moveTo(vcx, vcy); c.lineTo(px + rw * 0.95, py - rh * 0.1); c.stroke();
-  // 물결 반사 (수면 아래 일렁임)
-  const wob = Math.sin(clock * 1.6 + cx * 0.05) * 2.5;
-  c.fillStyle = 'rgba(63,174,94,.13)';
-  c.beginPath(); c.ellipse(px + wob, py + rh * 2.4 + 4, rw * 0.85, rh * 0.65, 0, 0, 7); c.fill();
-  c.fillStyle = 'rgba(120,220,150,.07)';
-  c.beginPath(); c.ellipse(px - wob, py + rh * 3.6 + 6, rw * 0.6, rh * 0.4, 0, 0, 7); c.fill();
-  if (isGoalDone) { c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillText('✓', px, py - 8); }
-  c.restore();
-}
-/* ── 배경 디테일 ── */
-function drawCattail(c, x, baseY, h, ph) {
-  // 부들 — 줄기 + 갈색 이삭 + 잎, 바람에 살랑
-  c.save(); c.translate(x, baseY);
-  const tip = Math.sin(clock * 0.9 + ph) * 4;
-  c.strokeStyle = '#3f6d35'; c.lineWidth = 2.5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(tip * 0.4, -h * 0.55, tip, -h); c.stroke();
-  c.lineWidth = 2;
-  c.beginPath(); c.moveTo(2, 0); c.quadraticCurveTo(-10, -h * 0.42, -15 + tip * 0.4, -h * 0.66); c.stroke();
-  c.beginPath(); c.moveTo(-2, 0); c.quadraticCurveTo(12, -h * 0.3, 15 + tip * 0.4, -h * 0.5); c.stroke();
-  c.fillStyle = '#7a4a2b';
-  c.beginPath(); c.roundRect(tip - 3.5, -h, 7, h * 0.3, 4); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.stroke();
-  c.fillStyle = '#c9a86a';
-  c.fillRect(tip - 1, -h - 6, 2, 6);
-  c.restore();
-}
-function drawDragonfly(c, W, H) {
-  const x = W * (0.4 + 0.22 * Math.sin(clock * 0.21));
-  const y = H * 0.2 + Math.sin(clock * 0.85) * 16;
-  const dir = Math.cos(clock * 0.21) >= 0 ? 1 : -1;
-  c.save(); c.translate(x, y); c.scale(dir, 1);
-  const flap = Math.sin(clock * 26);
-  c.fillStyle = 'rgba(190,230,255,.3)';
-  for (const wd of [-1, 1]) {
-    c.save(); c.rotate(wd * (0.55 + flap * 0.4));
-    c.beginPath(); c.ellipse(-8, -1, 10, 2.8, 0, 0, 7); c.fill(); c.restore();
-  }
-  c.strokeStyle = '#5ad0e0'; c.lineWidth = 2.2; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(-12, 0); c.lineTo(3, 0); c.stroke();
-  c.fillStyle = '#2fa8c0';
-  c.beginPath(); c.arc(5.5, 0, 2.8, 0, 7); c.fill();
-  c.fillStyle = '#0b2a33';
-  c.beginPath(); c.arc(6.5, -1, 1.1, 0, 7); c.fill();
-  c.restore();
-}
-function drawFireflies(c, W, waterY) {
-  // 상시 배경 반딧불 — 수면 위를 천천히 떠다니며 깜빡임
-  for (let i = 0; i < 10; i++) {
-    const sp = 0.11 + (i % 5) * 0.04;
-    const x = W * (0.5 + 0.46 * Math.sin(clock * sp + i * 2.4));
-    const y = waterY - 16 - (26 + (i * 37) % 95) - Math.sin(clock * 0.7 + i * 1.3) * 12;
-    const tw = 0.5 + 0.5 * Math.sin(clock * 2.3 + i * 1.9);
-    c.save();
-    c.globalAlpha = 0.2 + 0.6 * tw;
-    c.fillStyle = '#d9ff7c'; c.shadowColor = '#c8ff5e'; c.shadowBlur = 9;
-    c.beginPath(); c.arc(x, y, 1.9, 0, 7); c.fill();
-    c.restore();
+const { camera, controls } = makeCamera(cv, { maxD: 25 });
+// 달 + 별
+{
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 16),
+    new THREE.MeshBasicMaterial({ color: 0xf4ecd7 }));
+  moon.position.set(4.6, 4.0, -8.5); scene.add(moon);
+  const starMat = new THREE.MeshBasicMaterial({ color: 0xdfe8ff });
+  for (let i = 0; i < 46; i++) {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(i % 6 ? 0.02 : 0.035, 6, 6), starMat);
+    s.position.set(-8 + (i * 137) % 21, 2.4 + (i * 53) % 45 * 0.1, -9 - (i * 89) % 5);
+    scene.add(s);
   }
 }
+// 물
+{
+  const water = new THREE.Mesh(new THREE.BoxGeometry(9, 0.1, 8),
+    new THREE.MeshStandardMaterial({ color: 0x1d4a72, roughness: 0.25, metalness: 0.25, transparent: true, opacity: 0.92 }));
+  water.position.set(2.1, -0.06, 0); water.receiveShadow = true; scene.add(water);
+}
+// 둑 2개 (출발/도착) + 부들
+function makeBank(x0, x1, label) {
+  const w = x1 - x0;
+  const bank = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2f6a38, roughness: 0.9 }));
+  bank.position.set((x0 + x1) / 2, 0.03, 0); bank.receiveShadow = true; scene.add(bank);
+  const lab = textSprite(label, { size: 34, color: '#d8ffe2', bg: 'rgba(8,26,14,.7)', scale: 0.0042 });
+  lab.position.set((x0 + x1) / 2, 0.75, 1.3); scene.add(lab);
+  return bank;
+}
+makeBank(WORLD_L / 100, 0, '출발');
+makeBank(BANK_X / 100, WORLD_R / 100, '도착 🏁');
+{
+  const stemMat = new THREE.MeshStandardMaterial({ color: 0x4a7a3a, roughness: 0.8 });
+  const headMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.8 });
+  [[-0.5, -1.2], [-0.28, 1.1], [4.45, -1.0], [4.7, 1.25], [4.6, -1.9]].forEach(([x, z]) => {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.7, 6), stemMat);
+    stem.position.set(x, 0.5, z); scene.add(stem);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 8), headMat);
+    head.position.set(x, 0.75, z); scene.add(head);
+  });
+}
+// 연잎 4
+const padMeshes = PADS.map(cm => {
+  const g = new THREE.Group();
+  const leaf = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.035, 18),
+    new THREE.MeshStandardMaterial({ color: 0x3c9a44, roughness: 0.6 }));
+  leaf.castShadow = true; g.add(leaf);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.018, 8, 22),
+    new THREE.MeshStandardMaterial({ color: 0x2d7a34, roughness: 0.6 }));
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.02; g.add(rim);
+  g.position.set(cm / 100, 0.02, 0);
+  scene.add(g);
+  return g;
+});
+// 반딧불이
+const fireflies = [];
+{
+  for (let i = 0; i < 7; i++) {
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.9 }));
+    f.userData = { bx: 0.3 + (i * 137) % 40 / 10, by: 0.5 + (i * 53) % 12 / 10, ph: i * 1.7 };
+    scene.add(f); fireflies.push(f);
+  }
+}
+// 개구리
+function makeFrog3d() {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4cae4f, roughness: 0.5 });
+  const belly = new THREE.MeshStandardMaterial({ color: 0xa8e063, roughness: 0.6 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 14), bodyMat);
+  body.scale.set(1.15, 0.85, 1); body.position.y = 0.11; body.castShadow = true; g.add(body);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 12), belly);
+  chest.scale.set(1, 0.72, 0.9); chest.position.set(0.05, 0.08, 0); g.add(chest);
+  [-0.055, 0.055].forEach(z => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0xeafce8, roughness: 0.35 }));
+    eye.position.set(0.08, 0.215, z); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+    pup.position.set(0.117, 0.22, z); g.add(pup);
+  });
+  [-0.095, 0.095].forEach(z => {
+    const leg = new THREE.Mesh(new THREE.SphereGeometry(0.062, 10, 8), bodyMat);
+    leg.scale.set(1.3, 0.7, 0.8); leg.position.set(-0.07, 0.05, z); leg.castShadow = true; g.add(leg);
+  });
+  // 무거움 표시용 배낭
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12),
+    new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.5 }));
+  pack.position.set(-0.12, 0.16, 0); pack.visible = false; g.add(pack);
+  g.userData.pack = pack;
+  return g;
+}
+const frog = makeFrog3d(); scene.add(frog);
+// 궤적 라인 풀
+function mkLine(color, opacity) {
+  const l = new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  l.visible = false; scene.add(l); return l;
+}
+const pastLines = Array.from({ length: 8 }, () => mkLine(0xffffff, 0.3));
+const curLine = mkLine(0x7dffb0, 0.95);
+const demoLines = [mkLine(0x8fc4ff, 0.95), mkLine(0xffd23e, 0.95)];
+const autoLine = mkLine(0xffd02e, 0.95);
+const toV3 = pts => pts.map(p => new THREE.Vector3(p[0] / 100, p[1] / 100 + 0.06, 0));
+// 첨벙 물방울 풀
+const dropMeshes = Array.from({ length: 26 }, () => {
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 6),
+    new THREE.MeshBasicMaterial({ color: 0x9fd4ff, transparent: true, opacity: 0.9 }));
+  d.visible = false; scene.add(d); return d;
+});
+// 물결 링 풀
+const ringMeshes = Array.from({ length: 5 }, () => {
+  const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.015, 6, 24),
+    new THREE.MeshBasicMaterial({ color: 0x9fd4ff, transparent: true, opacity: 0.5 }));
+  r.rotation.x = Math.PI / 2; r.visible = false; scene.add(r); return r;
+});
+// 착지 거리 팝업
+let popSprite = null, popRef = null;
+camPresets(camera, controls, {
+  camSide: { pos: [2.1, 1.3, 5.2], target: [2.1, 0.5, 0] },
+  camDiag: { pos: [-1.6, 2.8, 4.0], target: [2.0, 0.3, 0] },
+  camTop:  { pos: [2.1, 8.2, 0.02], target: [2.1, 0, 0] },
+}, 'camSide');
+let followMode = false;
+['camSide', 'camDiag', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
+  followMode = false; $('camFollow').classList.remove('on');
+}));
+$('camFollow').onclick = () => {
+  followMode = true;
+  ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).classList.remove('on'));
+  $('camFollow').classList.add('on');
+};
+
 function draw() {
-  const { c, W, H } = fit();
-  const M = mapper(W, H);
-  // 밤하늘
-  const sky = c.createLinearGradient(0, 0, 0, M.waterY);
-  sky.addColorStop(0, '#0a101f'); sky.addColorStop(1, '#14203a');
-  c.fillStyle = sky; c.fillRect(0, 0, W, M.waterY);
-  // 달 + 별
-  c.fillStyle = '#f5e9c8';
-  c.beginPath(); c.arc(W * 0.86, H * 0.13, 22, 0, 7); c.fill();
-  c.fillStyle = '#0a101f';
-  c.beginPath(); c.arc(W * 0.86 - 9, H * 0.13 - 4, 18, 0, 7); c.fill();
-  c.fillStyle = 'rgba(255,255,255,.5)';
-  for (let i = 0; i < 26; i++) {
-    const x = (i * 137.5) % W, y = ((i * 89.7) % (M.waterY * 0.75));
-    const tw = 0.5 + 0.5 * Math.sin(clock * 2 + i);
-    c.globalAlpha = 0.25 + 0.45 * tw;
-    c.fillRect(x, y, 2, 2);
-  }
-  c.globalAlpha = 1;
-  // 물
-  const wat = c.createLinearGradient(0, M.waterY, 0, H);
-  wat.addColorStop(0, '#12305a'); wat.addColorStop(1, '#081428');
-  c.fillStyle = wat; c.fillRect(0, M.waterY, W, H - M.waterY);
-  c.strokeStyle = 'rgba(120,190,255,.25)'; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(0, M.waterY); c.lineTo(W, M.waterY); c.stroke();
-  // 달 물비침
-  const mx = W * 0.86;
-  for (let i = 0; i < 8; i++) {
-    const yy = M.waterY + 10 + i * 10;
-    if (yy > H - 4) break;
-    const wb = Math.sin(clock * 1.7 + i * 1.3) * 7;
-    c.fillStyle = `rgba(245,233,200,${0.11 - i * 0.012})`;
-    c.fillRect(mx - 14 + wb, yy, 28 - i * 2.4, 2.5);
-  }
-  // 잔물결
-  c.strokeStyle = 'rgba(120,190,255,.1)';
-  for (let i = 0; i < 5; i++) {
-    const y = M.waterY + 16 + i * 22;
-    if (y > H - 6) break;
-    c.beginPath();
-    for (let x = 0; x <= W; x += 8) {
-      const yy = y + Math.sin(x * 0.03 + clock * 1.4 + i * 2) * 2.5;
-      x === 0 ? c.moveTo(x, yy) : c.lineTo(x, yy);
-    }
-    c.stroke();
-  }
-  // 거리 눈금 (50cm)
-  c.font = '10px sans-serif'; c.textAlign = 'center';
-  for (let d = 0; d <= 400; d += 50) {
-    c.strokeStyle = 'rgba(140,165,200,.22)';
-    c.beginPath(); c.moveTo(M.x(d), M.waterY); c.lineTo(M.x(d), M.waterY + 7); c.stroke();
-    c.fillStyle = 'rgba(140,165,200,.4)';
-    c.fillText(d + '', M.x(d), M.waterY + 19);
-  }
-  // 양쪽 둑
-  for (const [x0, x1, label] of [[WORLD_L, 0, '출발'], [BANK_X, WORLD_R, '도착 🏁']]) {
-    const px0 = M.x(x0), px1 = M.x(x1);
-    const g = c.createLinearGradient(0, M.waterY - 14, 0, H);
-    g.addColorStop(0, '#3b7a3d'); g.addColorStop(0.25, '#2b4a34'); g.addColorStop(1, '#17242c');
-    c.fillStyle = g;
-    c.beginPath(); c.roundRect(px0 - 8, M.waterY - 12, px1 - px0 + 16, H - M.waterY + 20, 8); c.fill();
-    c.fillStyle = 'rgba(200,230,210,.55)'; c.font = 'bold 11px sans-serif';
-    c.fillText(label, (px0 + px1) / 2, M.waterY + 8);
-  }
-  // 부들 (양쪽 둑)
-  drawCattail(c, M.x(-52), M.waterY - 8, 62, 0);
-  drawCattail(c, M.x(-38), M.waterY - 6, 46, 1.7);
-  drawCattail(c, M.x(448), M.waterY - 8, 58, 3.1);
-  drawCattail(c, M.x(468), M.waterY - 5, 44, 4.6);
-  // 잠자리 + 반딧불
-  drawDragonfly(c, W, H);
-  drawFireflies(c, W, M.waterY);
-  // 연잎
-  PADS.forEach((p, i) => drawPad(c, M, p, i < padsCrossed && posX >= p));
-  // 착지 물결 링
-  rings.forEach(r => {
-    for (let k = 0; k < 3; k++) {
-      const rr = (r.t - k * 0.16) * 105;
-      if (rr <= 0) continue;
-      const a = Math.max(0, 0.55 - r.t * 0.42) * (1 - k * 0.3);
-      c.strokeStyle = `rgba(150,232,182,${a})`;
-      c.lineWidth = 2;
-      c.beginPath(); c.ellipse(M.x(r.x), M.waterY + 3, rr, rr * 0.22, 0, 0, 7); c.stroke();
-    }
-  });
-  // 지난 궤적 (흐리게)
-  pastTrails.forEach((tr, i) => {
-    const a = 0.08 + 0.14 * (i + 1) / pastTrails.length;
-    c.strokeStyle = tr.ok ? `rgba(46,224,111,${a})` : `rgba(255,90,82,${a})`;
-    c.lineWidth = 1.5; c.setLineDash([4, 5]);
-    c.beginPath();
-    tr.pts.forEach(([x, y], k) => k ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y)));
-    c.stroke(); c.setLineDash([]);
-  });
-  // 예측 데모 궤적
-  if (demo) {
-    const dr = (traj, color, frac, label) => {
-      if (frac <= 0) return;
-      const n = Math.max(2, Math.floor(traj.pts.length * Math.min(1, frac)));
-      c.strokeStyle = color; c.lineWidth = 2.5;
-      c.save(); c.shadowColor = color; c.shadowBlur = 8;
-      c.beginPath();
-      for (let i = 0; i < n; i++) {
-        const [x, y] = traj.pts[i];
-        i ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y));
-      }
-      c.stroke(); c.restore();
-      if (frac >= 1) {
-        c.fillStyle = color; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
-        c.fillText(label + ' → ' + Math.round(traj.dist) + 'cm', M.x(traj.pts[0][0] + traj.dist), M.waterY - 14);
-      }
-    };
-    dr(demo.t1, '#ffb02e', demo.progress, '당김 ' + demo.base + '칸');
-    dr(demo.t2, '#c792ea', demo.progress - 1, '당김 ' + demo.base * 2 + '칸');
-  }
-  // ⚡ 자동 실험 궤적 시연
-  if (auto && auto.traj) {
-    const traj = auto.traj, frac = Math.min(1, auto.progress);
-    const n = Math.max(2, Math.floor(traj.pts.length * frac));
-    c.strokeStyle = '#ffd02e'; c.lineWidth = 2.5;
-    c.save(); c.shadowColor = '#ffd02e'; c.shadowBlur = 8;
-    c.beginPath();
-    for (let i = 0; i < n; i++) {
-      const [x, y] = traj.pts[i];
-      i ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y));
-    }
-    c.stroke(); c.restore();
-    c.fillStyle = '#ffd02e'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText(`당김 ${auto.cur[0]}칸 · ${ANG_NAME[auto.cur[1]]} → ${Math.round(traj.dist)}cm`,
-      M.x(traj.pts[0][0] + traj.dist / 2), M.y(traj.peak) - 10);
-  }
-  // 현재 비행 궤적
-  if (flight) {
-    c.strokeStyle = '#4da3ff'; c.lineWidth = 2.5;
-    c.save(); c.shadowColor = '#4da3ff'; c.shadowBlur = 8;
-    c.beginPath();
-    flight.pts.forEach(([x, y], k) => k ? c.lineTo(M.x(x), M.y(y)) : c.moveTo(M.x(x), M.y(y)));
-    c.stroke(); c.restore();
-  }
-  // 개구리
-  const frogSize = Math.max(12, 9 * M.s);
-  if (state === 'fly' && flight) {
+  // (메인 루프가 매 프레임 호출) — 3D 씬 동기화 + 렌더
+  // 개구리 위치·모습
+  frog.userData.pack.visible = (weight === 2);
+  frog.scale.setScalar(weight === 2 ? 1.18 : 1);
+  if (state === 'fly' && flight && flight.pts.length) {
     const last = flight.pts[flight.pts.length - 1];
-    const flyT = flight.t / (2 * flight.vy / G);
-    drawFrog(c, M.x(last[0]), M.y(last[1]) - frogSize * 0.45, frogSize, 'fly', weight === 2, Math.atan2(flight.vy - G * flight.t, flight.vx), flyT);
-    // 실시간 점프 거리
-    c.save();
-    c.font = 'bold 17px "Cascadia Mono", Consolas, monospace'; c.textAlign = 'center';
-    c.fillStyle = '#ffd02e'; c.shadowColor = 'rgba(0,0,0,.9)'; c.shadowBlur = 5;
-    c.fillText('▸ ' + Math.round(last[0] - flight.x0) + ' cm', M.x(last[0]), M.y(last[1]) - frogSize * 2.0);
-    c.restore();
-  } else if (state !== 'splash') {
-    const pNow = params();
-    const pullT = (pNow.pull - 1) / (PULL_MAX - 1);
-    const fx = M.x(posX), fyBase = M.waterY - frogSize * 0.5 - 2;
-    // 고무줄 — 늘어날수록 팽팽(직선)·가늘어지고 색이 진해짐
-    if (state === 'ready' && !cleared) {
-      const ax = fx - frogSize * (1.05 + pullT * 1.1), ay = M.waterY - 3;
-      const hx = fx - frogSize * 0.28, hy = fyBase + frogSize * 0.42;
-      const sag = (1 - pullT) * frogSize * 0.55;              // 느슨하면 축 처짐
-      const rC = Math.round(255), gC = Math.round(150 - pullT * 110), bC = Math.round(140 - pullT * 110);
-      c.strokeStyle = `rgb(${rC},${gC},${bC})`;
-      c.lineWidth = 4.2 - pullT * 2.2; c.lineCap = 'round';
-      if (pullT > 0.6) { c.save(); c.shadowColor = '#ff2a1e'; c.shadowBlur = 8 * (pullT - 0.6) / 0.4; }
-      c.beginPath(); c.moveTo(ax, ay);
-      c.quadraticCurveTo((ax + hx) / 2, (ay + hy) / 2 + sag, hx, hy);
-      c.stroke();
-      if (pullT > 0.6) c.restore();
-      // 고정 말뚝 (테크닉 핀)
-      c.fillStyle = '#8a6a3c';
-      c.fillRect(ax - 2.5, ay - 6, 5, 12);
-      c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.strokeRect(ax - 2.5, ay - 6, 5, 12);
-    }
-    drawFrog(c, fx, fyBase, frogSize, 'sit', weight === 2, 0, pullT);
-    // 조준 화살표 + 각도 호 (확대)
-    if (state === 'ready' && !cleared) {
-      const rad = pNow.angDeg * Math.PI / 180;
-      const len = 40 + pNow.pull * 9;
-      const fy = M.waterY - frogSize * 0.6;
-      const tx = fx + Math.cos(rad) * len, ty = fy - Math.sin(rad) * len;
-      c.strokeStyle = 'rgba(255,176,46,.4)'; c.lineWidth = 1.5; c.setLineDash([3, 4]);
-      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + 46, fy); c.stroke(); c.setLineDash([]);
-      c.strokeStyle = 'rgba(255,176,46,.7)'; c.lineWidth = 2;
-      c.beginPath(); c.arc(fx, fy, 32, -rad, 0); c.stroke();
-      c.strokeStyle = 'rgba(255,176,46,.9)'; c.lineWidth = 3.5;
-      c.beginPath(); c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke();
-      c.fillStyle = 'rgba(255,176,46,.9)';
-      const ha = Math.atan2(fy - ty, tx - fx);
-      c.beginPath();
-      c.moveTo(tx, ty);
-      c.lineTo(tx - Math.cos(ha - 0.4) * 13, ty + Math.sin(ha - 0.4) * 13);
-      c.lineTo(tx - Math.cos(ha + 0.4) * 13, ty + Math.sin(ha + 0.4) * 13);
-      c.fill();
-      c.font = 'bold 15px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#ffb02e';
-      c.fillText(pNow.angDeg + '°', tx + 8, ty + 2);
-    }
+    frog.visible = true;
+    frog.position.set(last[0] / 100, last[1] / 100 + 0.05, 0);
+    frog.rotation.z = -0.35;
+  } else if (state === 'splash') {
+    frog.visible = false;
+  } else {
+    frog.visible = true;
+    frog.rotation.z = 0;
+    const onBank = posX < 20 || posX >= BANK_X - 10;
+    frog.position.set(posX / 100 + (cleared ? 0 : 0), onBank ? 0.18 : 0.055, 0);
   }
-  // 클리어 연출 — 무지개 + 반딧불 축포
-  if (celebrate) {
-    const ct = celebrate.t;
-    const ease = Math.min(1, ct * 0.9);
-    const cxp = M.x(205), cyp = M.waterY + 8;
-    const R0 = Math.min(W * 0.42, M.waterY * 0.94);
-    const cols = ['255,90,90', '255,170,60', '255,228,80', '110,230,130', '95,180,255', '190,145,255'];
-    c.save();
-    c.globalAlpha = 0.34 * ease;
-    c.lineCap = 'butt';
-    cols.forEach((col, i) => {
-      c.strokeStyle = `rgba(${col},1)`; c.lineWidth = Math.max(4, R0 * 0.035);
-      c.beginPath(); c.arc(cxp, cyp, R0 * (1 - i * 0.038), Math.PI, Math.PI * 2); c.stroke();
+  // 궤적 라인
+  pastLines.forEach((l, i) => {
+    const tr = pastTrails[i];
+    if (tr && tr.pts.length > 1) {
+      l.visible = true;
+      l.material.color.set(tr.ok ? 0x6fe08a : 0xff7a6e);
+      l.geometry.setFromPoints(toV3(tr.pts));
+    } else l.visible = false;
+  });
+  if (state === 'fly' && flight && flight.pts.length > 1) {
+    curLine.visible = true; curLine.geometry.setFromPoints(toV3(flight.pts));
+  } else curLine.visible = false;
+  if (state === 'demo' && demo) {
+    const segs = [demo.t1, demo.t2];
+    demoLines.forEach((l, i) => {
+      const tr = segs[i];
+      const frac = Math.max(0, Math.min(1, demo.progress - i * 0.9));
+      if (tr && frac > 0.02) {
+        const n = Math.max(2, Math.floor(tr.pts.length * frac));
+        l.visible = true; l.geometry.setFromPoints(toV3(tr.pts.slice(0, n)));
+      } else l.visible = false;
     });
-    c.restore();
-    for (let i = 0; i < 24; i++) {
-      const ph = i * 1.7;
-      const rise = (ct * (22 + (i * 13) % 34) + (i * 41) % 90) % 175;
-      const px = M.x(BANK_X + 25) + Math.sin(clock * 1.1 + ph) * (16 + (i * 7) % 42) - 20;
-      const py = M.waterY - 12 - rise;
-      const tw = 0.5 + 0.5 * Math.sin(clock * 3 + ph);
-      c.save();
-      c.globalAlpha = (0.25 + 0.65 * tw) * ease;
-      c.fillStyle = '#ffe98a'; c.shadowColor = '#ffd94e'; c.shadowBlur = 10;
-      c.beginPath(); c.arc(px, py, 2.3, 0, 7); c.fill();
-      c.restore();
-    }
-  }
-  // 착지 거리 팝업
-  if (distPop) {
-    const a = distPop.t < 1.3 ? Math.min(1, distPop.t * 4) : Math.max(0, 1 - (distPop.t - 1.3) / 0.6);
-    c.save();
-    c.globalAlpha = a; c.textAlign = 'center';
-    c.font = 'bold 27px "Cascadia Mono", Consolas, monospace';
-    c.fillStyle = '#ffb02e'; c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowBlur = 7;
-    c.fillText(Math.round(distPop.dist) + ' cm', M.x(distPop.x), M.waterY - 48 - distPop.t * 15);
-    c.restore();
-  }
+  } else demoLines.forEach(l => l.visible = false);
+  if (state === 'auto' && auto && auto.traj) {
+    const frac = Math.min(1, auto.progress);
+    const n = Math.max(2, Math.floor(auto.traj.pts.length * frac));
+    autoLine.visible = true; autoLine.geometry.setFromPoints(toV3(auto.traj.pts.slice(0, n)));
+  } else autoLine.visible = false;
   // 첨벙
-  if (splash) {
-    c.fillStyle = 'rgba(140,200,255,.8)';
-    splash.drops.forEach(d => { c.beginPath(); c.arc(M.x(d.x) + d.dx, M.y(d.y), 2.5, 0, 7); c.fill(); });
-    const rr = splash.t * 90;
-    c.strokeStyle = `rgba(140,200,255,${Math.max(0, 0.6 - splash.t * 0.6)})`;
-    c.lineWidth = 2;
-    c.beginPath(); c.ellipse(M.x(splash.x), M.waterY + 2, rr, rr * 0.25, 0, 0, 7); c.stroke();
+  dropMeshes.forEach((m, i) => {
+    const d = splash && splash.drops[i];
+    if (d && d.y > -2) {
+      m.visible = true;
+      m.position.set((d.x + (d.dx || 0)) / 100, Math.max(0, d.y) / 100 + 0.02, ((i % 5) - 2) * 0.06);
+      m.material.opacity = Math.max(0, 0.9 - splash.t * 0.8);
+    } else m.visible = false;
+  });
+  // 물결 링
+  ringMeshes.forEach((m, i) => {
+    const r = rings[i];
+    if (r) {
+      m.visible = true;
+      m.position.set(r.x / 100, 0.01, 0);
+      const k = r.t / 1.5;
+      m.scale.setScalar(0.6 + k * 2.4);
+      m.material.opacity = 0.5 * (1 - k);
+    } else m.visible = false;
+  });
+  // 연잎 출렁임
+  padMeshes.forEach((g, i) => {
+    const fxp = padFx.find(f => Math.abs(f.x - PADS[i]) < 1);
+    g.position.y = 0.02 + (fxp ? Math.sin(fxp.t * 9) * 0.03 * (1 - fxp.t / 1.6) : 0);
+  });
+  // 착지 거리 팝업
+  if (distPop && distPop !== popRef) {
+    popRef = distPop;
+    if (popSprite) scene.remove(popSprite);
+    popSprite = textSprite(Math.round(distPop.dist) + 'cm!', { size: 40, color: '#ffd88a', bg: 'rgba(30,20,6,.8)', scale: 0.0045 });
+    popSprite.position.set(distPop.x / 100, 0.85, 0);
+    scene.add(popSprite);
   }
+  if (popSprite && !distPop) { scene.remove(popSprite); popSprite = null; popRef = null; }
+  // 반딧불이 부유
+  fireflies.forEach(f => {
+    f.position.set(
+      f.userData.bx + Math.sin(clock * 0.7 + f.userData.ph) * 0.3,
+      f.userData.by + Math.sin(clock * 1.1 + f.userData.ph * 2) * 0.2,
+      -1.6 + Math.sin(clock * 0.5 + f.userData.ph) * 0.5);
+    f.material.opacity = 0.6 + 0.4 * Math.sin(clock * 2.2 + f.userData.ph);
+  });
+  if (followMode) {
+    controls.target.lerp(new THREE.Vector3(frog.position.x, 0.45, 0), 0.08);
+    camera.position.lerp(new THREE.Vector3(frog.position.x - 0.8, 1.0, 2.6), 0.05);
+  }
+  controls.update();
+  if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
 }
 
 /* ── 메인 루프 ── */
@@ -1045,7 +831,6 @@ $('btnAuto').onclick = startAuto;
 $('btnClearTb').onclick = () => { grid[weight] = Object.create(null); drawGrid(); };
 $('btnO').onclick = () => { if (state === 'ready') runPredict(true); };
 $('btnX').onclick = () => { if (state === 'ready') runPredict(false); };
-cv.addEventListener('pointerdown', () => { if (state === 'ready' && !cleared) doJump(); });
 window.addEventListener('resize', draw);
 
 refreshReadouts();
