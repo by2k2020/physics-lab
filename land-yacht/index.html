@@ -570,7 +570,7 @@ function pick(container, attr, onChange) {
   function animate(now) {
     const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
     yacht.position.x = pos;
-    yacht.userData.wheels.forEach(w => w.rotation.z = -pos / 0.19);
+    yacht.userData.wheels.forEach(w => w.rotation.y = -pos / 0.19);
     sailGrp.rotation.y = -P.deg * Math.PI / 180;
     const sc = P.s === '대' ? 1 : 0.72;
     sailGrp.scale.set(sc, sc, 1);
