@@ -108,13 +108,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🚶 라인 워크 시뮬레이션</div>
+      <div class="title">🚶 라인 워크 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp">실험 · 두 다리 보행</button>
@@ -130,6 +140,12 @@
         <div class="chip" style="color:var(--accent)"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">안정 여유</span><span id="hud_marg">—</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camFollow">🚶 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -241,8 +257,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeCamera, camPresets, textSprite, canvasTex, makeTree, makeFlag, distanceRuler } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -364,184 +381,216 @@ function updateMargin() {
   f.style.width = w + '%';
 }
 
-/* ── 로봇(측면 링키지 보행 모형) 그리기 ── */
-function drawRobot(c, x, groundY, ph, tiltRad, comPx, strideRel, celeb) {
-  const L1 = 40, L2 = 40, footLen = 52, footHalf = footLen / 2;
+/* ═════════ 3D 무대 (밤 산책로 · 보행 로봇) ═════════ */
+const stage3 = cv.closest('.stage');
+const renderer = makeRenderer(cv);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e1830);
+scene.fog = new THREE.Fog(0x0e1830, 10, 34);
+scene.add(new THREE.HemisphereLight(0xaac4ff, 0x1c2a44, 0.95));
+scene.add(new THREE.AmbientLight(0x8fa8ff, 0.4));
+{
+  const moonLight = new THREE.DirectionalLight(0xcfe0ff, 1.15);
+  moonLight.position.set(-4, 8, 5); moonLight.castShadow = true;
+  moonLight.shadow.mapSize.set(2048, 2048);
+  moonLight.shadow.camera.left = -6; moonLight.shadow.camera.right = 8;
+  moonLight.shadow.camera.top = 6; moonLight.shadow.camera.bottom = -2;
+  scene.add(moonLight);
+}
+const { camera, controls } = makeCamera(cv, { maxD: 22 });
+// 달·별
+{
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 16),
+    new THREE.MeshBasicMaterial({ color: 0xf4ecd7 }));
+  moon.position.set(4.5, 4.6, -10); scene.add(moon);
+  const starMat = new THREE.MeshBasicMaterial({ color: 0xdfe8ff });
+  for (let i = 0; i < 44; i++) {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(i % 6 ? 0.02 : 0.034, 6, 6), starMat);
+    s.position.set(-7 + (i * 137) % 19, 2.2 + (i * 53) % 42 * 0.09, -10 - (i * 89) % 5);
+    scene.add(s);
+  }
+}
+// 어두운 잔디 + 산책로 트랙
+{
+  const tex = canvasTex(256, 256, (c) => {
+    c.fillStyle = '#1d3524'; c.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 700; i++) {
+      c.fillStyle = ['#193020', '#22402b', '#152a1c'][i % 3];
+      c.fillRect((i * 97) % 256, (i * 61) % 256, 2, 3);
+    }
+  }, [12, 12]);
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(50, 0.2, 30),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
+  ground.position.set(1.5, -0.1, 0); ground.receiveShadow = true; scene.add(ground);
+  const trackTex = canvasTex(512, 128, (c) => {
+    c.fillStyle = '#4a4436'; c.fillRect(0, 0, 512, 128);
+    for (let i = 0; i < 260; i++) {
+      c.fillStyle = ['#413b2e', '#544d3d', '#3a3529'][i % 3];
+      c.beginPath(); c.arc((i * 131) % 512, (i * 47) % 128, 2 + (i % 3), 0, 7); c.fill();
+    }
+    // 파란 안내선 (점선)
+    c.fillStyle = '#4da3ff';
+    for (let x = 0; x < 512; x += 46) c.fillRect(x, 60, 26, 8);
+  }, [8, 1]);
+  const track = new THREE.Mesh(new THREE.BoxGeometry(46, 0.24, 1.6),
+    new THREE.MeshStandardMaterial({ map: trackTex, roughness: 0.9 }));
+  track.position.set(2, -0.08, 0); track.receiveShadow = true; scene.add(track);
+}
+// 나무·부들 소품
+[[-1.6, -2.6, 1.0], [1.6, -3.3, 1.2], [4.2, -2.5, 0.95], [-2.4, 2.3, 0.9], [5.6, 2.6, 1.1]]
+  .forEach(([x, z, s]) => { const t = makeTree(s); t.position.set(x, 0, z); scene.add(t); });
+// 거리 눈금 (50cm 간격)
+distanceRuler(scene, { from: 0, to: 3, step: 0.5, z: 1.1, unit: 'm', labCol: '#cfe0ff', toX: d => d });
+// 목표 깃발
+{
+  const flag = makeFlag('목표 300cm', 0x2ee06f);
+  flag.position.set(3.0, 0, -0.9); scene.add(flag);
+}
+/* 보행 로봇 (2D 링키지 계산 재사용, 픽셀→월드 1/230) */
+const RS = 1 / 230;
+const robotGrp = new THREE.Group(); scene.add(robotGrp);   // tilt 회전용 (지지발 pivot)
+const robotInner = new THREE.Group(); robotGrp.add(robotInner);
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.5 });
+const legMatA = new THREE.MeshStandardMaterial({ color: 0x3d8bff, roughness: 0.45 });
+const legMatB = new THREE.MeshStandardMaterial({ color: 0x5b8fd6, roughness: 0.45 });
+const footMat = new THREE.MeshStandardMaterial({ color: 0x22304c, roughness: 0.6 });
+// 몸통(스터드) + 머리
+const torso = new THREE.Mesh(new THREE.BoxGeometry(40 * RS * 2, 1, 40 * RS * 2), bodyMat);
+torso.castShadow = true; robotInner.add(torso);
+
+const head = new THREE.Mesh(new THREE.SphereGeometry(15 * RS * 1.6, 16, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 }));
+head.castShadow = true; robotInner.add(head);
+const eyeMat3 = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+const eyes = [-1, 1].map(s => {
+  const e = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), eyeMat3);
+  robotInner.add(e); return e;
+});
+// 다리: 힙-무릎(허벅지), 무릎-발(정강이), 발판 — 세그먼트를 매 프레임 배치
+function mkSeg(mat, w) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1, w), mat);
+  m.castShadow = true; robotInner.add(m); return m;
+}
+const legSegs = [0, 1].map(i => ({
+  thigh: mkSeg(i ? legMatB : legMatA, 0.075),
+  shin: mkSeg(i ? legMatB : legMatA, 0.07),
+  foot: (() => {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(52 * RS, 0.055, 0.14), footMat);
+    f.castShadow = true; robotInner.add(f); return f;
+  })(),
+}));
+function placeSeg(seg, x1, y1, x2, y2) {
+  const len = Math.max(0.01, Math.hypot(x2 - x1, y2 - y1));
+  seg.scale.y = len;
+  seg.position.set((x1 + x2) / 2, (y1 + y2) / 2, seg.position.z);
+  seg.rotation.z = -Math.atan2(x2 - x1, y2 - y1);
+}
+// 무게중심 마커 + 추선 + 지지면 하이라이트
+const comBall = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10),
+  new THREE.MeshBasicMaterial({ color: 0xff5a52 }));
+robotInner.add(comBall);
+const comLab = textSprite('무게중심', { size: 24, color: '#ffb0a8', bg: 'rgba(30,8,6,.75)', scale: 0.0028 });
+robotInner.add(comLab);
+const plumb = new THREE.Line(new THREE.BufferGeometry(),
+  new THREE.LineDashedMaterial({ color: 0x2ee06f, dashSize: 0.07, gapSize: 0.05 }));
+robotInner.add(plumb);
+const supportPad = new THREE.Mesh(new THREE.BoxGeometry(52 * RS * 1.15, 0.02, 0.2),
+  new THREE.MeshBasicMaterial({ color: 0x2ee06f, transparent: true, opacity: 0.4 }));
+robotInner.add(supportPad);
+camPresets(camera, controls, {
+  camSide: { pos: [1.4, 1.0, 5.6], target: [1.3, 0.55, 0] },
+  camDiag: { pos: [-2.2, 2.2, 4.2], target: [1.2, 0.45, 0] },
+  camFollow: null,
+}, 'camSide');
+let followMode = false;
+['camSide', 'camDiag'].forEach(id => $(id).addEventListener('click', () => {
+  followMode = false; $('camFollow').classList.remove('on');
+}));
+$('camFollow').onclick = () => {
+  followMode = true;
+  ['camSide', 'camDiag'].forEach(id => $(id).classList.remove('on'));
+  $('camFollow').classList.add('on');
+};
+
+function draw() {
+  // ── 2D 링키지 계산 (원본 drawRobot 수식) ──
+  const L1 = 40, L2 = 40, footHalf = 26;
+  const strideRel = STRIDE[st];
   const swingAmp = 0.28 * strideRel + 0.14;
   const legs = [];
   for (let i = 0; i < 2; i++) {
-    const p = ph + i * Math.PI;
+    const p = phase + i * Math.PI;
     const a1 = swingAmp * Math.sin(p);
     const bend = Math.max(0, 0.95 * Math.sin(p - 0.5)) * (0.4 + strideRel * 0.4);
     const kneeX = L1 * Math.sin(a1), kneeY = L1 * Math.cos(a1);
     const footX = kneeX + L2 * Math.sin(a1 - bend), footY = kneeY + L2 * Math.cos(a1 - bend);
-    legs.push({ a1, bend, kneeX, kneeY, footX, footY });
+    legs.push({ kneeX, kneeY, footX, footY });
   }
   const maxFootY = Math.max(legs[0].footY, legs[1].footY);
-  const hipY = groundY - maxFootY;                      // 낮은 발이 바닥에 닿게
+  const hipYpx = -maxFootY;                                  // 지면 기준 힙 높이(px, 위가 +가 되도록 부호 반전해 사용)
   const stanceI = legs[0].footY >= legs[1].footY ? 0 : 1;
-  const stanceFootX = x + legs[stanceI].footX;
-
-  // 무게중심 흔들림: 지지면 절반폭 × 불안정지수 만큼 좌우로 (추선이 발을 벗어나면 넘어짐)
+  const stanceFootX = legs[stanceI].footX;
   const swayPeak = footHalf * P.inst;
-  const sway = swayPeak * Math.sin(ph);
-  const comX = x + sway;
-  const bodyTop = hipY - 60;                             // 몸통 위
-  const comY = bodyTop - comPx;                          // 무게중심 높이(선택값)
-
-  c.save();
-  c.translate(stanceFootX, groundY);
-  c.rotate(tiltRad);                                     // 넘어질 때 지지발 기준 회전
-  c.translate(-stanceFootX, -groundY);
-
-  // 지지면(발 닿는 넓이) 하이라이트 바
-  const inSupport = Math.abs(comX - stanceFootX) <= footHalf;
-  c.fillStyle = inSupport ? 'rgba(46,224,111,.22)' : 'rgba(255,90,82,.22)';
-  c.strokeStyle = inSupport ? 'rgba(46,224,111,.7)' : 'rgba(255,90,82,.8)';
-  c.lineWidth = 2;
-  c.beginPath(); c.roundRect(stanceFootX - footHalf, groundY - 5, footLen, 10, 4); c.fill(); c.stroke();
-
-  // 다리 2개
-  for (let i = 0; i < 2; i++) {
-    const lg = legs[i];
-    const hx = x, hy = hipY;
-    const kx = x + lg.kneeX, ky = hipY + lg.kneeY;
-    const fx = x + lg.footX, fy = hipY + lg.footY;
-    c.strokeStyle = i === stanceI ? '#3d8bff' : '#5b8fd6';
-    c.lineWidth = 11; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(hx, hy); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
-    // 관절 핀
-    [[hx, hy], [kx, ky]].forEach(pt => { c.beginPath(); c.arc(pt[0], pt[1], 5, 0, 7); c.fillStyle = '#0c1322'; c.fill(); c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = 1.5; c.stroke(); });
-    // 발
-    c.fillStyle = '#22304c'; c.strokeStyle = '#0c1322'; c.lineWidth = 1.5;
-    c.beginPath(); c.roundRect(fx - footHalf, fy - 3, footLen, 12, 3); c.fill(); c.stroke();
-  }
-
-  // 몸통(무게추 브릭 느낌) + 머리
-  const bodyH = comPx + 28;
-  c.fillStyle = '#ff8a3d'; c.strokeStyle = '#c2410c'; c.lineWidth = 2;
-  c.beginPath(); c.roundRect(x - 20, comY - 8, 40, bodyH, 7); c.fill(); c.stroke();
-  // 스터드
-  c.fillStyle = '#ffb27d';
-  for (let k = -1; k <= 1; k++) { c.beginPath(); c.arc(x + k * 12, comY - 8, 4, 0, 7); c.fill(); }
-  // 팔 (완료 시 만세)
-  c.strokeStyle = '#ff8a3d'; c.lineWidth = 8; c.lineCap = 'round';
-  const armA = celeb > 0 ? -1.1 : 0.5 + 0.3 * Math.sin(ph);
-  [[-1], [1]].forEach(([s]) => {
-    c.beginPath(); c.moveTo(x + s * 16, comY + 6);
-    c.lineTo(x + s * (16 + 22 * Math.cos(armA)), comY + 6 - 22 * Math.sin(armA));
-    c.stroke();
+  const sway = swayPeak * Math.sin(phase);
+  lastGeom = { comX: sway, stanceFootX: stanceFootX };
+  // ── 3D 배치 (x: 진행 + 로컬, y: 위) ──
+  const hipY = -hipYpx * RS + 0;                              // maxFootY*RS
+  const hipW = { x: 0, y: maxFootY * RS };
+  legs.forEach((lg, i) => {
+    const seg = legSegs[i];
+    const z = i === 0 ? 0.09 : -0.09;
+    seg.thigh.position.z = z; seg.shin.position.z = z; seg.foot.position.z = z;
+    const kx = lg.kneeX * RS, ky = hipW.y - lg.kneeY * RS;
+    const fx = lg.footX * RS, fy = hipW.y - lg.footY * RS;
+    placeSeg(seg.thigh, 0, hipW.y, kx, ky);
+    placeSeg(seg.shin, kx, ky, fx, fy);
+    seg.foot.position.set(fx + 0.02, fy + 0.028, z);
+    seg.foot.rotation.z = 0;
   });
-  // 머리
-  const headY = comY - 24;
-  c.fillStyle = '#ffd23e'; c.strokeStyle = '#c2410c'; c.lineWidth = 2;
-  c.beginPath(); c.arc(x, headY, 15, 0, 7); c.fill(); c.stroke();
-  c.fillStyle = '#1a1a1a';
-  c.beginPath(); c.arc(x + 5, headY - 2, 2.4, 0, 7); c.fill();
-  c.beginPath(); c.arc(x - 3, headY - 2, 2.4, 0, 7); c.fill();
-
-  // 무게중심 마커 + 추선 (지지발까지)
-  c.setLineDash([5, 5]); c.lineWidth = 2;
-  c.strokeStyle = inSupport ? 'rgba(46,224,111,.85)' : 'rgba(255,90,82,.95)';
-  c.beginPath(); c.moveTo(comX, comY + bodyH / 2); c.lineTo(comX, groundY); c.stroke();
-  c.setLineDash([]);
-  c.beginPath(); c.arc(comX, comY + bodyH / 2 - 6, 8, 0, 7);
-  c.fillStyle = '#ff5a52'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
-  c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center';
-  c.fillText('무게중심', comX, comY + bodyH / 2 - 20);
-
-  c.restore();
-  return { footHalf, comX, stanceFootX, inSupport };
-}
-
-function draw() {
-  const { c, W, H } = fit(cv);
-  if (W < 60 || H < 60) return;
-  // 화면 높이에 맞춰 장면 전체 확대 — 로봇이 큰 화면에서도 주인공이 되도록
-  const S = Math.max(1, H / 430);
-  const VW = W / S, VH = H / S;
-  c.save(); c.scale(S, S);
-  const groundY = VH * 0.74, robotX = VW * 0.42;
-  const PXCM = 2.0;
-  // 하늘 배경
-  const bg = c.createLinearGradient(0, 0, 0, VH);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(0.7, '#101a30'); bg.addColorStop(1, '#13203a');
-  c.fillStyle = bg; c.fillRect(0, 0, VW, VH);
-  // 별 (고정 의사난수 배치)
-  c.fillStyle = 'rgba(210,225,255,.5)';
-  for (let i = 0; i < 40; i++) {
-    const sx = (i * 137.5) % VW, sy = ((i * 89.3) % (groundY * 0.55));
-    const tw = 0.5 + 0.5 * Math.sin(t * 1.4 + i * 2.1);
-    c.globalAlpha = 0.18 + 0.3 * tw;
-    c.beginPath(); c.arc(sx, sy, i % 5 === 0 ? 1.8 : 1.1, 0, 7); c.fill();
+  // 몸통·머리·무게중심
+  const comPx = COM_PX[ht];
+  const bodyTopY = hipW.y + 60 * RS;
+  const bodyH = (comPx + 28) * RS;
+  torso.scale.y = bodyH;
+  torso.position.set(sway * RS, bodyTopY + bodyH / 2, 0);
+  head.position.set(sway * RS, bodyTopY + bodyH + 0.1, 0);
+  eyes.forEach((e, i) => e.position.set(sway * RS + 0.075, bodyTopY + bodyH + 0.12, (i ? 1 : -1) * 0.045));
+  const comY = bodyTopY + bodyH * 0.55;
+  comBall.position.set(sway * RS, comY, 0.13);
+  comLab.position.set(sway * RS, comY + 0.22, 0.15);
+  // 추선 + 지지면
+  const inSupport = Math.abs(sway * RS - stanceFootX * RS) <= footHalf * RS;
+  plumb.material.color.set(inSupport ? 0x2ee06f : 0xff5a52);
+  plumb.geometry.setFromPoints([
+    new THREE.Vector3(sway * RS, comY, 0.13),
+    new THREE.Vector3(sway * RS, 0.01, 0.13),
+  ]);
+  plumb.computeLineDistances();
+  supportPad.material.color.set(inSupport ? 0x2ee06f : 0xff5a52);
+  supportPad.position.set(stanceFootX * RS, 0.012, 0);
+  // 전체 이동 + 넘어짐 회전 (지지발 피벗)
+  robotGrp.position.set(dist / 100, 0.045, 0);
+  robotGrp.rotation.z = 0;
+  robotInner.position.set(0, 0, 0);
+  if (tilt !== 0) {
+    // 지지발 기준 회전
+    robotInner.position.set(-stanceFootX * RS, 0, 0);
+    robotGrp.rotation.z = -tilt;
+    robotGrp.position.set(dist / 100 + stanceFootX * RS, 0.045, 0);
   }
-  c.globalAlpha = 1;
-  // 달
-  c.fillStyle = '#f4ecd7'; c.beginPath(); c.arc(VW * 0.86, groundY * 0.2, 22, 0, 7); c.fill();
-  c.fillStyle = '#0a101f'; c.globalAlpha = 0.25;
-  [[8, -5, 4], [-6, 6, 3], [2, 9, 2.4]].forEach(([dx, dy, r]) => { c.beginPath(); c.arc(VW * 0.86 + dx, groundY * 0.2 + dy, r, 0, 7); c.fill(); });
-  c.globalAlpha = 1;
-  // 언덕 실루엣 2겹 (패럴랙스 — 걸으면 흐른다)
-  const hill = (speed, base, amp, col, period) => {
-    const off = (dist * PXCM * speed) % period;
-    c.fillStyle = col; c.beginPath(); c.moveTo(0, groundY + 6);
-    for (let x = -period; x <= VW + period; x += 8) {
-      const k = (x + off) / period * Math.PI * 2;
-      c.lineTo(x, groundY - base - amp * (0.6 * Math.sin(k) + 0.4 * Math.sin(k * 2.3 + 1.7)));
-    }
-    c.lineTo(VW, groundY + 6); c.closePath(); c.fill();
-  };
-  hill(0.12, 64, 34, 'rgba(22,34,62,.75)', 520);
-  hill(0.28, 26, 26, 'rgba(28,42,74,.85)', 340);
-  // 구름 (패럴랙스)
-  c.fillStyle = 'rgba(170,190,225,.13)';
-  for (let i = 0; i < 4; i++) {
-    const cw = 90 + i * 28, cx0 = ((i * 400 + 120 - dist * PXCM * (0.15 + i * 0.04)) % (VW + cw + 200)) - cw;
-    const cy = 40 + (i * 53) % Math.max(60, groundY * 0.32);
-    c.beginPath();
-    c.ellipse(cx0, cy, cw * 0.5, 15, 0, 0, 7);
-    c.ellipse(cx0 + cw * 0.26, cy - 9, cw * 0.3, 13, 0, 0, 7);
-    c.ellipse(cx0 - cw * 0.24, cy - 5, cw * 0.26, 11, 0, 0, 7);
-    c.fill();
+  // 카메라 팔로우
+  if (followMode) {
+    controls.target.lerp(new THREE.Vector3(dist / 100, 0.5, 0), 0.08);
+    camera.position.lerp(new THREE.Vector3(dist / 100 - 0.6, 0.85, 2.6), 0.05);
   }
-  // 바닥
-  const gnd = c.createLinearGradient(0, groundY, 0, VH);
-  gnd.addColorStop(0, '#1a2745'); gnd.addColorStop(1, '#131d36');
-  c.fillStyle = gnd; c.fillRect(0, groundY + 6, VW, VH - groundY);
-  // 바닥 타일 줄눈 (스크롤 — 이동감)
-  c.strokeStyle = 'rgba(120,145,190,.14)'; c.lineWidth = 1.5;
-  const tileOff = (dist * PXCM) % 52;
-  for (let x = -tileOff; x < VW; x += 52) { c.beginPath(); c.moveTo(x, groundY + 6); c.lineTo(x - 26, VH); c.stroke(); }
-  // 걷는 선 (라인)
-  c.strokeStyle = '#4da3ff'; c.lineWidth = 3; c.setLineDash([14, 10]); c.lineDashOffset = -dist * PXCM % 24;
-  c.beginPath(); c.moveTo(0, groundY + 3); c.lineTo(VW, groundY + 3); c.stroke(); c.setLineDash([]);
-  // 거리 눈금 (스크롤)
-  c.font = '11px sans-serif'; c.textAlign = 'center';
-  const startCm = Math.floor((dist - robotX / PXCM) / 50) * 50;
-  for (let cm = startCm; cm <= dist + (VW - robotX) / PXCM; cm += 50) {
-    if (cm < 0) continue;
-    const sx = robotX + (cm - dist) * PXCM;
-    if (sx < 0 || sx > VW) continue;
-    c.strokeStyle = 'rgba(120,145,190,.3)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(sx, groundY + 6); c.lineTo(sx, groundY + 18); c.stroke();
-    c.fillStyle = '#7a8aa5'; c.fillText(cm + '', sx, groundY + 32);
-  }
-  // 목표 깃발
-  const goalX = robotX + (FULL - dist) * PXCM;
-  if (goalX > -20 && goalX < VW + 20) {
-    c.strokeStyle = '#8fa0ba'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(goalX, groundY); c.lineTo(goalX, groundY - 50); c.stroke();
-    c.fillStyle = '#2ee06f'; c.beginPath(); c.moveTo(goalX, groundY - 50); c.lineTo(goalX + 26, groundY - 42); c.lineTo(goalX, groundY - 34); c.closePath(); c.fill();
-    c.fillStyle = '#cfe0ff'; c.font = 'bold 11px sans-serif'; c.fillText('목표 ' + FULL + 'cm', goalX + 10, groundY - 56);
-  }
-
-  lastGeom = drawRobot(c, robotX, groundY, phase, tilt, COM_PX[ht], STRIDE[st], celebrate);
-  c.restore();
-
   // HUD
   $('hud_dist').textContent = Math.round(Math.min(dist, P.stable ? FULL : P.dist)) + ' cm';
   $('hud_t').textContent = t.toFixed(1) + ' s';
+  controls.update();
+  if (fitStage(renderer, camera, stage3)) renderer.render(scene, camera);
 }
+/* 상시 렌더 */
+requestAnimationFrame(function alive() { if (!eng.running) draw(); requestAnimationFrame(alive); });
 
 function step(dt) {
   if (finished) return;

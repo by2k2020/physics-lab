@@ -112,6 +112,14 @@
   .theory-box th, .theory-box td { padding: 7px 10px; }
   .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 4px; }
 
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+  .count3 { display: none; position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content; font-size: 92px; font-weight: 900; color: #ffd23e; text-shadow: 0 0 34px rgba(255,210,62,.65); pointer-events: none; }
+  .count3.go { font-size: 68px; color: #2ee06f; text-shadow: 0 0 34px rgba(46,224,111,.65); }
+  .ff3 { display: none; position: absolute; bottom: 14px; left: 14px; font-size: 13px; font-weight: 700; color: #ffb02e; background: rgba(8,12,22,.6); border-radius: 8px; padding: 4px 10px; }
   @media (max-width: 900px) {
     body { overflow: auto; }
     .app { height: auto; min-height: 100vh; }
@@ -122,13 +130,14 @@
 </style>
 <script src="../vendor/ctm-fx.js"></script>
 <script>CtmFX.badgeMap({fail:['out','fall','bad','fail','crash','no','stuck','diff']})</script>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정</div>
-      <div class="title">🏃 경주하기 — 크랭크 러너 레이스</div>
+      <div class="title">🏃 경주하기 — 크랭크 러너 레이스<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="race">🏁 경주</button>
@@ -148,6 +157,14 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">AI 기어</span><span id="hud_ai">?</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bdR"></span></div>
+      <div class="cam-row">
+        <button id="camWideR" class="on">▶ 전체</button>
+        <button id="camDiagR">⛰ 대각선</button>
+        <button id="camFollowR">🏃 따라가기</button>
+      </div>
+      <div class="count3" id="cntR"></div>
+      <div class="ff3" id="ffR">⏩ 빨리감기</div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
     </div>
     <div class="side">
       <div class="led-box"><span class="led" id="ledR"></span><span class="status-txt" id="stR">준비 — 선수를 만들고 출발!</span></div>
@@ -230,6 +247,11 @@
         <div class="chip" style="color:var(--purple)"><span class="lab">문제</span><span id="hud_qn">1 / 3</span></div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bdQ"></span></div>
+      <div class="cam-row">
+        <button id="camWideQ" class="on">▶ 전체</button>
+        <button id="camDiagQ">⛰ 대각선</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
     </div>
     <div class="side">
       <div class="led-box"><span class="led" id="ledQ"></span><span class="status-txt" id="stQ">먼저 예측하고, 경주로 확인!</span></div>
@@ -307,10 +329,12 @@
   </section>
 </div>
 
-<script>
+<script type="module">
 'use strict';
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, canvasTex, textSprite, grassGround, makeTree, makeCloud } from '../vendor/ctm-3d.js';
+
 const $ = id => document.getElementById(id);
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const redraws = {};
 
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -319,16 +343,6 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   $('theory').classList.toggle('on', b.dataset.tab === 'theory');
   if (redraws[b.dataset.tab]) requestAnimationFrame(redraws[b.dataset.tab]);
 });
-
-function fit(cv) {
-  const w = cv.clientWidth, h = cv.clientHeight;
-  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
-    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
-  }
-  const c = cv.getContext('2d');
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  return { c, W: w, H: h };
-}
 
 /* ── 물리 모델 ─────────────────────────────
    기어비: 속도 배율 sm ↔ 힘 배율 tm (맞바꿈)
@@ -356,374 +370,12 @@ function calcRun(gearKey, L, trackKey) {
   };
 }
 
-/* ── 부품 헬퍼: 테크닉 빔(핀홀 있는 부품) · 핀 조인트 ── */
-function beamPart(c, x1, y1, x2, y2, w, fill) {
-  const a = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1);
-  c.save(); c.translate(x1, y1); c.rotate(a);
-  c.fillStyle = fill;
-  c.beginPath(); c.roundRect(-w / 2, -w / 2, len + w, w, w / 2); c.fill();
-  c.fillStyle = 'rgba(8,12,22,.5)';
-  c.beginPath(); c.arc(0, 0, w * 0.22, 0, 7); c.fill();
-  c.beginPath(); c.arc(len, 0, w * 0.22, 0, 7); c.fill();
-  if (len > w * 2.4) { c.beginPath(); c.arc(len / 2, 0, w * 0.18, 0, 7); c.fill(); }
-  c.restore();
-}
-function pinJoint(c, x, y, r) {
-  c.fillStyle = '#101828'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
-  c.fillStyle = '#68748f'; c.beginPath(); c.arc(x, y, r * 0.45, 0, 7); c.fill();
-}
-
-/* ── 러너(레고 미니피겨) 그리기 ── */
-function drawRunner(c, x, y, rot, ph, L, col, o = {}) {
-  c.save(); c.translate(x, y); c.rotate(rot);
-  const sc = o.scale || 1; c.scale(sc, sc);
-  const seg = 13 + L * 1.9;              // 허벅지=정강이 길이
-  const r = 4 + L * 1.35;                // 크랭크 반지름(보폭)
-  const hipY = -seg * 1.8;
-  const torsoH = seg * 1.25;
-  const neck = { x: 3, y: hipY - torsoH };
-  const shoulder = { x: 2, y: hipY - torsoH * 0.82 };
-  const jit = o.stall ? Math.sin(performance.now() / 45) * 1.4 : 0;
-  c.translate(jit, 0);
-
-  // 크랭크 발 궤적 (은은한 타원)
-  c.strokeStyle = 'rgba(140,170,220,.22)'; c.lineWidth = 1; c.setLineDash([3, 4]);
-  c.beginPath(); c.ellipse(0, -r * 0.48, r * 1.35, r * 0.5, 0, 0, 7); c.stroke();
-  c.setLineDash([]);
-
-  const legPt = phi => {
-    const fx = Math.cos(phi) * r * 1.35;
-    const fy = -Math.max(0, Math.sin(phi)) * r * 0.95;
-    let dx = fx, dy = fy - hipY;
-    let d = Math.hypot(dx, dy);
-    const maxD = seg * 2 - 2;
-    if (d > maxD) { dx *= maxD / d; dy *= maxD / d; d = maxD; }
-    const mx = dx / 2, my = hipY + dy / 2;
-    const h = Math.sqrt(Math.max(0, seg * seg - d * d / 4));
-    let px = -dy / d, py = dx / d;
-    if (px < 0) { px = -px; py = -py; }          // 무릎은 앞(진행 방향)으로
-    return { kx: mx + px * h, ky: my + py * h, fx: dx, fy: hipY + dy };
-  };
-  const drawLeg = (phi, main) => {
-    const p = legPt(phi);
-    const cl = main ? col.leg : col.legDim;
-    beamPart(c, 0, hipY, p.kx, p.ky, 7, cl);       // 허벅지 빔
-    beamPart(c, p.kx, p.ky, p.fx, p.fy, 6, cl);    // 정강이 빔
-    c.fillStyle = main ? col.foot : col.footDim;
-    c.beginPath(); c.roundRect(p.fx - 4, p.fy - 3.5, 13, 7, 2.5); c.fill();
-    pinJoint(c, p.kx, p.ky, 2.8);                  // 무릎 관절 핀
-    pinJoint(c, p.fx, p.fy, 2.2);                  // 발목 핀
-  };
-  const drawArm = (phi, main) => {
-    const aLen = seg * 0.85;
-    const a = 0.85 * Math.sin(phi) + 0.35;
-    const uL = aLen * 0.55, fL = aLen * 0.5;
-    const ex = shoulder.x + Math.sin(a) * uL, ey = shoulder.y + Math.cos(a) * uL;
-    const a2 = a + 0.9;                            // 팔꿈치는 앞으로 굽힘
-    const hx2 = ex + Math.sin(a2) * fL, hy2 = ey + Math.cos(a2) * fL;
-    const ca = main ? col.arm : col.armDim;
-    beamPart(c, shoulder.x, shoulder.y, ex, ey, 5.5, ca);  // 위팔 빔
-    beamPart(c, ex, ey, hx2, hy2, 5, ca);                  // 아래팔 빔
-    pinJoint(c, ex, ey, 2.4);                              // 팔꿈치 관절 핀
-    c.fillStyle = main ? col.foot : col.footDim;
-    c.beginPath(); c.arc(hx2, hy2, 3, 0, 7); c.fill();     // 손
-  };
-
-  drawArm(ph, false);          // 뒤팔 (뒤다리와 같은 위상)
-  drawLeg(ph + Math.PI, false); // 뒷다리
-  // 몸통(캡슐) + 어깨 스터드
-  c.strokeStyle = col.body; c.lineWidth = 15; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(0, hipY); c.lineTo(neck.x, neck.y); c.stroke();
-  c.fillStyle = col.stud;
-  c.beginPath(); c.roundRect(neck.x - 5.5, neck.y - torsoH * 0.18 - 8, 4.5, 4, 1.5); c.fill();
-  c.beginPath(); c.roundRect(neck.x + 1, neck.y - torsoH * 0.18 - 8, 4.5, 4, 1.5); c.fill();
-  // 러닝복 번호판(bib)
-  const bibX = neck.x - 0.5, bibY = hipY - torsoH * 0.42;
-  c.fillStyle = '#f4f7fd';
-  c.beginPath(); c.roundRect(bibX - 6.5, bibY - 6.5, 13, 12, 2); c.fill();
-  c.strokeStyle = 'rgba(8,12,22,.4)'; c.lineWidth = 1;
-  c.beginPath(); c.roundRect(bibX - 6.5, bibY - 6.5, 13, 12, 2); c.stroke();
-  c.fillStyle = '#16203a'; c.font = 'bold 8.5px sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(col.num || '1', bibX, bibY);
-  c.textBaseline = 'alphabetic'; c.textAlign = 'left';
-  // 머리 (스타일별 구분)
-  const hy = neck.y - 10;
-  if (col.headType === 'bot') {
-    // AI 로봇 머리 (사각 + 안테나)
-    c.fillStyle = col.head;
-    c.beginPath(); c.roundRect(neck.x - 6, hy - 7.5, 16.5, 15, 3.5); c.fill();
-    c.fillStyle = '#0b0f18';
-    c.beginPath(); c.roundRect(neck.x - 2.8, hy - 3.2, 10.5, 5, 1.5); c.fill();
-    c.fillStyle = '#2ee06f';
-    c.beginPath(); c.arc(neck.x + 0.2, hy - 0.7, 1.4, 0, 7); c.fill();
-    c.beginPath(); c.arc(neck.x + 4.7, hy - 0.7, 1.4, 0, 7); c.fill();
-    c.strokeStyle = col.stud; c.lineWidth = 1.6;
-    c.beginPath(); c.moveTo(neck.x + 2.2, hy - 7.5); c.lineTo(neck.x + 2.2, hy - 12); c.stroke();
-    c.fillStyle = '#ff5a52'; c.beginPath(); c.arc(neck.x + 2.2, hy - 13.2, 2, 0, 7); c.fill();
-  } else {
-    // 미니피겨 얼굴
-    c.fillStyle = col.head;
-    c.beginPath(); c.arc(neck.x + 2, hy, 8.5, 0, 7); c.fill();
-    c.fillStyle = '#0b0f18';
-    c.beginPath(); c.arc(neck.x + 5.5, hy - 1.5, 1.6, 0, 7); c.fill();
-    c.strokeStyle = '#0b0f18'; c.lineWidth = 1.4;
-    c.beginPath(); c.arc(neck.x + 3.5, hy + 1.5, 3.4, 0.25, 1.35); c.stroke();
-    if (col.headType === 'cap') {
-      // 야구모자 (챙은 진행 방향)
-      c.fillStyle = col.body;
-      c.beginPath(); c.arc(neck.x + 2, hy - 1.2, 8.8, Math.PI, Math.PI * 2); c.fill();
-      c.beginPath(); c.roundRect(neck.x + 2, hy - 4.6, 11.5, 2.8, 1.4); c.fill();
-      c.fillStyle = col.stud;
-      c.beginPath(); c.arc(neck.x + 2, hy - 9.4, 2, 0, 7); c.fill();
-    } else if (col.headType === 'spiky') {
-      // 뾰족 머리카락
-      c.fillStyle = '#4a3120';
-      c.beginPath();
-      c.moveTo(neck.x - 6.3, hy - 2);
-      for (let i = 0; i < 4; i++) {
-        const sx = neck.x - 5 + i * 4.6;
-        c.lineTo(sx + 2.3, hy - 12 - (i % 2) * 2);
-        c.lineTo(sx + 4.6, hy - 5.5);
-      }
-      c.lineTo(neck.x + 10.3, hy - 2);
-      c.arc(neck.x + 2, hy, 8.5, -0.24, Math.PI + 0.24, true);
-      c.closePath(); c.fill();
-    } else if (col.headType === 'helmet') {
-      // 헬멧
-      c.fillStyle = col.body;
-      c.beginPath(); c.arc(neck.x + 2, hy - 0.6, 9.3, Math.PI * 0.92, Math.PI * 2.06); c.fill();
-      c.fillStyle = col.stud;
-      c.beginPath(); c.roundRect(neck.x - 1.2, hy - 10.8, 6.5, 2.2, 1.1); c.fill();
-    } else {
-      c.fillStyle = col.stud;
-      c.beginPath(); c.roundRect(neck.x - 1, hy - 13, 6, 4, 1.5); c.fill();
-    }
-  }
-  // 크랭크 기구 노출: 커넥팅 로드 + 크랭크 빔 + 십자축 + 크랭크 핀
-  // 회전-다리 연동이 눈에 띄도록 움직이는 링크(크랭크·로드)는 앰버색으로 강조
-  const pF = legPt(ph);
-  const rc = r * 0.55;
-  const cpx = Math.cos(ph) * rc, cpy = hipY + Math.sin(ph) * rc;
-  c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(cpx, cpy); c.lineTo(pF.fx, pF.fy); c.stroke();   // 커넥팅 로드
-  beamPart(c, 0, hipY, cpx, cpy, 5, '#ffb02e');                            // 크랭크 빔
-  c.fillStyle = '#0b0f18';
-  c.beginPath(); c.arc(0, hipY, 4.6, 0, 7); c.fill();
-  c.fillStyle = '#39445c';
-  c.fillRect(-1.6, hipY - 4.6, 3.2, 9.2); c.fillRect(-4.6, hipY - 1.6, 9.2, 3.2);
-  pinJoint(c, cpx, cpy, 2.4);                                              // 크랭크 핀
-  c.fillStyle = '#ffd23e'; c.beginPath(); c.arc(cpx, cpy, 1.5, 0, 7); c.fill();
-  drawLeg(ph, true);            // 앞다리
-  drawArm(ph + Math.PI, true);  // 앞팔
-  c.restore();
-}
-
-/* ── 트랙 씬 ── */
-function trackScene(c, W, H, trackKey, tapeAge) {
-  const T = TRACKS[trackKey];
-  const xs = 72, xe = W - 86;
-  const y0 = trackKey === 'flat' ? H * 0.74 : H * 0.82;
-  const y1 = trackKey === 'flat' ? H * 0.74 : H * 0.42;
-  const ang = Math.atan2(y1 - y0, xe - xs);
-  const posOf = d => {
-    const p = Math.max(0, Math.min(1, d / T.len));
-    return { x: xs + p * (xe - xs), y: y0 + p * (y1 - y0) };
-  };
-  // 배경
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  c.fillStyle = 'rgba(120,145,190,.08)';
-  for (let x = 20; x < W; x += 30)
-    for (let y = 20; y < H * 0.55; y += 30) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
-  // 관중석 (지붕 + 계단식 스탠드 + 응원하는 관중)
-  const gx0 = W * 0.05, gx1 = trackKey === 'flat' ? W * 0.95 : W * 0.52;
-  const gsY = H * 0.08, gsH = H * 0.26;
-  c.fillStyle = '#0f1830';
-  c.beginPath(); c.roundRect(gx0, gsY, gx1 - gx0, gsH, 9); c.fill();
-  c.strokeStyle = '#243356'; c.lineWidth = 1.5;
-  c.beginPath(); c.roundRect(gx0, gsY, gx1 - gx0, gsH, 9); c.stroke();
-  c.fillStyle = '#1c2a4c';
-  c.beginPath(); c.roundRect(gx0 - 8, gsY - 7, gx1 - gx0 + 16, 8, 4); c.fill();
-  const CROWD = ['#4da3ff', '#ff9046', '#2ee06f', '#c792ea', '#ffd23e', '#ff5a52', '#e8eef7'];
-  const nowS = performance.now() / 1000;
-  for (let ri = 0; ri < 4; ri++) {
-    const ry = gsY + 13 + ri * (gsH - 22) / 3.1;
-    c.fillStyle = '#16213c';
-    c.fillRect(gx0 + 5, ry + 5, gx1 - gx0 - 10, 3);
-    for (let sx = gx0 + 14, i = 0; sx < gx1 - 9; sx += 16, i++) {
-      const rnd = Math.abs(Math.sin((ri * 37 + i) * 12.9898) * 43758.55) % 1;
-      // 파도타기: 위상이 좌→우로 흐르는 웨이브, 정점에선 두 팔 번쩍
-      const wp = nowS * 2.4 - (sx - gx0) * 0.02 + ri * 0.35;
-      const lift = Math.max(0, Math.sin(wp));
-      const bob = -lift * lift * 4.5;
-      const col = CROWD[Math.floor(rnd * CROWD.length)];
-      c.fillStyle = col;
-      c.beginPath(); c.arc(sx, ry + bob, 3, 0, 7); c.fill();
-      c.fillRect(sx - 2.6, ry + bob + 2.8, 5.2, 3.4);
-      if (lift > 0.72) {
-        c.strokeStyle = col; c.lineWidth = 1.5;
-        c.beginPath();
-        c.moveTo(sx - 2.4, ry + bob + 3); c.lineTo(sx - 5.2, ry + bob - 3.5);
-        c.moveTo(sx + 2.4, ry + bob + 3); c.lineTo(sx + 5.2, ry + bob - 3.5);
-        c.stroke();
-      }
-    }
-  }
-  // 지면 (양끝 연장)
-  const slope = (y1 - y0) / (xe - xs);
-  const yAt = x => y0 + (x - xs) * slope;
-  c.fillStyle = '#131d33';
-  c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
-  c.strokeStyle = '#2a3a5c'; c.lineWidth = 4;
-  c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.stroke();
-  if (trackKey === 'up') {
-    // 오르막 강조: 경사면 해칭 + 옅은 웜톤 + 기울기 화살표·라벨
-    c.strokeStyle = 'rgba(95,125,180,.16)'; c.lineWidth = 2;
-    for (let x = 24; x < W; x += 44) {
-      c.beginPath(); c.moveTo(x, yAt(x) + 7); c.lineTo(x - 15, yAt(x) + 30); c.stroke();
-    }
-    const eg = c.createLinearGradient(0, y1, 0, H);
-    eg.addColorStop(0, 'rgba(255,176,46,.07)'); eg.addColorStop(1, 'rgba(255,176,46,0)');
-    c.fillStyle = eg;
-    c.beginPath(); c.moveTo(0, yAt(0)); c.lineTo(W, yAt(W)); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
-    const grade = Math.round(Math.abs(Math.tan(ang)) * 100);
-    const mp = posOf(T.len * 0.42);
-    c.save(); c.translate(mp.x, mp.y); c.rotate(ang);
-    c.strokeStyle = 'rgba(255,176,46,.65)'; c.lineWidth = 3; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(-58, 46); c.lineTo(58, 46); c.stroke();
-    c.beginPath(); c.moveTo(46, 40); c.lineTo(58, 46); c.lineTo(46, 52); c.stroke();
-    c.fillStyle = 'rgba(255,196,86,.9)'; c.font = 'bold 13.5px sans-serif'; c.textAlign = 'center';
-    c.fillText('⛰ 오르막 · 경사 ' + grade + '% — 힘이 필요해!', 0, 68);
-    c.restore();
-  }
-  // 레인 라인 (점선)
-  c.setLineDash([12, 9]); c.lineWidth = 1.5; c.strokeStyle = 'rgba(140,165,210,.25)';
-  [-14, 14, 42, 70].forEach(off => {
-    const po = perpOffset(ang, off);
-    const a0 = posOf(0), a1 = posOf(T.len);
-    c.beginPath(); c.moveTo(a0.x + po.x, a0.y + po.y); c.lineTo(a1.x + po.x, a1.y + po.y); c.stroke();
-  });
-  c.setLineDash([]);
-  // 거리 눈금
-  const step = T.len >= 40 ? 10 : 2;
-  c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#6d7b95';
-  for (let d = 0; d <= T.len; d += step) {
-    const p = posOf(d);
-    c.strokeStyle = 'rgba(120,145,190,.3)'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x, p.y + 8); c.stroke();
-    c.save(); c.translate(p.x, p.y + 20); c.rotate(ang); c.fillText(d + 'm', 0, 0); c.restore();
-  }
-  // 출발선
-  const s0 = posOf(0);
-  c.strokeStyle = '#4da3ff'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(s0.x, s0.y + 2); c.lineTo(s0.x, s0.y - 66); c.stroke();
-  c.font = 'bold 12.5px sans-serif'; c.fillStyle = '#4da3ff';
-  c.fillText('출발', s0.x, s0.y - 74);
-  // 결승 깃발
-  const f = posOf(T.len);
-  c.strokeStyle = '#c9d6ee'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(f.x, f.y); c.lineTo(f.x, f.y - 86); c.stroke();
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
-    c.fillStyle = (i + j) % 2 ? '#e8eef7' : '#1a2234';
-    c.fillRect(f.x + i * 9, f.y - 86 + j * 9, 9, 9);
-  }
-  c.strokeStyle = 'rgba(200,215,240,.5)'; c.lineWidth = 1;
-  c.strokeRect(f.x, f.y - 86, 36, 18);
-  c.font = 'bold 12.5px sans-serif'; c.fillStyle = '#e8eef7'; c.textAlign = 'center';
-  c.fillText('결승', f.x + 18, f.y - 94);
-  // 결승 테이프 (레인 가로지름, 빨강·흰 줄무늬 + 양끝 기둥)
-  const tpA = perpOffset(ang, -14), tpB = perpOffset(ang, 74);
-  const tx0 = f.x + tpA.x, ty0 = f.y + tpA.y - 26, tx1 = f.x + tpB.x, ty1 = f.y + tpB.y - 26;
-  c.strokeStyle = '#8fa0bf'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(tx0, ty0); c.lineTo(tx0, f.y + tpA.y); c.stroke();
-  c.beginPath(); c.moveTo(tx1, ty1); c.lineTo(tx1, f.y + tpB.y); c.stroke();
-  if (tapeAge == null) {
-    for (let i = 0; i < 10; i++) {
-      c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
-      c.beginPath();
-      c.moveTo(tx0 + (tx1 - tx0) * i / 10, ty0 + (ty1 - ty0) * i / 10);
-      c.lineTo(tx0 + (tx1 - tx0) * (i + 1) / 10, ty0 + (ty1 - ty0) * (i + 1) / 10);
-      c.stroke();
-    }
-  } else {
-    // 1등 통과! 테이프가 끊어져 양쪽 기둥에서 펄럭이며 늘어짐
-    const droop = Math.min(1, tapeAge * 1.8);
-    const sway = Math.sin(performance.now() / 280) * 5 * (1 - droop * 0.6);
-    const tapeHalf = (px, py, dirX) => {
-      const ex2 = px + dirX * 0.42 + sway, ey2 = py + 34 + 52 * droop;
-      const cx2 = px + dirX * 0.3, cy2 = py + 10 + 20 * droop;
-      let lx = px, ly = py;
-      for (let i = 1; i <= 6; i++) {
-        const tt = i / 6;
-        const qx = (1 - tt) * (1 - tt) * px + 2 * (1 - tt) * tt * cx2 + tt * tt * ex2;
-        const qy = (1 - tt) * (1 - tt) * py + 2 * (1 - tt) * tt * cy2 + tt * tt * ey2;
-        c.strokeStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.lineWidth = 5;
-        c.beginPath(); c.moveTo(lx, ly); c.lineTo(qx, qy); c.stroke();
-        lx = qx; ly = qy;
-      }
-    };
-    tapeHalf(tx0, ty0, tx1 - tx0);
-    tapeHalf(tx1, ty1, tx0 - tx1);
-  }
-  return { posOf, ang, T };
-}
-function perpOffset(ang, off) { return { x: Math.sin(ang) * off, y: -Math.cos(ang) * off }; }
-
 const COLS = {
-  blue:   { body: '#2563eb', head: '#ffd23e', stud: '#7db4ff', leg: '#3d7bff', legDim: '#22448c', arm: '#3d7bff', armDim: '#22448c', foot: '#e8eef7', footDim: '#5d6b85', hud: '#4da3ff', num: '7', headType: 'cap' },
-  orange: { body: '#c2410c', head: '#d9dfeb', stud: '#ffb27d', leg: '#ff8a3d', legDim: '#7c3a16', arm: '#ff8a3d', armDim: '#7c3a16', foot: '#e8eef7', footDim: '#5d6b85', hud: '#ff9046', num: '9', headType: 'bot' },
-  green:  { body: '#15803d', head: '#ffd23e', stud: '#7ce8a8', leg: '#2ec06f', legDim: '#14532d', arm: '#2ec06f', armDim: '#14532d', foot: '#e8eef7', footDim: '#5d6b85', hud: '#2ee06f', num: '2', headType: 'spiky' },
-  purple: { body: '#7c3aed', head: '#ffd23e', stud: '#c9a6ff', leg: '#a78bfa', legDim: '#3c2a6e', arm: '#a78bfa', armDim: '#3c2a6e', foot: '#e8eef7', footDim: '#5d6b85', hud: '#c792ea', num: '3', headType: 'helmet' },
+  blue:   { body: '#2563eb', head: '#ffd23e', stud: '#7db4ff', leg: '#3d7bff', foot: '#e8eef7', hud: '#4da3ff', num: '7', headType: 'cap' },
+  orange: { body: '#c2410c', head: '#d9dfeb', stud: '#ffb27d', leg: '#ff8a3d', foot: '#e8eef7', hud: '#ff9046', num: '9', headType: 'bot' },
+  green:  { body: '#15803d', head: '#ffd23e', stud: '#7ce8a8', leg: '#2ec06f', foot: '#e8eef7', hud: '#2ee06f', num: '2', headType: 'spiky' },
+  purple: { body: '#7c3aed', head: '#ffd23e', stud: '#c9a6ff', leg: '#a78bfa', foot: '#e8eef7', hud: '#c792ea', num: '3', headType: 'helmet' },
 };
-
-/* ── 이펙트: 먼지 · 발자국 · 색종이 · 결승 테이프 ── */
-function makeFx() { return { dust: [], prints: [], conf: [], tapeAge: null, burst: false }; }
-function fxReset(fx) { fx.dust.length = 0; fx.prints.length = 0; fx.conf.length = 0; fx.tapeAge = null; fx.burst = false; }
-const CONF_COLS = ['#ffd23e', '#ff5a52', '#2ee06f', '#4da3ff', '#c792ea', '#ff9046'];
-function fxBurst(fx, x, y) {
-  for (let i = 0; i < 70; i++) {
-    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 190;
-    fx.conf.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 130,
-      rot: Math.random() * 6.3, vr: (Math.random() - .5) * 10,
-      w: 4 + Math.random() * 4, h: 2.5 + Math.random() * 2.5,
-      col: CONF_COLS[i % CONF_COLS.length], age: 0, life: 1.8 + Math.random() * 1.2 });
-  }
-}
-function fxUpdate(fx, dt) {
-  if (fx.tapeAge != null) fx.tapeAge += dt;
-  fx.dust = fx.dust.filter(p => (p.age += dt) < p.life);
-  fx.dust.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 2.2; p.vy -= 24 * dt; });
-  fx.prints = fx.prints.filter(p => (p.age += dt) < 2.6);
-  fx.conf = fx.conf.filter(p => (p.age += dt) < p.life);
-  fx.conf.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 170 * dt; p.vx *= 1 - dt * 0.8; p.rot += p.vr * dt; });
-}
-function fxDrawGround(c, fx) {
-  fx.prints.forEach(p => {
-    c.save(); c.translate(p.x, p.y); c.rotate(p.ang);
-    c.globalAlpha = Math.max(0, 1 - p.age / 2.6) * 0.5;
-    c.fillStyle = '#8fa0bf';
-    c.beginPath(); c.ellipse(0, 3, 5, 1.8, 0, 0, 7); c.fill();
-    c.restore();
-  });
-  c.globalAlpha = 1;
-}
-function fxDrawAir(c, fx) {
-  fx.dust.forEach(p => {
-    const k = p.age / p.life;
-    c.globalAlpha = (1 - k) * 0.4;
-    c.fillStyle = '#aab6cf';
-    c.beginPath(); c.arc(p.x, p.y, p.r * (1 + k * 1.6), 0, 7); c.fill();
-  });
-  fx.conf.forEach(p => {
-    c.globalAlpha = Math.min(1, (p.life - p.age) / 0.5);
-    c.save(); c.translate(p.x, p.y); c.rotate(p.rot);
-    c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-    c.restore();
-  });
-  c.globalAlpha = 1;
-}
 
 function makeRunnerState(gearKey, L, trackKey, name, col) {
   return { gearKey, L, trackKey, name, col, d: 0, v: 0, ph: 0, fin: null };
@@ -736,59 +388,12 @@ function stepRunner(r, dt, jitterMul) {
   if (r.fin == null) r.d += r.v * dt;
   r.ph += (m.stall ? 0.5 : m.rps * Math.PI * 2) * dt;
 }
-function drawLaneRunner(c, scene, r, off, scale, label, fx) {
-  const p = scene.posOf(Math.min(r.d, scene.T.len));
-  const o = perpOffset(scene.ang, off);
-  const x = p.x + o.x, y = p.y + o.y;
-  if (fx && r.fin == null) {
-    const sNow = Math.sin(r.ph);
-    if (r._pSin > 0 && sNow <= 0 && r.v > 0.4) {          // 발이 땅에 닿는 순간 발자국
-      const lx = Math.cos(r.ph) * (4 + r.L * 1.35) * 1.35 * scale;
-      fx.prints.push({ x: x + Math.cos(scene.ang) * lx, y: y + Math.sin(scene.ang) * lx, ang: scene.ang, age: 0 });
-      if (fx.prints.length > 26) fx.prints.shift();
-    }
-    r._pSin = sNow;
-    if (r.v > 1.2 && Math.random() < 0.55) {              // 달릴 때 발밑 먼지
-      const bx = -Math.cos(scene.ang), by = -Math.sin(scene.ang);
-      fx.dust.push({ x: x + bx * 9 * scale, y: y + by * 9 * scale - 2,
-        vx: bx * (24 + Math.random() * 34), vy: by * 10 - 6 - Math.random() * 10,
-        r: 2 + Math.random() * 2.5, age: 0, life: 0.5 + Math.random() * 0.3 });
-      if (fx.dust.length > 90) fx.dust.shift();
-    }
-  }
-  drawRunner(c, x, y, scene.ang, r.ph, r.L, r.col, { scale, stall: r.stall && r.fin == null });
-  c.save(); c.translate(x, y);
-  const top = -(13 + r.L * 1.9) * 4.6 * scale - off * 0.45;  // 뒤 레인 라벨은 더 위로 (겹침 방지)
-  const fin = r.fin != null;
-  const badge = fin
-    ? (r.rank === 1 ? '🥇 ' : r.rank === 2 ? '🥈 ' : '🥉 ') + r.fin.toFixed(1) + '초'
-    : (r.stall ? '💦 힘 부족!' : '');
-  c.font = 'bold 13px sans-serif';
-  const lw = c.measureText(label).width;
-  const bFont = fin ? 'bold 13.5px sans-serif' : 'bold 13px sans-serif';
-  let bw = 0;
-  if (badge) { c.font = bFont; bw = c.measureText(badge).width + 7; }
-  c.textAlign = 'left';
-  c.font = 'bold 13px sans-serif'; c.fillStyle = r.col.hud;
-  c.fillText(label, -(lw + bw) / 2, top);
-  if (badge) {
-    c.font = bFont; c.fillStyle = fin ? '#ffd23e' : '#ff5a52';
-    c.fillText(badge, -(lw + bw) / 2 + lw + 7, top);
-  }
-  c.textAlign = 'center';
-  c.restore();
-}
-function countdownOverlay(c, W, H, ct) {
-  const n = ct > 2 ? '3' : ct > 1 ? '2' : ct > 0 ? '1' : '출발!';
-  c.save();
-  c.fillStyle = 'rgba(5,8,16,.35)'; c.fillRect(0, 0, W, H);
-  c.font = '900 ' + (n === '출발!' ? 64 : 88) + 'px sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillStyle = n === '출발!' ? '#2ee06f' : '#ffd23e';
-  c.shadowColor = c.fillStyle; c.shadowBlur = 30;
-  c.fillText(n, W / 2, H * 0.4);
-  c.restore();
-}
+
+/* ── 이펙트 상태 (테이프 끊김 · 컨페티 트리거) ── */
+function makeFx() { return { tapeAge: null, burst: false }; }
+function fxReset(fx) { fx.tapeAge = null; fx.burst = false; }
+function fxUpdate(fx, dt) { if (fx.tapeAge != null) fx.tapeAge += dt; }
+
 function pickCtl(container, attr, onChange) {
   const btns = [...container.querySelectorAll('button')];
   let val = container.querySelector('button.on').dataset[attr];
@@ -800,15 +405,366 @@ function pickCtl(container, attr, onChange) {
   return () => val;
 }
 
+/* ═══════════ 3D 러너 (크랭크 기구 노출 미니피겨) ═══════════ */
+function makeRunner3(col, L) {
+  const gp = new THREE.Group();
+  const seg = 0.16 + L * 0.022;          // 허벅지=정강이 길이 (보폭 ∝ L)
+  const hipY = seg * 1.9;
+  const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55 });
+  const bodyM = mat(col.body), legM = mat(col.leg), footM = mat(col.foot);
+  // 다리 2 (엉덩이 피벗 → 무릎 피벗)
+  const legs = [];
+  [0.055, -0.055].forEach(z => {
+    const thigh = new THREE.Group(); thigh.position.set(0, hipY, z); gp.add(thigh);
+    const tM = new THREE.Mesh(new THREE.BoxGeometry(0.055, seg, 0.05), legM);
+    tM.position.y = -seg / 2; tM.castShadow = true; thigh.add(tM);
+    const shin = new THREE.Group(); shin.position.y = -seg; thigh.add(shin);
+    const sM = new THREE.Mesh(new THREE.BoxGeometry(0.048, seg, 0.045), legM);
+    sM.position.y = -seg / 2; sM.castShadow = true; shin.add(sM);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.04, 0.055), footM);
+    foot.position.set(0.035, -seg, 0); foot.castShadow = true; shin.add(foot);
+    legs.push({ thigh, shin });
+  });
+  // 몸통 + 배번판
+  const torsoH = seg * 1.15;
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.16, torsoH, 0.14), bodyM);
+  torso.position.y = hipY + torsoH / 2; torso.castShadow = true; gp.add(torso);
+  const bib = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.085),
+    new THREE.MeshBasicMaterial({ map: canvasTex(48, 48, c => {
+      c.fillStyle = '#f4f7fd'; c.fillRect(0, 0, 48, 48);
+      c.strokeStyle = '#8b98ad'; c.lineWidth = 3; c.strokeRect(1, 1, 46, 46);
+      c.fillStyle = '#16203a'; c.font = 'bold 30px sans-serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(col.num, 24, 27);
+    }) }));
+  bib.position.set(0, hipY + torsoH * 0.5, 0.072); gp.add(bib);
+  // 어깨 스터드
+  const studM = mat(col.stud);
+  [-0.05, 0.05].forEach(x => {
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 10), studM);
+    st.position.set(x, hipY + torsoH + 0.01, 0); gp.add(st);
+  });
+  // 팔 2 (어깨 피벗 + 팔꿈치 앞굽힘)
+  const armM = mat(col.leg);
+  const arms = [];
+  [0.105, -0.105].forEach(z => {
+    const arm = new THREE.Group(); arm.position.set(0, hipY + torsoH * 0.86, z); gp.add(arm);
+    const up = new THREE.Mesh(new THREE.BoxGeometry(0.045, seg * 0.7, 0.045), armM);
+    up.position.y = -seg * 0.35; up.castShadow = true; arm.add(up);
+    const fore = new THREE.Group(); fore.position.y = -seg * 0.7; fore.rotation.z = 0.95; arm.add(fore);
+    const fM = new THREE.Mesh(new THREE.BoxGeometry(0.04, seg * 0.58, 0.04), armM);
+    fM.position.y = -seg * 0.29; fore.add(fM);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), footM);
+    hand.position.y = -seg * 0.58; fore.add(hand);
+    arms.push(arm);
+  });
+  // 머리 (스타일별)
+  const headY = hipY + torsoH + 0.1;
+  const headGrp = new THREE.Group(); headGrp.position.y = headY; gp.add(headGrp);
+  const eyeM = new THREE.MeshBasicMaterial({ color: 0x0b0f18 });
+  if (col.headType === 'bot') {
+    const h = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.12), mat(col.head));
+    h.castShadow = true; headGrp.add(h);
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.012), eyeM);
+    visor.position.set(0.005, 0.005, 0.062); headGrp.add(visor);
+    [-0.022, 0.022].forEach(x => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 8), new THREE.MeshBasicMaterial({ color: 0x2ee06f }));
+      e.position.set(x, 0.005, 0.07); headGrp.add(e);
+    });
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.06, 6), mat(col.stud));
+    ant.position.y = 0.09; headGrp.add(ant);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff5a52 }));
+    bulb.position.y = 0.13; headGrp.add(bulb);
+  } else {
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 16), mat(col.head));
+    h.castShadow = true; headGrp.add(h);
+    [-0.024, 0.024].forEach(x => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 8), eyeM);
+      e.position.set(x, 0.012, 0.055); headGrp.add(e);
+    });
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 12, Math.PI * 0.75), eyeM);
+    smile.position.set(0, -0.012, 0.055); smile.rotation.z = Math.PI + 0.4; headGrp.add(smile);
+    if (col.headType === 'cap') {
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.066, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), bodyM);
+      cap.position.y = 0.032; headGrp.add(cap);
+      const brim = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.014, 0.09), bodyM);
+      brim.position.set(0.075, 0.035, 0); headGrp.add(brim);
+    } else if (col.headType === 'spiky') {
+      [-0.03, 0.005, 0.038].forEach((x, i) => {
+        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.05 + (i % 2) * 0.02, 6),
+          new THREE.MeshStandardMaterial({ color: 0x4a3120, roughness: 0.8 }));
+        sp.position.set(x, 0.062, 0); headGrp.add(sp);
+      });
+    } else if (col.headType === 'helmet') {
+      const hm = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), bodyM);
+      hm.position.y = 0.022; headGrp.add(hm);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.1), mat(col.stud));
+      stripe.position.y = 0.082; headGrp.add(stripe);
+    }
+  }
+  // 크랭크 기구 (앰버 디스크 + 크랭크 빔 + 핀) — 회전↔걸음 연동 강조
+  const crank = new THREE.Group(); crank.position.set(0, hipY, 0.095); gp.add(crank);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.028, 16),
+    new THREE.MeshStandardMaterial({ color: 0xffb02e, roughness: 0.4 }));
+  disc.rotation.x = Math.PI / 2; crank.add(disc);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.024, 0.03),
+    new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.4 }));
+  beam.position.x = 0.03; crank.add(beam);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.05, 8),
+    new THREE.MeshStandardMaterial({ color: 0x68748f, roughness: 0.35, metalness: 0.4 }));
+  pin.rotation.x = Math.PI / 2; pin.position.x = 0.062; crank.add(pin);
+
+  const R = {
+    grp: gp, L, col, labelLift: 0,
+    topY: headY + 0.16,
+    _labTxt: '', _lab: null, _badTxt: null, _bad: null,
+    setLabel(txt) {
+      if (txt === this._labTxt) return;
+      this._labTxt = txt;
+      if (this._lab) gp.remove(this._lab);
+      this._lab = textSprite(txt, { size: 26, color: col.hud, bg: 'rgba(8,12,22,.72)', scale: 0.0042 });
+      this._lab.position.y = this.topY + 0.13 + this.labelLift; gp.add(this._lab);
+    },
+    setBadge(txt, color) {
+      if (txt === this._badTxt) return;
+      this._badTxt = txt;
+      if (this._bad) { gp.remove(this._bad); this._bad = null; }
+      if (txt) {
+        this._bad = textSprite(txt, { size: 27, color, bg: 'rgba(8,12,22,.8)', scale: 0.0044 });
+        this._bad.position.y = this.topY + 0.34 + this.labelLift; gp.add(this._bad);
+      }
+    },
+    update(ph, stall, lean) {
+      const swing = Math.sin(ph) * 0.62;
+      legs[0].thigh.rotation.z = swing;
+      legs[1].thigh.rotation.z = -swing;
+      legs[0].shin.rotation.z = -Math.max(0, Math.cos(ph)) * 0.9 - 0.06;
+      legs[1].shin.rotation.z = -Math.max(0, -Math.cos(ph)) * 0.9 - 0.06;
+      arms[0].rotation.z = -swing * 0.85;
+      arms[1].rotation.z = swing * 0.85;
+      crank.rotation.z = -ph;
+      gp.rotation.z = (lean || 0) + (stall ? Math.sin(performance.now() / 45) * 0.05 : 0);
+    },
+  };
+  return R;
+}
+
+/* ═══════════ 3D 경기장 월드 (트랙 · 관중석 · 결승 테이프 · 먼지) ═══════════ */
+const WLEN = 10, RISE = 2.4, LANE_HALF = 1.25, SURF = 0.1;
+function makeRaceWorld(cv) {
+  const stage = cv.closest('.stage');
+  const renderer = makeRenderer(cv);
+  const scene = makeScene('day');
+  stdLights(scene, { pos: [-6, 10, 6], shadowArea: 9 });
+  const { camera, controls } = makeCamera(cv, { fov: 44, maxD: 30 });
+  grassGround(scene, { size: 70 });
+  [[-8.5, -4.5, 1.3], [8.6, -5, 1.5], [-11, -2.5, 1.1], [11.5, -3.4, 1.4], [-7.2, 3.6, 1.0], [7.8, 3.9, 1.2]].forEach(([x, z, s]) => {
+    const t = makeTree(s); t.position.set(x, 0, z); scene.add(t);
+  });
+  [[-6, 7.5, -16], [4, 8.6, -18], [10, 7, -14]].forEach(([x, y, z]) => {
+    const cl = makeCloud(1.7); cl.position.set(x, y, z); scene.add(cl);
+  });
+  // 관중석 (계단식 스탠드 + 파도타기 관중 + 지붕)
+  const CROWD_COLS = [0x4da3ff, 0xff9046, 0x2ee06f, 0xc792ea, 0xffd23e, 0xff5a52, 0xe8eef7];
+  const crowd = [];
+  {
+    const stand = new THREE.Group(); scene.add(stand);
+    const smat = new THREE.MeshStandardMaterial({ color: 0x39445c, roughness: 0.8 });
+    for (let row = 0; row < 4; row++) {
+      const th = 0.42 + row * 0.42;
+      const tier = new THREE.Mesh(new THREE.BoxGeometry(13, th, 0.9), smat);
+      tier.position.set(0, th / 2, -2.6 - row * 0.92);
+      tier.receiveShadow = true; stand.add(tier);
+      for (let i = 0; i < 17; i++) {
+        const x = -6 + i * 0.75 + (row % 2) * 0.36;
+        const col2 = CROWD_COLS[(i * 7 + row * 3) % CROWD_COLS.length];
+        const p = new THREE.Group();
+        const bd = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.26, 0.16),
+          new THREE.MeshStandardMaterial({ color: col2, roughness: 0.7 }));
+        bd.position.y = 0.13; p.add(bd);
+        const hd = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8),
+          new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.6 }));
+        hd.position.y = 0.34; p.add(hd);
+        p.position.set(x, th, -2.6 - row * 0.92);
+        stand.add(p);
+        crowd.push({ p, x, row, baseY: th });
+      }
+    }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(13.6, 0.12, 4.6),
+      new THREE.MeshStandardMaterial({ color: 0x2a3550, roughness: 0.6 }));
+    roof.position.set(0, 3.1, -4.0); stand.add(roof);
+    [[-6.4, -2.3], [6.4, -2.3], [-6.4, -5.5], [6.4, -5.5]].forEach(([x, z]) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.1, 8), smat);
+      post.position.set(x, 1.55, z); stand.add(post);
+    });
+  }
+  // 트랙 (평지/오르막 전환 시 재구성)
+  let trackGrp = null, trackKey = '', tapeHalves = null;
+  function posOf(d) {
+    const T = TRACKS[trackKey];
+    const p = Math.max(0, Math.min(1, d / T.len));
+    return { x: -WLEN / 2 + p * WLEN, y: trackKey === 'up' ? p * RISE : 0 };
+  }
+  function setTrack(key) {
+    if (key === trackKey) return;
+    trackKey = key;
+    if (trackGrp) scene.remove(trackGrp);
+    trackGrp = new THREE.Group(); scene.add(trackGrp);
+    const T = TRACKS[key];
+    const isUp = key === 'up';
+    const ang = isUp ? Math.atan2(RISE, WLEN) : 0;
+    // 주로 스트립 (육상 트랙 텍스처 + 레인 점선)
+    const tex = canvasTex(512, 256, c => {
+      c.fillStyle = isUp ? '#8a6a4a' : '#b8543a'; c.fillRect(0, 0, 512, 256);
+      for (let i = 0; i < 420; i++) {
+        c.fillStyle = 'rgba(0,0,0,.09)';
+        c.fillRect((i * 131) % 512, (i * 47) % 256, 2, 2);
+      }
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 3; c.setLineDash([26, 16]);
+      [64, 128, 192].forEach(y => { c.beginPath(); c.moveTo(0, y); c.lineTo(512, y); c.stroke(); });
+    }, [3, 1]);
+    const slopeLen = Math.hypot(WLEN, isUp ? RISE : 0) + 1.3;
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.16, LANE_HALF * 2 + 0.5),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+    strip.receiveShadow = true;
+    if (isUp) {
+      strip.rotation.z = ang;
+      strip.position.set(0, RISE / 2 + 0.02, 0);
+      const sh = new THREE.Shape();
+      sh.moveTo(-WLEN / 2, 0); sh.lineTo(WLEN / 2, 0); sh.lineTo(WLEN / 2, RISE);
+      sh.closePath();
+      const wedge = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: LANE_HALF * 2 + 0.5, bevelEnabled: false }),
+        new THREE.MeshStandardMaterial({ color: 0x7a5f3e, roughness: 0.95 }));
+      wedge.position.z = -(LANE_HALF + 0.25);
+      wedge.receiveShadow = true;
+      trackGrp.add(wedge);
+      const grade = Math.round(RISE / WLEN * 100);
+      const gl = textSprite('⛰ 오르막 · 경사 ' + grade + '% — 힘이 필요해!', { size: 30, color: '#ffc456', bg: 'rgba(30,20,6,.72)', scale: 0.0044 });
+      gl.position.set(-0.8, RISE * 0.42 + 1.5, 1.2); trackGrp.add(gl);
+    } else {
+      strip.position.set(0, 0.02, 0);
+    }
+    trackGrp.add(strip);
+    // 거리 눈금 (기둥 + 라벨, 관람쪽 앞줄)
+    const step = T.len >= 40 ? 10 : 2;
+    for (let d = 0; d <= T.len; d += step) {
+      const p = posOf(d);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.16, 0.035),
+        new THREE.MeshStandardMaterial({ color: 0x5b6c8c }));
+      post.position.set(p.x, p.y + SURF + 0.08, LANE_HALF + 0.45); trackGrp.add(post);
+      const lab = textSprite(d + 'm', { size: 30, color: '#dfe8f5', bg: 'rgba(8,12,22,.6)', scale: 0.0038 });
+      lab.position.set(p.x, p.y + SURF + 0.3, LANE_HALF + 0.45); trackGrp.add(lab);
+    }
+    // 출발선
+    const s0 = posOf(0);
+    const sl = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, LANE_HALF * 2 + 0.4),
+      new THREE.MeshBasicMaterial({ color: 0x4da3ff }));
+    sl.rotation.z = isUp ? ang : 0;
+    sl.position.set(s0.x, s0.y + SURF + 0.005, 0); trackGrp.add(sl);
+    const st = textSprite('출발', { size: 30, color: '#4da3ff', bg: 'rgba(8,12,22,.66)', scale: 0.004 });
+    st.position.set(s0.x, s0.y + SURF + 0.55, LANE_HALF + 0.45); trackGrp.add(st);
+    // 결승 게이트 (기둥 2 + 체커 배너)
+    const f = posOf(T.len);
+    const tw = LANE_HALF + 0.35;
+    const poleM = new THREE.MeshStandardMaterial({ color: 0xc9d6ee, roughness: 0.4 });
+    [tw, -tw].forEach(z => {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.7, 10), poleM);
+      pole.position.set(f.x, f.y + SURF + 0.85, z); pole.castShadow = true; trackGrp.add(pole);
+    });
+    const chk = canvasTex(160, 32, c => {
+      for (let i = 0; i < 10; i++) for (let j = 0; j < 2; j++) {
+        c.fillStyle = (i + j) % 2 ? '#e8eef7' : '#1a2234';
+        c.fillRect(i * 16, j * 16, 16, 16);
+      }
+    });
+    const ban = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.26, tw * 2),
+      new THREE.MeshStandardMaterial({ map: chk, roughness: 0.6 }));
+    ban.position.set(f.x, f.y + SURF + 1.62, 0); trackGrp.add(ban);
+    const fl = textSprite('결승', { size: 32, color: '#e8eef7', bg: 'rgba(8,12,22,.66)', scale: 0.0042 });
+    fl.position.set(f.x, f.y + SURF + 1.95, 0); trackGrp.add(fl);
+    // 결승 테이프 (빨강·흰 줄무늬, 1등 통과 시 양쪽으로 끊어짐)
+    const tapeTex = canvasTex(128, 16, c => {
+      for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#e8eef7' : '#ff5a52'; c.fillRect(i * 16, 0, 16, 16); }
+    }, [2, 1]);
+    tapeHalves = [];
+    [1, -1].forEach(s => {
+      const half = new THREE.Group();
+      half.position.set(f.x, f.y + SURF + 0.55, s * tw);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.09, tw),
+        new THREE.MeshStandardMaterial({ map: tapeTex, roughness: 0.6 }));
+      mesh.position.z = -s * tw / 2;
+      half.add(mesh); trackGrp.add(half);
+      tapeHalves.push({ half, s });
+    });
+  }
+  function setTape(age) {
+    if (!tapeHalves) return;
+    const droop = age == null ? 0 : Math.min(1, age * 1.8);
+    const sway = age == null ? 0 : Math.sin(performance.now() / 280) * 0.12 * (1 - droop * 0.6);
+    tapeHalves.forEach(t => { t.half.rotation.x = -t.s * (droop * 1.25 + sway); });
+  }
+  // 먼지 풀
+  const dustPool = [];
+  for (let i = 0; i < 24; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xc9b8a0, transparent: true, opacity: 0 }));
+    m.visible = false; scene.add(m);
+    dustPool.push({ m, age: 9, life: 1, vx: 0, vy: 0 });
+  }
+  let dustIdx = 0;
+  function spawnDust(x, y, z) {
+    const d = dustPool[dustIdx++ % dustPool.length];
+    d.m.position.set(x - 0.16, y + 0.06, z + (Math.random() - 0.5) * 0.22);
+    d.age = 0; d.life = 0.45 + Math.random() * 0.25; d.m.visible = true;
+    d.m.scale.setScalar(1);
+    d.vx = -(0.5 + Math.random() * 0.7); d.vy = 0.3 + Math.random() * 0.4;
+  }
+  let fxLast = performance.now();
+  function render() {
+    const now = performance.now();
+    const dt = Math.min((now - fxLast) / 1000, 0.05); fxLast = now;
+    dustPool.forEach(d => {
+      if (d.age >= d.life) { d.m.visible = false; return; }
+      d.age += dt;
+      d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt;
+      const k = d.age / d.life;
+      d.m.material.opacity = (1 - k) * 0.5;
+      d.m.scale.setScalar(1 + k * 1.6);
+    });
+    const nowS = now / 1000;
+    crowd.forEach(cr => {
+      const lift = Math.max(0, Math.sin(nowS * 2.4 - (cr.x + 6) * 0.45 + cr.row * 0.35));
+      cr.p.position.y = cr.baseY + lift * lift * 0.16;
+    });
+    controls.update();
+    if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+  }
+  return { renderer, scene, camera, controls, setTrack, posOf, setTape, spawnDust, render };
+}
+
 /* ═════════ 경주 탭 ═════════ */
 (() => {
   const cv = $('cvR');
+  const world = makeRaceWorld(cv);
+  camPresets(world.camera, world.controls, {
+    camWideR:   { pos: [0, 3.2, 12.8], target: [0, 1.2, 0] },
+    camDiagR:   { pos: [-7.5, 4.8, 8.8], target: [0, 1.1, 0] },
+    camFollowR: { pos: [-2.0, 1.6, 3.6], target: [-4.2, 0.8, 0.4] },
+  }, 'camWideR');
   let state = 'idle';        // idle | count | run | done
   let countT = 0, t = 0, ts = 1, ffOn = false;
   let me = null, ai = null, aiJit = 1, runCount = 0;
   const best = {};           // gear_track → 최고 기록
   const fx = makeFx();
-  let postT = 0;             // 결승 후 축하 연출 시간
+  let meMesh = null, aiMesh = null;
+
+  function syncMesh(cur, r, z) {
+    if (cur && cur.L === r.L && cur.col === r.col) return cur;
+    if (cur) world.scene.remove(cur.grp);
+    const m = makeRunner3(r.col, r.L);
+    m.grp.position.z = z;
+    world.scene.add(m.grp);
+    return m;
+  }
 
   const getGear = pickCtl($('pickGear'), 'g', onParam);
   const getTrk = pickCtl($('pickTrk'), 't', onParam);
@@ -925,39 +881,46 @@ function pickCtl(container, attr, onChange) {
       if ((me.fin != null && ai.fin != null) || t >= cap || (first < 1e9 && t >= first + 25)) {
         fxUpdate(fx, real);
         draw(); finishRace();
-        postT = 0; raf = requestAnimationFrame(postFrame);   // 축하 연출 지속
-        return;
+        return;                                     // 이후 연출은 상시 루프가 이어감
       }
     }
     fxUpdate(fx, real);
     draw();
     if (state === 'count' || state === 'run') raf = requestAnimationFrame(frame);
   }
-  function postFrame(now) {
-    if (lastTs == null) lastTs = now;
-    const real = Math.min((now - lastTs) / 1000, 0.05);
-    lastTs = now;
-    postT += real;
-    fxUpdate(fx, real);
-    draw();
-    if (postT < 3.2 && state === 'done') raf = requestAnimationFrame(postFrame);
-  }
 
   function draw() {
-    let { c, W, H } = fit(cv);
-    // 화면 높이 비례 확대 — 고정픽셀 선수·트랙 요소가 큰 화면에서도 주인공 (fit()이 매 프레임 transform 리셋)
-    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
-    const scene = trackScene(c, W, H, me.trackKey, fx.tapeAge);
-    if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
-    fxDrawGround(c, fx);
-    drawLaneRunner(c, scene, ai, 30, 0.86, '🤖 AI · ' + (state === 'idle' || (state === 'count' && countT > 2) ? '???' : GEARS[ai.gearKey].icon + GEARS[ai.gearKey].name), fx);
-    drawLaneRunner(c, scene, me, 0, 1, '😀 나 · ' + GEARS[me.gearKey].icon + GEARS[me.gearKey].name, fx);
-    fxDrawAir(c, fx);
-    if (state === 'count') countdownOverlay(c, W, H, countT);
-    if ((ffOn || ts > 1) && state === 'run') {
-      c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
-      c.fillText('⏩ ×' + ts + ' 빨리감기', W - 14, H - 14);
-    }
+    if (!me) return;
+    world.setTrack(me.trackKey);
+    meMesh = syncMesh(meMesh, me, 0.55);
+    aiMesh = syncMesh(aiMesh, ai, -0.55);
+    aiMesh.labelLift = 0.3;              // 뒤 레인 라벨은 위로 (겹침 방지)
+    const lean = me.trackKey === 'up' ? -0.13 : 0;
+    [[me, meMesh], [ai, aiMesh]].forEach(([r, m]) => {
+      const p = world.posOf(Math.min(r.d, TRACKS[r.trackKey].len));
+      m.grp.position.x = p.x; m.grp.position.y = p.y + SURF;
+      m.update(r.ph, r.stall && state === 'run' && r.fin == null, lean);
+      if (state === 'run' && r.fin == null && r.v > 1.2 && Math.random() < 0.4)
+        world.spawnDust(p.x, p.y + SURF, m.grp.position.z);
+      const fin = r.fin != null;
+      m.setBadge(fin ? (r.rank === 1 ? '🥇 ' : '🥈 ') + r.fin.toFixed(1) + '초'
+        : (r.stall && state === 'run' ? '💦 힘 부족!' : ''), fin ? '#ffd23e' : '#ff5a52');
+    });
+    meMesh.setLabel('😀 나 · ' + GEARS[me.gearKey].icon + GEARS[me.gearKey].name);
+    aiMesh.setLabel('🤖 AI · ' + (state === 'idle' || (state === 'count' && countT > 2)
+      ? '???' : GEARS[ai.gearKey].icon + GEARS[ai.gearKey].name));
+    world.setTape(fx.tapeAge);
+    if (fx.burst) { fx.burst = false; CtmFX.confetti(0.5, 0.35); }
+    // 카운트다운 오버레이
+    const co = $('cntR');
+    if (state === 'count') {
+      co.style.display = 'block';
+      co.textContent = countT > 2 ? '3' : countT > 1 ? '2' : countT > 0 ? '1' : '출발!';
+      co.classList.toggle('go', countT <= 0);
+    } else co.style.display = 'none';
+    $('ffR').style.display = (state === 'run' && ts > 1) ? 'block' : 'none';
+    $('ffR').textContent = '⏩ ×' + ts + ' 빨리감기';
+    // HUD
     $('hud_t').textContent = t.toFixed(1) + ' s';
     $('hud_v').textContent = me.v.toFixed(1) + ' m/s';
     $('hud_d').textContent = Math.min(me.d, TRACKS[me.trackKey].len).toFixed(1) + ' m';
@@ -973,6 +936,15 @@ function pickCtl(container, attr, onChange) {
     $('progAiV').textContent = Math.min(ai.d, len).toFixed(1) + ' m';
     $('hud_ai').textContent = state === 'idle' || (state === 'count' && countT > 2)
       ? '?' : GEARS[ai.gearKey].icon + ' ' + GEARS[ai.gearKey].name;
+    // 따라가기 카메라
+    const fBtn = $('camFollowR');
+    if (fBtn && fBtn.classList.contains('on')) {
+      const p = world.posOf(Math.min(me.d, TRACKS[me.trackKey].len));
+      world.controls.target.lerp(new THREE.Vector3(p.x + 0.4, p.y + 0.7, 0.4), 0.1);
+      world.camera.position.x += (p.x - 1.7 - world.camera.position.x) * 0.08;
+      world.camera.position.y += (p.y + 1.5 - world.camera.position.y) * 0.05;
+    }
+    world.render();
   }
 
   $('btnGo').onclick = () => {
@@ -987,13 +959,24 @@ function pickCtl(container, attr, onChange) {
   $('btnRst').onclick = () => { cancelAnimationFrame(raf); lastTs = null; reset(); };
 
   redraws.race = () => { if (me && state !== 'run' && state !== 'count') draw(); };
-  window.addEventListener('resize', redraws.race);
   requestAnimationFrame(reset);
+  /* 상시 렌더 (정지 중에도 카메라·관중·테이프 연출) */
+  let aliveLast = performance.now();
+  requestAnimationFrame(function alive(now) {
+    const dt = Math.min((now - aliveLast) / 1000, 0.05); aliveLast = now;
+    if (me && state !== 'run' && state !== 'count') { fxUpdate(fx, dt); draw(); }
+    requestAnimationFrame(alive);
+  });
 })();
 
 /* ═════════ 예측 도전 탭 ═════════ */
 (() => {
   const cv = $('cvQ');
+  const world = makeRaceWorld(cv);
+  camPresets(world.camera, world.controls, {
+    camWideQ: { pos: [0, 3.2, 12.8], target: [0, 1.2, 0] },
+    camDiagQ: { pos: [-7.5, 4.8, 8.8], target: [0, 1.1, 0] },
+  }, 'camWideQ');
   const QUESTIONS = [
     {
       track: 'up',
@@ -1035,17 +1018,29 @@ function pickCtl(container, attr, onChange) {
   let qi = 0, picked = null, state = 'ask';   // ask | run | done
   let t = 0, ts = 2, lanes = [], raf = null, lastTs = null;
   const fx = makeFx();
-  let postT = 0;
+  let laneMeshes = [];
+  const LANE_Z = [-0.85, 0, 0.85];
 
   function setStatus(mode, txt) {
     $('ledQ').className = 'led ' + (mode === 'run' ? 'run' : mode === 'done' ? 'done' : '');
     $('stQ').textContent = txt;
+  }
+  function rebuildMeshes() {
+    laneMeshes.forEach(m => world.scene.remove(m.grp));
+    laneMeshes = lanes.map((l, i) => {
+      const m = makeRunner3(l.col, l.L);
+      m.grp.position.z = LANE_Z[i];
+      m.labelLift = (2 - i) * 0.24;      // 뒤 레인일수록 라벨 위로
+      world.scene.add(m.grp);
+      return m;
+    });
   }
   function loadQ() {
     const q = QUESTIONS[qi];
     state = 'ask'; picked = null; t = 0; ts = 2;
     fxReset(fx);
     lanes = q.lanes.map(l => makeRunnerState(l.gearKey, l.L, q.track, l.label, l.col));
+    rebuildMeshes();
     $('hud_qn').textContent = (qi + 1) + ' / ' + QUESTIONS.length;
     $('qText').textContent = q.text;
     $('liveQ').innerHTML = q.lanes.map((l, i) =>
@@ -1065,7 +1060,7 @@ function pickCtl(container, attr, onChange) {
           state = 'ask';
           fxReset(fx);
           $('qVerdict').className = 'verdict'; $('bdQ').className = 'badge';
-          lanes.forEach((l, k) => { l.d = 0; l.v = 0; l.ph = k * 1.1; l.fin = null; });
+          lanes.forEach((l, k) => { l.d = 0; l.v = 0; l.ph = k * 1.1; l.fin = null; l.rank = null; });
           draw();
         }
         picked = i;
@@ -1118,35 +1113,30 @@ function pickCtl(container, attr, onChange) {
     fxUpdate(fx, real);
     if (lanes.every(l => l.fin != null) || t >= cap || (first < 1e9 && t >= first + 12)) {
       draw(); finishQ();
-      postT = 0; raf = requestAnimationFrame(postFrame);
       return;
     }
     draw();
     raf = requestAnimationFrame(frame);
   }
-  function postFrame(now) {
-    if (lastTs == null) lastTs = now;
-    const real = Math.min((now - lastTs) / 1000, 0.05);
-    lastTs = now;
-    postT += real;
-    fxUpdate(fx, real);
-    draw();
-    if (postT < 3.2 && state === 'done') raf = requestAnimationFrame(postFrame);
-  }
   function draw() {
-    let { c, W, H } = fit(cv);
-    // 화면 높이 비례 확대 (fit()이 매 프레임 transform 리셋)
-    const K2 = Math.max(1, H / 430); c.save(); c.scale(K2, K2); W /= K2; H /= K2;
-    const scene = trackScene(c, W, H, QUESTIONS[qi].track, fx.tapeAge);
-    if (fx.burst) { fx.burst = false; const fp = scene.posOf(scene.T.len); fxBurst(fx, fp.x, fp.y - 46); }
-    fxDrawGround(c, fx);
-    const offs = [56, 28, 0], scales = [0.78, 0.88, 1];
-    lanes.forEach((l, i) => drawLaneRunner(c, scene, l, offs[i], scales[i], l.name, fx));
-    fxDrawAir(c, fx);
-    if (state === 'run' && ts > 2) {
-      c.font = 'bold 13px sans-serif'; c.textAlign = 'right'; c.fillStyle = '#ffb02e';
-      c.fillText('⏩ 빨리감기', W - 14, H - 14);
-    }
+    if (!lanes.length) return;
+    const q = QUESTIONS[qi];
+    world.setTrack(q.track);
+    const lean = q.track === 'up' ? -0.13 : 0;
+    lanes.forEach((l, i) => {
+      const m = laneMeshes[i];
+      const p = world.posOf(Math.min(l.d, TRACKS[l.trackKey].len));
+      m.grp.position.x = p.x; m.grp.position.y = p.y + SURF;
+      m.update(l.ph, l.stall && state === 'run' && l.fin == null, lean);
+      if (state === 'run' && l.fin == null && l.v > 1.2 && Math.random() < 0.35)
+        world.spawnDust(p.x, p.y + SURF, m.grp.position.z);
+      m.setLabel(l.name);
+      const fin = l.fin != null;
+      m.setBadge(fin ? (l.rank === 1 ? '🥇 ' : l.rank === 2 ? '🥈 ' : '🥉 ') + l.fin.toFixed(1) + '초'
+        : (l.stall && state === 'run' ? '💦 힘 부족!' : ''), fin ? '#ffd23e' : '#ff5a52');
+    });
+    world.setTape(fx.tapeAge);
+    if (fx.burst) { fx.burst = false; CtmFX.confetti(0.5, 0.35); }
     $('hud_qt').textContent = t.toFixed(1) + ' s';
     lanes.forEach((l, i) => {
       const f2 = $('lq' + i), v2 = $('lqv' + i);
@@ -1154,12 +1144,13 @@ function pickCtl(container, attr, onChange) {
       const p2 = $('lqp' + i), pv2 = $('lqpv' + i), len = TRACKS[l.trackKey].len;
       if (p2) { p2.style.width = Math.min(100, l.d / len * 100) + '%'; pv2.textContent = Math.min(l.d, len).toFixed(1) + ' m'; }
     });
+    world.render();
   }
   $('btnQGo').onclick = () => {
     if (picked == null || state === 'run') return;
     state = 'run'; t = 0; ts = 2; lastTs = null;
     fxReset(fx);
-    lanes.forEach((l, i) => { l.d = 0; l.v = 0; l.ph = i * 1.1; l.fin = null; });
+    lanes.forEach((l, i) => { l.d = 0; l.v = 0; l.ph = i * 1.1; l.fin = null; l.rank = null; });
     $('btnQGo').disabled = true;
     setStatus('run', '경주 중… 누가 1등일까?');
     cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
@@ -1169,9 +1160,14 @@ function pickCtl(container, attr, onChange) {
     qi = (qi + 1) % QUESTIONS.length;
     loadQ();
   };
-  redraws.quiz = () => { if (state !== 'run') draw(); };
-  window.addEventListener('resize', () => { if (state !== 'run') draw(); });
+  redraws.quiz = () => { if (lanes.length && state !== 'run') draw(); };
   requestAnimationFrame(loadQ);
+  let aliveLast = performance.now();
+  requestAnimationFrame(function alive(now) {
+    const dt = Math.min((now - aliveLast) / 1000, 0.05); aliveLast = now;
+    if (lanes.length && state !== 'run') { fxUpdate(fx, dt); draw(); }
+    requestAnimationFrame(alive);
+  });
 })();
 </script>
 </body>
