@@ -127,13 +127,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 · 13차시 크레인 / 23차시 올리기와 내리기</div>
-      <div class="title">🏗️ 도르래 크레인 시뮬레이션</div>
+      <div class="title">🏗️ 도르래 크레인 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">🏗️ 크레인 조종</button>
@@ -150,6 +160,12 @@
         <div class="chip" style="color:var(--accent)"><span class="lab">당긴 줄 길이</span><span id="hud_rope">0.0 m</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">필요한 힘</span><span id="hud_need">10</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camLoad">📦 화물</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -274,8 +290,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeCamera, camPresets, textSprite, canvasTex, makeMinifig } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -507,484 +524,250 @@ function updatePanel() {
   $('valH').textContent = S.h.toFixed(1) + ' m';
 }
 
-/* ── 그리기 유틸 ── */
-function wheel(c, x, y, r, ang, color) {
-  c.save(); c.translate(x, y); c.rotate(ang);
-  // 플랜지 (줄 이탈 방지 테두리)
-  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r + 3.5, 0, 7); c.fill();
-  c.strokeStyle = '#3a4661'; c.lineWidth = 1; c.beginPath(); c.arc(0, 0, r + 3.5, 0, 7); c.stroke();
-  const g = c.createRadialGradient(-r*0.3, -r*0.3, r*0.2, 0, 0, r);
-  g.addColorStop(0, '#ffd97a'); g.addColorStop(1, color);
-  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1; c.stroke();
-  // 림 홈 (줄이 걸리는 V홈)
-  c.strokeStyle = 'rgba(45,28,6,.55)'; c.lineWidth = Math.max(2, r * 0.18);
-  c.beginPath(); c.arc(0, 0, r - Math.max(2, r * 0.18) * 0.7, 0, 7); c.stroke();
-  // 스포크 5개
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = Math.max(1.5, r * 0.14); c.lineCap = 'round';
-  for (let k = 0; k < 5; k++) {
-    const a = k * Math.PI * 2 / 5;
-    c.beginPath();
-    c.moveTo(Math.cos(a) * r * 0.26, Math.sin(a) * r * 0.26);
-    c.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
-    c.stroke();
-  }
-  // 림 마커 점 (회전이 눈에 보이게)
-  c.fillStyle = '#fff3c4';
-  c.beginPath(); c.arc(r * 0.82, 0, Math.max(1.8, r * 0.13), 0, 7); c.fill();
-  // 허브 + 축 볼트
-  c.fillStyle = '#0b0f18'; c.beginPath(); c.arc(0, 0, r * 0.26, 0, 7); c.fill();
-  c.fillStyle = '#4d5d84'; c.beginPath(); c.arc(0, 0, r * 0.12, 0, 7); c.fill();
-  // 회전 중 속도선 (줄과 같이 도는 아크)
-  if (Math.abs(S.ropeVel) > 0.05) {
-    c.strokeStyle = 'rgba(255,217,122,.5)'; c.lineWidth = 2; c.lineCap = 'round';
-    for (let k = 0; k < 3; k++) {
-      const a = k * 2.094;
-      c.beginPath(); c.arc(0, 0, r + 7, a, a + 0.85); c.stroke();
+/* ═════════ 3D 무대 (밤 공사장 크레인) ═════════ */
+const cv3 = $('cv');
+const stage3 = cv3.closest('.stage');
+const renderer = makeRenderer(cv3);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1526);
+scene.fog = new THREE.Fog(0x0d1526, 12, 45);
+scene.add(new THREE.HemisphereLight(0xaac4ff, 0x1c2438, 0.9));
+scene.add(new THREE.AmbientLight(0x8fa8ff, 0.35));
+{
+  const moon = new THREE.DirectionalLight(0xcfe0ff, 1.2);
+  moon.position.set(-5, 9, 6); moon.castShadow = true;
+  moon.shadow.mapSize.set(2048, 2048);
+  moon.shadow.camera.left = -7; moon.shadow.camera.right = 7;
+  moon.shadow.camera.top = 8; moon.shadow.camera.bottom = -2;
+  scene.add(moon);
+}
+const { camera, controls } = makeCamera(cv3, { maxD: 22 });
+// 도시 실루엣 + 달 배경
+{
+  const tex = canvasTex(512, 256, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, '#0d1526'); g.addColorStop(1, '#16223c');
+    c.fillStyle = g; c.fillRect(0, 0, 512, 256);
+    c.fillStyle = '#f4ecd7'; c.beginPath(); c.arc(420, 52, 26, 0, 7); c.fill();
+    c.fillStyle = '#dfe8ff';
+    for (let i = 0; i < 40; i++) c.fillRect((i * 137) % 512, (i * 53) % 110, 2, 2);
+    // 빌딩들
+    for (let i = 0; i < 11; i++) {
+      const bw = 34 + (i * 37) % 40, bh = 60 + (i * 53) % 90, bx = i * 48;
+      c.fillStyle = i % 2 ? '#141d33' : '#182440';
+      c.fillRect(bx, 256 - bh, bw, bh);
+      c.fillStyle = 'rgba(255,220,140,.5)';
+      for (let wy = 256 - bh + 8; wy < 248; wy += 14)
+        for (let wx = bx + 5; wx < bx + bw - 5; wx += 11)
+          if ((wx * wy) % 7 < 3) c.fillRect(wx, wy, 4, 5);
     }
-  }
-  c.restore();
+  });
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(52, 26),
+    new THREE.MeshBasicMaterial({ map: tex, depthWrite: false }));
+  sky.position.set(1, 5.5, -17); scene.add(sky);
 }
-function rope(c, pts, width = 3) {
-  const path = () => {
-    c.beginPath();
-    pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
-  };
-  c.lineCap = 'round';
-  c.strokeStyle = '#a97a3c'; c.lineWidth = width + 1.2; path(); c.stroke();  // 외곽 음영
-  c.strokeStyle = '#e2bc78'; c.lineWidth = width; path(); c.stroke();        // 본줄
-  c.save();                                                                  // 꼬임 질감 (당길수록 흐름)
-  c.strokeStyle = 'rgba(96,58,14,.55)'; c.lineWidth = width * 0.85;
-  c.setLineDash([width * 1.1, width * 1.5]); c.lineDashOffset = -S.rope * 15;
-  path(); c.stroke();
-  c.restore();
+// 공사장 바닥
+{
+  const tex = canvasTex(256, 256, (c) => {
+    c.fillStyle = '#2a2f3c'; c.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 400; i++) {
+      c.fillStyle = ['#242938', '#313749', '#20242f'][i % 3];
+      c.fillRect((i * 97) % 256, (i * 61) % 256, 3, 3);
+    }
+  }, [10, 10]);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(40, 0.2, 40),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
+  floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
 }
-function lattice(c, x, y0, y1, w) {
-  c.strokeStyle = '#33415e'; c.lineWidth = 3.5;
-  c.beginPath(); c.moveTo(x - w/2, y0); c.lineTo(x - w/2, y1); c.moveTo(x + w/2, y0); c.lineTo(x + w/2, y1); c.stroke();
-  c.lineWidth = 1.6;
-  const stepY = 26;
-  for (let y = y0, i = 0; y < y1 - 4; y += stepY, i++) {
-    c.beginPath();
-    c.moveTo(x - w/2, y); c.lineTo(x + w/2, y);                    // 수평재
-    if (i % 2) { c.moveTo(x - w/2, y); c.lineTo(x + w/2, y + stepY); }
-    else { c.moveTo(x + w/2, y); c.lineTo(x - w/2, y + stepY); }
-    c.stroke();
+// 소품 — 러버콘·바리케이드
+{
+  const coneMat = new THREE.MeshStandardMaterial({ color: 0xd85a1e, roughness: 0.6 });
+  [[-3.2, 1.6], [4.4, 1.9], [0.6, 2.6]].forEach(([x, z]) => {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.36, 12), coneMat);
+    cone.position.set(x, 0.18, z); cone.castShadow = true; scene.add(cone);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.115, 0.07, 12),
+      new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.5 }));
+    band.position.set(x, 0.22, z); scene.add(band);
+  });
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.05),
+    new THREE.MeshStandardMaterial({ color: 0xffd21e, roughness: 0.6 }));
+  bar.position.set(-3.4, 0.42, 0.6); scene.add(bar);
+  [[-3.85, 0.6], [-2.95, 0.6]].forEach(([x, z]) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.42, 8),
+      new THREE.MeshStandardMaterial({ color: 0x5a6b8c, roughness: 0.6 }));
+    leg.position.set(x, 0.21, z); scene.add(leg);
+  });
+}
+/* 크레인 — 타워 + 지브 + 카운터웨이트 */
+const TOWER_X = 0.6, JIB_Y = 4.3, LOAD_X = 2.3, WORKER_X = -1.3;
+{
+  const steel = new THREE.MeshStandardMaterial({ color: 0xd8a11e, roughness: 0.45 });
+  const towerTex = canvasTex(64, 256, (c) => {
+    c.fillStyle = '#d8a11e'; c.fillRect(0, 0, 64, 256);
+    c.strokeStyle = 'rgba(90,60,8,.85)'; c.lineWidth = 6;
+    for (let y = 0; y < 256; y += 32) {
+      c.beginPath(); c.moveTo(0, y); c.lineTo(64, y + 32); c.stroke();
+      c.beginPath(); c.moveTo(64, y); c.lineTo(0, y + 32); c.stroke();
+    }
+  }, [1, 4]);
+  const tower = new THREE.Mesh(new THREE.BoxGeometry(0.55, JIB_Y, 0.55),
+    new THREE.MeshStandardMaterial({ map: towerTex, roughness: 0.5 }));
+  tower.position.set(TOWER_X, JIB_Y / 2, 0); tower.castShadow = true; scene.add(tower);
+  const jib = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.3, 0.4), steel);
+  jib.position.set(TOWER_X + 1.2, JIB_Y + 0.15, 0); jib.castShadow = true; scene.add(jib);
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x4a566f, roughness: 0.6 }));
+  counter.position.set(TOWER_X - 1.35, JIB_Y + 0.1, 0); counter.castShadow = true; scene.add(counter);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x3d8bff, roughness: 0.3 }));
+  cab.position.set(TOWER_X, JIB_Y - 0.4, 0.3); scene.add(cab);
+}
+/* 도르래 휠 (고정 — 지브 끝) + 움직 도르래 */
+function makeWheel3d(r) {
+  const g = new THREE.Group();
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.1, 20),
+    new THREE.MeshStandardMaterial({ color: 0xffb02e, roughness: 0.4 }));
+  rim.rotation.x = Math.PI / 2; g.add(rim);
+  const mk = new THREE.Mesh(new THREE.BoxGeometry(r * 1.5, 0.02, 0.11),
+    new THREE.MeshBasicMaterial({ color: 0x7a4a08 }));
+  g.add(mk);
+  return g;
+}
+const fixedWheel = makeWheel3d(0.22);
+fixedWheel.position.set(LOAD_X, JIB_Y - 0.05, 0); scene.add(fixedWheel);
+const movWheel = makeWheel3d(0.18);
+scene.add(movWheel);
+// 앵커 (복합·움직용, 지브에 고정점)
+const anchor = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.2, 0.12),
+  new THREE.MeshStandardMaterial({ color: 0x8b98ad, roughness: 0.4 }));
+anchor.position.set(LOAD_X + 0.5, JIB_Y - 0.1, 0); scene.add(anchor);
+/* 화물 3종 */
+const loadGrp = new THREE.Group(); scene.add(loadGrp);
+const loadMeshes = {};
+{
+  const box10 = new THREE.Group();
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.7 }));
+  b.position.y = 0.25; b.castShadow = true; box10.add(b);
+  loadMeshes[10] = box10;
+  const box20 = new THREE.Group();
+  const cont = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.55, 0.55),
+    new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5 }));
+  cont.position.y = 0.275; cont.castShadow = true; box20.add(cont);
+  for (let i = -1; i <= 1; i++) {
+    const rib = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.55, 0.57),
+      new THREE.MeshStandardMaterial({ color: 0x16389c, roughness: 0.5 }));
+    rib.position.set(i * 0.24, 0.275, 0); box20.add(rib);
   }
-  c.fillStyle = '#4d5d84';                                         // 접합부 리벳
-  for (let y = y0; y < y1 - 2; y += stepY) {
-    c.beginPath(); c.arc(x - w/2, y, 2, 0, 7); c.fill();
-    c.beginPath(); c.arc(x + w/2, y, 2, 0, 7); c.fill();
+  loadMeshes[20] = box20;
+  const rock = new THREE.Group();
+  const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.42, 0),
+    new THREE.MeshStandardMaterial({ color: 0x8b8f98, roughness: 0.9 }));
+  r.position.y = 0.38; r.scale.y = 0.85; r.castShadow = true; rock.add(r);
+  loadMeshes[40] = rock;
+  for (const k in loadMeshes) { loadMeshes[k].visible = false; loadGrp.add(loadMeshes[k]); }
+  // 무게 라벨
+  loadGrp.userData.labels = {};
+  [10, 20, 40].forEach(w => {
+    const lab = textSprite(w + 'kg', { size: 30, color: '#fff', bg: 'rgba(20,26,40,.8)', scale: 0.0034 });
+    lab.position.y = 0.85; lab.visible = false; loadGrp.add(lab);
+    loadGrp.userData.labels[w] = lab;
+  });
+}
+/* 로프 */
+const ropeMesh = new THREE.Line(new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ color: 0xe8d9b0 }));
+scene.add(ropeMesh);
+/* 인부 */
+const worker = makeMinifig({ shirt: 0xff8a3d, pants: 0x22304c });
+worker.position.set(WORKER_X, 0, 0);
+worker.rotation.y = Math.PI / 2 + 0.5;
+scene.add(worker);
+/* 목표 3m 라인 + 눈금 */
+{
+  const line = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.02, 0.02),
+    new THREE.MeshBasicMaterial({ color: 0x2ee06f }));
+  line.position.set(LOAD_X, MAX_H + 0.42, 0); scene.add(line);
+  const lab = textSprite('목표 3m', { size: 28, color: '#b8ffd2', bg: 'rgba(8,30,16,.7)', scale: 0.0034 });
+  lab.position.set(LOAD_X + 1.15, MAX_H + 0.45, 0); scene.add(lab);
+  for (let m = 0; m <= 3; m++) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x8fa0ba }));
+    t.position.set(LOAD_X - 0.95, m + 0.42, 0); scene.add(t);
+    const ml = textSprite(m + 'm', { size: 24, color: '#aebad0', scale: 0.0028 });
+    ml.position.set(LOAD_X - 1.25, m + 0.44, 0); scene.add(ml);
   }
 }
+/* 먼지 풀 */
+const dustPool = Array.from({ length: 18 }, () => {
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x9aa2b5, transparent: true, opacity: 0.5 }));
+  d.visible = false; scene.add(d); return d;
+});
+camPresets(camera, controls, {
+  camSide: { pos: [1.0, 2.6, 8.6], target: [0.9, 2.0, 0] },
+  camDiag: { pos: [-4.2, 4.2, 6.4], target: [0.9, 1.9, 0] },
+  camLoad: { pos: [3.6, 1.6, 3.4], target: [2.3, 1.2, 0] },
+}, 'camSide');
 
-/* ── 메인 그리기 ── */
-const cv = $('cv');
 function draw() {
-  const { c, W, H } = fit(cv);
-  const shx = S.shakeT > 0 ? (Math.random() - 0.5) * S.shakeT * 26 : 0;
-  const shy = S.shakeT > 0 ? (Math.random() - 0.5) * S.shakeT * 18 : 0;
-  c.save(); c.translate(shx, shy);
-
-  // 밤하늘 — 그라데이션 + 반짝이는 별 + 달 + 흐르는 구름
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#070b18'); bg.addColorStop(0.55, '#0c1326'); bg.addColorStop(1, '#152140');
-  c.fillStyle = bg; c.fillRect(-30, -30, W + 60, H + 60);
-  for (let i = 0; i < 70; i++) {
-    const sx = (i * 97.31) % W, sy = (i * 57.77) % (H * 0.62);
-    const tw = 0.5 + 0.5 * Math.sin(S.t * 1.6 + i * 2.3);
-    c.fillStyle = `rgba(190,210,255,${0.06 + 0.16 * tw})`;
-    c.beginPath(); c.arc(sx, sy, 0.8 + (i % 3) * 0.5, 0, 7); c.fill();
-  }
-  const moonX = W - 88, moonY = 74;
-  const mg = c.createRadialGradient(moonX, moonY, 6, moonX, moonY, 52);
-  mg.addColorStop(0, 'rgba(240,238,215,.28)'); mg.addColorStop(1, 'rgba(240,238,215,0)');
-  c.fillStyle = mg; c.beginPath(); c.arc(moonX, moonY, 52, 0, 7); c.fill();
-  c.fillStyle = '#e8e4c8'; c.beginPath(); c.arc(moonX, moonY, 19, 0, 7); c.fill();
-  c.fillStyle = 'rgba(160,158,130,.5)';
-  for (const [ox, oy, or2] of [[-6, -4, 3.4], [5, 5, 2.6], [3, -8, 2], [-3, 8, 1.7]]) {
-    c.beginPath(); c.arc(moonX + ox, moonY + oy, or2, 0, 7); c.fill();
-  }
-  c.fillStyle = 'rgba(150,170,210,.06)';
-  for (const [sp, oy, sc] of [[9, 60, 1], [14, 128, 1.35]]) {
-    const cx0 = ((S.t * sp + oy * 7) % (W + 260)) - 130;
-    for (const [ex, ey, rw, rh] of [[0, 0, 66, 15], [40, -8, 48, 12], [-38, -5, 42, 11]]) {
-      c.beginPath(); c.ellipse(cx0 + ex * sc, oy + ey, rw * sc, rh, 0, 0, 7); c.fill();
-    }
-  }
-
-  const groundY = H - 46;
-  const jibY = 74;
-  const mastX = Math.max(86, W * 0.19);
-  const px = Math.min(W - 130, mastX + Math.max(210, W * 0.4));  // 도르래 매달림 x
-  const M = ma(), nd = need();
-  const L = LOADS[S.w];
-
-  // 땅
-  c.fillStyle = '#111a2e'; c.fillRect(-30, groundY, W + 60, H - groundY + 30);
-  c.strokeStyle = '#2c3d5e'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(-30, groundY); c.lineTo(W + 30, groundY); c.stroke();
-  c.strokeStyle = 'rgba(90,110,150,.25)'; c.lineWidth = 1.3;
-  for (let x = 0; x < W + 20; x += 22) {
-    c.beginPath(); c.moveTo(x, groundY + 2); c.lineTo(x - 10, groundY + 14); c.stroke();
-  }
-
-  // 아주 먼 스카이라인 (지평선 실루엣)
-  c.fillStyle = 'rgba(19,27,48,.55)';
-  for (let i = 0; i < 14; i++) {
-    const fx = (i * 137.3) % (W + 60) - 30;
-    const fw = 34 + (i * 41) % 46, fh = 24 + (i * 67) % 44;
-    c.fillRect(fx, groundY - fh, fw, fh);
-  }
-  // 먼 곳의 다른 타워크레인 실루엣
-  const dcx = W * 0.55, dcy = groundY - 118;
-  c.strokeStyle = 'rgba(45,60,95,.7)'; c.lineWidth = 2.5;
-  c.beginPath();
-  c.moveTo(dcx, groundY); c.lineTo(dcx, dcy);
-  c.moveTo(dcx - 44, dcy + 6); c.lineTo(dcx + 62, dcy + 6);
-  c.moveTo(dcx, dcy - 14); c.lineTo(dcx - 40, dcy + 6);
-  c.moveTo(dcx, dcy - 14); c.lineTo(dcx + 58, dcy + 6);
-  c.moveTo(dcx + 44, dcy + 6); c.lineTo(dcx + 44, dcy + 34);
-  c.stroke();
-  c.fillStyle = 'rgba(45,60,95,.7)'; c.fillRect(dcx + 38, dcy + 34, 12, 9);
-  // 멀리 보이는 건물 실루엣 (공사장 배경)
-  for (const [bx0, bw, bh] of [[W - 165, 92, 150], [W - 228, 56, 96], [14, 50, 74]]) {
-    c.fillStyle = 'rgba(26,36,62,.6)';
-    c.fillRect(bx0, groundY - bh, bw, bh);
-    c.fillStyle = 'rgba(255,213,110,.13)';
-    for (let wx = bx0 + 7; wx < bx0 + bw - 9; wx += 14)
-      for (let wy = groundY - bh + 8; wy < groundY - 12; wy += 16)
-        c.fillRect(wx, wy, 6, 8);
-  }
-  // 공사장 소품: 안전 고깔 + 줄무늬 바리케이드
-  drawCone(c, Math.max(px - 88, mastX + 128), groundY);
-  if (W - px > 210) drawBarrier(c, px + 152, groundY);
-  else if (mastX > 140) drawBarrier(c, mastX - 100, groundY);
-
-  // 크레인 몸체
-  lattice(c, mastX, jibY - 8, groundY, 30);                       // 기둥
-  c.fillStyle = '#18233c'; c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
-  c.beginPath(); c.roundRect(mastX - 34, groundY - 6, 68, 12, 3); c.fill(); c.stroke();  // 받침
-  c.fillStyle = '#1c2a48';
-  c.beginPath(); c.roundRect(mastX - 70, jibY - 26, 46, 34, 5); c.fill(); c.stroke();    // 카운터웨이트
-  c.fillStyle = '#8b98ad'; c.font = '10px sans-serif'; c.textAlign = 'center';
-  c.fillText('무게추', mastX - 47, jibY - 6);
-  c.fillStyle = '#18233c';
-  c.beginPath(); c.roundRect(mastX - 16, jibY - 20, 40, 26, 5); c.fill(); c.stroke();    // 조종석
-  c.fillStyle = 'rgba(77,163,255,.35)';
-  c.beginPath(); c.roundRect(mastX - 10, jibY - 15, 18, 12, 3); c.fill();
-  // 지브 (수평 팔)
-  c.strokeStyle = '#33415e'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(mastX - 24, jibY); c.lineTo(px + 46, jibY); c.stroke();
-  c.lineWidth = 1.6;
-  for (let x = mastX + 20, i = 0; x < px + 30; x += 24, i++) {
-    c.beginPath();
-    if (i % 2) { c.moveTo(x, jibY - 9); c.lineTo(x + 24, jibY + 9); }
-    else { c.moveTo(x, jibY + 9); c.lineTo(x + 24, jibY - 9); }
-    c.stroke();
-  }
-  c.strokeStyle = '#33415e'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(mastX - 24, jibY - 9); c.lineTo(px + 46, jibY - 9);
-  c.moveTo(mastX - 24, jibY + 9); c.lineTo(px + 46, jibY + 9); c.stroke();
-  c.fillStyle = '#4d5d84';                                          // 지브 리벳
-  for (let x = mastX + 32, i = 0; x < px + 42; x += 24, i++) {
-    c.beginPath(); c.arc(x, jibY - 9, 1.8, 0, 7); c.fill();
-    c.beginPath(); c.arc(x, jibY + 9, 1.8, 0, 7); c.fill();
-  }
-  // 타워 꼭대기 + 타이 로드
-  c.strokeStyle = '#33415e'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(mastX + 4, jibY - 20); c.lineTo(mastX + 4, jibY - 52); c.stroke();
-  c.strokeStyle = '#46557a'; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(mastX + 4, jibY - 52); c.lineTo(px + 34, jibY - 9);
-  c.moveTo(mastX + 4, jibY - 52); c.lineTo(mastX - 56, jibY - 24); c.stroke();
-  // 항공 경고등 — 꼭대기 빨강 · 지브 끝 주황 교차 점멸
-  const beaconOn = Math.sin(S.t * 5) > -0.15;
-  if (beaconOn) {
-    const bgl = c.createRadialGradient(mastX + 4, jibY - 55, 1, mastX + 4, jibY - 55, 16);
-    bgl.addColorStop(0, 'rgba(255,90,82,.75)'); bgl.addColorStop(1, 'rgba(255,90,82,0)');
-    c.fillStyle = bgl; c.beginPath(); c.arc(mastX + 4, jibY - 55, 16, 0, 7); c.fill();
-  }
-  c.fillStyle = beaconOn ? '#ff5a52' : '#57231f';
-  c.beginPath(); c.arc(mastX + 4, jibY - 55, 3.2, 0, 7); c.fill();
-  const tipOn = Math.sin(S.t * 5 + Math.PI) > -0.15;
-  if (tipOn) {
-    const tgl = c.createRadialGradient(px + 46, jibY - 14, 1, px + 46, jibY - 14, 12);
-    tgl.addColorStop(0, 'rgba(255,176,46,.7)'); tgl.addColorStop(1, 'rgba(255,176,46,0)');
-    c.fillStyle = tgl; c.beginPath(); c.arc(px + 46, jibY - 14, 12, 0, 7); c.fill();
-  }
-  c.fillStyle = tipOn ? '#ffb02e' : '#4d3a12';
-  c.beginPath(); c.arc(px + 46, jibY - 14, 2.6, 0, 7); c.fill();
-
-  // 화물 위치 계산
-  const loadW = S.w === 10 ? 62 : S.w === 20 ? 96 : 84;
-  const loadH2 = S.w === 10 ? 52 : S.w === 20 ? 56 : 62;
-  const blockGap = M > 1 ? 46 : 26;                       // 훅/움직도르래 공간
-  const liftPx = groundY - loadH2 - (jibY + 60) - blockGap;
-  const pxPerM = liftPx / MAX_H;
-  const loadTop = groundY - loadH2 - S.h * pxPerM;
-  const hangLen = Math.max(60, loadTop - (jibY + 34));     // 매달린 길이 → 진폭 연동
-  const sway = Math.sin(S.swayAng) * Math.min(46, hangLen * 0.22);
-  const lx = px + sway;                                    // 화물 중심 x (진자 스웨이)
-  const wheelAng = S.rope * 1.6;
-  S.lastPx = px; S.lastGroundY = groundY;                  // 먼지 스폰 좌표
-
-  // 높이 눈금자
-  const rulerX = px + 74;
-  c.strokeStyle = 'rgba(120,150,200,.3)'; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(rulerX, groundY); c.lineTo(rulerX, groundY - MAX_H * pxPerM - loadH2); c.stroke();
-  c.font = '10.5px sans-serif'; c.textAlign = 'left'; c.fillStyle = '#77839a';
-  for (let m = 0; m <= MAX_H; m++) {
-    const y = groundY - loadH2 - m * pxPerM;
-    c.beginPath(); c.moveTo(rulerX - 5, y); c.lineTo(rulerX + 5, y); c.stroke();
-    c.fillText(m + 'm', rulerX + 9, y + 3.5);
-  }
-  // 목표선
-  const goalY = groundY - loadH2 - MAX_H * pxPerM;
-  c.strokeStyle = 'rgba(46,224,111,.5)'; c.setLineDash([5, 5]); c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(px - 70, goalY); c.lineTo(rulerX, goalY); c.stroke(); c.setLineDash([]);
-  c.fillStyle = '#2ee06f'; c.font = 'bold 11px sans-serif';
-  c.fillText('🎯 목표 3m', px - 68, goalY - 7);
-
-  // 도르래 브래킷 (지브에 매달림)
-  c.strokeStyle = '#39445c'; c.lineWidth = 4;
-  c.beginPath(); c.moveTo(px, jibY + 6); c.lineTo(px, jibY + 22); c.stroke();
-  const fbY = jibY + 34;                                   // 고정 블록 중심 y
-
-  // 손잡이(사람) 쪽 위치
-  const mastWheelY = jibY + 20;
-  const handleBob = S.holding ? Math.sin(S.t * 16) * 7 : 0;
-  const handleY = groundY - 118 + handleBob;
-  const handleX = mastX + 44;
-
-  // ── 구성별 줄 + 도르래 ──
-  if (M === 1) {
-    // 고정 1개: 화물 → 고정바퀴 → 지브 따라 → 기둥바퀴 → 손
-    rope(c, [[px + 14, fbY], [lx + 6, loadTop - 14]]);
-    rope(c, [[px - 14, fbY], [mastX + 14, mastWheelY]]);
-    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
-    wheel(c, px, fbY, 15, wheelAng, '#c98a2e');
-    // 훅
-    hook(c, lx + 6, loadTop - 14, loadTop);
-  } else if (M === 2) {
-    const mbY = loadTop - 26;                              // 움직 도르래 중심
-    rope(c, [[px + 26, jibY + 8], [lx + 13, mbY]]);        // 고정 끝(지브 고정)
-    rope(c, [[lx - 13, mbY], [px - 24, fbY]]);             // 움직 → 고정(방향전환)
-    rope(c, [[px - 24 - 12, fbY], [mastX + 14, mastWheelY]]);
-    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
-    c.strokeStyle = '#39445c'; c.lineWidth = 3;            // 지브 고정점
-    c.beginPath(); c.moveTo(px + 26, jibY + 6); c.lineTo(px + 26, jibY + 12); c.stroke();
-    wheel(c, px - 24, fbY, 13, wheelAng, '#c98a2e');       // 방향전환 고정
-    wheel(c, lx, mbY, 14, -wheelAng, '#2ea3c9');           // 움직 도르래
-    c.strokeStyle = '#39445c'; c.lineWidth = 3.5;          // 움직도르래 ↔ 화물
-    c.beginPath(); c.moveTo(lx, mbY + 6); c.lineTo(lx, loadTop); c.stroke();
-    labelPulley(c, lx, mbY - 52, '움직');
+  const boxH = { 10: 0.5, 20: 0.55, 40: 0.75 }[S.w];
+  // 화물 위치 + 스웨이 (도르래점 기준 진자)
+  for (const k in loadMeshes) loadMeshes[k].visible = (+k === S.w);
+  for (const k in loadGrp.userData.labels) loadGrp.userData.labels[k].visible = (+k === S.w);
+  const pivotY = JIB_Y - 0.05;
+  const hangLen = pivotY - (S.h + boxH);
+  const sway = S.swayAng;
+  const lx = LOAD_X + Math.sin(sway) * hangLen * 0.25;
+  loadGrp.position.set(lx, S.h + 0.42, 0);
+  loadGrp.rotation.z = sway * 0.5;
+  S.lastPx = lx * 60; S.lastGroundY = 0;
+  // 움직 도르래 (movable/compound에서만)
+  const useMov = S.cfg !== 'fixed';
+  movWheel.visible = useMov;
+  anchor.visible = useMov;
+  if (useMov) movWheel.position.set(lx, S.h + boxH + 0.62, 0);
+  // 도르래 회전
+  fixedWheel.children[1].rotation.z = -S.rope * 3;
+  if (useMov) movWheel.children[1].rotation.z = S.rope * 3.4;
+  // 로프 경로
+  const handY = 1.05 + (S.holding ? Math.sin(S.t * 8) * 0.06 : 0);
+  const hand = new THREE.Vector3(WORKER_X + 0.25, handY, 0);
+  const fw = new THREE.Vector3(LOAD_X, pivotY + 0.22, 0);
+  const pts = [hand, new THREE.Vector3(LOAD_X - 0.22, pivotY + 0.1, 0)];
+  if (S.cfg === 'fixed') {
+    pts.push(new THREE.Vector3(lx, S.h + boxH + 0.42, 0));
+  } else if (S.cfg === 'movable') {
+    pts.push(new THREE.Vector3(lx - 0.18, S.h + boxH + 0.62, 0));
+    pts.push(new THREE.Vector3(lx, S.h + boxH + 0.44, 0));
+    pts.push(new THREE.Vector3(lx + 0.18, S.h + boxH + 0.62, 0));
+    pts.push(new THREE.Vector3(LOAD_X + 0.5, pivotY, 0));
   } else {
-    // 복합: 고정 2 + 움직 2, 4가닥
-    const mbY = loadTop - 26;
-    const off = [-27, -9, 9, 27];
-    for (let i = 0; i < 4; i++) rope(c, [[px + off[i], fbY + 4], [lx + off[i], mbY]]);
-    rope(c, [[px - 40, fbY], [mastX + 14, mastWheelY]]);
-    rope(c, [[mastX + 14, mastWheelY], [handleX, handleY]]);
-    wheel(c, px - 18, fbY, 13, wheelAng, '#c98a2e');
-    wheel(c, px + 18, fbY, 13, wheelAng, '#c98a2e');
-    wheel(c, lx - 18, mbY, 13, -wheelAng, '#2ea3c9');
-    wheel(c, lx + 18, mbY, 13, -wheelAng, '#2ea3c9');
-    c.strokeStyle = '#39445c'; c.lineWidth = 3.5;
-    c.beginPath(); c.moveTo(lx, mbY + 8); c.lineTo(lx, loadTop); c.stroke();
-    c.fillStyle = '#1a2234'; c.strokeStyle = '#39445c'; c.lineWidth = 1.5;
-    c.beginPath(); c.roundRect(lx - 36, mbY - 5, 72, 10, 4); c.fill(); c.stroke();
-    labelPulley(c, lx, mbY - 14, '움직 ×2');
+    pts.push(new THREE.Vector3(lx - 0.18, S.h + boxH + 0.62, 0));
+    pts.push(new THREE.Vector3(lx - 0.06, S.h + boxH + 0.44, 0));
+    pts.push(new THREE.Vector3(lx + 0.06, S.h + boxH + 0.62, 0));
+    pts.push(new THREE.Vector3(LOAD_X + 0.2, pivotY + 0.14, 0));
+    pts.push(new THREE.Vector3(lx + 0.18, S.h + boxH + 0.5, 0));
+    pts.push(new THREE.Vector3(LOAD_X + 0.5, pivotY, 0));
   }
-  // 기둥 위 방향전환 바퀴 (공통)
-  wheel(c, mastX + 14, mastWheelY, 11, wheelAng, '#c98a2e');
-
-  // 화물
-  drawLoad(c, lx, loadTop, loadW, loadH2, L);
-
-  // 사람 + 손잡이
-  drawPuller(c, handleX, handleY, groundY, S.holding);
-
-  // 추락 먼지 구름
-  for (const p of S.dust) {
-    const a = Math.max(0, p.life / p.max);
-    c.fillStyle = `rgba(152,142,120,${(0.34 * a).toFixed(3)})`;
-    c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill();
-  }
-
-  // 당긴 줄 코일
-  const coilR = 7 + Math.min(20, S.rope * 1.6);
-  c.strokeStyle = '#d9b06a'; c.lineWidth = 3;
-  c.beginPath(); c.arc(mastX - 44, groundY - coilR - 4, coilR, 0, 7); c.stroke();
-  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1.4;
-  c.beginPath(); c.arc(mastX - 44, groundY - coilR - 4, coilR * 0.6, 0, 7); c.stroke();
-  c.fillStyle = '#77839a'; c.font = '10px sans-serif'; c.textAlign = 'center';
-  c.fillText('당긴 줄 ' + S.rope.toFixed(1) + 'm', mastX - 44, groundY + 14);
-
-  // 구성 라벨
-  c.font = 'bold 12.5px sans-serif'; c.textAlign = 'center';
-  c.fillStyle = '#ffb02e';
-  c.fillText(`${CONFIGS[S.cfg].name} — 줄 ${M}가닥 · 필요한 힘 ${nd.toFixed(nd % 1 ? 1 : 0)}`, px, jibY - 16);
-
-  c.restore();
-}
-function hook(c, rx, ry, loadTop) {
-  c.strokeStyle = '#9aa5b1'; c.lineWidth = 3.5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx, loadTop - 2); c.stroke();
-  c.beginPath(); c.arc(rx - 4, loadTop - 4, 5, -0.4, 3.2); c.stroke();
-}
-function labelPulley(c, x, y, txt) {
-  c.fillStyle = '#5bd0f0'; c.font = 'bold 10.5px sans-serif'; c.textAlign = 'center';
-  c.fillText(txt, x, y + 30);
-}
-function drawLoad(c, cx, top, w, h, L) {
-  c.save();
-  if (S.w === 40) {                       // 바위
-    const g = c.createRadialGradient(cx - w*0.2, top + h*0.25, 6, cx, top + h/2, w*0.7);
-    g.addColorStop(0, L.light); g.addColorStop(1, L.color);
-    c.fillStyle = g;
-    c.beginPath();
-    c.moveTo(cx - w/2, top + h*0.75);
-    c.quadraticCurveTo(cx - w/2 - 6, top + h*0.3, cx - w*0.24, top + h*0.08);
-    c.quadraticCurveTo(cx, top - 6, cx + w*0.3, top + h*0.14);
-    c.quadraticCurveTo(cx + w/2 + 5, top + h*0.42, cx + w*0.4, top + h*0.85);
-    c.quadraticCurveTo(cx, top + h + 4, cx - w/2, top + h*0.75);
-    c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
-    // 균열 (가지 친 금)
-    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1.2;
-    c.beginPath(); c.moveTo(cx - w*0.15, top + h*0.22); c.lineTo(cx - w*0.02, top + h*0.48);
-    c.lineTo(cx + w*0.1, top + h*0.58); c.moveTo(cx - w*0.02, top + h*0.48); c.lineTo(cx - w*0.14, top + h*0.7); c.stroke();
-    c.beginPath(); c.moveTo(cx + w*0.24, top + h*0.16); c.lineTo(cx + w*0.3, top + h*0.42); c.lineTo(cx + w*0.2, top + h*0.62); c.stroke();
-    c.beginPath(); c.moveTo(cx - w*0.36, top + h*0.5); c.lineTo(cx - w*0.24, top + h*0.66); c.stroke();
-    // 얼룩 점
-    c.fillStyle = 'rgba(0,0,0,.16)';
-    for (const [sx, sy, sr] of [[-0.3, 0.32, 2.6], [0.08, 0.76, 3], [0.33, 0.3, 2], [-0.06, 0.62, 1.8]]) {
-      c.beginPath(); c.arc(cx + w*sx, top + h*sy, sr, 0, 7); c.fill();
-    }
-    c.fillStyle = 'rgba(255,255,255,.14)';
-    c.beginPath(); c.arc(cx - w*0.18, top + h*0.18, 3.4, 0, 7); c.fill();
-  } else {
-    const g = c.createLinearGradient(cx - w/2, top, cx + w/2, top + h);
-    g.addColorStop(0, L.light); g.addColorStop(1, L.color);
-    c.fillStyle = g;
-    c.beginPath(); c.roundRect(cx - w/2, top, w, h, 5); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.5; c.stroke();
-    if (S.w === 20) {                     // 컨테이너: 골판 + 문 잠금봉 + 코너캐스팅
-      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2;
-      for (let x = cx - w/2 + 10; x < cx + w/2 - 22; x += 11) {
-        c.beginPath(); c.moveTo(x, top + 5); c.lineTo(x, top + h - 5); c.stroke();
-      }
-      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2;
-      c.beginPath(); c.moveTo(cx + w/2 - 9, top + 4); c.lineTo(cx + w/2 - 9, top + h - 4);
-      c.moveTo(cx + w/2 - 16, top + 4); c.lineTo(cx + w/2 - 16, top + h - 4); c.stroke();
-      c.fillStyle = 'rgba(255,255,255,.45)';
-      c.fillRect(cx + w/2 - 11.5, top + h*0.44, 5, 3.5); c.fillRect(cx + w/2 - 18.5, top + h*0.44, 5, 3.5);
-      c.fillStyle = 'rgba(0,0,0,.4)';
-      for (const [ox, oy] of [[-w/2 + 2, 2], [w/2 - 7, 2], [-w/2 + 2, h - 7], [w/2 - 7, h - 7]]) c.fillRect(cx + ox, top + oy, 5, 5);
-    } else {                              // 상자: 십자 테이프 + 덮개 접힘선 + 송장 라벨
-      c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 5;
-      c.beginPath(); c.moveTo(cx, top + 2); c.lineTo(cx, top + h - 2); c.stroke();
-      c.strokeStyle = 'rgba(255,244,214,.4)'; c.lineWidth = 4;
-      c.beginPath(); c.moveTo(cx - w/2 + 2, top + 9); c.lineTo(cx + w/2 - 2, top + 9); c.stroke();
-      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1.2;
-      c.beginPath(); c.moveTo(cx - w/2 + 3, top + 14); c.lineTo(cx + w/2 - 3, top + 14); c.stroke();
-      c.fillStyle = 'rgba(255,250,235,.85)';
-      c.fillRect(cx - w/2 + 6, top + h - 16, 16, 10);
-      c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1;
-      c.strokeRect(cx - w/2 + 6, top + h - 16, 16, 10);
-      c.beginPath(); c.moveTo(cx - w/2 + 8, top + h - 12); c.lineTo(cx - w/2 + 19, top + h - 12);
-      c.moveTo(cx - w/2 + 8, top + h - 9); c.lineTo(cx - w/2 + 16, top + h - 9); c.stroke();
-    }
-  }
-  c.fillStyle = '#fff'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-  c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 4;
-  c.fillText(S.w + 'kg', cx, top + h / 2 + 5);
-  c.restore();
-}
-function drawPuller(c, hx, hy, groundY, pulling) {
-  // 손잡이
-  c.fillStyle = '#c2410c';
-  c.beginPath(); c.roundRect(hx - 14, hy - 6, 28, 12, 6); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.stroke();
-  // 미니피겨 인부 — 힘을 줄수록 뒤로 기울며 버티는 자세, 힘 부족이면 발이 미끄러짐
-  const lean = Math.min(1, S.power / MAX_PULL) * 16;
-  const sl = S.slip ? Math.sin(S.t * 26) * 2.5 + 2 : 0;   // 미끄러지는 발 떨림
-  const bx = hx + 24 + sl, by = groundY;
-  const hipX = bx + lean * 0.5, hipY = by - 26;
-  const shX = hipX + lean * 1.1, shY = hipY - 20 + lean * 0.25;
-  c.lineCap = 'round';
-  if (S.slip) {                                            // 발 밑 스키드 자국
-    c.strokeStyle = 'rgba(205,192,160,.4)'; c.lineWidth = 2;
-    for (let k = 0; k < 3; k++) {
-      c.beginPath(); c.moveTo(bx - 22 + k * 6, by - 1.5); c.lineTo(bx - 30 + k * 6, by - 1.5); c.stroke();
-    }
-  }
-  // 다리 (앞다리 버팀 + 뒷다리 뻗음)
-  c.strokeStyle = '#3b5b8f'; c.lineWidth = 6;
-  c.beginPath();
-  c.moveTo(hipX, hipY); c.lineTo(bx - 9 - lean * 0.5, by - 3);
-  c.moveTo(hipX, hipY); c.lineTo(bx + 11 + lean * 0.4, by - 3);
-  c.stroke();
-  // 안전화
-  c.fillStyle = '#26314a';
-  c.beginPath(); c.roundRect(bx - 16 - lean * 0.5, by - 6, 13, 6, 2); c.fill();
-  c.beginPath(); c.roundRect(bx + 6 + lean * 0.4, by - 6, 13, 6, 2); c.fill();
-  // 몸통 (형광 안전조끼)
-  c.strokeStyle = '#ff9046'; c.lineWidth = 9;
-  c.beginPath(); c.moveTo(hipX, hipY); c.lineTo(shX, shY); c.stroke();
-  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2;    // 반사띠
-  const mx = (hipX + shX) / 2, my = (hipY + shY) / 2;
-  c.beginPath(); c.moveTo(mx - 4, my + 3); c.lineTo(mx + 4, my - 3); c.stroke();
-  // 양팔 → 손잡이
-  c.strokeStyle = '#e8b07a'; c.lineWidth = 4.5;
-  c.beginPath();
-  c.moveTo(shX, shY + 2); c.lineTo(hx + 9, hy);
-  c.moveTo(shX + 1, shY + 5); c.lineTo(hx + 12, hy + 4);
-  c.stroke();
-  c.fillStyle = '#f5d5a8';                                    // 장갑 낀 손
-  c.beginPath(); c.arc(hx + 10, hy + 2, 3.6, 0, 7); c.fill();
-  // 머리 + 노란 안전모 (손잡이 쪽을 바라봄)
-  const hdX = shX + lean * 0.2, hdY = shY - 12;
-  c.fillStyle = '#f0c49a'; c.beginPath(); c.arc(hdX, hdY, 7.5, 0, 7); c.fill();
-  c.fillStyle = '#ffd21e';
-  c.beginPath(); c.arc(hdX, hdY - 2, 8.2, Math.PI, 0); c.fill();
-  c.beginPath(); c.roundRect(hdX - 10, hdY - 3.5, 20, 3, 1.5); c.fill();
-  c.fillStyle = '#1a2234';
-  c.beginPath(); c.arc(hdX - 3.6, hdY + 2, 1.2, 0, 7); c.fill();   // 눈
-  if (S.slip) {                                               // 땀방울 + 미끌 표시
-    c.fillStyle = 'rgba(120,190,255,.85)';
-    c.beginPath(); c.arc(hdX + 10, hdY - 6 + Math.sin(S.t * 10) * 2.5, 2, 0, 7); c.fill();
-    c.fillStyle = '#ff5a52'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
-    c.fillText('미끌!', bx - 20, by - 12);
-  }
-  if (pulling) {
-    c.fillStyle = '#ffb02e'; c.font = 'bold 12.5px sans-serif'; c.textAlign = 'center';
-    c.fillText(S.slip ? '으윽...!' : '영차!', hdX, hdY - 16);
-    // 당기는 방향 화살
-    c.strokeStyle = 'rgba(255,176,46,.8)'; c.lineWidth = 2.5;
-    c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, hy + 30); c.stroke();
-    c.fillStyle = 'rgba(255,176,46,.8)';
-    c.beginPath(); c.moveTo(hx, hy + 36); c.lineTo(hx - 5, hy + 28); c.lineTo(hx + 5, hy + 28); c.fill();
-  }
-}
-function drawCone(c, x, gy) {
-  c.fillStyle = '#e8622d';
-  c.beginPath(); c.moveTo(x - 9, gy); c.lineTo(x - 3.2, gy - 20); c.lineTo(x + 3.2, gy - 20); c.lineTo(x + 9, gy); c.closePath(); c.fill();
-  c.fillStyle = '#f4f0e6';
-  c.beginPath(); c.moveTo(x - 6.6, gy - 8); c.lineTo(x - 5.2, gy - 13); c.lineTo(x + 5.2, gy - 13); c.lineTo(x + 6.6, gy - 8); c.closePath(); c.fill();
-  c.fillStyle = '#c24d1e'; c.fillRect(x - 12, gy - 2.5, 24, 3);
-}
-function drawBarrier(c, x, gy) {
-  c.strokeStyle = '#5a6b8c'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(x - 20, gy); c.lineTo(x - 14, gy - 17); c.moveTo(x + 20, gy); c.lineTo(x + 14, gy - 17); c.stroke();
-  c.save();
-  c.beginPath(); c.roundRect(x - 26, gy - 26, 52, 10, 2); c.clip();
-  c.fillStyle = '#ffd21e'; c.fillRect(x - 26, gy - 26, 52, 10);
-  c.fillStyle = '#1a2234';
-  for (let s = -32; s < 30; s += 12) {
-    c.beginPath(); c.moveTo(x + s, gy - 16); c.lineTo(x + s + 6, gy - 26); c.lineTo(x + s + 12, gy - 26); c.lineTo(x + s + 6, gy - 16); c.closePath(); c.fill();
-  }
-  c.restore();
+  ropeMesh.geometry.setFromPoints(pts);
+  // 인부 자세 (당길 때 뒤로 기울고 팔 올림)
+  worker.rotation.z = S.holding ? -0.18 - Math.sin(S.t * 8) * 0.03 : 0;
+  worker.userData.arms.rotation.z = S.holding ? 2.4 : 0.3;
+  if (S.slip) worker.position.x = WORKER_X + Math.sin(S.t * 30) * 0.03;
+  else worker.position.x = WORKER_X;
+  // 먼지
+  dustPool.forEach((m, i) => {
+    const p = S.dust[i];
+    if (p) {
+      m.visible = true;
+      m.position.set(p.x / 60, Math.max(0.05, -p.y / 60 + 0.05), 0.3);
+      m.scale.setScalar(0.6 + p.r / 12);
+      m.material.opacity = 0.5 * Math.max(0, p.life / p.max);
+    } else m.visible = false;
+  });
+  controls.update();
+  if (fitStage(renderer, camera, stage3)) renderer.render(scene, camera);
 }
 
 /* ── 메인 루프 ── */

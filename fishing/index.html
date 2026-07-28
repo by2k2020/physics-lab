@@ -106,13 +106,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 20차시</div>
-      <div class="title">🎣 낚시하러 가자 — 릴 기어비 낚시</div>
+      <div class="title">🎣 낚시하러 가자 — 릴 기어비 낚시<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="game">🎣 낚시터</button>
@@ -130,6 +140,12 @@
         <div class="chip" style="color:var(--orange)"><span class="lab">줄 감는 속력</span><span id="hud_v">0.0 m/s</span></div>
         <div class="chip" style="color:var(--green)"><span class="lab">끌어올림</span><span id="hud_p">0 %</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camSea">🌊 물속</button>
+        <button id="camDiag">◤ 대각선</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -235,8 +251,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeCamera, camPresets, textSprite, canvasTex, makeMinifig } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -453,422 +470,227 @@ function finish(success, why) {
   refreshStatic();
 }
 
-/* ── 그리기: 낚시터 장면 ── */
-function spawnBubble() {
-  bubbles.push({ y: 0, r: 1.5 + Math.random() * 2.5, vy: 18 + Math.random() * 22, life: 1, offX: (Math.random() - 0.5) * 22 });
+/* ═════════ 3D 무대 (노을 낚시터) ═════════ */
+const cv = $('cv');
+const stage3 = cv.closest('.stage');
+const renderer = makeRenderer(cv);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x3a2547);
+scene.fog = new THREE.Fog(0x3a2547, 14, 40);
+scene.add(new THREE.HemisphereLight(0xffc9a0, 0x2a2040, 1.0));
+scene.add(new THREE.AmbientLight(0xffb080, 0.35));
+{
+  const sun = new THREE.DirectionalLight(0xffb060, 1.3);
+  sun.position.set(5, 5, 3); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -8; sun.shadow.camera.right = 8;
+  sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -8;
+  scene.add(sun);
 }
-function spawnSplash(x, n, power) {
-  for (let i = 0; i < n; i++)
-    splashes.push({ x: x + (Math.random() - 0.5) * 12, y: 0,
-      vx: (Math.random() - 0.5) * power, vy: -(36 + Math.random() * power),
-      r: 1.2 + Math.random() * 2, life: 0.8 + Math.random() * 0.35 });
-}
-function roundedRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
-
-function drawFishShape(c, x, y, size, f, ang, mouthUp, flip) {
-  c.save(); c.translate(x, y); c.rotate(ang);
-  if (flip) c.scale(-1, 1);
-  const sp = f.species, color = f.color, light = f.light;
-  const cat = sp === 'catfish';
-  const L = size * (cat ? 2.5 : 2.1);
-  const Hh = size * (cat ? 0.9 : sp === 'carp' ? 1.3 : 1.15);
-  // 꼬리 — 붕어/잉어는 갈라진 꼬리, 메기는 둥근 꼬리
-  c.fillStyle = color;
-  c.beginPath();
-  if (cat) {
-    c.moveTo(L * 0.38, 0);
-    c.quadraticCurveTo(L * 0.64, -Hh * 0.55, L * 0.60, 0);
-    c.quadraticCurveTo(L * 0.64, Hh * 0.55, L * 0.38, 0);
-  } else {
-    c.moveTo(L * 0.40, 0);
-    c.lineTo(L * 0.62, -Hh * 0.55);
-    c.lineTo(L * 0.54, 0);
-    c.lineTo(L * 0.62, Hh * 0.55);
-  }
-  c.closePath(); c.fill();
-  // 등지느러미 — 잉어는 높고 길게, 붕어는 봉긋, 메기는 작게
-  c.fillStyle = color;
-  c.beginPath();
-  if (sp === 'carp') {
-    c.moveTo(-L * 0.12, -Hh * 0.40);
-    c.quadraticCurveTo(L * 0.02, -Hh * 0.95, L * 0.30, -Hh * 0.38);
-  } else if (cat) {
-    c.moveTo(-L * 0.06, -Hh * 0.42);
-    c.quadraticCurveTo(0, -Hh * 0.72, L * 0.10, -Hh * 0.42);
-  } else {
-    c.moveTo(-L * 0.08, -Hh * 0.44);
-    c.quadraticCurveTo(L * 0.06, -Hh * 0.80, L * 0.26, -Hh * 0.42);
-  }
-  c.closePath(); c.fill();
-  // 몸통
-  const bg = c.createLinearGradient(0, -Hh / 2, 0, Hh / 2);
-  bg.addColorStop(0, light); bg.addColorStop(1, color);
-  c.fillStyle = bg;
-  if (cat) {
-    c.beginPath(); c.ellipse(L * 0.05, 0, L * 0.42, Hh * 0.42, 0, 0, 7); c.fill();
-    c.beginPath(); c.ellipse(-L * 0.30, 0, L * 0.20, Hh * 0.50, 0, 0, 7); c.fill(); // 넓적한 머리
-    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1;
-    c.beginPath(); c.ellipse(L * 0.05, 0, L * 0.42, Hh * 0.42, 0, 0, 7); c.stroke();
-  } else {
-    c.beginPath(); c.ellipse(0, 0, L / 2, Hh / 2, 0, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.stroke();
-  }
-  // 비늘 — 붕어 잔비늘 / 잉어 굵은 비늘 / 메기는 매끈 + 광택
-  if (!cat) {
-    c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = sp === 'carp' ? 1.3 : 1;
-    const rows = sp === 'carp' ? 3 : 2;
-    const sr = size * (sp === 'carp' ? 0.17 : 0.11);
-    for (let r = 0; r < rows; r++) for (let q = 0; q < 4; q++) {
-      const sxp = -L * 0.20 + q * L * 0.13 + (r % 2) * L * 0.06;
-      const syp = -Hh * 0.16 + r * Hh * 0.17;
-      c.beginPath(); c.arc(sxp, syp, sr, 0.35, Math.PI - 0.35); c.stroke();
-    }
-  } else {
-    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(-L * 0.36, -Hh * 0.2); c.quadraticCurveTo(0, -Hh * 0.34, L * 0.34, -Hh * 0.15); c.stroke();
-  }
-  // 가슴지느러미
-  c.fillStyle = 'rgba(0,0,0,.18)';
-  c.beginPath(); c.ellipse(-L * 0.02, Hh * 0.14, L * 0.13, Hh * 0.22, 0.6, 0, 7); c.fill();
-  // 메기 긴 뒷지느러미
-  if (cat) {
-    c.fillStyle = 'rgba(0,0,0,.2)';
-    c.beginPath(); c.moveTo(-L * 0.05, Hh * 0.34);
-    c.quadraticCurveTo(L * 0.16, Hh * 0.60, L * 0.36, Hh * 0.28);
-    c.closePath(); c.fill();
-  }
-  // 눈
-  const ex = cat ? -L * 0.36 : -L * 0.28, ey = -Hh * (cat ? 0.18 : 0.12);
-  c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, size * 0.14, 0, 7); c.fill();
-  c.fillStyle = '#111'; c.beginPath(); c.arc(ex, ey, size * 0.07, 0, 7); c.fill();
-  // 입 — 메기는 넓은 입
-  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.4; c.lineCap = 'round';
-  if (cat) {
-    c.beginPath(); c.moveTo(-L * 0.48, Hh * 0.04);
-    c.quadraticCurveTo(-L * 0.40, Hh * 0.14, -L * 0.28, Hh * 0.08); c.stroke();
-  } else {
-    c.beginPath(); c.arc(-L * 0.42, mouthUp ? -Hh * 0.05 : Hh * 0.05, size * 0.12, 0.4, 2.2); c.stroke();
-  }
-  // 수염 — 메기 4가닥 길게, 잉어 2가닥 짧게
-  if (cat) {
-    c.strokeStyle = 'rgba(255,205,185,.85)'; c.lineWidth = 1.3;
-    const wob = Math.sin(wave * 3) * size * 0.1;
-    [[-0.50, -0.14, -0.78, -0.34], [-0.51, -0.04, -0.82, -0.06],
-     [-0.49, 0.08, -0.74, 0.28], [-0.47, 0.16, -0.62, 0.42]].forEach(w => {
-      c.beginPath(); c.moveTo(L * w[0], Hh * w[1]);
-      c.quadraticCurveTo(L * (w[0] + w[2]) / 2, Hh * w[3] + wob * 0.5, L * w[2], Hh * w[3] + wob);
-      c.stroke();
+const { camera, controls } = makeCamera(cv, { maxD: 20 });
+// 노을 배경 (해 포함)
+{
+  const tex = canvasTex(512, 320, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, 320);
+    g.addColorStop(0, '#3a2547'); g.addColorStop(0.45, '#8a4a5c'); g.addColorStop(0.8, '#e08a52'); g.addColorStop(1, '#f2b060');
+    c.fillStyle = g; c.fillRect(0, 0, 512, 320);
+    const sg = c.createRadialGradient(390, 235, 6, 390, 235, 60);
+    sg.addColorStop(0, '#ffe9b0'); sg.addColorStop(0.35, '#ffc25e'); sg.addColorStop(1, 'rgba(255,170,80,0)');
+    c.fillStyle = sg; c.beginPath(); c.arc(390, 235, 60, 0, 7); c.fill();
+    c.fillStyle = '#ffdf9a'; c.beginPath(); c.arc(390, 235, 26, 0, 7); c.fill();
+    // 구름 실루엣
+    c.fillStyle = 'rgba(90,50,80,.5)';
+    [[80, 70, 90], [230, 45, 70], [420, 90, 100]].forEach(([x, y, w]) => {
+      c.beginPath(); c.ellipse(x, y, w, 13, 0, 0, 7); c.fill();
+      c.beginPath(); c.ellipse(x + w * 0.3, y - 8, w * 0.55, 10, 0, 0, 7); c.fill();
     });
-  } else if (sp === 'carp') {
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.1;
-    c.beginPath(); c.moveTo(-L * 0.44, Hh * 0.10); c.lineTo(-L * 0.50, Hh * 0.24); c.stroke();
-    c.beginPath(); c.moveTo(-L * 0.39, Hh * 0.14); c.lineTo(-L * 0.43, Hh * 0.30); c.stroke();
-  }
-  c.restore();
+  });
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(46, 26),
+    new THREE.MeshBasicMaterial({ map: tex, depthWrite: false }));
+  sky.position.set(2, 3.4, -16); scene.add(sky);
 }
+/* 바다 (반투명 — 물속이 보임) */
+const SEA_Y = 0;
+{
+  const seaTop = new THREE.Mesh(new THREE.PlaneGeometry(40, 24),
+    new THREE.MeshStandardMaterial({ color: 0x3a6a9c, roughness: 0.12, metalness: 0.4, transparent: true, opacity: 0.55 }));
+  seaTop.rotation.x = -Math.PI / 2; seaTop.position.set(4, SEA_Y + 0.01, 0); scene.add(seaTop);
+  const seaBody = new THREE.Mesh(new THREE.BoxGeometry(40, 7, 24),
+    new THREE.MeshStandardMaterial({ color: 0x123a5e, roughness: 0.7, transparent: true, opacity: 0.62 }));
+  seaBody.position.set(4, SEA_Y - 3.5, 0); scene.add(seaBody);
+  // 바다 바닥 + 수초
+  const bed = new THREE.Mesh(new THREE.BoxGeometry(40, 0.3, 24),
+    new THREE.MeshStandardMaterial({ color: 0x1c3550, roughness: 0.95 }));
+  bed.position.set(4, SEA_Y - 6.6, 0); scene.add(bed);
+  const weedMat = new THREE.MeshStandardMaterial({ color: 0x2c6a4a, roughness: 0.8 });
+  [[0.6, -1.4], [2.4, 1.2], [4.4, -1.8], [6.2, 0.8], [3.4, -0.4]].forEach(([x, z]) => {
+    const w = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.8, 6), weedMat);
+    w.position.set(x, SEA_Y - 6.1, z); scene.add(w);
+  });
+}
+/* 부두 + 낚시꾼 */
+{
+  const plankTex = canvasTex(128, 64, (c) => {
+    c.fillStyle = '#7a5a33'; c.fillRect(0, 0, 128, 64);
+    c.strokeStyle = 'rgba(60,40,18,.7)'; c.lineWidth = 3;
+    for (let i = 0; i <= 128; i += 22) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 64); c.stroke(); }
+  }, [3, 1]);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.14, 1.6),
+    new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.8 }));
+  deck.position.set(-2.2, SEA_Y + 0.42, 0); deck.castShadow = true; scene.add(deck);
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x5f4426, roughness: 0.85 });
+  [[-3.4, 0.6], [-3.4, -0.6], [-1.0, 0.6], [-1.0, -0.6]].forEach(([x, z]) => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.6, 10), postMat);
+    p.position.set(x, SEA_Y - 0.35, z); scene.add(p);
+  });
+}
+const angler = makeMinifig({ shirt: 0x3d8bff, pants: 0x22304c, hair: 0x6b4a2c });
+angler.position.set(-1.55, SEA_Y + 0.49, 0);
+angler.rotation.y = Math.PI / 2 - 0.35;
+scene.add(angler);
+/* 낚싯대 (휘는 튜브) + 릴 + 줄 */
+const ROD_BASE = new THREE.Vector3(-1.35, SEA_Y + 0.95, 0);
+let rodMesh = null, rodBendRef = null;
+function buildRod(bend) {
+  if (rodMesh && rodBendRef === Math.round(bend * 20)) return;
+  rodBendRef = Math.round(bend * 20);
+  if (rodMesh) scene.remove(rodMesh);
+  const tip = rodTip(bend);
+  const mid = new THREE.Vector3(ROD_BASE.x + 0.85, ROD_BASE.y + 0.95 - bend * 0.25, 0);
+  const curve = new THREE.QuadraticBezierCurve3(ROD_BASE, mid, tip);
+  rodMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.028, 8),
+    new THREE.MeshStandardMaterial({ color: 0xc9a24a, roughness: 0.5 }));
+  rodMesh.castShadow = true;
+  scene.add(rodMesh);
+}
+function rodTip(bend) {
+  return new THREE.Vector3(ROD_BASE.x + 1.75, ROD_BASE.y + 1.35 - bend * 0.9, 0);
+}
+const reel3d = new THREE.Group();
+reel3d.position.set(ROD_BASE.x + 0.35, ROD_BASE.y + 0.28, 0.12); scene.add(reel3d);
+{
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 14),
+    new THREE.MeshStandardMaterial({ color: 0x4a566f, roughness: 0.4 }));
+  drum.rotation.x = Math.PI / 2; reel3d.add(drum);
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.03),
+    new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.5 }));
+  handle.position.set(0.07, 0, 0.06); reel3d.add(handle);
+}
+const lineMesh = new THREE.Line(new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0.85 }));
+scene.add(lineMesh);
+/* 물고기 3종 */
+const FISH_X = 1.1;
+function makeFish3d(key) {
+  const f = FISH[key];
+  const g = new THREE.Group();
+  const col = new THREE.Color(f.color);
+  const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.45 });
+  const sc = f.size / 22;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), mat);
+  body.scale.set(1.5, 0.85, 0.7); g.add(body);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 4), mat);
+  tail.rotation.z = -Math.PI / 2; tail.position.x = 0.45; tail.scale.z = 0.5; g.add(tail);
+  const fin = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.18, 4), mat);
+  fin.position.set(0, 0.22, 0); fin.scale.z = 0.5; g.add(fin);
+  const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  eyeW.position.set(-0.24, 0.05, 0.13); g.add(eyeW);
+  const eyeB = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x111111 }));
+  eyeB.position.set(-0.27, 0.05, 0.16); g.add(eyeB);
+  g.scale.setScalar(sc);
+  g.visible = false;
+  g.userData.tail = tail;
+  scene.add(g);
+  return g;
+}
+const fishMeshes = { small: makeFish3d('small'), mid: makeFish3d('mid'), big: makeFish3d('big') };
+/* 깊이 눈금 */
+for (let m = 1; m <= 6; m++) {
+  const lab = textSprite(m + 'm', { size: 26, color: '#9fc4e8', bg: 'rgba(6,16,30,.6)', scale: 0.0032 });
+  lab.position.set(3.1, SEA_Y - m, 1.4); scene.add(lab);
+}
+/* 버블·스플래시 풀 */
+const bubblePool = Array.from({ length: 14 }, () => {
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xbfe4ff, transparent: true, opacity: 0.55 }));
+  b.visible = false; scene.add(b); return b;
+});
+const splashPool = Array.from({ length: 12 }, () => {
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xd9ecff, transparent: true, opacity: 0.85 }));
+  s.visible = false; scene.add(s); return s;
+});
+function spawnBubble() {
+  bubbles.push({ y: 0, r: 1, vy: 0.5 + Math.random() * 0.5, life: 1.6, offX: (Math.random() - 0.5) * 0.4, offZ: (Math.random() - 0.5) * 0.3 });
+}
+function spawnSplash() {
+  for (let i = 0; i < 12; i++) {
+    const a = Math.PI * (0.2 + Math.random() * 0.6);
+    splashes.push({ x: FISH_X + (Math.random() - 0.5) * 0.3, y: 0, vx: Math.cos(a) * (Math.random() < 0.5 ? -1 : 1) * 1.2, vy: Math.sin(a) * 2.6, life: 0.9 });
+  }
+}
+camPresets(camera, controls, {
+  camSide: { pos: [1.0, 1.3, 7.2], target: [0.8, -1.2, 0] },
+  camSea:  { pos: [2.6, -1.6, 4.6], target: [1.1, -2.2, 0] },
+  camDiag: { pos: [-3.4, 2.6, 5.4], target: [0.6, -0.8, 0] },
+}, 'camSide');
 
 function drawScene(dt) {
-  const cv = $('cv');
-  const { c, W, H } = fit(cv);
   wave += dt;
-  const waterY = H * 0.28;
-  const f = fish(), g = gear();
-  const maxD = 6.8;
-  const pxPerM = (H - waterY - 26) / maxD;
-
-  // 노을 하늘
-  const sky = c.createLinearGradient(0, 0, 0, waterY);
-  sky.addColorStop(0, '#1c1440'); sky.addColorStop(0.42, '#5b2a5e');
-  sky.addColorStop(0.72, '#b04a47'); sky.addColorStop(1, '#ff9a52');
-  c.fillStyle = sky; c.fillRect(0, 0, W, waterY);
-  // 지는 해 + 노을빛
-  const sunX = W * 0.82, sunY = waterY * 0.74;
-  const glow = c.createRadialGradient(sunX, sunY, 4, sunX, sunY, 80);
-  glow.addColorStop(0, 'rgba(255,205,110,.95)'); glow.addColorStop(1, 'rgba(255,130,60,0)');
-  c.fillStyle = glow; c.fillRect(sunX - 80, sunY - 80, 160, 160);
-  c.fillStyle = '#ffd77a'; c.beginPath(); c.arc(sunX, sunY, 17, 0, 7); c.fill();
-  // 노을 구름 띠
-  c.fillStyle = 'rgba(255,150,110,.28)';
-  [[0.16, 0.38, 90], [0.42, 0.56, 130], [0.64, 0.28, 70]].forEach(cl => {
-    c.beginPath(); c.ellipse(W * cl[0], waterY * cl[1], cl[2], 7, 0, 0, 7); c.fill();
+  const f = fish();
+  // 물고기
+  for (const k in fishMeshes) fishMeshes[k].visible = false;
+  const fm = fishMeshes[fishKey];
+  let fy;
+  if (mode === 'fight') fy = SEA_Y - depth;
+  else if (caughtFishAnim > 0) fy = SEA_Y + 0.5 + Math.sin(wave * 4) * 0.1;
+  else fy = SEA_Y - f.depth;
+  fm.visible = true;
+  const wob = (mode === 'fight' && struggling) ? Math.sin(wave * 18) * 0.16 : Math.sin(wave * 2.2) * 0.04;
+  fm.position.set(FISH_X + wob, fy, 0);
+  fm.rotation.z = (mode === 'fight' ? (struggling ? Math.sin(wave * 15) * 0.4 : -0.25) : Math.sin(wave * 2.2) * 0.08);
+  fm.userData.tail.rotation.y = Math.sin(wave * 10) * 0.5;
+  if (caughtFishAnim > 0) caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.25);
+  if (splashPending) { splashPending = false; spawnSplash(); }
+  // 낚싯대 휨 + 줄
+  const bend = mode === 'fight' ? Math.min(1, (curRes / 22) + (struggling ? 0.3 : 0)) : (caughtFishAnim > 0 ? 0.15 : 0.05);
+  buildRod(bend);
+  const tip = rodTip(bend);
+  lineMesh.geometry.setFromPoints([tip, new THREE.Vector3(fm.position.x - 0.3 * Math.sign(1), fy + 0.1, 0)]);
+  // 릴 크랭크 회전
+  reel3d.rotation.z = -crankAng;
+  // 버블
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.y += b.vy * dt; b.life -= dt;
+    if (b.life <= 0 || fy + b.y > SEA_Y) bubbles.splice(i, 1);
+  }
+  bubblePool.forEach((m, i) => {
+    const b = bubbles[i];
+    if (b) {
+      m.visible = true;
+      m.position.set(FISH_X + b.offX, Math.min(SEA_Y - 0.05, fy + 0.2 + b.y), b.offZ);
+      m.material.opacity = 0.55 * Math.min(1, b.life);
+    } else m.visible = false;
   });
-  // 초저녁 별 (위쪽만)
-  c.fillStyle = 'rgba(255,255,255,.4)';
-  for (let i = 0; i < 8; i++) {
-    const sx = (i * 173.5) % W, sy = ((i * 71.7) % (waterY * 0.3));
-    c.fillRect(sx, sy, 1.6, 1.6);
-  }
-
-  // 물
-  const wat = c.createLinearGradient(0, waterY, 0, H);
-  wat.addColorStop(0, '#0d3a63'); wat.addColorStop(0.55, '#08284a'); wat.addColorStop(1, '#041226');
-  c.fillStyle = wat; c.fillRect(0, waterY, W, H - waterY);
-  // 노을 반사 — 수면 상부 온기
-  const warm = c.createLinearGradient(0, waterY, 0, waterY + 60);
-  warm.addColorStop(0, 'rgba(255,140,70,.22)'); warm.addColorStop(1, 'rgba(255,140,70,0)');
-  c.fillStyle = warm; c.fillRect(0, waterY, W, 60);
-  // 해 기둥 반사 (일렁임)
-  for (let i = 0; i < 8; i++) {
-    const ry = waterY + 8 + i * 10;
-    const flick = Math.sin(wave * 2.8 + i * 1.3) * (5 + i);
-    c.fillStyle = `rgba(255,160,85,${0.16 - i * 0.016})`;
-    c.beginPath(); c.ellipse(sunX + flick, ry, 26 - i * 2, 2.4, 0, 0, 7); c.fill();
-  }
-  // 물결
-  c.strokeStyle = 'rgba(140,200,255,.45)'; c.lineWidth = 2;
-  c.beginPath();
-  for (let x = 0; x <= W; x += 6) {
-    const y = waterY + Math.sin(x * 0.025 + wave * 2.2) * 3;
-    x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-  }
-  c.stroke();
-  c.strokeStyle = 'rgba(140,200,255,.14)';
-  c.beginPath();
-  for (let x = 0; x <= W; x += 6) {
-    const y = waterY + 9 + Math.sin(x * 0.03 + wave * 1.7 + 2) * 3;
-    x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-  }
-  c.stroke();
-  // 수면 반짝임
-  for (let i = 0; i < 26; i++) {
-    const gx = (i * 89 + (i * i * 37) % 53) % W;
-    const twk = Math.sin(wave * 3.1 + i * 2.13);
-    if (twk > 0.35) {
-      c.fillStyle = `rgba(255,225,170,${(twk - 0.35) * 0.9})`;
-      c.fillRect(gx, waterY + 2 + (i * 5) % 9, 4 + twk * 5, 1.5);
-    }
-  }
-
-  // 바닥
-  c.fillStyle = '#0c1a2e'; c.beginPath();
-  c.moveTo(0, H); c.lineTo(0, H - 16);
-  for (let x = 0; x <= W; x += 40) c.lineTo(x, H - 16 - Math.sin(x * 0.02) * 6);
-  c.lineTo(W, H); c.closePath(); c.fill();
-  // 자갈 (고정 배치 — 깜빡임 없음)
-  for (let i = 0; i * 16 < W; i++) {
-    const gx = i * 16 + ((i * 37) % 11), gy = H - 6 - ((i * 29) % 7), gr = 2.5 + ((i * 53) % 4);
-    c.fillStyle = ['#22314a', '#2c3d58', '#1a2740'][i % 3];
-    c.beginPath(); c.ellipse(gx, gy, gr, gr * 0.65, 0, 0, 7); c.fill();
-  }
-  // 수초 — 줄기 + 양옆 잎
-  c.lineCap = 'round';
-  for (let i = 0; i < 6; i++) {
-    const bx = W * (0.12 + i * 0.16), sw = Math.sin(wave * 1.4 + i) * 6;
-    c.strokeStyle = 'rgba(46,150,110,.5)'; c.lineWidth = 2.5;
-    c.beginPath(); c.moveTo(bx, H - 14);
-    c.quadraticCurveTo(bx + sw, H - 34, bx + sw * 1.8, H - 52 - (i % 3) * 8);
-    c.stroke();
-    c.strokeStyle = 'rgba(46,175,120,.38)'; c.lineWidth = 1.8;
-    c.beginPath(); c.moveTo(bx, H - 16);
-    c.quadraticCurveTo(bx - 8 + sw * 0.4, H - 26, bx - 12 + sw * 0.7, H - 36 - (i % 2) * 6); c.stroke();
-    c.beginPath(); c.moveTo(bx, H - 15);
-    c.quadraticCurveTo(bx + 9 + sw * 0.4, H - 24, bx + 13 + sw * 0.6, H - 32 + (i % 2) * 4); c.stroke();
-  }
-  // 물속 상승 기포
-  if (Math.random() < dt * 2 && ambBubbles.length < 24)
-    ambBubbles.push({ x: Math.random(), y: 1, r: 1 + Math.random() * 2, vy: 0.09 + Math.random() * 0.08, wob: Math.random() * 6 });
-  for (let i = ambBubbles.length - 1; i >= 0; i--) {
-    const b = ambBubbles[i]; b.y -= b.vy * dt;
-    if (b.y <= 0.03) { ambBubbles.splice(i, 1); continue; }
-    c.strokeStyle = 'rgba(180,220,255,.3)'; c.lineWidth = 1;
-    c.beginPath();
-    c.arc(b.x * W + Math.sin(wave * 2 + b.wob) * 4, waterY + b.y * (H - waterY - 16), b.r, 0, 7);
-    c.stroke();
-  }
-
-  // 깊이 눈금 (오른쪽)
-  c.font = '11.5px sans-serif'; c.textAlign = 'right';
-  for (let m = 0; m <= maxD; m += 1) {
-    const y = waterY + m * pxPerM;
-    if (y > H - 22) break;
-    c.strokeStyle = 'rgba(140,170,220,.22)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(W - 34, y); c.lineTo(W - 26, y); c.stroke();
-    c.fillStyle = 'rgba(160,185,225,.55)';
-    c.fillText(m + ' m', W - 38, y + 3.5);
-  }
-
-  // 부두 (오른쪽 아님 — 왼쪽)
-  const dockW = Math.min(150, W * 0.24), dockY = waterY - 26;
-  c.fillStyle = '#3a2c1c'; c.fillRect(0, dockY, dockW, 12);
-  c.fillStyle = '#2a2015';
-  for (let x = 8; x < dockW; x += 26) c.fillRect(x, dockY, 3, 12);
-  c.fillStyle = '#241b12';
-  c.fillRect(dockW * 0.25, dockY + 12, 8, waterY - dockY + 6);
-  c.fillRect(dockW * 0.75, dockY + 12, 8, waterY - dockY + 6);
-
-  // 아이 미니피겨 — 모자·낚시조끼·주머니
-  const kidX = dockW * 0.45, kidY = dockY;
-  // 다리 + 신발
-  c.fillStyle = '#2f5fd0'; c.fillRect(kidX - 8, kidY - 15, 6, 15); c.fillRect(kidX + 2, kidY - 15, 6, 15);
-  c.fillStyle = '#243f8a'; c.fillRect(kidX - 9, kidY - 3, 8, 3); c.fillRect(kidX + 1, kidY - 3, 8, 3);
-  // 몸통(셔츠)
-  c.fillStyle = '#e34b40'; roundedRect(c, kidX - 8, kidY - 35, 16, 21, 4); c.fill();
-  // 낚시조끼 양쪽 패널
-  c.fillStyle = '#b8862f';
-  roundedRect(c, kidX - 8.5, kidY - 35, 6, 20, 2); c.fill();
-  roundedRect(c, kidX + 2.5, kidY - 35, 6, 20, 2); c.fill();
-  // 조끼 주머니 2개 + 덮개
-  c.fillStyle = '#96691f';
-  c.fillRect(kidX - 7.5, kidY - 24, 4.5, 5.5); c.fillRect(kidX + 3.2, kidY - 24, 4.5, 5.5);
-  c.strokeStyle = '#6b4a12'; c.lineWidth = 1;
-  c.strokeRect(kidX - 7.5, kidY - 24, 4.5, 5.5); c.strokeRect(kidX + 3.2, kidY - 24, 4.5, 5.5);
-  c.fillStyle = '#6b4a12';
-  c.fillRect(kidX - 7.5, kidY - 24, 4.5, 1.8); c.fillRect(kidX + 3.2, kidY - 24, 4.5, 1.8);
-  // 머리 + 얼굴 (오른쪽 물 방향 봄)
-  c.fillStyle = '#ffcf6b'; c.beginPath(); c.arc(kidX, kidY - 44, 9, 0, 7); c.fill();
-  c.fillStyle = '#3a2b16'; c.beginPath(); c.arc(kidX + 4, kidY - 45, 1.3, 0, 7); c.fill();
-  c.strokeStyle = '#3a2b16'; c.lineWidth = 1.1; c.lineCap = 'round';
-  c.beginPath(); c.arc(kidX + 3.5, kidY - 42, 2.5, 0.3, 1.4); c.stroke();
-  // 챙 달린 캡모자
-  c.fillStyle = '#1f7a48';
-  c.beginPath(); c.arc(kidX, kidY - 46, 9.4, Math.PI, 0); c.closePath(); c.fill();
-  roundedRect(c, kidX + 3, kidY - 48.5, 12, 3.2, 1.6); c.fill();
-  c.fillStyle = '#175c36'; c.beginPath(); c.arc(kidX, kidY - 55, 2, 0, 7); c.fill();
-
-  // 낚싯대 — 물고기 저항에 비례해 휘어짐 (버틸 땐 더 크게)
-  const tension = mode === 'fight'
-    ? Math.min(1, 0.2 + (curRes / 32) * 0.85 + (stalled ? 0.22 : 0))
-    : 0.12;
-  const baseX = kidX + 16, baseY = kidY - 25;
-  const tipX = Math.min(W * 0.46, baseX + W * 0.26);
-  const tipY = waterY - H * 0.2 + tension * 42;
-  const cpx = baseX + (tipX - baseX) * 0.6, cpy = baseY - (baseY - tipY) * 1.15;
-  const qp = tq => ({ x: (1 - tq) * (1 - tq) * baseX + 2 * (1 - tq) * tq * cpx + tq * tq * tipX,
-                      y: (1 - tq) * (1 - tq) * baseY + 2 * (1 - tq) * tq * cpy + tq * tq * tipY });
-  const reelX = baseX + 14, reelY = baseY + 10;
-  // 손잡이 그립(코르크)
-  const g1 = qp(0.1);
-  c.strokeStyle = '#5a3d22'; c.lineWidth = 6; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(baseX - (g1.x - baseX) * 0.5, baseY - (g1.y - baseY) * 0.5); c.lineTo(g1.x, g1.y); c.stroke();
-  // 로드 블랭크 + 하이라이트
-  c.strokeStyle = '#c9a15a'; c.lineWidth = 3.5;
-  c.beginPath(); c.moveTo(baseX, baseY); c.quadraticCurveTo(cpx, cpy, tipX, tipY); c.stroke();
-  c.strokeStyle = 'rgba(255,240,200,.35)'; c.lineWidth = 1.2;
-  c.beginPath(); c.moveTo(baseX, baseY - 1); c.quadraticCurveTo(cpx, cpy - 1, tipX, tipY - 0.5); c.stroke();
-  // 가이드 링 4개 (끝으로 갈수록 작게)
-  const rings = [0.3, 0.55, 0.78, 0.96].map((tq, i) => {
-    const p = qp(tq), rr = 4 - i * 0.7;
-    return { x: p.x, y: p.y + rr + 3, r: rr, top: p };
-  });
-  c.strokeStyle = '#d8e4f5'; c.lineWidth = 1.4;
-  rings.forEach(rg => {
-    c.beginPath(); c.moveTo(rg.top.x, rg.top.y); c.lineTo(rg.x, rg.y - rg.r); c.stroke();
-    c.beginPath(); c.arc(rg.x, rg.y, rg.r, 0, 7); c.stroke();
-  });
-  // 릴 스풀 → 가이드 링 통과 → 초릿대 원줄
-  c.strokeStyle = 'rgba(230,240,255,.35)'; c.lineWidth = 1;
-  c.beginPath(); c.moveTo(reelX, reelY - 5);
-  rings.forEach(rg => c.lineTo(rg.x, rg.y));
-  c.lineTo(tipX, tipY); c.stroke();
-  // 릴 — 시트·몸체·스풀·감긴 줄·크랭크
-  c.strokeStyle = '#4a5872'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(baseX + 9, baseY + 1); c.lineTo(reelX, reelY - 6); c.stroke();
-  c.fillStyle = '#39445c'; c.beginPath(); c.arc(reelX, reelY, 9, 0, 7); c.fill();
-  c.strokeStyle = '#202a3e'; c.lineWidth = 1.2; c.stroke();
-  c.fillStyle = '#202a3e'; c.beginPath(); c.arc(reelX, reelY, 5.5, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(220,235,255,.55)'; c.lineWidth = 1;
-  for (let rr = 3; rr <= 5; rr++) { c.beginPath(); c.arc(reelX, reelY, rr, 0, 7); c.stroke(); }
-  const hx = reelX + Math.cos(crankAng) * 10, hy = reelY + Math.sin(crankAng) * 10;
-  c.strokeStyle = '#8b98ad'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(reelX, reelY); c.lineTo(hx, hy); c.stroke();
-  c.fillStyle = '#ffb02e'; c.beginPath(); c.arc(hx, hy, 3, 0, 7); c.fill();
-  // 팔 — 한 손은 로드 그립, 한 손은 릴 크랭크 (크랭크 따라 도는 손)
-  c.strokeStyle = '#e34b40'; c.lineWidth = 5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(kidX + 5, kidY - 31); c.lineTo(baseX, baseY - 1); c.stroke();
-  c.strokeStyle = '#c93c32'; c.lineWidth = 4.5;
-  c.beginPath(); c.moveTo(kidX + 6, kidY - 26); c.lineTo(hx, hy); c.stroke();
-  c.fillStyle = '#ffcf6b';
-  c.beginPath(); c.arc(baseX, baseY - 1, 3, 0, 7); c.fill();
-  c.beginPath(); c.arc(hx, hy, 3.2, 0, 7); c.fill();
-
-  // 물고기 위치
-  let fx = tipX, fy;
-  if (mode === 'fight') {
-    const sway = Math.sin(t * 1.3) * (14 + depth * 4) + (struggling ? Math.sin(t * 22) * 7 : 0);
-    fx = tipX + sway;
-    fy = waterY + depth * pxPerM;
-  }
-
-  // 낚싯줄
-  if (mode === 'fight') {
-    c.strokeStyle = stalled ? 'rgba(255,110,100,.9)' : 'rgba(230,240,255,.65)';
-    c.lineWidth = stalled ? 1.8 : 1.2;
-    c.beginPath(); c.moveTo(tipX, tipY);
-    c.quadraticCurveTo(tipX + (fx - tipX) * 0.3, (tipY + fy) / 2, fx, fy - f.size * 0.9);
-    c.stroke();
-    // 물고기 — 버틸 땐 파닥임 크게
-    const wig = Math.sin(t * (struggling ? 20 : 6)) * (struggling ? 0.4 : 0.22);
-    drawFishShape(c, fx, fy, f.size, f, -Math.PI / 2 + wig, true);
-    if (struggling) {
-      c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ff5a52';
-      c.fillText('💢 버티는 중!', fx, fy + f.size * 1.9);
-    }
-    // 줄이 수면을 가르는 지점 — 파문 + 버틸 때 물튀김
-    const lx = tipX + (fx - tipX) * ((waterY - tipY) / Math.max(1, fy - tipY));
-    const rp = (t % 0.9) / 0.9;
-    c.strokeStyle = `rgba(220,240,255,${(1 - rp) * 0.45})`; c.lineWidth = 1.5;
-    c.beginPath(); c.ellipse(lx, waterY + 2, 5 + rp * 24, 2 + rp * 5, 0, 0, 7); c.stroke();
-    if (struggling && Math.random() < dt * 12) spawnSplash(lx, 2, 30);
-    // 깊이 진행률 — 오른쪽 세로 바 + 물고기 옆 %
-    const prog = Math.max(0, Math.min(1, 1 - depth / f.depth));
-    const barX = W - 8, botY2 = waterY + f.depth * pxPerM, fyB = waterY + depth * pxPerM;
-    c.lineCap = 'round';
-    c.strokeStyle = 'rgba(140,170,220,.25)'; c.lineWidth = 7;
-    c.beginPath(); c.moveTo(barX, waterY + 4); c.lineTo(barX, botY2); c.stroke();
-    c.strokeStyle = stalled ? 'rgba(255,110,100,.85)' : 'rgba(46,224,111,.85)';
-    c.beginPath(); c.moveTo(barX, Math.min(fyB, botY2)); c.lineTo(barX, botY2); c.stroke();
-    c.font = 'bold 14px sans-serif'; c.textAlign = 'center';
-    c.fillStyle = stalled ? '#ffb02e' : '#7ce8a8';
-    c.fillText(`▲ ${Math.round(prog * 100)}% 끌어올림`, fx, fy - f.size * 2.3);
-    // 거품
-    for (let i = bubbles.length - 1; i >= 0; i--) {
-      const b = bubbles[i];
-      b.life -= dt * 0.55; b.y -= b.vy * dt;
-      if (b.life <= 0) { bubbles.splice(i, 1); continue; }
-      c.strokeStyle = `rgba(180,220,255,${b.life * 0.55})`; c.lineWidth = 1;
-      c.beginPath(); c.arc(fx + b.offX, fy + b.y - f.size, b.r, 0, 7); c.stroke();
-    }
-  } else {
-    // 대기: 찌만 동동
-    const bobY = waterY + Math.sin(wave * 2.5) * 3;
-    c.strokeStyle = 'rgba(230,240,255,.5)'; c.lineWidth = 1.2;
-    c.beginPath(); c.moveTo(tipX, tipY); c.lineTo(tipX, bobY - 6); c.stroke();
-    c.fillStyle = '#ff5a52'; c.beginPath(); c.arc(tipX, bobY - 3, 5, 0, 7); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(tipX, bobY - 6, 2.5, 0, 7); c.fill();
-    // 목표 물고기 미리보기 (물속에서 유영)
-    const px = W * 0.62 + Math.sin(wave * 0.7) * 26;
-    const py = waterY + f.depth * pxPerM + Math.sin(wave * 1.6) * 6;
-    drawFishShape(c, px, py, f.size, f, Math.sin(wave * 0.9) * 0.1, false);
-    c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(210,225,250,.8)';
-    c.fillText(`${f.name} · 깊이 ${f.depth} m · 저항 ${f.res}`, px, py - f.size * 1.5);
-  }
-
-  // 물튀김 입자
-  if (splashPending) { spawnSplash(tipX, 18, 70); splashPending = false; }
+  // 스플래시
   for (let i = splashes.length - 1; i >= 0; i--) {
     const s = splashes[i];
-    s.vy += 190 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-    if (s.life <= 0 || s.y > 10) { splashes.splice(i, 1); continue; }
-    c.fillStyle = `rgba(210,235,255,${Math.min(0.85, s.life)})`;
-    c.beginPath(); c.arc(s.x, waterY + s.y, s.r, 0, 7); c.fill();
+    s.vy -= 6 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+    if (s.life <= 0) splashes.splice(i, 1);
   }
-
-  // 잡은 직후 — 물 밖 점프 연출
-  if (caughtFishAnim > 0) {
-    caughtFishAnim = Math.max(0, caughtFishAnim - dt * 0.55);
-    const k = 1 - caughtFishAnim;
-    const jumpH = H * 0.10 + f.size * 1.4;
-    const ax = tipX - 12 + k * 28;
-    const ay = waterY + 8 - Math.sin(Math.PI * Math.min(1, k * 1.08)) * jumpH;
-    const rot = -0.9 + k * 1.6 + Math.sin(wave * 13) * 0.18;
-    drawFishShape(c, ax, ay, f.size * (0.85 + 0.15 * caughtFishAnim), f, rot, true);
-    if (Math.random() < dt * 26)
-      splashes.push({ x: ax, y: ay - waterY, vx: (Math.random() - 0.5) * 26, vy: 14, r: 1 + Math.random() * 1.6, life: 0.55 });
-    c.globalAlpha = Math.min(1, caughtFishAnim * 2.2);
-    c.font = 'bold 21px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#2ee06f';
-    c.fillText('낚았다!', tipX, waterY - jumpH - 16);
-    c.globalAlpha = 1;
-  }
+  splashPool.forEach((m, i) => {
+    const s = splashes[i];
+    if (s) {
+      m.visible = true;
+      m.position.set(s.x, SEA_Y + Math.max(0, s.y), 0.2);
+      m.material.opacity = 0.85 * Math.min(1, s.life);
+    } else m.visible = false;
+  });
+  controls.update();
+  if (fitStage(renderer, camera, stage3)) renderer.render(scene, camera);
 }
 
 /* ── 그리기: 릴 기어 인셋 ── */

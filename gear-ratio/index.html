@@ -125,13 +125,23 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정</div>
-      <div class="title">⚙️ 기어비 시뮬레이션</div>
+      <div class="title">⚙️ 기어비 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">실험 1 · 기어비</button>
@@ -149,6 +159,11 @@
         <div class="chip" style="color:var(--accent)"><span class="lab">드라이버 회전수</span><span id="hud_rA">0.00 회전</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">팔로워 회전수</span><span id="hud_rB">0.00 회전</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camFront1" class="on">🎯 정면</button>
+        <button id="camDiag1">◤ 대각선</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -223,6 +238,10 @@
         <div class="chip" style="color:var(--accent)"><span class="lab">드라이버</span><span id="hud_dA">0.00 회전</span></div>
         <div class="chip" style="color:var(--purple)"><span class="lab">아이들러</span><span id="hud_dI">0.00 회전</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">팔로워</span><span id="hud_dB">0.00 회전</span></div>
+      </div>
+      <div class="cam-row">
+        <button id="camFront2" class="on">🎯 정면</button>
+        <button id="camDiag2">◤ 대각선</button>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd2"></span></div>
     </div>
@@ -329,8 +348,9 @@
 
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const RUN_T = 10;
@@ -500,173 +520,65 @@ function teethPick(container, onChange) {
   return () => val;
 }
 
-/* ── 레고 테크닉풍 기어 그리기 ── */
-function drawGear(c, x, y, teeth, ang, color, opts = {}) {
-  const R = opts.r;                       // 피치 반지름(px)
-  const TAU = Math.PI * 2;
-  const tooth = Math.max(6, R * 0.17);    // 이 높이
-  const rOut = R + tooth * 0.55, rIn = R - tooth * 0.5;
-  const N = teeth;
-  c.save(); c.translate(x, y);
-  // 드롭 섀도 (입체감)
-  c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = R * 0.35; c.shadowOffsetY = R * 0.06;
-  c.beginPath(); c.arc(0, 0, rOut, 0, TAU); c.fillStyle = 'rgba(0,0,0,.01)'; c.fill(); c.restore();
-  c.rotate(ang);
-  // 톱니 링 — 끝이 좁아지는 사다리꼴 치형 (테크닉 기어 프로파일)
-  c.beginPath();
-  for (let i = 0; i < N; i++) {
-    const tipC = (i + 0.125) / N * TAU, gapC = (i + 0.625) / N * TAU;
-    const t0 = tipC - 0.11 / N * TAU, t1 = tipC + 0.11 / N * TAU;   // 이 끝 (좁음)
-    const g0 = gapC - 0.18 / N * TAU, g1 = gapC + 0.18 / N * TAU;   // 이 뿌리 골 (넓음)
-    if (i === 0) c.moveTo(Math.cos(t0) * rOut, Math.sin(t0) * rOut);
-    else c.lineTo(Math.cos(t0) * rOut, Math.sin(t0) * rOut);
-    c.arc(0, 0, rOut, t0, t1);
-    c.lineTo(Math.cos(g0) * rIn, Math.sin(g0) * rIn);
-    c.arc(0, 0, rIn, g0, g1);
+/* ── 3D 공용: 기어·화살표·작업실 씬 ── */
+const TAU3 = Math.PI * 2;
+function makeGear3d(T, r, color, light) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.94, r * 0.94, 0.16, 32),
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.4 }));
+  body.rotation.x = Math.PI / 2; body.castShadow = true; g.add(body);
+  const toothMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.4 });
+  const tw = Math.max(0.05, r * 2.6 / T);
+  for (let k = 0; k < T; k++) {
+    const a = k / T * TAU3;
+    const tooth = new THREE.Mesh(new THREE.BoxGeometry(tw, r * 0.15, 0.16), toothMat);
+    tooth.position.set(Math.cos(a) * r, Math.sin(a) * r, 0);
+    tooth.rotation.z = a + Math.PI / 2;
+    g.add(tooth);
   }
-  c.closePath();
-  const body = c.createRadialGradient(-R * 0.35, -R * 0.35, R * 0.15, 0, 0, rOut);
-  body.addColorStop(0, opts.light); body.addColorStop(0.75, color); body.addColorStop(1, shade(color));
-  c.fillStyle = body; c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.2; c.stroke();
-  // 몸판 안쪽 림 (플라스틱 사출 단차)
-  c.beginPath(); c.arc(0, 0, rIn - Math.max(2, R * 0.045), 0, TAU);
-  c.strokeStyle = 'rgba(255,255,255,.13)'; c.lineWidth = Math.max(1, R * 0.02); c.stroke();
-  c.beginPath(); c.arc(0, 0, rIn - Math.max(2, R * 0.045), 0, TAU);
-  c.fillStyle = 'rgba(0,0,0,.10)'; c.fill();
-  // 스포크 구멍 — 큰 기어 4개(핀홀 림 포함), 중간 기어는 작은 핀홀
-  const holeRing = (n, dist, hr) => {
-    for (let k = 0; k < n; k++) {
-      const a = k * TAU / n + Math.PI / 4;
-      const hx = Math.cos(a) * dist, hy = Math.sin(a) * dist;
-      c.beginPath(); c.arc(hx, hy, hr, 0, TAU);
-      c.fillStyle = '#070c18'; c.fill();
-      c.lineWidth = Math.max(1.5, hr * 0.22); c.strokeStyle = 'rgba(255,255,255,.16)'; c.stroke();
-      c.beginPath(); c.arc(hx, hy, hr * 0.62, 0, TAU);
-      c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1; c.stroke();
-    }
-  };
-  if (R > 34) holeRing(4, R * 0.55, R * 0.16);
-  else if (R > 20) holeRing(4, R * 0.56, R * 0.11);
-  // 중심 허브 + 십자축 홀 (레고 액슬)
-  const hubR = Math.max(11, R * 0.26);
-  const hub = c.createRadialGradient(-hubR * 0.35, -hubR * 0.35, hubR * 0.15, 0, 0, hubR);
-  hub.addColorStop(0, opts.light); hub.addColorStop(1, color);
-  c.beginPath(); c.arc(0, 0, hubR, 0, TAU); c.fillStyle = hub; c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.2; c.stroke();
-  const s = Math.max(4.5, R * 0.105);
-  c.fillStyle = '#0b0f18';   // 십자 홀 (뚫린 부분)
-  c.beginPath(); c.roundRect(-s * 0.62, -s * 1.68, s * 1.24, s * 3.36, s * 0.3); c.fill();
-  c.beginPath(); c.roundRect(-s * 1.68, -s * 0.62, s * 3.36, s * 1.24, s * 0.3); c.fill();
-  c.fillStyle = '#5b6982';   // 관통한 회색 액슬
-  c.beginPath(); c.roundRect(-s * 0.42, -s * 1.48, s * 0.84, s * 2.96, s * 0.22); c.fill();
-  c.beginPath(); c.roundRect(-s * 1.48, -s * 0.42, s * 2.96, s * 0.84, s * 0.22); c.fill();
-  // 회전 확인용 마커 점
-  c.fillStyle = 'rgba(255,255,255,.95)';
-  c.beginPath(); c.arc(rIn - Math.max(6, R * 0.11), 0, Math.max(3, R * 0.05), 0, TAU); c.fill();
-  c.restore();
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(0.09, r * 0.22), Math.max(0.09, r * 0.22), 0.18, 16),
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(light), roughness: 0.35 }));
+  hub.rotation.x = Math.PI / 2; g.add(hub);
+  // 십자축 홀
+  const cross = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0x39445c }));
+  g.add(cross);
+  const cross2 = cross.clone(); cross2.rotation.z = Math.PI / 2; g.add(cross2);
+  const mk = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.035, r * 0.06), 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  mk.position.set(r * 0.72, 0, 0.1); g.add(mk);
+  return g;
 }
-function shade(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const f = v => Math.max(0, Math.round(v * 0.55));
-  return `rgb(${f(n >> 16 & 255)},${f(n >> 8 & 255)},${f(n & 255)})`;
+function makeArrowRing3(r, cw, color, lw) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity: 0.85 });
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(r, lw || 0.025, 8, 24, Math.PI * 1.15), mat);
+  g.add(arc);
+  const head = new THREE.Mesh(new THREE.ConeGeometry((lw || 0.025) * 3.4, 0.16, 10), mat);
+  const endA = cw ? 0 : Math.PI * 1.15;
+  head.position.set(Math.cos(endA) * r, Math.sin(endA) * r, 0);
+  head.rotation.z = endA + (cw ? -Math.PI / 2 : Math.PI / 2);
+  g.add(head);
+  g.rotation.z = Math.PI * 0.6;
+  return g;
 }
-function dirArrow(c, x, y, r, cw, color, lw = 3.5) {
-  // 회전 방향 화살 호 (글로우 + 큰 화살촉) — 굵기 lw ∝ 토크 크기
-  const k = Math.max(0.7, lw / 3.5);
-  c.save(); c.translate(x, y);
-  c.shadowColor = color; c.shadowBlur = 7;
-  c.strokeStyle = color; c.lineWidth = lw; c.lineCap = 'round';
-  c.beginPath();
-  if (cw) c.arc(0, 0, r, -2.25, -0.88);
-  else c.arc(0, 0, r, -0.88, -2.25, true);
-  c.stroke();
-  c.shadowBlur = 0;
-  const tip = cw ? -0.88 : -2.25;
-  const tx = Math.cos(tip) * r, ty = Math.sin(tip) * r;
-  const tang = tip + (cw ? Math.PI / 2 : -Math.PI / 2);
-  c.fillStyle = color;
-  c.beginPath();
-  c.moveTo(tx + Math.cos(tang) * 12 * k, ty + Math.sin(tang) * 12 * k);
-  c.lineTo(tx + Math.cos(tang + 2.45) * 8.5 * k, ty + Math.sin(tang + 2.45) * 8.5 * k);
-  c.lineTo(tx + Math.cos(tang - 2.45) * 8.5 * k, ty + Math.sin(tang - 2.45) * 8.5 * k);
-  c.closePath(); c.fill();
-  c.restore();
-}
-function meshGlow(c, x, y, size, t) {
-  // 기어 맞물림 접촉 지점 하이라이트 (펄스 글로우 + 스파크 틱)
-  const pulse = 0.72 + 0.28 * Math.sin(t * 6);
-  const g = c.createRadialGradient(x, y, 0, x, y, size);
-  g.addColorStop(0, `rgba(255,238,160,${0.8 * pulse})`);
-  g.addColorStop(0.42, `rgba(255,190,80,${0.32 * pulse})`);
-  g.addColorStop(1, 'rgba(255,190,80,0)');
-  c.fillStyle = g;
-  c.beginPath(); c.arc(x, y, size, 0, 7); c.fill();
-  c.strokeStyle = `rgba(255,242,200,${0.75 * pulse})`; c.lineWidth = 1.6; c.lineCap = 'round';
-  for (let k = 0; k < 4; k++) {
-    const a = k * Math.PI / 2 + Math.PI / 4 + t * 2;
-    c.beginPath();
-    c.moveTo(x + Math.cos(a) * size * 0.42, y + Math.sin(a) * size * 0.42);
-    c.lineTo(x + Math.cos(a) * size * 0.72, y + Math.sin(a) * size * 0.72);
-    c.stroke();
-  }
-  c.lineCap = 'butt';
-}
-function speedStreaks(c, x, y, rr, ang, rpm, color) {
-  // 회전 속도감 라인 — 빠를수록 길고 진한 모션 호 3개
-  if (rpm < 1) return;
-  const len = 0.18 + Math.min(1.1, rpm / 110);
-  const alpha = Math.min(0.55, 0.12 + rpm / 220);
-  c.save(); c.translate(x, y);
-  c.strokeStyle = color; c.globalAlpha = alpha; c.lineCap = 'round'; c.lineWidth = 2.4;
-  for (let k = 0; k < 3; k++) {
-    const a0 = ang + k * Math.PI * 2 / 3;
-    c.beginPath(); c.arc(0, 0, rr, a0, a0 + len); c.stroke();
-  }
-  c.restore();
-}
-function drawTag(c, x, y, text, color) {
-  // 역할 라벨 필 (색 테두리 + 반투명 배경)
-  c.font = 'bold 13.5px "Malgun Gothic", sans-serif';
-  const w = c.measureText(text).width + 24;
-  c.fillStyle = 'rgba(8,12,22,.8)';
-  c.beginPath(); c.roundRect(x - w / 2, y - 13, w, 26, 13); c.fill();
-  c.strokeStyle = color; c.lineWidth = 1.5; c.stroke();
-  c.fillStyle = color; c.textAlign = 'center'; c.fillText(text, x, y + 4.5);
-}
-function drawBeam(c, x0, x1, y) {
-  // 테크닉 리프트암(빔) — 축을 지지하는 프레임 (입체 두께 + 지지 기둥)
-  const h = 24;
-  const post = x => {
-    const pg = c.createLinearGradient(x, y, x, y + 78);
-    pg.addColorStop(0, '#39435c'); pg.addColorStop(1, 'rgba(20,26,40,0)');
-    c.fillStyle = pg; c.fillRect(x - 7, y, 14, 78);
-  };
-  post(x0 + 14); post(x1 - 14);
-  c.fillStyle = '#141b2c';   // 아래쪽 두께 (사출 측면)
-  c.beginPath(); c.roundRect(x0 + 3, y - h / 2 + 5, x1 - x0, h, h / 2); c.fill();
-  const g = c.createLinearGradient(0, y - h / 2, 0, y + h / 2);
-  g.addColorStop(0, '#525d74'); g.addColorStop(0.45, '#3b465e'); g.addColorStop(1, '#232b3e');
-  c.fillStyle = g;
-  c.beginPath(); c.roundRect(x0, y - h / 2, x1 - x0, h, h / 2); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
-  c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 1;   // 상단 하이라이트
-  c.beginPath(); c.moveTo(x0 + 11, y - h / 2 + 3.5); c.lineTo(x1 - 11, y - h / 2 + 3.5); c.stroke();
-  for (let x = x0 + 16; x <= x1 - 12; x += 30) {   // 핀 홀
-    c.beginPath(); c.arc(x, y, 5.5, 0, 7);
-    c.fillStyle = '#0c1322'; c.fill();
-    c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 1.2; c.stroke();
-  }
-}
-function drawBench(c, W, H, yAxis) {
-  // 작업대 배경
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  // 점 격자 (브레드보드 느낌)
-  c.fillStyle = 'rgba(120,145,190,.08)';
-  for (let x = 20; x < W; x += 26)
-    for (let y = 20; y < H; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
+function makeBenchScene(cvEl) {
+  const renderer = makeRenderer(cvEl);
+  const scene = makeScene('indoor', 9, 50);
+  stdLights(scene, { dark: true, pos: [-3, 7, 5], shadowArea: 7 });
+  const { camera, controls } = makeCamera(cvEl, { maxD: 16, minD: 2.5 });
+  const tex = canvasTex(256, 256, (c) => {
+    c.fillStyle = '#151d30'; c.fillRect(0, 0, 256, 256);
+    c.fillStyle = 'rgba(120,145,190,.12)';
+    for (let x = 16; x < 256; x += 26) for (let y = 16; y < 256; y += 26) { c.beginPath(); c.arc(x, y, 2, 0, 7); c.fill(); }
+  }, [8, 8]);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(24, 0.2, 24),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+  floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(24, 8, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0x1c2740, roughness: 0.9 }));
+  wall.position.set(0, 4, -3.2); scene.add(wall);
+  return { renderer, scene, camera, controls };
 }
 
 /* ═════════ 실험 1 · 기어비 ═════════ */
@@ -711,48 +623,89 @@ function drawBench(c, W, H, yAxis) {
     if (samples.length === 0 || t - samples[samples.length - 1].t > 0.08)
       samples.push({ t, rA: angA / (Math.PI * 2), rB: Math.abs(angB) / (Math.PI * 2) });
   }
+  /* ═════════ 3D 무대 (실험 1 · 기어 2개) ═════════ */
+  const stage3 = cv.closest('.stage');
+  const W1 = makeBenchScene(cv);
+  camPresets(W1.camera, W1.controls, {
+    camFront1: { pos: [0, 1.6, 5.2], target: [0, 1.25, 0] },
+    camDiag1:  { pos: [-2.8, 2.8, 4.2], target: [0, 1.2, 0] },
+  }, 'camFront1');
+  const AXIS_Y = 1.35;
+  const gearGrp1 = new THREE.Group(); W1.scene.add(gearGrp1);
+  let sig1 = '', gA = null, gB = null, xA = 0, xB = 0, tagA = null, tagB = null, tagF = null;
+  const glow1 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffee96, transparent: true, opacity: 0.5 }));
+  W1.scene.add(glow1);
+  let arrA = null, arrB = null;
+  // 모터 박스
+  const motor = new THREE.Group(); W1.scene.add(motor);
+  {
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.5, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x2a3a5c, roughness: 0.5 }));
+    box.castShadow = true; motor.add(box);
+    const lab = textSprite('모터', { size: 28, color: '#cfe0ff', bg: 'rgba(8,12,22,.7)', scale: 0.0032 });
+    lab.position.y = 0.48; motor.add(lab);
+  }
+  let shaft1 = null;
+  function rebuild1() {
+    const u = 3.3 / (P.tA + P.tB);
+    const rA = P.tA * u / 2, rB = P.tB * u / 2;
+    xA = -(rA + rB) / 2; xB = xA + rA + rB;
+    while (gearGrp1.children.length) gearGrp1.remove(gearGrp1.children[0]);
+    gA = makeGear3d(P.tA, rA, '#2563eb', '#7db4ff');
+    gA.position.set(xA, AXIS_Y, 0); gearGrp1.add(gA);
+    gB = makeGear3d(P.tB, rB, '#c2410c', '#ffb27d');
+    gB.position.set(xB, AXIS_Y, 0); gearGrp1.add(gB);
+    // 축 기둥
+    [xA, xB].forEach(x => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, AXIS_Y, 10),
+        new THREE.MeshStandardMaterial({ color: 0x39445c, roughness: 0.5 }));
+      post.position.set(x, AXIS_Y / 2, -0.14); gearGrp1.add(post);
+    });
+    motor.position.set(xA - rA - 0.6, AXIS_Y, 0);
+    if (shaft1) W1.scene.remove(shaft1);
+    shaft1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, rA + 0.62, 10),
+      new THREE.MeshStandardMaterial({ color: 0x5b6982, roughness: 0.4, metalness: 0.4 }));
+    shaft1.rotation.z = Math.PI / 2;
+    shaft1.position.set(xA - (rA + 0.62) / 2, AXIS_Y, 0);
+    W1.scene.add(shaft1);
+    glow1.position.set(xA + rA, AXIS_Y, 0.12);
+    // 태그
+    if (tagA) gearGrp1.remove(tagA);
+    tagA = textSprite(`드라이버 ${P.tA}T · ${P.rpm} RPM`, { size: 27, color: '#7db4ff', bg: 'rgba(8,14,26,.78)', scale: 0.0032 });
+    tagA.position.set(xA, AXIS_Y + rA + 0.32, 0.3); gearGrp1.add(tagA);
+    if (tagB) gearGrp1.remove(tagB);
+    tagB = textSprite(`팔로워 ${P.tB}T · ${P.outRpm.toFixed(1)} RPM`, { size: 27, color: '#ffb27d', bg: 'rgba(26,14,6,.78)', scale: 0.0032 });
+    tagB.position.set(xB, AXIS_Y - rB - 0.3, 0.3); gearGrp1.add(tagB);
+    if (tagF) gearGrp1.remove(tagF);
+    tagF = textSprite(`힘 ×${P.ratio.toFixed(2)}`, { size: 27, color: '#ffd88a', bg: 'rgba(30,20,6,.78)', scale: 0.0032 });
+    tagF.position.set(xB, AXIS_Y + rB + 0.32, 0.3); gearGrp1.add(tagF);
+    if (arrA) gearGrp1.remove(arrA);
+    arrA = makeArrowRing3(rA + 0.2, true, '#4da3ff', 0.024);
+    arrA.position.set(xA, AXIS_Y, 0.14); gearGrp1.add(arrA);
+    if (arrB) gearGrp1.remove(arrB);
+    arrB = makeArrowRing3(rB + 0.2, false, '#ff9046', Math.min(0.06, 0.02 + P.ratio * 0.012));
+    arrB.position.set(xB, AXIS_Y, 0.14); gearGrp1.add(arrB);
+  }
   function draw() {
-    const { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;   // 숨김 탭(사이즈 0) 가드
-    const yAxis = H * 0.46;
-    drawBench(c, W, H, yAxis);
-    // 기어 크기: 두 기어가 화면에 맞게
-    const unit = Math.min((W * 0.62) / (P.tA + P.tB), (H * 0.56) / Math.max(P.tA, P.tB) / 1.15);
-    const rA = P.tA * unit / 2, rB = P.tB * unit / 2;
-    const cxA = W / 2 - rB - 4, cxB = cxA + rA + rB;
-    // 프레임 빔 (기어 축 지지)
-    drawBeam(c, cxA - rA - 40, cxB + rB + 40, yAxis);
-    // 모터 박스 (드라이버 왼쪽)
-    c.fillStyle = '#18233c';
-    const mw = Math.max(58, rA * 0.9);
-    c.strokeStyle = '#2c3d5e'; c.lineWidth = 1.5;
-    c.beginPath(); c.roundRect(cxA - rA - mw - 26, yAxis - 30, mw, 60, 9); c.fill(); c.stroke();
-    c.fillStyle = '#9aa8bf'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
-    c.fillText('모터', cxA - rA - mw / 2 - 26, yAxis + 4);
-    c.strokeStyle = '#5b6982'; c.lineWidth = 6; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(cxA - rA - 26, yAxis); c.lineTo(cxA, yAxis); c.stroke();
-    c.lineCap = 'butt';
-    // 기어 2개 (맞물림 위상 보정)
-    drawGear(c, cxA, yAxis, P.tA, angA, '#2563eb', { r: rA, light: '#7db4ff' });
-    drawGear(c, cxB, yAxis, P.tB, angB + Math.PI / P.tB, '#c2410c', { r: rB, light: '#ffb27d' });
-    // 맞물림 접촉 지점 하이라이트
-    meshGlow(c, cxA + rA, yAxis, Math.max(15, Math.min(rA, rB) * 0.5), t);
-    // 회전 속도감 모션 라인 (빠른 기어일수록 길고 진함)
-    const outA = rA + Math.max(6, rA * 0.17) * 0.55, outB = rB + Math.max(6, rB * 0.17) * 0.55;
-    speedStreaks(c, cxA, yAxis, outA + 8, angA, P.rpm, '#7db4ff');
-    speedStreaks(c, cxB, yAxis, outB + 8, angB, P.outRpm, '#ffb27d');
-    // 방향 화살 (굵기 = 토크) + 역할 라벨
-    const lwB = Math.max(2, Math.min(9, 3.5 * Math.sqrt(P.ratio)));
-    dirArrow(c, cxA, yAxis, rA + 17, true, '#4da3ff', 3.5);
-    dirArrow(c, cxB, yAxis, rB + 17, false, '#ff9046', lwB);
-    drawTag(c, cxA, yAxis - rA - 40, `드라이버 ${P.tA}T · ${P.rpm} RPM`, '#4da3ff');
-    drawTag(c, cxB, yAxis + rB + 44, `팔로워 ${P.tB}T · ${P.outRpm.toFixed(1)} RPM`, '#ff9046');
-    drawTag(c, cxB, yAxis - rB - 40, `힘 ×${P.ratio.toFixed(2)}`, '#ffb02e');
-    // HUD
+    // 3D 동기화 + 렌더 (HUD 포함)
+    if (P.tA == null) return;
+    const sig = P.tA + '|' + P.tB + '|' + P.rpm;
+    if (sig !== sig1) { sig1 = sig; rebuild1(); }
+    gA.rotation.z = angA;
+    gB.rotation.z = angB + Math.PI / P.tB;
+    shaft1.rotation.x = angA;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 6);
+    glow1.material.opacity = 0.25 + pulse * 0.35;
+    glow1.scale.setScalar(1 + pulse * 0.5);
     $('hud_t1').textContent = t.toFixed(1) + ' s';
     $('hud_rA').textContent = (angA / (Math.PI * 2)).toFixed(2) + ' 회전';
     $('hud_rB').textContent = (Math.abs(angB) / (Math.PI * 2)).toFixed(2) + ' 회전';
+    W1.controls.update();
+    if (fitStage(W1.renderer, W1.camera, stage3)) W1.renderer.render(W1.scene, W1.camera);
   }
+  /* 상시 렌더 (정지 중에도 카메라 조작 가능) */
+  requestAnimationFrame(function alive1() { if (!eng.running) draw(); requestAnimationFrame(alive1); });
   function drawG() {
     const vMax = Math.max(1, ...samples.map(s => Math.max(s.rA, s.rB))) * 1.18;
     drawGraph($('gr1'), [
@@ -830,42 +783,67 @@ function drawBench(c, W, H, yAxis) {
     if (samples.length === 0 || t - samples[samples.length - 1].t > 0.08)
       samples.push({ t, rA: ang[0] / 6.283, rI: Math.abs(ang[1]) / 6.283, rB: Math.abs(ang[2]) / 6.283 });
   }
-  function draw() {
-    const { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;   // 숨김 탭(사이즈 0) 가드
-    const yAxis = H * 0.46;
-    drawBench(c, W, H, yAxis);
+  /* ═════════ 3D 무대 (실험 2 · 아이들러) ═════════ */
+  const stage3b = cv.closest('.stage');
+  const W2 = makeBenchScene(cv);
+  camPresets(W2.camera, W2.controls, {
+    camFront2: { pos: [0, 1.7, 5.8], target: [0, 1.3, 0] },
+    camDiag2:  { pos: [-2.8, 2.8, 4.4], target: [0, 1.2, 0] },
+  }, 'camFront2');
+  const AXIS_Y2 = 1.35;
+  const gearGrp2 = new THREE.Group(); W2.scene.add(gearGrp2);
+  let sig2 = '', gears2 = [], glows2 = [];
+  function rebuild2() {
     const teeth = [T_DRV, P.tI, T_FLW];
-    const unit = Math.min((W * 0.68) / (T_DRV + P.tI * 2 + T_FLW), (H * 0.5) / Math.max(...teeth) / 1.1);
-    const r = teeth.map(n => n * unit / 2);
-    const cx = [];
-    cx[0] = W / 2 - (r[0] + r[1] * 2 + r[2]) / 2 + r[0] * 0;   // 중앙 정렬 계산
+    const u = 3.9 / (T_DRV + P.tI * 2 + T_FLW);
+    const r = teeth.map(n => n * u / 2);
     const total = r[0] + 2 * r[1] + r[2];
-    cx[0] = W / 2 - total / 2 + 0;
-    cx[0] += r[0] * 0;   // 왼쪽 기어 중심
-    const x0 = W / 2 - total / 2;
-    cx[0] = x0; cx[1] = x0 + r[0] + r[1]; cx[2] = cx[1] + r[1] + r[2];
-    const colors = ['#2563eb', '#7c3aed', '#c2410c'];
-    const lights = ['#7db4ff', '#c9a6ff', '#ffb27d'];
+    const x0 = -total / 2;
+    const cx = [x0, x0 + r[0] + r[1], 0];
+    cx[2] = cx[1] + r[1] + r[2];
+    while (gearGrp2.children.length) gearGrp2.remove(gearGrp2.children[0]);
+    gears2 = []; glows2 = [];
+    const cols = ['#2563eb', '#7c3aed', '#c2410c'];
+    const lits = ['#7db4ff', '#c9a6ff', '#ffb27d'];
     const names = [`드라이버 ${T_DRV}T`, `아이들러 ${P.tI}T`, `팔로워 ${T_FLW}T`];
-    const hudCols = ['#4da3ff', '#c792ea', '#ff9046'];
-    drawBeam(c, cx[0] - r[0] - 34, cx[2] + r[2] + 34, yAxis);
-    const rpms = [P.rpm, P.rpm * T_DRV / P.tI, P.rpm * T_DRV / T_FLW];
     teeth.forEach((n, i) => {
-      drawGear(c, cx[i], yAxis, n, ang[i] + (i === 1 ? Math.PI / n : 0) + (i === 2 ? Math.PI / n / 2 : 0), colors[i], { r: r[i], light: lights[i] });
-      const out = r[i] + Math.max(6, r[i] * 0.17) * 0.55;
-      speedStreaks(c, cx[i], yAxis, out + 8, ang[i], rpms[i], lights[i]);
-      dirArrow(c, cx[i], yAxis, r[i] + 16, i !== 1, hudCols[i]);
-      drawTag(c, cx[i], yAxis + r[i] * (i === 1 ? -1 : 1) + (i === 1 ? -38 : 42), names[i], hudCols[i]);
+      const g = makeGear3d(n, r[i], cols[i], lits[i]);
+      g.position.set(cx[i], AXIS_Y2, 0); gearGrp2.add(g); gears2.push(g);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, AXIS_Y2, 10),
+        new THREE.MeshStandardMaterial({ color: 0x39445c, roughness: 0.5 }));
+      post.position.set(cx[i], AXIS_Y2 / 2, -0.14); gearGrp2.add(post);
+      const tag = textSprite(names[i], { size: 26, color: lits[i], bg: 'rgba(10,10,20,.78)', scale: 0.0031 });
+      tag.position.set(cx[i], i === 1 ? AXIS_Y2 - r[i] - 0.3 : AXIS_Y2 + r[i] + 0.3, 0.3);
+      gearGrp2.add(tag);
+      const arrow = makeArrowRing3(r[i] + 0.18, i !== 1, lits[i], 0.022);
+      arrow.position.set(cx[i], AXIS_Y2, 0.14); gearGrp2.add(arrow);
+      if (i > 0) {
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10),
+          new THREE.MeshBasicMaterial({ color: 0xffee96, transparent: true, opacity: 0.5 }));
+        glow.position.set(cx[i] - r[i], AXIS_Y2, 0.12); gearGrp2.add(glow); glows2.push(glow);
+      }
     });
-    // 맞물림 접촉 지점 2곳 하이라이트
-    meshGlow(c, cx[0] + r[0], yAxis, Math.max(13, Math.min(r[0], r[1]) * 0.5), t);
-    meshGlow(c, cx[1] + r[1], yAxis, Math.max(13, Math.min(r[1], r[2]) * 0.5), t);
+  }
+  function draw() {
+    if (P.tI == null) return;
+    const sig = P.tI + '|' + P.rpm;
+    if (sig !== sig2) { sig2 = sig; rebuild2(); }
+    gears2.forEach((g, i) => {
+      g.rotation.z = ang[i] + (i === 1 ? Math.PI / P.tI : 0) + (i === 2 ? Math.PI / T_FLW / 2 : 0);
+    });
+    glows2.forEach((g, i) => {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 6 + i * 1.5);
+      g.material.opacity = 0.25 + pulse * 0.35;
+      g.scale.setScalar(1 + pulse * 0.5);
+    });
     $('hud_t2').textContent = t.toFixed(1) + ' s';
     $('hud_dA').textContent = (ang[0] / 6.283).toFixed(2) + ' 회전';
     $('hud_dI').textContent = (Math.abs(ang[1]) / 6.283).toFixed(2) + ' 회전';
     $('hud_dB').textContent = (Math.abs(ang[2]) / 6.283).toFixed(2) + ' 회전';
+    W2.controls.update();
+    if (fitStage(W2.renderer, W2.camera, stage3b)) W2.renderer.render(W2.scene, W2.camera);
   }
+  requestAnimationFrame(function alive2() { if (!eng.running) draw(); requestAnimationFrame(alive2); });
   function drawG() {
     const vMax = Math.max(1, ...samples.map(s => Math.max(s.rA, s.rI, s.rB))) * 1.18;
     drawGraph($('gr2'), [
