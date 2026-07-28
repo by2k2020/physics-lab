@@ -118,6 +118,16 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 <script>CtmFX.badgeMap({fail:['out','fall','bad','fail','crash','no','stuck','warn']})</script>
 </head>
 <body>
@@ -125,7 +135,7 @@
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정 · 14차시</div>
-      <div class="title">💨 공압장치 (pneumatics) 시뮬레이션</div>
+      <div class="title">💨 공압장치 (pneumatics) 시뮬레이션<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">실험 1 · 공압 리프트</button>
@@ -143,6 +153,12 @@
         <div class="chip" style="color:var(--green)"><span class="lab">밀어올리는 힘 (공기압)</span><span id="hud_f">0.0 kg</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">들어올린 높이</span><span id="hud_h">0.0 cm</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camFront1" class="on">🎯 정면</button>
+        <button id="camDiag1">◤ 대각선</button>
+        <button id="camTop1">⬇ 위</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -211,6 +227,10 @@
       <div class="hud">
         <div class="chip"><span class="lab">진행 펌프질</span><span id="hud_pp">0 회</span></div>
         <div class="chip" style="color:var(--air)"><span class="lab">압력 (bar)</span><span id="hud_pb">0.0</span></div>
+      </div>
+      <div class="cam-row">
+        <button id="camFront2" class="on">🎯 정면</button>
+        <button id="camDiag2">◤ 대각선</button>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd2"></span></div>
     </div>
@@ -311,8 +331,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const redraws = {};
@@ -339,6 +360,72 @@ function calc(pumps, A) {
   return { rawP, effP, over, F: effP * A };
 }
 
+/* ═════════ 3D 공용 — 공압 실린더 빌더 ═════════ */
+const CYL_R = [0.2, 0.26, 0.33];            // 가는/보통/굵은 시각 반지름
+const ROD_LEN = 0.9, STROKE3 = 0.5;
+function makeCyl3d(r) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.05, r + 0.07, 0.1, 24),
+    new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.5 }));
+  base.position.y = 0.05; base.castShadow = true; g.add(base);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1.2, 24, 1, true),
+    new THREE.MeshStandardMaterial({ color: 0x9fb2d0, roughness: 0.2, metalness: 0.35, transparent: true, opacity: 0.35, side: THREE.DoubleSide }));
+  barrel.position.y = 0.68; g.add(barrel);
+  const topRing = new THREE.Mesh(new THREE.TorusGeometry(r, 0.025, 10, 26),
+    new THREE.MeshStandardMaterial({ color: 0x6b7896, roughness: 0.35, metalness: 0.4 }));
+  topRing.rotation.x = Math.PI / 2; topRing.position.y = 1.28; g.add(topRing);
+  const air = new THREE.Mesh(new THREE.CylinderGeometry(r - 0.035, r - 0.035, 1, 20),
+    new THREE.MeshStandardMaterial({ color: 0x58d3ff, transparent: true, opacity: 0.3, roughness: 0.3 }));
+  g.add(air);
+  const liftGrp = new THREE.Group(); g.add(liftGrp);
+  const piston = new THREE.Mesh(new THREE.CylinderGeometry(r - 0.03, r - 0.03, 0.07, 20),
+    new THREE.MeshStandardMaterial({ color: 0xd6dde9, roughness: 0.3, metalness: 0.3 }));
+  liftGrp.add(piston);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.22, r * 0.22, ROD_LEN, 12),
+    new THREE.MeshStandardMaterial({ color: 0x9aa6bd, roughness: 0.3, metalness: 0.4 }));
+  rod.position.y = ROD_LEN / 2; liftGrp.add(rod);
+  const platform = new THREE.Mesh(new THREE.BoxGeometry(r * 2.9, 0.07, r * 2.4),
+    new THREE.MeshStandardMaterial({ color: 0x4a566f, roughness: 0.5 }));
+  platform.position.y = ROD_LEN + 0.035; platform.castShadow = true; liftGrp.add(platform);
+  // 안전밸브
+  const valve = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x4a566f, roughness: 0.5 }));
+  valve.position.set(r + 0.06, 1.18, 0); g.add(valve);
+  g.userData = { air, liftGrp, valve, r };
+  return g;
+}
+function setCylState(g, airH, overP, inten) {
+  const u = g.userData;
+  u.air.scale.y = Math.max(0.02, airH);
+  u.air.position.y = 0.1 + airH / 2;
+  u.air.material.opacity = 0.16 + 0.42 * inten;
+  u.liftGrp.position.y = 0.1 + airH + 0.04;
+  u.valve.material.color.set(overP ? 0xff5a52 : 0x4a566f);
+}
+/* 실내 작업실 씬 셋업 (두 실험 공용) */
+function makePneuScene(cvEl) {
+  const renderer = makeRenderer(cvEl);
+  const scene = makeScene('indoor', 9, 55);
+  stdLights(scene, { dark: true, pos: [-3, 7, 5], shadowArea: 7 });
+  const { camera, controls } = makeCamera(cvEl, { maxD: 18 });
+  const tex = canvasTex(256, 256, (c) => {
+    c.fillStyle = '#1a2438'; c.fillRect(0, 0, 256, 256);
+    c.strokeStyle = 'rgba(120,150,200,.16)'; c.lineWidth = 2;
+    for (let i = 0; i <= 256; i += 64) {
+      c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 256); c.stroke();
+      c.beginPath(); c.moveTo(0, i); c.lineTo(256, i); c.stroke();
+    }
+  }, [8, 8]);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.2, 26),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+  floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
+  // 뒷벽
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(26, 8, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0x202c46, roughness: 0.9 }));
+  wall.position.set(0, 4, -4); scene.add(wall);
+  return { renderer, scene, camera, controls };
+}
+
 /* ── 탭 전환 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
@@ -358,102 +445,7 @@ function fit(cv) {
 }
 function roundRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
 
-function drawBench(c, W, H) {
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  c.fillStyle = 'rgba(120,145,190,.07)';
-  for (let x = 20; x < W; x += 26)
-    for (let y = 20; y < H; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
-}
-function drawFloor(c, W, y) {
-  const g = c.createLinearGradient(0, y, 0, y + 26);
-  g.addColorStop(0, '#2b3550'); g.addColorStop(1, 'rgba(20,26,40,0)');
-  c.fillStyle = g; c.fillRect(0, y, W, 26);
-  c.strokeStyle = '#3a4661'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
-}
-
-/* ── 압력 게이지 (반원 다이얼) ── */
-function drawGauge(c, x, y, r, p) {
-  c.save(); c.translate(x, y);
-  // 페이스
-  c.beginPath(); c.arc(0, 0, r, Math.PI, 2 * Math.PI); c.closePath();
-  const fg = c.createRadialGradient(0, -r * 0.2, r * 0.1, 0, 0, r);
-  fg.addColorStop(0, '#f2f6ff'); fg.addColorStop(1, '#c3ccdd');
-  c.fillStyle = fg; c.fill();
-  c.strokeStyle = '#1a2438'; c.lineWidth = Math.max(3, r * 0.09); c.stroke();
-  // 안전/위험 존
-  c.lineWidth = r * 0.13; c.lineCap = 'butt';
-  c.strokeStyle = '#1f9e57'; c.beginPath(); c.arc(0, 0, r * 0.8, Math.PI, Math.PI + (PSAFE / PMAXG) * Math.PI); c.stroke();
-  c.strokeStyle = '#d63a32'; c.beginPath(); c.arc(0, 0, r * 0.8, Math.PI + (PSAFE / PMAXG) * Math.PI, 2 * Math.PI); c.stroke();
-  // 눈금 + 숫자
-  c.fillStyle = '#1a2438'; c.font = 'bold ' + Math.round(r * 0.16) + 'px sans-serif'; c.textAlign = 'center';
-  for (let i = 0; i <= PMAXG; i++) {
-    const a = Math.PI + (i / PMAXG) * Math.PI;
-    c.strokeStyle = '#1a2438'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62); c.lineTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); c.stroke();
-    c.fillText(i, Math.cos(a) * r * 0.48, Math.sin(a) * r * 0.48 + r * 0.05);
-  }
-  // 바늘
-  const pc = Math.max(0, Math.min(PMAXG, p));
-  const a = Math.PI + (pc / PMAXG) * Math.PI;
-  c.save(); c.rotate(a);
-  c.fillStyle = '#e0342b';
-  c.beginPath(); c.moveTo(-r * 0.06, 0); c.lineTo(0, -r * 0.05); c.lineTo(r * 0.74, 0); c.lineTo(0, r * 0.05); c.closePath(); c.fill();
-  c.restore();
-  c.beginPath(); c.arc(0, 0, r * 0.1, 0, 7); c.fillStyle = '#1a2438'; c.fill();
-  c.strokeStyle = '#7a869e'; c.lineWidth = 1.5; c.stroke();
-  c.restore();
-  // 디지털 표시
-  c.fillStyle = pc > PSAFE - 0.05 ? '#ff5a52' : '#58d3ff';
-  c.font = 'bold ' + Math.round(r * 0.24) + 'px "Cascadia Mono", monospace'; c.textAlign = 'center';
-  c.fillText(p.toFixed(1) + ' bar', x, y + r * 0.42);
-}
-
-/* ── 손펌프 ── */
-function drawPump(c, x, groundY, bob, fill) {
-  const bodyW = 46, bodyH = 118, bx = x - bodyW / 2, by = groundY - bodyH;
-  // 베이스
-  c.fillStyle = '#232b3e'; roundRect(c, x - 40, groundY - 10, 80, 12, 5); c.fill();
-  // 원통 몸체
-  const g = c.createLinearGradient(bx, 0, bx + bodyW, 0);
-  g.addColorStop(0, '#3a4661'); g.addColorStop(0.5, '#4a566f'); g.addColorStop(1, '#2a3348');
-  c.fillStyle = g; roundRect(c, bx, by, bodyW, bodyH, 8); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 1.5; c.stroke();
-  // 압축된 공기 표시 (아래에서 차오름)
-  const fh = (bodyH - 12) * Math.min(1, fill);
-  c.save(); roundRect(c, bx + 3, by + 3, bodyW - 6, bodyH - 6, 6); c.clip();
-  const ag = c.createLinearGradient(0, groundY, 0, groundY - fh);
-  ag.addColorStop(0, 'rgba(88,211,255,.55)'); ag.addColorStop(1, 'rgba(88,211,255,.12)');
-  c.fillStyle = ag; c.fillRect(bx + 3, groundY - 6 - fh, bodyW - 6, fh);
-  c.restore();
-  // 플런저 로드 + 손잡이 (bob=1 눌림)
-  const travel = 34, rodTop = by - 42 + bob * travel;
-  c.strokeStyle = '#8592ab'; c.lineWidth = 8; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(x, by + 6); c.lineTo(x, rodTop + 8); c.stroke();
-  c.fillStyle = '#1f5eff'; roundRect(c, x - 34, rodTop, 68, 15, 7); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4; c.stroke();
-  c.lineCap = 'butt';
-  // 라벨
-  c.fillStyle = '#9aa8bf'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
-  c.fillText('손펌프', x, groundY + 24);
-}
-
-function drawTag(c, x, y, text, color) {
-  c.font = 'bold 13px "Malgun Gothic", sans-serif';
-  const w = c.measureText(text).width + 22;
-  c.fillStyle = 'rgba(8,12,22,.82)'; roundRect(c, x - w / 2, y - 13, w, 26, 13); c.fill();
-  c.strokeStyle = color; c.lineWidth = 1.5; c.stroke();
-  c.fillStyle = color; c.textAlign = 'center'; c.fillText(text, x, y + 4.5);
-}
-function arrowV(c, x, yTip, len, up, color, lw) {
-  c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw; c.lineCap = 'round';
-  const dir = up ? -1 : 1, yTail = yTip + len * -dir;
-  c.beginPath(); c.moveTo(x, yTail); c.lineTo(x, yTip); c.stroke();
-  const h = Math.max(8, lw * 2.4);
-  c.beginPath(); c.moveTo(x, yTip); c.lineTo(x - h * 0.6, yTip + dir * h); c.lineTo(x + h * 0.6, yTip + dir * h); c.closePath(); c.fill();
-  c.restore();
-}
+/* (2D 도형 헬퍼 — 3D 전환으로 제거) */
 
 /* ═════════ 실험 1 · 공압 리프트 ═════════ */
 (() => {
@@ -523,132 +515,159 @@ function arrowV(c, x, yTip, len, up, color, lw) {
     updateUI();
   }
 
-  function draw() {
-    const { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;
-    drawBench(c, W, H);
-    const groundY = H * 0.82;
-    drawFloor(c, W, groundY);
-    const s = state();
-    const pumpX = W * 0.19;
-    const cylX = W * 0.6;
-    const barrelH = H * 0.5;
-    const barrelW = s.cyl.w;
-    const stroke = barrelH * 0.46;
-
-    // 튜브 (펌프 바닥 → 실린더 바닥)
-    const p0x = pumpX + 24, p0y = groundY - 4;
-    const p2x = cylX, p2y = groundY - 6;
-    c.strokeStyle = '#3a4661'; c.lineWidth = 11; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(p0x, p0y); c.lineTo(p2x - barrelW * 0.5 - 6, p0y); c.lineTo(p2x, p2y); c.stroke();
-    c.strokeStyle = '#586a8c'; c.lineWidth = 5;
-    c.beginPath(); c.moveTo(p0x, p0y); c.lineTo(p2x - barrelW * 0.5 - 6, p0y); c.lineTo(p2x, p2y); c.stroke();
-    c.lineCap = 'butt';
-    // 공기 입자
-    const path = [[p0x, p0y], [p2x - barrelW * 0.5 - 6, p0y], [p2x, p2y]];
-    const segLen = [Math.hypot(path[1][0] - path[0][0], path[1][1] - path[0][1]), Math.hypot(path[2][0] - path[1][0], path[2][1] - path[1][1])];
-    const totLen = segLen[0] + segLen[1];
-    particles.forEach(pt => {
-      if (pt.t < 0 || pt.t > 1) return;
-      let d = pt.t * totLen, seg = 0;
-      if (d > segLen[0]) { d -= segLen[0]; seg = 1; }
-      const a = path[seg], b = path[seg + 1], f = d / segLen[seg];
-      const px = a[0] + (b[0] - a[0]) * f, py = a[1] + (b[1] - a[1]) * f;
-      c.beginPath(); c.arc(px, py, 3.2, 0, 7);
-      c.fillStyle = pt.over ? 'rgba(255,120,110,.9)' : 'rgba(120,225,255,.9)'; c.fill();
-    });
-
-    // 펌프
-    drawPump(c, pumpX, groundY, aHandle, aFill);
-    // 게이지
-    drawGauge(c, W * 0.37, H * 0.24, Math.min(78, H * 0.16), aP);
-
-    // ── 실린더 ──
-    const bx = cylX - barrelW / 2, byTop = groundY - barrelH;
-    // 바깥 벽
-    const wall = c.createLinearGradient(bx, 0, bx + barrelW, 0);
-    wall.addColorStop(0, 'rgba(90,105,135,.45)'); wall.addColorStop(0.5, 'rgba(150,170,205,.28)'); wall.addColorStop(1, 'rgba(60,72,95,.5)');
-    c.fillStyle = wall; roundRect(c, bx, byTop, barrelW, barrelH, 10); c.fill();
-    c.strokeStyle = '#6b7896'; c.lineWidth = 2.5; c.stroke();
-    // 내부 공기 압력 채움 (피스톤 아래)
-    const pistonY = groundY - 18 - aLift * stroke;   // 피스톤 윗면
-    c.save(); roundRect(c, bx + 4, byTop + 4, barrelW - 8, barrelH - 8, 7); c.clip();
-    const airG = c.createLinearGradient(0, groundY, 0, pistonY);
-    const inten = Math.min(1, aP / PSAFE);
-    airG.addColorStop(0, `rgba(88,211,255,${0.25 + 0.45 * inten})`);
-    airG.addColorStop(1, `rgba(88,211,255,${0.08 + 0.2 * inten})`);
-    c.fillStyle = airG; c.fillRect(bx + 4, pistonY, barrelW - 8, groundY - pistonY);
-    // 압력 점 애니메이션
-    c.fillStyle = `rgba(180,240,255,${0.4 * inten})`;
-    for (let i = 0; i < Math.round(pumps * 2.5); i++) {
-      const px = bx + 8 + Math.random() * (barrelW - 16);
-      const py = pistonY + 6 + Math.random() * Math.max(4, groundY - pistonY - 10);
-      c.beginPath(); c.arc(px, py, 1.6, 0, 7); c.fill();
-    }
-    c.restore();
-    // 피스톤 원판
-    const pistG = c.createLinearGradient(0, pistonY - 8, 0, pistonY + 12);
-    pistG.addColorStop(0, '#e6ebf5'); pistG.addColorStop(1, '#8b97ad');
-    c.fillStyle = pistG; roundRect(c, bx + 4, pistonY, barrelW - 8, 14, 4); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.2; c.stroke();
-    // 로드 (피스톤 → 위 플랫폼)
-    const platY = byTop - 30;
-    c.strokeStyle = '#9aa6bd'; c.lineWidth = 10; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(cylX, pistonY); c.lineTo(cylX, platY + 8); c.stroke();
-    c.lineCap = 'butt';
-    // 플랫폼
-    c.fillStyle = '#4a566f'; roundRect(c, cylX - barrelW * 0.55, platY, barrelW * 1.1, 12, 5); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.4; c.stroke();
-
-    // 물건 (상자)
-    const box = s.wt.box, boxY = platY - box;
-    const boxG = c.createLinearGradient(0, boxY, 0, boxY + box);
-    boxG.addColorStop(0, '#e08a3c'); boxG.addColorStop(1, '#a85a1c');
-    c.fillStyle = boxG; roundRect(c, cylX - box / 2, boxY, box, box, 8); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 2; c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(cylX - box / 2 + 6, boxY + 8); c.lineTo(cylX + box / 2 - 6, boxY + 8); c.stroke();
-    c.fillStyle = '#fff'; c.font = 'bold ' + Math.max(13, box * 0.24) + 'px sans-serif'; c.textAlign = 'center';
-    c.fillText(s.wt.kg + 'kg', cylX, boxY + box / 2 + box * 0.09);
-
-    // 힘 화살표 (밀어올리는 공기압 vs 무게)
-    const lwF = Math.max(3, Math.min(11, s.F * 0.6));
-    arrowV(c, cylX - box / 2 - 22, boxY + box * 0.5, Math.min(60, 14 + s.F * 2.2), true, '#2ee06f', lwF);
-    arrowV(c, cylX + box / 2 + 22, boxY + box * 0.5, Math.min(60, 14 + s.wt.kg * 2.2), false, '#ff9046', Math.max(3, Math.min(11, s.wt.kg * 0.55)));
-
-    // 안전밸브 (실린더 상단 우측)
-    const vX = bx + barrelW + 2, vY = byTop + 16;
-    c.fillStyle = s.over ? '#ff5a52' : '#4a566f';
-    roundRect(c, vX - 4, vY - 6, 16, 12, 3); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1.2; c.stroke();
-    if (s.over && hiss > 0.02) {
-      c.fillStyle = `rgba(255,255,255,${0.5 * hiss})`;
-      for (let i = 0; i < 6; i++) {
-        const a = -0.4 + Math.random() * 0.8;
-        c.beginPath(); c.arc(vX + 14 + i * 3 + Math.random() * 6, vY + Math.sin(a) * 14, 2.4, 0, 7); c.fill();
+  /* ═════════ 3D 무대 (실험 1 · 공압 리프트) ═════════ */
+  const stage1 = cv.closest('.stage');
+  const W1 = makePneuScene(cv);
+  camPresets(W1.camera, W1.controls, {
+    camFront1: { pos: [0, 1.5, 4.4], target: [0.1, 0.85, 0] },
+    camDiag1:  { pos: [-2.8, 2.6, 3.4], target: [0.1, 0.7, 0] },
+    camTop1:   { pos: [0, 6.2, 0.6], target: [0, 0, 0] },
+  }, 'camFront1');
+  const CYLX = 0.85, PUMPX = -1.35;
+  // 손펌프
+  const pumpBody = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.7, 18),
+    new THREE.MeshStandardMaterial({ color: 0x2e3a56, roughness: 0.5 }));
+  pumpBody.position.set(PUMPX, 0.35, 0); pumpBody.castShadow = true; W1.scene.add(pumpBody);
+  const pumpHandle = new THREE.Group(); W1.scene.add(pumpHandle);
+  {
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 10),
+      new THREE.MeshStandardMaterial({ color: 0x9aa6bd, roughness: 0.35, metalness: 0.4 }));
+    shaft.position.y = -0.21; pumpHandle.add(shaft);
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.42, 12),
+      new THREE.MeshStandardMaterial({ color: 0x3d8bff, roughness: 0.45 }));
+    grip.rotation.z = Math.PI / 2; pumpHandle.add(grip);
+    pumpHandle.position.set(PUMPX, 0.95, 0);
+  }
+  const pumpLab = textSprite('손펌프', { size: 30, color: '#cfe0ff', bg: 'rgba(8,12,22,.65)', scale: 0.0036 });
+  pumpLab.position.set(PUMPX, 1.35, 0); W1.scene.add(pumpLab);
+  // 파이프 (펌프 → 실린더)
+  {
+    const pipeMat = new THREE.MeshStandardMaterial({ color: 0x586a8c, roughness: 0.4 });
+    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, CYLX - PUMPX, 12), pipeMat);
+    p1.rotation.z = Math.PI / 2; p1.position.set((PUMPX + CYLX) / 2, 0.07, 0.15); W1.scene.add(p1);
+  }
+  // 압력 게이지 (다이얼 텍스처 + 바늘)
+  const gaugeGrp = new THREE.Group();
+  gaugeGrp.position.set(-0.3, 1.5, 0); W1.scene.add(gaugeGrp);
+  {
+    const dialTex = canvasTex(256, 256, (c) => {
+      c.fillStyle = '#0c1322'; c.beginPath(); c.arc(128, 128, 126, 0, 7); c.fill();
+      c.strokeStyle = '#8fa0ba'; c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 120, 0, 7); c.stroke();
+      for (let i = 0; i <= 8; i++) {
+        const a = Math.PI * 0.75 + i / 8 * Math.PI * 1.5;
+        const p = i * 0.5;
+        c.strokeStyle = p > 3 ? '#ff5a52' : '#8fa0ba'; c.lineWidth = 5;
+        c.beginPath();
+        c.moveTo(128 + Math.cos(a) * 100, 128 + Math.sin(a) * 100);
+        c.lineTo(128 + Math.cos(a) * 116, 128 + Math.sin(a) * 116);
+        c.stroke();
+        if (i % 2 === 0) {
+          c.fillStyle = '#cfe0ff'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.fillText(p.toFixed(0), 128 + Math.cos(a) * 78, 128 + Math.sin(a) * 78);
+        }
       }
-      c.fillStyle = 'rgba(255,90,82,.9)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'left';
-      c.fillText('치익—', vX + 16, vY - 8);
-    }
-
-    // 라벨
-    drawTag(c, cylX, boxY - 22, `${s.wt.name} · ${s.wt.kg}kg`, '#ff9046');
-    drawTag(c, cylX, groundY + 24, `${s.cyl.name} 실린더 · 면적 ${s.cyl.A}cm²`, '#58d3ff');
-    // 눈금자 (높이)
-    const rulerX = cylX + barrelW * 0.7 + 20;
-    c.strokeStyle = 'rgba(150,170,205,.4)'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(rulerX, platY); c.lineTo(rulerX, platY - stroke); c.stroke();
-    c.fillStyle = '#8fa0ba'; c.font = '11px sans-serif'; c.textAlign = 'left';
+      c.fillStyle = '#8fa0ba'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center';
+      c.fillText('bar', 128, 190);
+    });
+    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 28),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+    dial.rotation.x = Math.PI / 2; gaugeGrp.add(dial);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.29, 28),
+      new THREE.MeshBasicMaterial({ map: dialTex }));
+    face.position.z = 0.035; gaugeGrp.add(face);
+  }
+  const needle = new THREE.Group(); needle.position.z = 0.05; gaugeGrp.add(needle);
+  {
+    const n = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.025, 0.015),
+      new THREE.MeshBasicMaterial({ color: 0xff5a52 }));
+    n.position.x = 0.09; needle.add(n);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.03, 12),
+      new THREE.MeshStandardMaterial({ color: 0xffb02e, roughness: 0.4 }));
+    hub.rotation.x = Math.PI / 2; needle.add(hub);
+  }
+  // 리프트 실린더 3종 (굵기 토글)
+  const cyl3Meshes = CYL_R.map(r => {
+    const g = makeCyl3d(r);
+    g.position.set(CYLX, 0, 0); g.visible = false; W1.scene.add(g);
+    return g;
+  });
+  // 물건 상자 3종 + 라벨
+  const BOX_SIZE = [0.24, 0.32, 0.42];
+  const boxGrp = new THREE.Group(); W1.scene.add(boxGrp);
+  const boxMeshes = BOX_SIZE.map((sz, i) => {
+    const b = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, sz),
+      new THREE.MeshStandardMaterial({ color: 0xe08a3c, roughness: 0.6 }));
+    m.position.y = sz / 2; m.castShadow = true; b.add(m);
+    const lab = textSprite(WT[i].kg + 'kg', { size: 34, color: '#fff', bg: 'rgba(120,60,10,.85)', scale: 0.0035 });
+    lab.position.y = sz + 0.16; b.add(lab);
+    b.visible = false; boxGrp.add(b);
+    return b;
+  });
+  // 힘 화살표 (초록 ↑ 공기압 / 주황 ↓ 무게)
+  function mkArrow(color) {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color });
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 10), mat);
+    shaft.position.y = 0.5; g.add(shaft);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.18, 12), mat);
+    head.position.y = 1.06; g.add(head);
+    W1.scene.add(g);
+    return g;
+  }
+  const arrUp = mkArrow(0x2ee06f);
+  const arrDown = mkArrow(0xff9046); arrDown.rotation.z = Math.PI;
+  // 증기 파티클 (과압)
+  const steamMeshes = Array.from({ length: 6 }, (_, i) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+    W1.scene.add(s); return s;
+  });
+  // 높이 눈금
+  distanceRulerY: {
+    const rx = CYLX + 0.75;
     for (let cm = 0; cm <= 8; cm += 2) {
-      const yy = platY - (cm / 8) * stroke;
-      c.beginPath(); c.moveTo(rulerX - 3, yy); c.lineTo(rulerX + 4, yy); c.stroke();
-      c.fillText(cm + 'cm', rulerX + 7, yy + 3.5);
+      const y = 1.0 + (cm / 8) * STROKE3;
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.015, 0.015),
+        new THREE.MeshStandardMaterial({ color: 0x8fa0ba }));
+      tick.position.set(rx, y, 0); W1.scene.add(tick);
+      const lab = textSprite(cm + 'cm', { size: 26, color: '#aebad0', scale: 0.003 });
+      lab.position.set(rx + 0.24, y, 0); W1.scene.add(lab);
     }
+  }
 
+  function draw() {
+    // 3D 씬 동기화 (loop가 매 프레임 호출 + 렌더)
+    const s = state();
+    pumpHandle.position.y = 0.98 - aHandle * 0.3;
+    needle.rotation.z = -Math.PI * 0.75 - (Math.min(aP, PMAXG) / PMAXG) * Math.PI * 1.5;
+    cyl3Meshes.forEach((g, i) => g.visible = (i === cylIdx));
+    const g3 = cyl3Meshes[cylIdx];
+    const airH = 0.1 + aLift * STROKE3 + aFill * 0.06;
+    setCylState(g3, airH, s.over, Math.min(1, aP / PSAFE));
+    // 상자 (플랫폼 위)
+    const platY = 0.1 + airH + 0.04 + ROD_LEN + 0.07;
+    boxGrp.position.set(CYLX, platY, 0);
+    boxMeshes.forEach((b, i) => b.visible = (i === wtIdx));
+    // 힘 화살표
+    const sz = BOX_SIZE[wtIdx];
+    arrUp.position.set(CYLX - sz / 2 - 0.22, platY, 0);
+    arrUp.scale.y = Math.min(0.75, 0.12 + s.F * 0.026);
+    arrDown.position.set(CYLX + sz / 2 + 0.22, platY + sz + 0.1, 0);
+    arrDown.scale.y = Math.min(0.75, 0.12 + s.wt.kg * 0.026);
+    // 증기
+    steamMeshes.forEach((m, i) => {
+      if (s.over && hiss > 0.05) {
+        m.material.opacity = 0.5 * hiss * (0.5 + 0.5 * Math.sin(aP * 3 + i * 2.1));
+        m.position.set(CYLX + g3.userData.r + 0.12 + (i % 3) * 0.09 + hiss * 0.1, 1.2 + Math.sin(i * 1.7 + hiss * 6) * 0.08, (i % 2 - 0.5) * 0.1);
+      } else m.material.opacity = 0;
+    });
     // HUD
     $('hud_p').textContent = aP.toFixed(1) + ' bar';
     $('hud_f').textContent = s.F.toFixed(1) + ' kg';
     $('hud_h').textContent = s.heightCm.toFixed(1) + ' cm';
+    W1.controls.update();
+    if (fitStage(W1.renderer, W1.camera, stage1)) W1.renderer.render(W1.scene, W1.camera);
   }
 
   function loop(ts) {
@@ -735,46 +754,56 @@ function arrowV(c, x, yTip, len, up, color, lw) {
     c.beginPath(); c.moveTo(pad, top); c.lineTo(pad, base); c.lineTo(W - 8, base); c.stroke();
   }
 
+  /* ═════════ 3D 무대 (실험 2 · 굵기 비교) ═════════ */
+  const stage2 = cv.closest('.stage');
+  const W2 = makePneuScene(cv);
+  camPresets(W2.camera, W2.controls, {
+    camFront2: { pos: [0, 1.6, 4.8], target: [0, 0.95, 0] },
+    camDiag2:  { pos: [-3.0, 2.8, 3.6], target: [0, 0.8, 0] },
+  }, 'camFront2');
+  const CYL_X2 = [-1.35, 0, 1.45];
+  const cylMeshes2 = CYL_R.map((r, i) => {
+    const g = makeCyl3d(r);
+    g.position.set(CYL_X2[i], 0, 0); W2.scene.add(g);
+    return g;
+  });
+  const nameLabs2 = CYL.map((cyl, i) => {
+    const lab = textSprite(`${cyl.name} · ${cyl.A}cm²`, { size: 30, color: '#8fdcff', bg: 'rgba(8,20,30,.7)', scale: 0.0036 });
+    lab.position.set(CYL_X2[i], -0.28, 0.8); W2.scene.add(lab);
+    return lab;
+  });
+  let forceLabs2 = [null, null, null], forceVals2 = [null, null, null];
+  function setForceLab(i, F, over) {
+    const txt = F.toFixed(1) + 'kg' + (over ? ' ⚠' : '');
+    if (forceVals2[i] === txt) return;
+    forceVals2[i] = txt;
+    if (forceLabs2[i]) W2.scene.remove(forceLabs2[i]);
+    forceLabs2[i] = textSprite(txt, { size: 36, color: over ? '#ff8a80' : '#7dffb0', bg: 'rgba(8,22,14,.8)', scale: 0.004 });
+    forceLabs2[i].position.set(CYL_X2[i], 2.35, 0);
+    W2.scene.add(forceLabs2[i]);
+  }
+
   function draw() {
-    const { c, W, H } = fit(cv);
-    if (W < 60 || H < 60) return;
-    drawBench(c, W, H);
-    const groundY = H * 0.82;
-    drawFloor(c, W, groundY);
+    // 3D 씬 동기화 + 렌더
     const nShown = aFill;
-    const barrelH = H * 0.5, stroke = barrelH * 0.42;
+    const inten = Math.min(1, (nShown * PSTEP) / PSAFE);
     CYL.forEach((cyl, i) => {
-      const cx = W * (0.24 + i * 0.26);
-      const bw = cyl.w, bx = cx - bw / 2, byTop = groundY - barrelH;
       const r = calc(Math.round(nShown), cyl.A);
-      const inten = Math.min(1, (nShown * PSTEP) / PSAFE);
       const liftFrac = Math.min(1, r.F / 24);
-      const pistonY = groundY - 16 - liftFrac * stroke;
-      // 벽
-      const wall = c.createLinearGradient(bx, 0, bx + bw, 0);
-      wall.addColorStop(0, 'rgba(90,105,135,.45)'); wall.addColorStop(0.5, 'rgba(150,170,205,.26)'); wall.addColorStop(1, 'rgba(60,72,95,.5)');
-      c.fillStyle = wall; roundRect(c, bx, byTop, bw, barrelH, 9); c.fill();
-      c.strokeStyle = r.over ? '#ff5a52' : '#6b7896'; c.lineWidth = 2.5; c.stroke();
-      // 공기
-      c.save(); roundRect(c, bx + 4, byTop + 4, bw - 8, barrelH - 8, 6); c.clip();
-      const airG = c.createLinearGradient(0, groundY, 0, pistonY);
-      airG.addColorStop(0, `rgba(88,211,255,${0.25 + 0.45 * inten})`); airG.addColorStop(1, `rgba(88,211,255,${0.08 + 0.18 * inten})`);
-      c.fillStyle = airG; c.fillRect(bx + 4, pistonY, bw - 8, groundY - pistonY);
-      c.restore();
-      // 피스톤 + 로드 + 플랫폼
-      c.fillStyle = '#c3cddc'; roundRect(c, bx + 4, pistonY, bw - 8, 12, 4); c.fill();
-      c.strokeStyle = '#8b97ad'; c.lineWidth = 8; c.lineCap = 'round';
-      const platY = byTop - 22;
-      c.beginPath(); c.moveTo(cx, pistonY); c.lineTo(cx, platY + 6); c.stroke(); c.lineCap = 'butt';
-      c.fillStyle = '#4a566f'; roundRect(c, cx - bw * 0.55, platY, bw * 1.1, 10, 4); c.fill();
-      // 힘 라벨
-      drawTag(c, cx, platY - 20, `${r.F.toFixed(1)}kg`, r.over ? '#ff5a52' : '#2ee06f');
-      drawTag(c, cx, groundY + 22, `${cyl.name} · ${cyl.A}cm²`, '#58d3ff');
-      if (r.over) { c.fillStyle = 'rgba(255,90,82,.9)'; c.font = 'bold 11px sans-serif'; c.textAlign = 'center'; c.fillText('안전밸브 열림', cx, byTop - 34); }
+      const airH = 0.1 + liftFrac * STROKE3 + Math.min(1, nShown / PUMP_MAX) * 0.06;
+      setCylState(cylMeshes2[i], airH, r.over, inten);
+      setForceLab(i, r.F, r.over);
     });
     $('hud_pp').textContent = Math.round(nShown) + ' 회';
     $('hud_pb').textContent = Math.min(PSAFE, Math.round(nShown) * PSTEP).toFixed(1);
+    W2.controls.update();
+    if (fitStage(W2.renderer, W2.camera, stage2)) W2.renderer.render(W2.scene, W2.camera);
   }
+  /* 상시 렌더 (자동실험 외 시간에도 카메라 조작 가능) */
+  (function alive(now) {
+    if (!running) draw();
+    requestAnimationFrame(alive);
+  })(performance.now());
 
   function loop(ts) {
     if (!running) return;

@@ -146,6 +146,16 @@
   }
 </style>
 <script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
 <script>CtmFX.badgeMap({fail:['out','fall','bad','fail','crash','no','stuck','warn']})</script>
 </head>
 <body>
@@ -153,7 +163,7 @@
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 21차시</div>
-      <div class="title">🦞 집게 시뮬레이션 — 지렛대의 힘</div>
+      <div class="title">🦞 집게 시뮬레이션 — 지렛대의 힘<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="game">🎯 미션 · 집게 옮기기</button>
@@ -171,6 +181,12 @@
         <div class="chip"><span class="lab">쥐는 힘 (악력)</span><span id="hud_grip" style="color:var(--accent)">1단</span></div>
         <div class="chip"><span class="lab">무는 힘 (출력 힘)</span><span id="hud_out" style="color:var(--orange)">0 N</span></div>
       </div>
+      <div class="cam-row">
+        <button id="camFront" class="on">🎯 정면</button>
+        <button id="camDiag">◤ 대각선</button>
+        <button id="camTop">⬇ 위</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
@@ -332,8 +348,9 @@
   </section>
 </div>
 
-<script>
-'use strict';
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -574,154 +591,6 @@ function spawnShards() {
   }
 }
 
-/* ── 물건 그리기 ── */
-function drawObj(c, key, cx, yBot, s, squish, crack) {
-  const o = OBJS[key];
-  crack = crack || 0;
-  const w = o.w * s * (1 + (squish || 0) * 0.5), h = o.h * s * (1 - (squish || 0));
-  const top = yBot - h;
-  c.save();
-  if (key === 'sponge') {
-    const scrubH = h * 0.26;
-    // 노란 몸통 (기공 스펀지)
-    const g = c.createLinearGradient(0, top, 0, yBot);
-    g.addColorStop(0, '#ffd95e'); g.addColorStop(1, '#dfa92c');
-    c.fillStyle = g;
-    c.beginPath(); c.roundRect(cx - w / 2, top + scrubH, w, h - scrubH, [0, 0, 6, 6]); c.fill();
-    c.strokeStyle = '#b8922a'; c.lineWidth = 1.5; c.stroke();
-    // 초록 수세미층
-    const sg = c.createLinearGradient(0, top, 0, top + scrubH);
-    sg.addColorStop(0, '#5cb46e'); sg.addColorStop(1, '#2f7d44');
-    c.fillStyle = sg;
-    c.beginPath(); c.roundRect(cx - w / 2, top, w, scrubH, [6, 6, 0, 0]); c.fill();
-    c.strokeStyle = 'rgba(25,80,40,.85)'; c.lineWidth = 1.3; c.stroke();
-    c.fillStyle = 'rgba(255,255,255,.2)';
-    for (let i = 0; i < 14; i++) {
-      const px = cx - w / 2 + 2 + ((i * 37) % 97) / 97 * (w - 4);
-      const py = top + 1.5 + ((i * 53) % 89) / 89 * (scrubH - 3);
-      c.fillRect(px, py, 1.6, 1.6);
-    }
-    // 기공 (크기 다양, 그림자 있는 구멍)
-    [[-.33, -.5, .34], [.05, -.4, .5], [.3, -.55, .3], [-.12, -.62, .28], [.34, -.26, .38],
-     [-.3, -.2, .42], [.1, -.15, .3], [-.05, -.34, .24], [.22, -.42, .2], [-.2, -.4, .18]].forEach(p => {
-      const pr = Math.max(1.4, s * p[2]);
-      const px = cx + p[0] * w, py = yBot + p[1] * h;
-      c.fillStyle = 'rgba(150,110,25,.6)';
-      c.beginPath(); c.ellipse(px, py, pr, pr * 0.8, 0, 0, 7); c.fill();
-      c.fillStyle = 'rgba(90,62,10,.55)';
-      c.beginPath(); c.ellipse(px + pr * 0.16, py + pr * 0.2, pr * 0.55, pr * 0.42, 0, 0, 7); c.fill();
-    });
-    // 눌림 주름 (꽉 쥐면 몸통에 가로 주름이 잡힘)
-    if ((squish || 0) > 0.04) {
-      c.strokeStyle = 'rgba(150,105,20,' + Math.min(0.75, 0.3 + squish * 1.6) + ')';
-      c.lineWidth = 1.3;
-      for (let i = 0; i < 2; i++) {
-        const cy2 = top + scrubH + (h - scrubH) * (0.34 + i * 0.32);
-        c.beginPath();
-        c.moveTo(cx - w * 0.43, cy2);
-        c.quadraticCurveTo(cx, cy2 + 3 + squish * 10, cx + w * 0.43, cy2);
-        c.stroke();
-      }
-      // 옆구리 불룩 하이라이트
-      c.strokeStyle = 'rgba(255,235,160,.35)'; c.lineWidth = 1.6;
-      c.beginPath(); c.arc(cx - w / 2 + 1, top + scrubH + (h - scrubH) * 0.5, (h - scrubH) * 0.34, Math.PI * 0.6, Math.PI * 1.4); c.stroke();
-      c.beginPath(); c.arc(cx + w / 2 - 1, top + scrubH + (h - scrubH) * 0.5, (h - scrubH) * 0.34, Math.PI * 1.6, Math.PI * 0.4); c.stroke();
-    }
-  } else if (key === 'wood') {
-    const g = c.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
-    g.addColorStop(0, '#9c6229'); g.addColorStop(0.35, '#c08445');
-    g.addColorStop(0.65, '#b5793a'); g.addColorStop(1, '#835023');
-    c.fillStyle = g;
-    c.beginPath(); c.roundRect(cx - w / 2, top, w, h, 3); c.fill();
-    c.strokeStyle = '#5f3a17'; c.lineWidth = 1.6; c.stroke();
-    // 윗면 하이라이트
-    c.strokeStyle = 'rgba(255,220,170,.35)'; c.lineWidth = 1.2;
-    c.beginPath(); c.moveTo(cx - w / 2 + 3, top + 2.2); c.lineTo(cx + w / 2 - 3, top + 2.2); c.stroke();
-    // 나뭇결 곡선
-    c.strokeStyle = 'rgba(90,55,20,.55)'; c.lineWidth = 1;
-    for (let i = 1; i <= 4; i++) {
-      const gy = top + h * i / 5;
-      c.beginPath(); c.moveTo(cx - w / 2 + 2.5, gy);
-      c.bezierCurveTo(cx - w / 6, gy + 2.5, cx + w / 6, gy - 2.5, cx + w / 2 - 2.5, gy + (i % 2 ? 1.5 : -1.5));
-      c.stroke();
-    }
-    // 옹이 (동심 타원)
-    const kx = cx + w * 0.2, ky = top + h * 0.36;
-    for (let r = 3; r >= 1; r--) {
-      c.strokeStyle = 'rgba(80,46,14,.8)'; c.lineWidth = r === 1 ? 1.5 : 1;
-      c.beginPath(); c.ellipse(kx, ky, r * s * 0.16, r * s * 0.115, 0.2, 0, 7); c.stroke();
-    }
-    c.fillStyle = 'rgba(70,40,12,.9)';
-    c.beginPath(); c.ellipse(kx, ky, s * 0.13, s * 0.09, 0.2, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(100,60,22,.45)'; c.lineWidth = 0.9;
-    c.beginPath(); c.ellipse(kx, ky, s * 0.62, s * 0.42, 0.2, 0, 7); c.stroke();
-  } else { // glass
-    const wTop = w, wBot = w * 0.74;
-    const halfW = t => (wBot + (wTop - wBot) * t) / 2; // t: 0=바닥, 1=입구
-    // 유리 몸통 (좌우 가장자리가 밝은 투명감)
-    const g = c.createLinearGradient(cx - wTop / 2, 0, cx + wTop / 2, 0);
-    g.addColorStop(0, 'rgba(190,230,255,.32)'); g.addColorStop(0.5, 'rgba(150,210,255,.13)');
-    g.addColorStop(1, 'rgba(190,230,255,.32)');
-    c.beginPath();
-    c.moveTo(cx - wTop / 2, top); c.lineTo(cx - wBot / 2, yBot);
-    c.lineTo(cx + wBot / 2, yBot); c.lineTo(cx + wTop / 2, top); c.closePath();
-    c.fillStyle = g; c.fill();
-    c.strokeStyle = 'rgba(200,235,255,.9)'; c.lineWidth = 2; c.stroke();
-    // 담긴 물 + 수면 + 기포
-    const wl = yBot - h * 0.42;
-    c.beginPath();
-    c.moveTo(cx - halfW(0.42), wl); c.lineTo(cx - wBot / 2 + 1.5, yBot - 1.5);
-    c.lineTo(cx + wBot / 2 - 1.5, yBot - 1.5); c.lineTo(cx + halfW(0.42), wl); c.closePath();
-    c.fillStyle = 'rgba(90,170,255,.32)'; c.fill();
-    c.beginPath(); c.ellipse(cx, wl, halfW(0.42), Math.max(1.8, s * 0.32), 0, 0, 7);
-    c.fillStyle = 'rgba(160,215,255,.4)'; c.fill();
-    c.strokeStyle = 'rgba(220,245,255,.55)'; c.lineWidth = 1; c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1;
-    [[-.14, .12], [.1, .22], [-.02, .3]].forEach(b => {
-      c.beginPath(); c.arc(cx + b[0] * w, yBot - h * b[1], Math.max(1, s * 0.14), 0, 7); c.stroke();
-    });
-    // 두꺼운 바닥굽
-    c.fillStyle = 'rgba(210,240,255,.35)';
-    c.beginPath();
-    c.moveTo(cx - halfW(0.08), yBot - h * 0.08); c.lineTo(cx - wBot / 2, yBot);
-    c.lineTo(cx + wBot / 2, yBot); c.lineTo(cx + halfW(0.08), yBot - h * 0.08); c.closePath(); c.fill();
-    // 넓은 반사 하이라이트 (왼쪽) + 가는 광 줄기 (오른쪽)
-    c.fillStyle = 'rgba(255,255,255,.2)';
-    c.beginPath();
-    c.moveTo(cx - halfW(0.88) * 0.75, top + h * 0.12); c.lineTo(cx - halfW(0.88) * 0.45, top + h * 0.12);
-    c.lineTo(cx - halfW(0.12) * 0.45, yBot - h * 0.12); c.lineTo(cx - halfW(0.12) * 0.75, yBot - h * 0.12);
-    c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.6; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(cx + halfW(0.85) * 0.6, top + h * 0.15); c.lineTo(cx + halfW(0.25) * 0.66, yBot - h * 0.25); c.stroke();
-    // 입구 림 (이중선)
-    c.beginPath(); c.ellipse(cx, top, wTop / 2, Math.max(2.5, s * 0.5), 0, 0, 7);
-    c.strokeStyle = 'rgba(220,245,255,.95)'; c.lineWidth = 1.8; c.stroke();
-    c.beginPath(); c.ellipse(cx, top, wTop / 2 - 2, Math.max(1.8, s * 0.38), 0, 0, 7);
-    c.strokeStyle = 'rgba(160,210,250,.45)'; c.lineWidth = 1; c.stroke();
-    // 깨지기 전조 — 힘이 한계에 다가가면 잔금이 번짐
-    if (crack > 0.02) {
-      const ccx = cx - w * 0.1, ccy = top + h * 0.38;
-      c.strokeStyle = 'rgba(240,252,255,' + (0.3 + crack * 0.6).toFixed(2) + ')';
-      c.lineWidth = 1.1; c.lineCap = 'round';
-      const angs = [0.35, 2.3, 4.15, 5.35, 1.35, 3.3];
-      const n = crack < 0.35 ? 2 : crack < 0.7 ? 4 : 6;
-      for (let i = 0; i < n; i++) {
-        const a = angs[i], len = h * (0.16 + crack * 0.3) * (0.72 + (i % 3) * 0.2);
-        c.beginPath(); c.moveTo(ccx, ccy);
-        c.lineTo(ccx + Math.cos(a) * len * 0.55 + (i % 2 ? 2.2 : -2.2), ccy + Math.sin(a) * len * 0.55);
-        c.lineTo(ccx + Math.cos(a + 0.28) * len, ccy + Math.sin(a + 0.28) * len);
-        c.stroke();
-      }
-      c.fillStyle = 'rgba(255,255,255,' + (0.35 + crack * 0.5).toFixed(2) + ')';
-      c.beginPath(); c.arc(ccx, ccy, 1.6 + crack * 1.6, 0, 7); c.fill();
-    }
-  }
-  c.restore();
-}
-
-/* ── 메인 렌더 ── */
-const cv = $('cv');
-let lastLayout = null;
 
 function computeLayout(W, H) {
   const s = Math.min(W / 78, H / 52);
@@ -736,148 +605,201 @@ function computeLayout(W, H) {
   return { s, yG, Lj, thetaC, baseX, gyBase, basketX, objX: baseX, objW };
 }
 
+/* ═════════ 3D 렌더 (집게 링키지) ═════════
+   로직은 가상 레이아웃(1000×620) 픽셀 기준 그대로 — 렌더만 three.js */
+const cv = $('cv');
+let lastLayout = null;
+const VIRT_W = 1000, VIRT_H = 620, PX2W = 1 / 145;
+const WX = px => (px - VIRT_W * 0.4) * PX2W;
+const WY = (py, yG) => (yG - py) * PX2W;
+
+const stage3 = cv.closest('.stage');
+const renderer = makeRenderer(cv);
+const scene = makeScene('indoor', 9, 55);
+stdLights(scene, { dark: true, pos: [-3, 7, 5], shadowArea: 7 });
+const { camera, controls } = makeCamera(cv, { maxD: 16 });
+camera.position.set(1.2, 1.6, 5.6); controls.target.set(1.3, 0.75, 0); controls.update();
+{
+  const tex = canvasTex(256, 256, (c) => {
+    c.fillStyle = '#1a2438'; c.fillRect(0, 0, 256, 256);
+    c.strokeStyle = 'rgba(120,150,200,.15)'; c.lineWidth = 2;
+    for (let i = 0; i <= 256; i += 64) {
+      c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 256); c.stroke();
+      c.beginPath(); c.moveTo(0, i); c.lineTo(256, i); c.stroke();
+    }
+  }, [8, 8]);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.2, 26),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+  floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(26, 8, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0x202c46, roughness: 0.9 }));
+  wall.position.set(0, 4, -3.2); scene.add(wall);
+  // 선반 + 공구상자 + 페인트캔 (배경 소품)
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x2a3550, roughness: 0.7 }));
+  shelf.position.set(2.6, 2.3, -2.9); scene.add(shelf);
+  const toolbox = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.3, 0.32),
+    new THREE.MeshStandardMaterial({ color: 0x8a2f2a, roughness: 0.5 }));
+  toolbox.position.set(1.7, 2.49, -2.9); scene.add(toolbox);
+  const paint = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.26, 14),
+    new THREE.MeshStandardMaterial({ color: 0x3d4d68, roughness: 0.5 }));
+  paint.position.set(2.7, 2.47, -2.9); scene.add(paint);
+}
+/* 물건 3종 */
+function makeObjMesh(key) {
+  const g = new THREE.Group();
+  if (key === 'sponge') {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.34, 0.36),
+      new THREE.MeshStandardMaterial({ color: 0xffd95e, roughness: 0.85 }));
+    body.position.y = 0.17; body.castShadow = true; g.add(body);
+    const scrub = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.36),
+      new THREE.MeshStandardMaterial({ color: 0x3f9a55, roughness: 0.9 }));
+    scrub.position.y = 0.39; g.add(scrub);
+  } else if (key === 'wood') {
+    const tex = canvasTex(128, 128, (c) => {
+      c.fillStyle = '#b5793a'; c.fillRect(0, 0, 128, 128);
+      c.strokeStyle = 'rgba(90,55,20,.55)'; c.lineWidth = 3;
+      for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(0, 18 + i * 24); c.bezierCurveTo(40, 22 + i * 24, 90, 12 + i * 24, 128, 20 + i * 24); c.stroke(); }
+    });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.4),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }));
+    body.position.y = 0.25; body.castShadow = true; g.add(body);
+  } else {
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe4ff, roughness: 0.08, metalness: 0.05, transparent: true, opacity: 0.35 });
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.55, 20, 1, true), glassMat);
+    cup.position.y = 0.275; g.add(cup);
+    const bottom = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.03, 20), glassMat);
+    bottom.position.y = 0.015; g.add(bottom);
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.185, 0.3, 18),
+      new THREE.MeshStandardMaterial({ color: 0x5aaaff, transparent: true, opacity: 0.4, roughness: 0.2 }));
+    water.position.y = 0.17; g.add(water);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.012, 8, 22),
+      new THREE.MeshStandardMaterial({ color: 0xdcf5ff, roughness: 0.2, transparent: true, opacity: 0.8 }));
+    rim.rotation.x = Math.PI / 2; rim.position.y = 0.55; g.add(rim);
+    g.userData.glassMat = glassMat;
+  }
+  return g;
+}
+const objMeshes = {};
+['sponge', 'wood', 'glass'].forEach(k => { objMeshes[k] = makeObjMesh(k); objMeshes[k].visible = false; scene.add(objMeshes[k]); });
+/* 바구니 */
+const basketGrp = new THREE.Group(); scene.add(basketGrp);
+{
+  const mat = new THREE.MeshStandardMaterial({ color: 0x6d4f26, roughness: 0.85 });
+  const bot = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.7), mat);
+  bot.position.y = 0.03; basketGrp.add(bot);
+  [[0, 0.36, 0.95, 0.05], [0, -0.36, 0.95, 0.05]].forEach(([dx, dz, w, d]) => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, d), mat);
+    s.position.set(dx, 0.21, dz); s.castShadow = true; basketGrp.add(s);
+  });
+  [[-0.45, 0, 0.05, 0.75], [0.45, 0, 0.05, 0.75]].forEach(([dx, dz, w, d]) => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, d), mat);
+    s.position.set(dx, 0.21, dz); s.castShadow = true; basketGrp.add(s);
+  });
+  const lab = textSprite('🧺 바구니', { size: 28, color: '#e8c78f', bg: 'rgba(30,20,6,.7)', scale: 0.0032 });
+  lab.position.y = 0.75; basketGrp.add(lab);
+}
+const basketItems = [];   // 배달된 미니 물건
+/* 집게 (받침점 그룹 + X빔 2개) */
+const gripGrp = new THREE.Group(); scene.add(gripGrp);
+const armMat1 = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.45 });
+const armMat2 = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.45 });
+function makeArm(mat) {
+  const arm = new THREE.Group();
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1, 0.09), mat);
+  handle.geometry.translate(0, 0.5, 0); handle.castShadow = true; arm.add(handle);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1, 0.09), mat);
+  jaw.geometry.translate(0, -0.5, 0); jaw.castShadow = true; arm.add(jaw);
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.11),
+    new THREE.MeshStandardMaterial({ color: 0x2b3038, roughness: 0.9 }));
+  arm.add(pad);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xff9046 }));
+  arm.add(tip);
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xf0bd93, roughness: 0.7 }));
+  hand.scale.set(1, 1.25, 0.9); arm.add(hand);
+  arm.userData = { handle, jaw, pad, tip, hand };
+  return arm;
+}
+const armL = makeArm(armMat1), armR = makeArm(armMat2);
+gripGrp.add(armL, armR);
+{
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.16, 16),
+    new THREE.MeshStandardMaterial({ color: 0x39445c, roughness: 0.4 }));
+  pivot.rotation.x = Math.PI / 2; gripGrp.add(pivot);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xff5a52 }));
+  dot.position.z = 0.09; gripGrp.add(dot);
+}
+// 3요소 라벨
+const labP = textSprite('● 받침점', { size: 26, color: '#ff8a80', bg: 'rgba(20,8,8,.7)', scale: 0.003 });
+gripGrp.add(labP); labP.position.set(0.42, 0, 0);
+const labF = textSprite('● 힘점', { size: 26, color: '#8fc4ff', bg: 'rgba(8,14,26,.7)', scale: 0.003 });
+gripGrp.add(labF);
+const labA = textSprite('● 작용점', { size: 26, color: '#ffb27d', bg: 'rgba(26,14,6,.7)', scale: 0.003 });
+gripGrp.add(labA);
+// 악력 화살표 2개
+function mkGripArrow() {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: 0x4da3ff });
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.035, 0.035), mat);
+  shaft.position.x = -0.25; g.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 10), mat);
+  head.rotation.z = -Math.PI / 2; head.position.x = 0.06; g.add(head);
+  gripGrp.add(g); return g;
+}
+const arrGL = mkGripArrow(), arrGR = mkGripArrow();
+arrGR.rotation.y = Math.PI;
+// 힘 라벨 (값 캐시)
+let gripLabTxt = null, gripLab = null, outLabTxt = null, outLab = null;
+function setGripLab(txt, y) {
+  if (txt !== gripLabTxt) {
+    gripLabTxt = txt;
+    if (gripLab) gripGrp.remove(gripLab);
+    gripLab = textSprite(txt, { size: 28, color: '#8fc4ff', bg: 'rgba(8,14,26,.75)', scale: 0.0032 });
+    gripGrp.add(gripLab);
+  }
+  if (gripLab) gripLab.position.set(0, y, 0);
+}
+function setOutLab(txt, y) {
+  if (txt !== outLabTxt) {
+    outLabTxt = txt;
+    if (outLab) gripGrp.remove(outLab);
+    outLab = txt ? textSprite(txt, { size: 28, color: '#ffb27d', bg: 'rgba(26,14,6,.75)', scale: 0.0032 }) : null;
+    if (outLab) gripGrp.add(outLab);
+  }
+  if (outLab) outLab.position.set(0, y, 0);
+}
+// 경고·쨍그랑 스프라이트
+const warnLab = textSprite('⚠ 금이 가고 있어! 힘을 줄여!', { size: 30, color: '#ffd28a', bg: 'rgba(40,26,4,.8)', scale: 0.0034 });
+warnLab.visible = false; scene.add(warnLab);
+const crashLab = textSprite('쨍그랑!! 💥', { size: 46, color: '#ff8a80', bg: 'rgba(40,8,6,.8)', scale: 0.005 });
+crashLab.visible = false; scene.add(crashLab);
+// 파편 풀
+const shardPool = Array.from({ length: 31 }, (_, i) => {
+  const type = i < 15 ? 'shard' : i < 25 ? 'drop' : 'spark';
+  const m = type === 'shard'
+    ? new THREE.Mesh(new THREE.TetrahedronGeometry(0.045), new THREE.MeshStandardMaterial({ color: 0xdcf2ff, roughness: 0.15, transparent: true, opacity: 0.9 }))
+    : new THREE.Mesh(new THREE.SphereGeometry(type === 'drop' ? 0.028 : 0.02, 8, 8),
+        new THREE.MeshBasicMaterial({ color: type === 'drop' ? 0x78beff : 0xffffff, transparent: true, opacity: 0.9 }));
+  m.visible = false; scene.add(m); return m;
+});
+// 카메라 프리셋
+camPresets(camera, controls, {
+  camFront: { pos: [1.2, 1.6, 5.6], target: [1.3, 0.75, 0] },
+  camDiag:  { pos: [-1.8, 2.6, 4.4], target: [1.2, 0.65, 0] },
+  camTop:   { pos: [1.3, 6.8, 0.6], target: [1.3, 0, 0] },
+}, 'camFront');
+
 function drawScene(dt) {
-  const { c, W, H } = fit(cv);
-  const L = computeLayout(W, H);
+  const L = computeLayout(VIRT_W, VIRT_H);
   lastLayout = L;
   const o = OBJ();
 
-  // 배경
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a101f'); bg.addColorStop(1, '#101a30');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  c.fillStyle = 'rgba(120,145,190,.08)';
-  for (let x = 20; x < W; x += 26)
-    for (let y = 20; y < L.yG - 8; y += 26) { c.beginPath(); c.arc(x, y, 1.2, 0, 7); c.fill(); }
-  // 바닥
-  c.fillStyle = '#131c30';
-  c.fillRect(0, L.yG, W, H - L.yG);
-  c.strokeStyle = 'rgba(120,150,200,.35)'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(0, L.yG); c.lineTo(W, L.yG); c.stroke();
-
-  // ── 작업실 소품: 벽 선반 + 공구 + 바닥 나사 ──
-  const shy = Math.max(56, H * 0.15), sx1 = W * 0.60, sx2 = Math.min(W - 24, W * 0.95);
-  if (sx2 - sx1 > 200) {
-    // 선반 판 + 받침대
-    c.fillStyle = '#1c2538'; c.fillRect(sx1, shy, sx2 - sx1, 7);
-    c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(sx1, shy, sx2 - sx1, 2);
-    c.fillStyle = '#151d2e';
-    c.fillRect(sx1 + 16, shy + 7, 6, 15); c.fillRect(sx2 - 30, shy + 7, 6, 15);
-    // 빨간 공구상자
-    const tbx = sx1 + 30, tby = shy - 30;
-    c.fillStyle = '#8a2f2a';
-    c.beginPath(); c.roundRect(tbx, tby, 62, 30, 4); c.fill();
-    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(tbx + 3, tby + 2, 56, 6);
-    c.strokeStyle = '#511713'; c.lineWidth = 1.4;
-    c.beginPath(); c.roundRect(tbx, tby, 62, 30, 4); c.stroke();
-    c.beginPath(); c.moveTo(tbx, tby + 13); c.lineTo(tbx + 62, tby + 13); c.stroke();
-    c.strokeStyle = '#3a3f4c'; c.lineWidth = 3; c.lineCap = 'round';
-    c.beginPath(); c.arc(tbx + 31, tby + 1, 12, Math.PI, 0); c.stroke();
-    c.fillStyle = '#c9a24a'; c.fillRect(tbx + 27, tby + 10, 8, 6);
-    // 페인트 캔
-    const pcx = sx1 + 122, pcy = shy - 25;
-    c.fillStyle = '#3d4d68'; c.beginPath(); c.roundRect(pcx, pcy, 27, 25, 2); c.fill();
-    c.fillStyle = 'rgba(255,255,255,.14)'; c.fillRect(pcx + 3, pcy + 3, 5, 19);
-    c.strokeStyle = '#232c3e'; c.lineWidth = 1.2;
-    c.beginPath(); c.roundRect(pcx, pcy, 27, 25, 2); c.stroke();
-    c.strokeStyle = '#5b6d8a'; c.lineWidth = 2;
-    c.beginPath(); c.ellipse(pcx + 13.5, pcy, 13.5, 3, 0, 0, 7); c.stroke();
-    // 걸이 공구 — 스패너
-    const wpx = sx1 + 200;
-    c.fillStyle = '#101725';
-    c.beginPath(); c.arc(wpx, shy + 12, 2.5, 0, 7); c.fill();
-    c.save(); c.translate(wpx, shy + 36); c.rotate(0.12);
-    c.strokeStyle = '#48566f'; c.lineWidth = 6; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(0, -16); c.lineTo(0, 16); c.stroke();
-    c.strokeStyle = '#54637e'; c.lineWidth = 5;
-    c.beginPath(); c.arc(0, -21, 7, 0.8, 5.5); c.stroke();
-    c.beginPath(); c.arc(0, 21, 7, 3.9, 2.4); c.stroke();
-    c.restore();
-    // 걸이 공구 — 망치
-    const hpx = sx1 + 252;
-    c.fillStyle = '#101725';
-    c.beginPath(); c.arc(hpx, shy + 12, 2.5, 0, 7); c.fill();
-    c.save(); c.translate(hpx, shy + 34); c.rotate(-0.08);
-    c.fillStyle = '#7a5a33'; c.beginPath(); c.roundRect(-2.5, -10, 5, 36, 2.5); c.fill();
-    c.fillStyle = '#3f4a5f'; c.beginPath(); c.roundRect(-13, -18, 26, 11, 3); c.fill();
-    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(-13, -18, 26, 3);
-    c.restore();
-  }
-  // 바닥에 눕혀진 렌치 + 나사 (왼쪽 구석)
-  const fy = L.yG + (H - L.yG) * 0.45;
-  c.save(); c.globalAlpha = 0.8; c.translate(W * 0.055, fy); c.rotate(-0.06);
-  c.strokeStyle = '#39445c'; c.lineWidth = 5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(-16, 0); c.lineTo(16, 0); c.stroke();
-  c.strokeStyle = '#455373'; c.lineWidth = 4;
-  c.beginPath(); c.arc(-21, 0, 6, 1.7, 0.6); c.stroke();
-  c.beginPath(); c.arc(21, 0, 6, 4.8, 3.7); c.stroke();
-  c.restore();
-  [[W * 0.11, fy + 8], [W * 0.128, fy - 5]].forEach(([px, py]) => {
-    c.save(); c.globalAlpha = 0.8; c.translate(px, py);
-    c.fillStyle = '#4a5872';
-    c.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = i * Math.PI / 3;
-      i ? c.lineTo(Math.cos(a) * 4.5, Math.sin(a) * 4.5) : c.moveTo(4.5, 0);
-    }
-    c.closePath(); c.fill();
-    c.fillStyle = '#2c3548'; c.beginPath(); c.arc(0, 0, 2, 0, 7); c.fill();
-    c.restore();
-  });
-
-  // 출발 지점 표시
-  c.strokeStyle = 'rgba(77,163,255,.35)'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
-  c.beginPath(); c.ellipse(L.objX, L.yG + 7, L.objW * 0.9, 5, 0, 0, 7); c.stroke(); c.setLineDash([]);
-  c.fillStyle = '#5a6a85'; c.font = '11px sans-serif'; c.textAlign = 'center';
-  c.fillText('출발', L.objX, L.yG + 24);
-
-  // 바구니 (라탄 짜임)
-  const bw = Math.max(78, L.s * 9), bh = Math.max(46, L.s * 5.2);
-  const bx = L.basketX, byT = L.yG - bh;
-  const basketPath = () => {
-    c.beginPath();
-    c.moveTo(bx - bw / 2, byT); c.lineTo(bx - bw / 2 + 8, L.yG);
-    c.lineTo(bx + bw / 2 - 8, L.yG); c.lineTo(bx + bw / 2, byT); c.closePath();
-  };
-  basketPath(); c.fillStyle = '#3b2d17'; c.fill();
-  c.save(); basketPath(); c.clip();
-  const wRows = 4, wCols = 8, cw = bw / wCols;
-  for (let r = 0; r < wRows; r++) {
-    const ry = byT + bh * r / wRows, rh = bh / wRows;
-    for (let ci = 0; ci < wCols; ci++) {
-      const rx = bx - bw / 2 + ci * cw;
-      c.fillStyle = (r + ci) % 2 ? '#6d4f26' : '#4c3718';
-      c.beginPath(); c.roundRect(rx + 1, ry + 1, cw - 2, rh - 2, 3); c.fill();
-      c.strokeStyle = 'rgba(255,225,170,.16)'; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(rx + 2.5, ry + 2.5); c.lineTo(rx + cw - 2.5, ry + 2.5); c.stroke();
-    }
-  }
-  // 세로 스테이크 (경사 따라)
-  c.strokeStyle = 'rgba(35,24,8,.5)'; c.lineWidth = 2;
-  for (let ci = 1; ci < wCols; ci++) {
-    const t = ci / wCols;
-    c.beginPath();
-    c.moveTo(bx - bw / 2 + bw * t, byT);
-    c.lineTo(bx - bw / 2 + 8 + (bw - 16) * t, L.yG);
-    c.stroke();
-  }
-  c.restore();
-  basketPath(); c.strokeStyle = '#8a6a35'; c.lineWidth = 2; c.stroke();
-  // 상단 굵은 림
-  c.strokeStyle = '#a9834a'; c.lineWidth = 5; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(bx - bw / 2 - 2, byT); c.lineTo(bx + bw / 2 + 2, byT); c.stroke();
-  c.strokeStyle = 'rgba(255,230,180,.35)'; c.lineWidth = 1.4;
-  c.beginPath(); c.moveTo(bx - bw / 2, byT - 1.6); c.lineTo(bx + bw / 2, byT - 1.6); c.stroke();
-  // 바구니 속 배달된 물건들
-  S.basket.forEach((k, i) => {
-    const col = i % 3, row = Math.floor(i / 3);
-    drawObj(c, k, bx - bw * 0.24 + col * bw * 0.24, L.yG - 4 - row * L.s * 3.2, L.s * 0.52, 0);
-  });
-  c.fillStyle = '#b9915a'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center';
-  c.fillText('🧺 바구니', bx, byT - 10);
-
-  // ── 페이즈 진행 ──
+  // ── 페이즈 진행 (로직 — 원본 그대로, 가상 픽셀 좌표) ──
   S.phaseT += dt;
+  const bx = L.basketX;
   const carryDist = bx - L.baseX;
   if (S.phase === 'lift') {
     const k = easeIO(clamp(S.phaseT / 0.45, 0, 1));
@@ -921,14 +843,14 @@ function drawScene(dt) {
     }
   }
 
-  // ── 집게 각도 ──
+  // ── 집게 각도 (로직) ──
   const out = outForce();
   let squish = 0;
   if (o.squishy && S.objState !== 'gone') squish = clamp((out - o.min * 2) / 350, 0, 0.32);
   const thFree = Math.max(0.05, TH_MAX * (1 - S.grip / 115));
   let thTarget;
   if (S.phase === 'drop' || S.phase === 'return' || S.phase === 'respawn') thTarget = TH_MAX;
-  else if (S.objState === 'held')   // 잡기에 성공했으면 시각적으로도 꽉 문다
+  else if (S.objState === 'held')
     thTarget = Math.max(Math.min(thFree, L.thetaC), L.thetaC * (1 - squish));
   else if (S.objState === 'ground' && thFree <= L.thetaC)
     thTarget = Math.max(thFree, L.thetaC * (1 - squish));
@@ -936,32 +858,7 @@ function drawScene(dt) {
   S.theta += (thTarget - S.theta) * Math.min(1, dt * 12);
   const th = S.theta;
 
-  // ── 물건 ──
-  const gx = L.baseX + S.dx, gy = L.gyBase + S.dy;
-  const jawTipY = gy + L.Lj * Math.cos(th);
-  // 유리컵 금 전조: 출력힘이 깨짐 한계 70%를 넘으면 잔금 + 떨림
-  let crack = 0;
-  if (isFinite(o.max) && (S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC + 0.02)
-    crack = clamp((out - o.max * 0.7) / (o.max * 0.3), 0, 0.999);
-  const shake = crack > 0 ? Math.sin(performance.now() / 26) * crack * 2.2 : 0;
-  if (S.objState === 'ground') drawObj(c, S.objKey, L.objX + shake, L.yG, L.s, squish, crack);
-  else if (S.objState === 'held') {
-    // 운반 중 집게 끝을 축으로 살랑살랑 흔들림
-    const sway = S.phase === 'move' ? Math.sin(S.phaseT * 9) * 0.07
-               : S.phase === 'lift' ? Math.sin(S.phaseT * 16) * 0.035 : 0;
-    c.save(); c.translate(gx + shake, jawTipY); c.rotate(sway);
-    drawObj(c, S.objKey, 0, o.h * L.s * 0.5, L.s, squish, crack);
-    c.restore();
-  }
-  else if (S.objState === 'falling' && S.fall) drawObj(c, S.objKey, S.fall.x, S.fall.y, L.s, 0);
-  if (crack > 0.15 && S.objState === 'ground') {
-    const blink = 0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180));
-    c.fillStyle = 'rgba(255,176,46,' + blink.toFixed(2) + ')';
-    c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText('⚠ 금이 가고 있어! 힘을 줄여!', L.objX, L.yG - o.h * L.s - 12);
-  }
-
-  // ── 파편 ──
+  // ── 파편 (로직) ──
   for (let i = S.particles.length - 1; i >= 0; i--) {
     const p = S.particles[i];
     p.life -= dt;
@@ -969,178 +866,91 @@ function drawScene(dt) {
     p.vy += (p.type === 'spark' ? 220 : 900) * dt;
     p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
     if (p.y > L.yG - 2 && p.type !== 'spark') { p.y = L.yG - 2; p.vy *= -0.35; p.vx *= 0.7; }
-    c.save(); c.globalAlpha = clamp(p.life, 0, 1);
-    c.translate(p.x, p.y); c.rotate(p.rot);
-    if (p.type === 'shard') {
-      const gsh = c.createLinearGradient(0, -p.size, 0, p.size);
-      gsh.addColorStop(0, 'rgba(235,250,255,.95)'); gsh.addColorStop(1, 'rgba(140,200,255,.5)');
-      c.fillStyle = gsh;
-      c.beginPath();
-      c.moveTo(0, -p.size);
-      c.lineTo(p.size * p.skew, p.size * (0.5 - p.notch));
-      c.lineTo(p.size * 0.15, p.size * 0.7);
-      c.lineTo(-p.size * p.skew, p.size * 0.45);
-      c.closePath(); c.fill();
-      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 0.8; c.stroke();
-    } else if (p.type === 'drop') {
-      c.fillStyle = 'rgba(120,190,255,.75)';
-      c.beginPath(); c.arc(0, 0, p.size, 0, 7); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.6)';
-      c.beginPath(); c.arc(-p.size * 0.3, -p.size * 0.3, p.size * 0.3, 0, 7); c.fill();
-    } else { // spark
-      c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 1.4; c.lineCap = 'round';
-      c.beginPath();
-      c.moveTo(-p.size, 0); c.lineTo(p.size, 0);
-      c.moveTo(0, -p.size); c.lineTo(0, p.size);
-      c.stroke();
-    }
-    c.restore();
   }
-  if (S.phase === 'break' && S.phaseT < 0.45) { // 충격파 링
-    const k = S.phaseT / 0.45;
-    c.strokeStyle = 'rgba(235,250,255,' + (0.7 * (1 - k)).toFixed(3) + ')';
-    c.lineWidth = 3 * (1 - k) + 1;
-    c.beginPath(); c.arc(L.objX, L.yG - o.h * L.s * 0.5, 10 + k * 70, 0, 7); c.stroke();
-  }
-  if (S.phase === 'break' && S.phaseT < 0.8) {
-    c.font = 'bold ' + Math.max(20, L.s * 2.6) + 'px sans-serif';
-    c.textAlign = 'center'; c.fillStyle = 'rgba(255,90,82,' + clamp(1 - S.phaseT, 0, 1) + ')';
-    c.fillText('쨍그랑!! 💥', L.objX, L.yG - o.h * L.s - 24);
-  }
-
-  // ── 집게 (X자 레고 테크닉 빔 링키지) ──
-  const hcm = HANDLES[S.h].cm;
-  const hs = hcm * L.s * Math.sin(th), hc = hcm * L.s * Math.cos(th);
-  const js = L.Lj * Math.sin(th), jc = L.Lj * Math.cos(th);
-  const armW = Math.max(9, L.s * 1.15);
-
-  // 홀 뚫린 테크닉 빔 (둥근 끝 + 스터드 홀, pivotD 위치는 핀 자리라 스킵)
-  function drawBeam(x1, y1, x2, y2, w, colLight, colMid, colDark, pivotD) {
-    const ang = Math.atan2(y2 - y1, x2 - x1);
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    c.save();
-    c.translate(x1, y1); c.rotate(ang);
-    const g = c.createLinearGradient(0, -w / 2, 0, w / 2);
-    g.addColorStop(0, colLight); g.addColorStop(0.4, colMid); g.addColorStop(1, colDark);
-    c.fillStyle = g;
-    c.beginPath(); c.roundRect(-w * 0.55, -w / 2, len + w * 1.1, w, w / 2); c.fill();
-    c.strokeStyle = colDark; c.lineWidth = 1.5; c.stroke();
-    const pitch = Math.max(w * 1.2, 13), hr = w * 0.27;
-    for (let d = pitch * 0.55; d < len - w * 0.35; d += pitch) {
-      if (Math.abs(d - pivotD) < w * 0.9) continue;
-      c.fillStyle = '#0a0f1c';
-      c.beginPath(); c.arc(d, 0, hr, 0, 7); c.fill();
-      c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 1.1;
-      c.beginPath(); c.arc(d, 0, hr + 1.1, Math.PI * 1.55, Math.PI * 0.55); c.stroke();
-      c.strokeStyle = 'rgba(255,255,255,.3)';
-      c.beginPath(); c.arc(d, 0, hr + 1.1, Math.PI * 0.55, Math.PI * 1.55); c.stroke();
-    }
-    c.restore();
-  }
-
-  const arms = [
-    { hx: gx + hs, hy: gy - hc, jx: gx - js, jy: gy + jc, cl: '#5a95e8', cm2: '#1d4ed8', cd: '#122e6b' },
-    { hx: gx - hs, hy: gy - hc, jx: gx + js, jy: gy + jc, cl: '#7db4ff', cm2: '#2563eb', cd: '#173a85' },
-  ];
-  arms.forEach(a => {
-    drawBeam(a.hx, a.hy, a.jx, a.jy, armW, a.cl, a.cm2, a.cd, hcm * L.s);
-    // 고무 패드 (집게 끝 안쪽 면, 미끄럼 방지 홈)
-    const inw = a.jx < gx ? 1 : -1;
-    const padW = armW * 0.62, padH = armW * 1.9;
-    const px2 = a.jx + inw * armW * 0.42, py2 = a.jy + armW * 0.1;
-    c.fillStyle = '#2b3038';
-    c.beginPath(); c.roundRect(px2 - padW / 2, py2 - padH / 2, padW, padH, padW * 0.4); c.fill();
-    c.strokeStyle = '#12151b'; c.lineWidth = 1.3; c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = 1;
-    for (let i = -1; i <= 1; i++) {
-      c.beginPath();
-      c.moveTo(px2 - padW * 0.32, py2 + i * padH * 0.26);
-      c.lineTo(px2 + padW * 0.32, py2 + i * padH * 0.26);
-      c.stroke();
-    }
-    // 작용점 마커
-    c.fillStyle = '#ff9046';
-    c.beginPath(); c.arc(a.jx, a.jy, armW * 0.24, 0, 7); c.fill();
-  });
-
-  // 받침점 — 레고 프릭션 핀 조인트 (플랜지 + 십자 슬롯)
-  c.fillStyle = '#39445c';
-  c.beginPath(); c.arc(gx, gy, armW * 0.95, 0, 7); c.fill();
-  c.strokeStyle = '#0b0f18'; c.lineWidth = 2; c.stroke();
-  const pg = c.createRadialGradient(gx - armW * 0.25, gy - armW * 0.25, 1, gx, gy, armW * 0.75);
-  pg.addColorStop(0, '#6b7994'); pg.addColorStop(1, '#222b3f');
-  c.fillStyle = pg;
-  c.beginPath(); c.arc(gx, gy, armW * 0.68, 0, 7); c.fill();
-  c.strokeStyle = '#0b0f18'; c.lineWidth = Math.max(2, armW * 0.16); c.lineCap = 'round';
-  c.beginPath();
-  c.moveTo(gx - armW * 0.36, gy); c.lineTo(gx + armW * 0.36, gy);
-  c.moveTo(gx, gy - armW * 0.36); c.lineTo(gx, gy + armW * 0.36);
-  c.stroke();
-  c.fillStyle = '#ff5a52';
-  c.beginPath(); c.arc(gx, gy, armW * 0.17, 0, 7); c.fill();
-
-  // 잡는 손 (손잡이 끝을 쥔 주먹)
-  function drawHand(hx2, hy2, side) {
-    const dlen = Math.hypot(hx2 - gx, hy2 - gy);
-    const ux = (hx2 - gx) / dlen, uy = (hy2 - gy) / dlen;
-    const sz = armW * 1.05;
-    const os = ((-uy) * side > 0) ? 1 : -1;  // 로컬 +y 중 바깥쪽 부호
-    c.save();
-    c.translate(hx2 - ux * sz * 0.5, hy2 - uy * sz * 0.5);
-    c.rotate(Math.atan2(uy, ux));
-    // 손바닥 (빔 바깥쪽)
-    c.fillStyle = '#f0bd93'; c.strokeStyle = '#c68a58'; c.lineWidth = 1.4;
-    c.beginPath(); c.ellipse(0, os * sz * 0.55, sz * 0.95, sz * 0.62, 0, 0, 7);
-    c.fill(); c.stroke();
-    // 손가락 4개 (빔을 감아쥠)
-    for (let i = 0; i < 4; i++) {
-      const fx = -sz * 0.6 + i * sz * 0.42;
-      c.strokeStyle = '#d99f6d'; c.lineWidth = sz * 0.36; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(fx, os * sz * 0.72); c.lineTo(fx, -os * sz * 0.52); c.stroke();
-      c.strokeStyle = '#f4c69d'; c.lineWidth = sz * 0.24;
-      c.beginPath(); c.moveTo(fx, os * sz * 0.66); c.lineTo(fx, -os * sz * 0.46); c.stroke();
-    }
-    // 엄지 (안쪽에서 받침)
-    c.strokeStyle = '#e8b184'; c.lineWidth = sz * 0.34; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(sz * 0.1, -os * sz * 0.4); c.lineTo(sz * 0.8, -os * sz * 0.22); c.stroke();
-    c.restore();
-  }
-  drawHand(gx - hs, gy - hc, -1);
-  drawHand(gx + hs, gy - hc, 1);
-
-  // 악력 화살표 (손잡이를 안쪽으로)
-  if (S.grip > 0) {
-    const alen = 12 + S.grip * 0.45, off = armW * 2.4;
-    [[gx - hs, gy - hc, 1], [gx + hs, gy - hc, -1]].forEach(([x, y, d]) => {
-      c.strokeStyle = '#4da3ff'; c.fillStyle = '#4da3ff'; c.lineWidth = 3.5; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(x - d * (alen + off + 8), y); c.lineTo(x - d * (off + 8), y); c.stroke();
-      c.beginPath(); c.moveTo(x - d * off, y); c.lineTo(x - d * (off + 10), y - 6.5); c.lineTo(x - d * (off + 10), y + 6.5);
-      c.closePath(); c.fill();
-    });
-    c.fillStyle = '#4da3ff'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText(`쥐는 힘 ${S.level}단`, gx, gy - hc - armW * 1.6 - 8);
-  }
-  // 출력힘 표시 (집게 끝)
-  if (out > 0 && (S.objState === 'held' || (S.objState === 'ground' && thFree <= L.thetaC + 0.02))) {
-    c.fillStyle = '#ff9046'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center';
-    c.fillText(`무는 힘 ${out.toFixed(0)}N`, gx, gy + jc + Math.max(26, o.h * L.s * 0.5 + 22));
-  }
-
-  // 3요소 라벨
-  c.font = 'bold 12px sans-serif'; c.textAlign = 'left';
-  c.fillStyle = '#ff5a52'; c.fillText('● 받침점', gx + armW + 8, gy + 4);
-  c.fillStyle = '#4da3ff'; c.fillText('● 힘점', gx + hs + armW * 2.2, gy - hc - 13);
-  c.fillStyle = '#ff9046'; c.fillText('● 작용점', gx + js + armW * 1.4, gy + jc + 4);
-  // 길이 표시
-  c.fillStyle = '#8b98ad'; c.font = '11px sans-serif'; c.textAlign = 'right';
-  c.fillText(`손잡이 ${hcm}cm`, gx - hs / 2 - 13, gy - hc / 2);
-  c.fillText(`집게 ${JAW_CM}cm`, gx - js / 2 - 13, gy + jc / 2 + 4);
-
-  // 배지 자동 숨김
   if (S.badgeTimer > 0) {
     S.badgeTimer -= dt;
     if (S.badgeTimer <= 0) $('bd').className = 'badge';
   }
+
+  /* ══ 3D 동기화 ══ */
+  const s3 = L.s * PX2W;
+  const gxW = WX(L.baseX + S.dx), gyW = WY(L.gyBase + S.dy, L.yG);
+  gripGrp.position.set(gxW, gyW, 0);
+  const hLen = HANDLES[S.h].cm * L.s * PX2W, jLen = L.Lj * PX2W;
+  [armL, armR].forEach((arm, i) => {
+    const sgn = i === 0 ? 1 : -1;
+    arm.rotation.z = -sgn * th;
+    arm.userData.handle.scale.y = hLen;
+    arm.userData.jaw.scale.y = jLen;
+    arm.userData.pad.position.set(sgn * 0.045, -jLen + 0.1, 0);
+    arm.userData.tip.position.set(0, -jLen, 0);
+    arm.userData.hand.position.set(0, hLen, 0);
+  });
+  // 라벨·화살표
+  const handTipX = Math.sin(th) * hLen, handTipY = Math.cos(th) * hLen;
+  labF.position.set(handTipX + 0.32, handTipY, 0);
+  labA.position.set(Math.sin(th) * jLen + 0.36, -Math.cos(th) * jLen, 0);
+  const showGrip = S.grip > 0;
+  arrGL.visible = arrGR.visible = showGrip;
+  if (showGrip) {
+    const alen = 0.25 + S.grip * 0.004;
+    arrGL.position.set(-handTipX - 0.2, handTipY, 0); arrGL.scale.x = alen / 0.5;
+    arrGR.position.set(handTipX + 0.2, handTipY, 0); arrGR.scale.x = alen / 0.5;
+  }
+  setGripLab(`쥐는 힘 ${S.level}단`, Math.cos(th) * hLen + 0.3);
+  const showOut = out > 0 && (S.objState === 'held' || (S.objState === 'ground' && thFree <= L.thetaC + 0.02));
+  setOutLab(showOut ? `무는 힘 ${out.toFixed(0)}N` : null, -Math.cos(th) * jLen - 0.55);
+  // 물건
+  const jawTipYpx = (L.gyBase + S.dy) + L.Lj * Math.cos(th);
+  let crack = 0;
+  if (isFinite(o.max) && (S.objState === 'ground' || S.objState === 'held') && thFree <= L.thetaC + 0.02)
+    crack = clamp((out - o.max * 0.7) / (o.max * 0.3), 0, 0.999);
+  const shake = crack > 0 ? Math.sin(performance.now() / 26) * crack * 0.02 : 0;
+  ['sponge', 'wood', 'glass'].forEach(k => objMeshes[k].visible = false);
+  const om = objMeshes[S.objKey];
+  if (S.objState === 'ground') {
+    om.visible = true;
+    om.position.set(WX(L.objX) + shake, 0, 0);
+    om.rotation.z = 0;
+  } else if (S.objState === 'held') {
+    const sway = S.phase === 'move' ? Math.sin(S.phaseT * 9) * 0.07
+               : S.phase === 'lift' ? Math.sin(S.phaseT * 16) * 0.035 : 0;
+    om.visible = true;
+    om.position.set(gxW + shake, WY(jawTipYpx + o.h * L.s, L.yG), 0);
+    om.rotation.z = sway;
+  } else if (S.objState === 'falling' && S.fall) {
+    om.visible = true;
+    om.position.set(WX(S.fall.x), WY(S.fall.y, L.yG), 0);
+    om.rotation.z = 0;
+  }
+  om.scale.set(1 + squish * 0.5, 1 - squish, 1);
+  if (om.userData.glassMat) om.userData.glassMat.emissive = new THREE.Color(crack > 0 ? 0x552222 : 0x000000);
+  warnLab.visible = crack > 0.15 && S.objState === 'ground';
+  if (warnLab.visible) warnLab.position.set(WX(L.objX), 0.95, 0.3);
+  crashLab.visible = S.phase === 'break' && S.phaseT < 0.8;
+  if (crashLab.visible) crashLab.position.set(WX(L.objX), 1.0, 0.3);
+  // 바구니 + 담긴 물건
+  basketGrp.position.set(WX(L.basketX), 0, 0);
+  while (basketItems.length < S.basket.length) {
+    const k = S.basket[basketItems.length];
+    const mini = makeObjMesh(k);
+    mini.scale.setScalar(0.55);
+    mini.position.set(WX(L.basketX) - 0.22 + basketItems.length * 0.24, 0.07, 0);
+    scene.add(mini); basketItems.push(mini);
+  }
+  while (basketItems.length > S.basket.length) { scene.remove(basketItems.pop()); }
+  // 파편
+  shardPool.forEach((m, i) => {
+    const p = S.particles[i];
+    if (p) {
+      m.visible = true;
+      m.position.set(WX(p.x), WY(p.y, L.yG), 0.1 + (i % 5) * 0.04);
+      m.rotation.z = p.rot;
+      m.material.opacity = clamp(p.life, 0, 1);
+    } else m.visible = false;
+  });
+  controls.update();
+  if (fitStage(renderer, camera, stage3)) renderer.render(scene, camera);
 }
 
 /* ── 루프 ── */
