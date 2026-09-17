@@ -133,7 +133,7 @@
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🌀 플라이 휠러 — 감아 돌려 달리는 자동차<span class="t3d">3D</span></div>
+      <div class="title">🌀 플라이 휠러 — 도움닫기로 감아 달리는 자동차<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">실험 · 플라이휠 주행</button>
@@ -162,16 +162,16 @@
     <div class="side">
       <div class="led-box"><span class="led" id="led1"></span><span class="status-txt" id="st1">준비</span></div>
       <div class="ctl-row">
-        <button class="primary" id="run1">▶ 감아서 출발</button>
+        <button class="primary" id="run1">▶ 도움닫기 출발</button>
         <button id="pause1" disabled>⏸</button>
         <button id="reset1">↺</button>
       </div>
 
       <h3>실험 조건 (단계 선택)</h3>
-      <div class="param"><label>감기 세기 <span style="color:#5a6a85">(초기 회전수)</span> <b id="v_wind">3단</b></label>
+      <div class="param"><label>도움닫기 거리 <span style="color:#5a6a85">(미는 거리)</span> <b id="v_wind">90cm</b></label>
         <div class="pick wind" id="pickWind">
-          <button data-s="1">1단</button><button data-s="2">2단</button>
-          <button data-s="3" class="on">3단</button><button data-s="4">4단</button><button data-s="5">5단</button>
+          <button data-s="1">30cm</button><button data-s="2">60cm</button>
+          <button data-s="3" class="on">90cm</button><button data-s="4">120cm</button><button data-s="5">150cm</button>
         </div>
       </div>
       <div class="param"><label>플라이휠 무게 <span style="color:#5a6a85">(무거운 바퀴)</span> <b id="v_mass">보통</b></label>
@@ -198,7 +198,7 @@
         <div class="readout wide" style="grid-column:1/-1"><div class="k">주행 거리</div><div class="v g" id="ro_dist" style="font-size:25px">—</div></div>
       </div>
 
-      <h3>📋 격자 결과표 <span style="text-transform:none;color:#5a6a85">(감기세기 × 휠무게 → 주행거리 m · 클릭 확대)</span></h3>
+      <h3>📋 격자 결과표 <span style="text-transform:none;color:#5a6a85">(도움닫기 × 휠무게 → 주행거리 m · 클릭 확대)</span></h3>
       <table class="mx" id="matrix"></table>
       <div class="ctl-row" style="margin-bottom:8px">
         <button class="primary" id="auto1" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border-color:#a855f7">⚡ 자동 실험 (표 15칸 채우기)</button>
@@ -213,7 +213,7 @@
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
           <table class="log" id="tb1">
-            <thead><tr><th>#</th><th>감기</th><th>휠무게</th><th>마찰</th><th>에너지</th><th>거리</th><th>시간</th></tr></thead>
+            <thead><tr><th>#</th><th>도움닫기</th><th>휠무게</th><th>마찰</th><th>에너지</th><th>거리</th><th>시간</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -227,7 +227,7 @@
       <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
         <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
         이번 차시에서는 <b>무거운 바퀴(플라이휠)</b>에 <b>회전 에너지</b>를 저장했다가 꺼내 쓰는 원리를 배웁니다.
-        손으로 감아 돌려 저장한 힘으로 자동차가 스스로 달리고, 무게·감기 세기·바닥 마찰을 바꾸면 얼마나 멀리·오래 가는지 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
+        도움닫기 구역에서 손으로 밀며 저장한 힘으로 자동차가 스스로 달리고, 휠 무게·도움닫기 거리·바닥 마찰을 바꾸면 얼마나 멀리·오래 가는지 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
         아이는 예측 → 실험 → 격자표 비교의 과학적 방법을 놀이처럼 익히며, 에너지 저장과 마찰이라는 실제 물리 개념을 몸으로 이해하게 됩니다.
       </div>
 
@@ -257,16 +257,16 @@
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
       <ul style="line-height:2.1">
         <li><b>① 예측</b> — 출발 전 "어떤 조건이 가장 멀리 갈까?" 아이들에게 손들기</li>
-        <li><b>② 감아 출발</b> — 감기 3단 · 보통 휠로 출발. 저장 에너지와 주행 거리 확인</li>
-        <li><b>③ 세기 실험</b> — 휠·마찰 고정, 감기 1→5단으로 올리며 "거리가 얼마나 늘지?" (격자표 기록)</li>
-        <li><b>④ 무게 실험</b> — 감기 고정, 휠을 가벼움→무거움으로 바꿔 "더 오래 구르네!" 확인</li>
+        <li><b>② 도움닫기 출발</b> — 도움닫기 90cm · 보통 휠로 출발. 저장 에너지와 주행 거리 확인</li>
+        <li><b>③ 거리 실험</b> — 휠·마찰 고정, 도움닫기 30→150cm로 늘리며 "거리가 얼마나 늘지?" (격자표 기록)</li>
+        <li><b>④ 무게 실험</b> — 도움닫기 고정, 휠을 가벼움→무거움으로 바꿔 "더 오래 구르네!" 확인</li>
         <li><b>⑤ 반전</b> — 바닥 마찰을 "거침"으로. 같은 힘인데 훨씬 짧게 멈춘다 — "마찰이 힘을 먹는구나!"</li>
       </ul>
 
       <div class="tip">
         <b>🧱 레고 브릭큐 실험 팁</b><br>
-        · 실물 BricQ 플라이 휠러 모델은 바퀴를 바닥에 대고 <b>뒤로 몇 번 굴려</b> 플라이휠을 감는다 — 시뮬의 "감기 세기"와 같다<br>
-        · 감는 횟수를 1·2·3번으로 정하고, 바닥에 출발선을 그어 <b>멈춘 거리를 자로 재</b> 격자표에 기록<br>
+        · 실물 실험은 색테이프로 <b>도움닫기 구역 + 출발선</b>을 바닥에 표시하고, 도움닫기 구역에서 손으로 밀며 에너지를 저장한 뒤 <b>출발선에서 손을 뗀다</b> (수업 PPT 트랙 확인하기)<br>
+        · 도움닫기 거리를 30·60·90cm로 정하고, 출발선부터 <b>멈춘 거리를 줄자로 재</b> 3회 평균을 격자표에 기록<br>
         · 카펫(거침) vs 마룻바닥(매끄러움)에서 각각 달려보고 "왜 다르지?" 이야기<br>
         · 무게추(추가 브릭)를 휠에 끼워 무겁게 만들면 더 오래 구른다 — 관성모멘트를 몸으로 체험
       </div>
@@ -450,8 +450,11 @@ function solve(windLv, massLv, fricLv) {
 /* ═════════ 실험 · 플라이휠 주행 ═════════ */
 (() => {
   const cv = $('cv1');
-  const WIND_T = 1.4;
-  let phase = 'idle';   // idle | winding | driving | done
+  const RUNUP_M = 0.3;                                    // 도움닫기 거리 = 단계 × 0.3 m (30~150cm)
+  const RUN_VIS = 2;                                      // 도움닫기 화면 과장 배율 (실측값은 그대로)
+  const runup = () => RUNUP_M * (P.wind || 3);
+  const pushT = () => 0.5 + 0.55 * runup();               // 미는 시간 — 거리에 비례
+  let phase = 'idle';   // idle | pushing | driving
   let tw = 0, t = 0, finished = false, samples = [], runCount = 0;
   let wheelAng = 0, flyAng = 0, S = {}, P = {};
   const results = {};   // key windLv|massLv -> dist (마찰별)
@@ -464,13 +467,20 @@ function solve(windLv, massLv, fricLv) {
   const { camera, controls } = makeCamera(cv, { maxD: 45 });
   grassGround(scene, { size: 90, x: 4 });
   const tracks3d = {
-    0: dirtTrack(scene, { len: 11, w: 2.3, x: 3.9, base: '#a9cfe8' }),   // 매끄러움
-    1: dirtTrack(scene, { len: 11, w: 2.3, x: 3.9, base: '#8a6a44' }),   // 거침
+    0: dirtTrack(scene, { len: 14, w: 2.3, x: 2.4, base: '#a9cfe8' }),   // 매끄러움
+    1: dirtTrack(scene, { len: 14, w: 2.3, x: 2.4, base: '#8a6a44' }),   // 거침
   };
   distanceRuler(scene, { from: 0, to: 8, step: 1, z: 1.45, unit: 'm', labCol: '#eaf2ff' });
   {
     const line = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.014, 2.3), new THREE.MeshBasicMaterial({ color: 0x2ee06f }));
     line.position.set(0, 0.035, 0); scene.add(line);
+  }
+  {  // 도움닫기 구역 — 출발선 뒤 최대 150cm × 화면 과장 2배 (수업 자료: 색테이프로 표시)
+    const zone = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.3),
+      new THREE.MeshBasicMaterial({ color: 0xffd23e, transparent: true, opacity: 0.13 }));
+    zone.rotation.x = -Math.PI / 2; zone.position.set(-1.5, 0.012, 0); scene.add(zone);
+    const zlab = textSprite('도움닫기 구역', { size: 34, color: '#ffe6b0', bg: 'rgba(50,38,8,.6)', scale: 0.004 });
+    zlab.position.set(-1.5, 0.5, 1.35); scene.add(zlab);
   }
   [[-1.6, -2.7, 1.0], [9.2, -2.9, 1.25], [2.6, -3.6, 0.9], [6.2, -2.6, 1.15], [0.6, -4.7, 1.3], [-2.9, 2.4, 0.95], [11.0, 2.8, 1.2]]
     .forEach(([x, z, s]) => { const tr = makeTree(s); tr.position.set(x, 0, z); scene.add(tr); });
@@ -503,7 +513,7 @@ function solve(windLv, massLv, fricLv) {
     return g;
   });
   // 상태 라벨 (감는 중/달리는 중)
-  const labWind = textSprite('🌀 감는 중…', { size: 40, color: '#e2ccff', bg: 'rgba(40,20,70,.75)', scale: 0.005 });
+  const labWind = textSprite('🖐 도움닫기 — 밀면서 에너지 저장…', { size: 40, color: '#ffe6b0', bg: 'rgba(60,42,8,.75)', scale: 0.005 });
   labWind.position.set(0, 1.15, 0); labWind.visible = false; car.add(labWind);
   const labDrive = textSprite('🚗 달리는 중', { size: 40, color: '#b8ffd2', bg: 'rgba(8,40,20,.75)', scale: 0.005 });
   labDrive.position.set(0, 1.15, 0); labDrive.visible = false; car.add(labDrive);
@@ -515,8 +525,8 @@ function solve(windLv, massLv, fricLv) {
   }
   function clearFlag() { if (flag) { scene.remove(flag); flag = null; } }
   camPresets(camera, controls, {
-    camSide: { pos: [4, 1.9, 8.4], target: [3.6, 0.45, 0] },
-    camDiag: { pos: [-3.6, 3.6, 6.0], target: [3.4, 0.35, 0] },
+    camSide: { pos: [2.6, 2.0, 9.6], target: [2.6, 0.45, 0] },
+    camDiag: { pos: [-4.6, 3.6, 6.0], target: [2.8, 0.35, 0] },
     camTop:  { pos: [4, 11.5, 0.02], target: [4, 0, 0] },
   }, 'camSide');
   let followMode = false;
@@ -531,11 +541,11 @@ function solve(windLv, massLv, fricLv) {
   let lastRT = performance.now();
   function animate(now) {
     const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
-    const d = curDist();
+    const d = carX();
     car.position.x = Math.min(d, 9);
     car.userData.wheels.forEach(w => w.rotation.z = -d / car.userData.wheelR);
     flyDiscs.forEach((g, i) => { g.visible = (i === P.mass); g.rotation.z = -flyAng; });
-    labWind.visible = phase === 'winding' && eng.running;
+    labWind.visible = phase === 'pushing' && eng.running;
     labDrive.visible = phase === 'driving' && eng.running;
     clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 18) cl.position.x = -11; });
     if (followMode) {
@@ -579,12 +589,12 @@ function solve(windLv, massLv, fricLv) {
   }
   function step(dt) {
     if (finished) return;
-    if (phase === 'idle') phase = 'winding';
-    if (phase === 'winding') {
+    if (phase === 'idle') phase = 'pushing';
+    if (phase === 'pushing') {                  // 도움닫기 — 앞으로 밀며 플라이휠에 에너지 저장
       tw += dt;
-      const p = Math.min(1, tw / WIND_T);
-      flyAng += S.w0 * Math.PI * 2 * p * dt;   // 점점 빨라지며 감김
-      if (tw >= WIND_T) { phase = 'driving'; t = 0; }
+      const p = Math.min(1, tw / pushT());
+      flyAng += S.w0 * Math.PI * 2 * p * dt;    // 미는 속도에 비례해 감김
+      if (tw >= pushT()) { phase = 'driving'; t = 0; }   // 출발선에서 손 떼기
       return;
     }
     // driving
@@ -598,6 +608,11 @@ function solve(windLv, massLv, fricLv) {
     if (samples.length === 0 || t - samples[samples.length - 1].t > 0.06)
       samples.push({ t, d: dist, w });
   }
+  function carX() {
+    if (phase === 'idle') return -runup() * RUN_VIS;                    // 도움닫기 시작점 대기
+    if (phase === 'pushing') { const p = Math.min(1, tw / pushT()); return -runup() * RUN_VIS * (1 - p * p); }
+    return curDist();
+  }
   function curDist() {
     if (phase === 'driving' || finished) {
       const u = S.time > 0 ? t / S.time : 1; return S.dist * (2 * u - u * u);
@@ -605,14 +620,14 @@ function solve(windLv, massLv, fricLv) {
     return 0;
   }
   function curW() {
-    if (phase === 'winding') return S.w0 * Math.min(1, tw / WIND_T);
+    if (phase === 'pushing') return S.w0 * Math.min(1, tw / pushT());
     if (phase === 'driving') { const u = S.time > 0 ? t / S.time : 1; return S.w0 * (1 - u); }
     if (finished) return 0;
     return 0;
   }
   function draw() {
     // 3D 씬은 상시 렌더 루프가 그린다 — HUD만 갱신
-    $('hud_t').textContent = (phase === 'winding' ? 0 : t).toFixed(1) + ' s';
+    $('hud_t').textContent = (phase === 'driving' || finished ? t : 0).toFixed(1) + ' s';
     $('hud_w').textContent = curW().toFixed(1) + ' 회전/초';
     $('hud_d').textContent = curDist().toFixed(2) + ' m';
   }
@@ -624,7 +639,7 @@ function solve(windLv, massLv, fricLv) {
   }
   function drawMatrix() {
     const winds = [1, 2, 3, 4, 5], masses = [0, 1, 2];
-    let html = '<tr><th>휠＼감기</th>' + winds.map(w => `<th>${w}단</th>`).join('') + '</tr>';
+    let html = '<tr><th>휠＼도움닫기</th>' + winds.map(w => `<th>${w * 30}cm</th>`).join('') + '</tr>';
     for (const m of masses) html += `<tr><td class="lab">${MASS_NAME[m]}</td>` + winds.map(w => {
       const key = w + '|' + m;
       const v = results[key];
@@ -644,7 +659,7 @@ function solve(windLv, massLv, fricLv) {
     bd.textContent = `✓ ${S.dist.toFixed(2)}m 주행 · ${S.time.toFixed(1)}s — 저장 에너지 ${S.E.toFixed(0)}(상댓값)를 마찰이 다 씀`;
     const tb = $('tb1').querySelector('tbody');
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.wind}단</td><td class="cond">${MASS_NAME[P.mass]}</td>` +
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.wind * 30}cm</td><td class="cond">${MASS_NAME[P.mass]}</td>` +
       `<td class="cond">${FRIC_NAME[P.fric]}</td><td>${S.E.toFixed(0)}</td>` +
       `<td>${S.dist.toFixed(2)}m</td><td>${S.time.toFixed(1)}s</td>`;
     tb.prepend(tr);
@@ -663,7 +678,7 @@ function solve(windLv, massLv, fricLv) {
   };
   $('reset1').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; $('pause1').textContent = '⏸'; };
 
-  $('pickWind').addEventListener('click', () => { $('v_wind').textContent = pWind.get() + '단'; });
+  $('pickWind').addEventListener('click', () => { $('v_wind').textContent = pWind.get() * 30 + 'cm'; });
   $('pickMass').addEventListener('click', () => { $('v_mass').textContent = MASS_NAME[pMass.get()]; });
 
   // ⚡ 자동 실험 — 현재 마찰 조건에서 15칸 즉시 계산
@@ -674,7 +689,7 @@ function solve(windLv, massLv, fricLv) {
       results[w + '|' + m] = solve(w, m, f).dist;
     drawMatrix();
     const bd = $('bd1'); bd.className = 'badge diff';
-    bd.textContent = `⚡ 자동 실험 완료 — ${FRIC_NAME[f]} 바닥 15칸: 세게 감고 무거운 휠일수록 멀리!`;
+    bd.textContent = `⚡ 자동 실험 완료 — ${FRIC_NAME[f]} 바닥 15칸: 도움닫기가 길고 무거운 휠일수록 멀리!`;
   };
 
   redraws.exp1 = () => { if (!eng.running) { draw(); drawG(); } };

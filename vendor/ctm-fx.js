@@ -271,7 +271,11 @@
     clone.removeAttribute('id');
     clone.style.cursor = 'default';
     var w = tblSrc.offsetWidth || 300, h = tblSrc.offsetHeight || 150;
-    var k = Math.min(innerWidth * 0.92 / w, innerHeight * 0.76 / h, 4);
+    // 원본 픽셀 크기로 고정 — width:100% 표가 오버레이 폭 기준으로 다시 늘어나 깨지는 것 방지
+    clone.style.width = w + 'px';
+    clone.style.height = h + 'px';
+    clone.style.maxWidth = 'none';
+    var k = Math.min(innerWidth * 0.92 / w, innerHeight * 0.76 / h, 3);
     if (k < 1) k = 1;
     clone.style.transform = 'scale(' + k + ')';
     clone.style.transformOrigin = 'top left';

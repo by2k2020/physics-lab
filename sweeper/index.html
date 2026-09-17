@@ -95,6 +95,15 @@
   details { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0c1220; }
   details summary { padding: 9px 13px; font-size: 12.5px; color: #c6d2e6; cursor: pointer; font-weight: 700; }
   details .inner { padding: 0 12px 12px; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; padding: 9px 0 3px; color: #c6d2e6; font-size: 13px; }
+  .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .predict { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; flex-direction: column; align-items: center; gap: 12px; background: rgba(8,12,22,.85); backdrop-filter: blur(5px); border: 1px solid rgba(120,150,200,.3); border-radius: 16px; padding: 22px 30px; z-index: 5; }
+  .predict.on { display: flex; }
+  .predict .q { font-size: 18px; font-weight: 800; text-align: center; }
+  .predict .sub { font-size: 12.5px; color: var(--dim); }
+  .predict .btns { display: flex; gap: 10px; }
+  .predict button { padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2, #1a2234); color: var(--text); cursor: pointer; }
+  .predict button:hover { border-color: var(--accent); }
   table.log { width: 100%; border-collapse: collapse; font-size: 10.5px; }
   table.log th, table.log td { border: 1px solid var(--border); padding: 4px 4px; text-align: center; }
   table.log th { background: var(--panel2); color: var(--dim); font-weight: 600; }
@@ -138,7 +147,7 @@
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭 프라임 과정 · 16차시</div>
-      <div class="title">🧹 청소차 시뮬레이션 — 기어로 브러시 돌리기<span class="t3d">3D</span></div>
+      <div class="title">🧹 청소차 시뮬레이션 — 밀면 기어가 날개를 돌린다<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="exp1">🚛 청소 실험</button>
@@ -152,9 +161,9 @@
       <canvas class="scene" id="cv1"></canvas>
       <div class="hud">
         <div class="chip"><span class="lab">진행</span><span id="hud_prog">0 %</span></div>
-        <div class="chip" style="color:var(--accent)"><span class="lab">브러시 회전속도</span><span id="hud_rpm">0 RPM</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">날개 회전속도</span><span id="hud_rpm">0 RPM</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">돌리는 힘 (토크)</span><span id="hud_trq">0</span></div>
-        <div class="chip" style="color:var(--green)"><span class="lab">쓸어담음</span><span id="hud_cap">0 / 0</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">도착선에 모음</span><span id="hud_cap">0 / 0</span></div>
       </div>
       <div class="cam-row">
         <button id="camSide" class="on">▶ 옆</button>
@@ -163,6 +172,15 @@
         <button id="camFollow">🧹 따라가기</button>
       </div>
       <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
+      <div class="predict" id="predict">
+        <div class="q">🤔 이 기어 조합이면 회전날개는 어떻게 돌까?</div>
+        <div class="sub">구동기어★ <b id="predGear">20T</b> → 피동기어 <b id="predGear2">20T</b> — 톱니수를 비교해봐!</div>
+        <div class="btns">
+          <button id="predAcc">🐇 가속</button>
+          <button id="predEq">= 등속</button>
+          <button id="predDec">🐢 감속</button>
+        </div>
+      </div>
       <div class="badge-wrap"><span class="badge" id="bd1"></span></div>
     </div>
     <div class="side">
@@ -176,18 +194,18 @@
       <h3>① 기어비 — 속도와 힘의 맞바꿈</h3>
       <div class="param">
         <div class="pick" id="pickGear">
-          <button data-k="speed"><b>속도형</b><small>40T→8T 가속</small></button>
-          <button data-k="balance" class="on"><b>균형형</b><small>24T→24T 1:1</small></button>
-          <button data-k="power"><b>힘형</b><small>8T→40T 감속</small></button>
+          <button data-k="speed"><b>속도형</b><small>36T→12T 가속</small></button>
+          <button data-k="balance" class="on"><b>균형형</b><small>20T→20T 등속</small></button>
+          <button data-k="power"><b>힘형</b><small>12T→36T 감속</small></button>
         </div>
       </div>
 
-      <h3>② 주행 속도</h3>
+      <h3>② 회전 날개 수</h3>
       <div class="param">
-        <div class="pick" id="pickDrive">
-          <button data-k="slow"><b>느리게</b><small>꼼꼼히</small></button>
-          <button data-k="normal" class="on"><b>보통</b></button>
-          <button data-k="fast"><b>빠르게</b><small>후딱</small></button>
+        <div class="pick" id="pickBlade">
+          <button data-k="1"><b>1개</b><small>드문드문</small></button>
+          <button data-k="2"><b>2개</b></button>
+          <button data-k="3" class="on"><b>3개</b><small>촘촘히</small></button>
         </div>
       </div>
 
@@ -199,16 +217,30 @@
         </div>
       </div>
 
+      <div class="toggle-row">
+        <input type="checkbox" id="predictMode"><label for="predictMode">🙋 예상하기 모드 — 실험 전에 가속/등속/감속 맞히기</label>
+      </div>
+      <details style="margin:4px 0 8px">
+        <summary>🚙 더 실험해보기 — 주행 속도</summary>
+        <div class="inner">
+          <div class="pick" id="pickDrive" style="margin-top:8px">
+            <button data-k="slow"><b>느리게</b><small>꼼꼼히</small></button>
+            <button data-k="normal" class="on"><b>보통</b></button>
+            <button data-k="fast"><b>빠르게</b><small>후딱</small></button>
+          </div>
+        </div>
+      </details>
+
       <h3>예측 → 측정</h3>
       <div class="eff-hero"><div class="k">청소 효율 (예측)</div><div class="v" id="effV">—</div><div class="sub" id="effSub"></div></div>
       <div class="readouts">
-        <div class="readout"><div class="k">브러시 회전속도</div><div class="v a" id="roRpm">—</div></div>
-        <div class="readout"><div class="k">브러시 힘 (토크)</div><div class="v b" id="roTrq">—</div></div>
+        <div class="readout"><div class="k">날개 회전속도</div><div class="v a" id="roRpm">—</div></div>
+        <div class="readout"><div class="k">날개 힘 (토크)</div><div class="v b" id="roTrq">—</div></div>
         <div class="readout"><div class="k">완료 예상 시간</div><div class="v" id="roTime" style="color:var(--purple)">—</div></div>
-        <div class="readout"><div class="k">쓸어담은 쓰레기</div><div class="v" id="roCap" style="color:var(--green)">—</div></div>
+        <div class="readout"><div class="k">도착선에 모은 쓰레기</div><div class="v" id="roCap" style="color:var(--green)">—</div></div>
       </div>
 
-      <h3>브러시가 얻은 것 ↔ 잃은 것</h3>
+      <h3>날개가 얻은 것 ↔ 잃은 것</h3>
       <div class="bars">
         <div class="bar-row"><span class="lab">회전 속도</span><div class="bar-track"><div class="bar-fill" id="barSpd" style="background:linear-gradient(90deg,#1f5eff,#4da3ff);width:20%"></div></div><span class="val" id="valSpd">—</span></div>
         <div class="bar-row"><span class="lab">돌리는 힘</span><div class="bar-track"><div class="bar-fill" id="barTrq" style="background:linear-gradient(90deg,#c2410c,#ff9046);width:20%"></div></div><span class="val" id="valTrq">—</span></div>
@@ -230,7 +262,7 @@
         </table>
       </div>
 
-      <h3>쓸어담은 쓰레기 – 시간 그래프</h3>
+      <h3>도착선에 모은 쓰레기 – 시간 그래프</h3>
       <canvas class="graph" id="gr1" height="240"></canvas>
       <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
 
@@ -238,7 +270,7 @@
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
           <table class="log" id="tb1">
-            <thead><tr><th>#</th><th>기어비</th><th>주행</th><th>쓰레기</th><th>효율</th><th>시간</th></tr></thead>
+            <thead><tr><th>#</th><th>기어비</th><th>날개</th><th>쓰레기</th><th>효율</th><th>시간</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -251,67 +283,81 @@
     <div class="theory-box">
       <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
         <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
-        이번 차시에서는 <b>기어비</b>가 <b>회전속도</b>와 <b>돌리는 힘(토크)</b>을 서로 맞바꾸는 원리를 배웁니다.
-        청소차의 회전 브러시를 어떤 기어로 연결하느냐에 따라, 브러시가 <b>빠르게 돌지</b> 아니면 <b>힘차게 돌지</b>가 달라집니다.
-        가벼운 먼지는 빠른 브러시(속도형)가, 무거운 알갱이는 힘센 브러시(힘형)가 잘 쓸어담는다는 것을 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
-        아이는 예측 → 실험 → 격자표 비교의 과학적 방법을 놀이처럼 익히며, 레고에듀케이션 공식 레슨과 같은 개념을 배웁니다.
+        이번 차시에서는 <b>구동기어와 피동기어의 톱니수 비(기어비)</b>가 <b>회전속도</b>와 <b>돌리는 힘(토크)</b>을 서로 맞바꾸는 원리를 배웁니다.
+        실물 브릭큐 프라임 기어(36·28·20·12톱니)와 같은 조합으로, 회전날개가 <b>가속·등속·감속</b> 중 어떻게 돌지 예상하고 확인합니다.
+        가벼운 먼지는 빠른 날개(가속)가, 무거운 알갱이는 힘센 날개(감속)가 잘 쓸어담고, 회전 날개 수가 많을수록 잘 치운다는 것도 실험합니다.<br>
+        아이는 예상하기 → 실험 → 결과 확인 → 격자표 비교라는 공정한 테스트 방법을 놀이처럼 익히며, 레고에듀케이션 공식 레슨과 같은 개념을 배웁니다.
       </div>
 
-      <h2>🧹 기어 하나로 브러시를 빠르게? 아니면 힘차게?</h2>
-      <p>청소차 브러시는 <b>모터의 힘을 기어로 전달</b>받아 돈다. 그런데 기어의 잇수를 바꾸면
-        브러시가 <b>빨리 돌지</b> 아니면 <b>천천히 대신 힘차게 돌지</b>가 정해진다. 둘을 동시에 크게 만들 수는 없다 — 이것이 <b>맞바꿈(트레이드오프)</b>이다.</p>
+      <h2>🧹 기어 하나로 날개를 빠르게? 아니면 힘차게?</h2>
+      <p>이 청소차엔 모터가 없다! <b>차를 밀면 바퀴가 돌고, 바퀴 축의 기어가 그 힘을 회전날개까지 전달</b>한다 (PT 질문: 바닥 청소 장치가 움직이려면? → 차를 밀어야!). 그런데 기어의 잇수를 바꾸면
+        날개가 <b>빨리 돌지</b> 아니면 <b>천천히 대신 힘차게 돌지</b>가 정해진다. 둘을 동시에 크게 만들 수는 없다 — 이것이 <b>맞바꿈(트레이드오프)</b>이다.</p>
       <ul>
-        <li>회전속도: <span class="eq">브러시 RPM = 모터 RPM ÷ 기어비</span></li>
-        <li>돌리는 힘: <span class="eq">브러시 토크 = 모터 토크 × 기어비</span> — 속도를 잃은 만큼 힘을 얻는다</li>
+        <li>회전속도: <span class="eq">날개 RPM = 바퀴 RPM ÷ 기어비</span></li>
+        <li>돌리는 힘: <span class="eq">날개 토크 = 바퀴 토크 × 기어비</span> — 속도를 잃은 만큼 힘을 얻는다</li>
       </ul>
 
       <table>
-        <thead><tr><th>기어 조합 (모터→브러시)</th><th>기어비</th><th>브러시 결과</th><th>잘 쓰는 쓰레기</th></tr></thead>
+        <thead><tr><th>구동기어★ → 피동기어</th><th>기어비</th><th>날개 결과</th><th>잘 쓰는 쓰레기</th></tr></thead>
         <tbody>
-          <tr><td>40T → 8T</td><td>1:5 가속</td><td>속도 5배 · 힘 ⅕ (속도형)</td><td>가벼운 먼지 💨</td></tr>
-          <tr><td>24T → 24T</td><td>1:1</td><td>변화 없음 (균형형)</td><td>둘 다 보통</td></tr>
-          <tr><td>8T → 40T</td><td>5:1 감속</td><td>속도 ⅕ · 힘 5배 (힘형)</td><td>무거운 알갱이 🪨</td></tr>
+          <tr><td>36T★ → 12T</td><td>1:3 <b>가속</b></td><td>속도 3배 · 힘 ⅓ (속도형)</td><td>가벼운 먼지 💨</td></tr>
+          <tr><td>20T★ → 20T</td><td>1:1 <b>등속</b></td><td>변화 없음 (균형형)</td><td>둘 다 보통</td></tr>
+          <tr><td>12T★ → 36T</td><td>3:1 <b>감속</b></td><td>속도 ⅓ · 힘 3배 (힘형)</td><td>무거운 알갱이 🪨</td></tr>
         </tbody>
       </table>
+      <p style="margin-top:10px">⭐ 규칙 정리 (마무리 퀴즈와 동일):
+        구동기어★ 톱니가 피동기어보다 <b>많으면 가속</b> · <b>적으면 감속</b> · <b>같으면 등속</b>!</p>
+
+      <h2 style="margin-top:22px">⚙️ 베벨기어 — 축의 방향을 바꾸는 기어</h2>
+      <p>바퀴 축은 <b>옆으로</b> 누워 있는데 회전날개는 <b>바닥과 평행하게(세로축 중심)</b> 돌아야 한다. 이때 <b>베벨기어</b>(우산처럼 비스듬한 톱니 기어)가
+        맞물려 <b>회전축의 방향을 90°씩 꺾어</b> 준다. 실물 청소차 모형에서는 베벨기어가 축의 방향을 모두 <b>2번</b> 바꾼다 —
+        모형을 뒤집어 기어가 어디서 방향을 꺾는지 찾아보자!</p>
+
+      <h2 style="margin-top:22px">🌀 회전 날개 수 — 많을수록 잘 치울까?</h2>
+      <p>날개가 1개면 한 바퀴에 <b>한 번만</b> 쓸지만, 3개면 <b>세 번</b> 쓴다. 같은 회전속도라도
+        날개가 많고 길수록 쓰레기를 놓치지 않고 잘 쓸어담는다 — 실물 실험(날개 1·2·3개 비교)과 같은 결과!</p>
 
       <h2 style="margin-top:22px">🤔 왜 무거운 쓰레기엔 힘형이 이길까?</h2>
-      <p>무거운 알갱이를 튕겨 올리려면 브러시가 <b>큰 힘</b>으로 밀어야 한다. 속도형 브러시는 빠르지만 힘이 약해 알갱이를 밀지 못하고 <b>그냥 지나쳐</b> 버린다.
+      <p>무거운 알갱이를 쳐내려면 날개가 <b>큰 힘</b>으로 밀어야 한다. 속도형 날개는 빠르지만 힘이 약해 알갱이를 밀지 못하고 <b>그냥 지나쳐</b> 버린다.
         반대로 가벼운 먼지는 힘이 거의 필요 없으니, <b>빨리 여러 번 쓸어담는</b> 속도형이 유리하다.</p>
       <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
-        빠른 브러시 = <b>가벼운 것 많이</b> · 힘센 브러시 = <b>무거운 것 확실히</b> → 쓰레기에 맞는 기어를 골라야 한다.
+        빠른 날개 = <b>가벼운 것 많이</b> · 힘센 날개 = <b>무거운 것 확실히</b> → 쓰레기에 맞는 기어를 골라야 한다.
       </p>
 
       <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
       <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
-        <b style="color:var(--accent)">기어비 (gear ratio)</b> — 맞물린 두 기어의 잇수 비율. 이 비율이 속도와 힘을 바꿔요.<br>
+        <b style="color:var(--accent)">구동기어 · 피동기어</b> — 힘이 들어오는 쪽(바퀴 축)에 붙어 도는 기어가 구동기어★, 맞물려 따라 도는 기어가 피동기어예요.<br>
+        <b style="color:var(--accent)">기어비 (gear ratio)</b> — 맞물린 두 기어의 톱니수 비율. 이 비율이 속도와 힘을 바꿔요.<br>
+        <b style="color:var(--purple)">가속 · 등속 · 감속</b> — 구동★ 톱니가 많으면 가속, 같으면 등속, 적으면 감속!<br>
         <b style="color:var(--orange)">돌리는 힘 (토크, torque)</b> — 물체를 돌리거나 밀어내는 힘. 무거운 것을 튕기려면 커야 해요.<br>
-        <b style="color:var(--purple)">회전속도 (RPM)</b> — 1분에 몇 바퀴 도는지. 브러시가 빠를수록 먼지를 자주 쓸어요.<br>
-        <b style="color:var(--green)">맞바꿈 (트레이드오프)</b> — 속도를 얻으면 힘을 잃고, 힘을 얻으면 속도를 잃는 관계예요. 둘 다 크게는 못 해요.
+        <b style="color:var(--purple)">회전속도 (RPM)</b> — 1분에 몇 바퀴 도는지. 날개가 빠를수록 먼지를 자주 쓸어요.<br>
+        <b style="color:var(--green)">맞바꿈 (트레이드오프)</b> — 속도를 얻으면 힘을 잃고, 힘을 얻으면 속도를 잃는 관계예요. 둘 다 크게는 못 해요.<br>
+        <b style="color:var(--green)">베벨기어</b> — 비스듬한 톱니로 맞물려 회전축의 방향을 90° 바꾸는 기어. 청소차에선 2번 바꿔요.
       </div>
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
       <ul style="line-height:2.1">
-        <li><b>① 예측</b> — 쓰레기를 "무거운 알갱이"로 두고, 어떤 기어비가 잘 쓸까 손들기</li>
-        <li><b>② 속도형 실험</b> — 속도형으로 청소 시작 → 알갱이를 밀지 못해 남는 것 확인 (효율 낮음)</li>
-        <li><b>③ 힘형 실험</b> — 힘형으로 바꿔 다시 청소 → 알갱이가 쓸려 담긴다 ("힘이 있어야 하는구나!")</li>
-        <li><b>④ 반전</b> — 쓰레기를 "가벼운 먼지"로 바꾸면? 이번엔 속도형이 더 잘 쓴다 (격자표로 비교)</li>
+        <li><b>① 예상하기</b> — "예상하기 모드"를 켜고, 기어 조합마다 가속/등속/감속을 맞혀보기 (PT 기어구조 표 그대로)</li>
+        <li><b>② 결과 확인</b> — 세 조합을 차례로 실험해 날개 빠른 순서 정하기: 속도형 1위 → 균형형 2위 → 힘형 3위</li>
+        <li><b>③ 쓰레기 실험</b> — 무거운 알갱이엔 속도형이 지고 힘형이 이기는 것 확인 ("힘이 있어야 하는구나!")</li>
+        <li><b>④ 날개 실험</b> — 회전 날개 1개→3개로 바꿔가며 어떤 게 잘 치우는지 비교 (PT 날개 미션)</li>
         <li><b>⑤ 자동 실험</b> — ⚡ 자동 실험으로 6칸을 채워 대각선으로 최적이 갈리는 것을 한눈에 확인</li>
       </ul>
 
       <div class="tip">
         <b>🧱 실제 레고 브릭큐 실험 팁</b><br>
-        · 스파이크/브릭큐 기어: 8T·16T·24T·40T — 모터축과 브러시축을 서로 다른 조합으로 연결<br>
-        · 브러시 축에 표시 테이프를 붙여 <b>10초 동안 회전수를 직접 세기</b> — 속도형이 훨씬 많이 돈다<br>
+        · 스파이크/브릭큐 기어: 8T·16T·24T·40T — 바퀴축과 날개축을 서로 다른 조합으로 연결<br>
+        · 날개 축에 표시 테이프를 붙여 <b>10초 동안 회전수를 직접 세기</b> — 속도형이 훨씬 많이 돈다<br>
         · 가벼운 종이조각과 무거운 콩·구슬을 바닥에 뿌리고, 기어비를 바꿔가며 무엇이 잘 쓸리는지 관찰<br>
-        · 힘형은 브러시가 느려도 무거운 것을 <b>밀어낼 힘</b>이 있다 — 속도만 빠른 게 최고가 아니라는 증거!
+        · 힘형은 날개가 느려도 무거운 것을 <b>밀어낼 힘</b>이 있다 — 속도만 빠른 게 최고가 아니라는 증거!
       </div>
 
       <details style="margin-top:18px">
         <summary>🔎 효율을 어떻게 계산했나 (선생님용)</summary>
         <div class="inner" style="padding:12px 16px; line-height:2">
           청소 효율 = <span class="eq">힘 조건 × 속도 조건</span> 으로 계산합니다.<br>
-          · 힘 조건 = 브러시 토크 ÷ 쓰레기가 필요로 하는 힘 (1을 넘으면 1) — 무거운 알갱이엔 힘형이 유리<br>
-          · 속도 조건 = 브러시 회전속도 ÷ 필요 회전속도, 주행이 빠를수록 조금 낮아짐 — 가벼운 먼지엔 속도형이 유리<br>
+          · 힘 조건 = 날개 토크 ÷ 쓰레기가 필요로 하는 힘 (1을 넘으면 1) — 무거운 알갱이엔 힘형이 유리<br>
+          · 속도 조건 = 날개 회전속도 ÷ 필요 회전속도, 주행이 빠를수록 조금 낮아짐 — 가벼운 먼지엔 속도형이 유리<br>
           <span style="color:var(--dim)">두 조건을 곱하므로, 쓰레기에 딱 맞는 기어를 골라야 효율이 높아집니다.</span>
         </div>
       </details>
@@ -324,7 +370,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
-         grassGround, dirtTrack, distanceRuler, makeCar, makeTree, makeCloud, makeRock } from '../vendor/ctm-3d.js';
+         grassGround, dirtTrack, distanceRuler, makeTree, makeCloud, makeRock } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const redraws = {};
@@ -446,11 +492,12 @@ function picker(container, onChange) {
 }
 
 /* ── 물리 모델 ── */
-// 공식: 브러시 RPM = 모터 RPM(90) ÷ 기어비 · 토크 = 모터 토크(60) × 기어비 (원리표와 정확히 일치)
+// 공식: 날개 RPM = 바퀴 RPM(90, 미는 속도) ÷ 기어비 · 토크 = 바퀴 토크(60) × 기어비 — 무동력, 밀어서 구동
+// 톱니수는 브릭큐 프라임 실물 부품(36·28·20·12T) 기준 — PT 기어구조 실험의 가속/등속/감속 3조합
 const GEARS = {
-  speed:   { label: '속도형', gearRatio: 0.2, brushRPM: 450, torque: 12,  color: '#4da3ff' },
-  balance: { label: '균형형', gearRatio: 1.0, brushRPM: 90,  torque: 60,  color: '#c792ea' },
-  power:   { label: '힘형',   gearRatio: 5.0, brushRPM: 18,  torque: 300, color: '#ff9046' },
+  speed:   { label: '속도형', drive: 36, driven: 12, gearRatio: 1 / 3, brushRPM: 270, torque: 20,  result: '가속', color: '#4da3ff' },
+  balance: { label: '균형형', drive: 20, driven: 20, gearRatio: 1.0,   brushRPM: 90,  torque: 60,  result: '등속', color: '#c792ea' },
+  power:   { label: '힘형',   drive: 12, driven: 36, gearRatio: 3.0,   brushRPM: 30,  torque: 180, result: '감속', color: '#ff9046' },
 };
 const DRIVE = {
   slow:   { label: '느리게', f: 0.8, dur: 8.0 },
@@ -461,12 +508,14 @@ const DEBRIS = {
   dust:   { label: '가벼운 먼지', reqT: 12,  needRPM: 110, color: '#cfd8e6', r: 3.4, emoji: '💨' },
   pellet: { label: '무거운 알갱이', reqT: 100, needRPM: 12,  color: '#b07a4a', r: 5.6, emoji: '🪨' },
 };
+const BLADE_F = { 1: 0.55, 2: 0.8, 3: 1.0 };   // 회전 날개 수 → 쓸어담는 기회 (PT 미션: 날개가 많을수록 잘 치운다)
 const clamp01 = v => Math.max(0, Math.min(1, v));
-function computeEff(gk, dk, drk) {
+function computeEff(gk, dk, drk, bk) {
   const g = GEARS[gk], d = DEBRIS[dk], dr = DRIVE[drk];
   const torqueF = clamp01(g.torque / d.reqT);
   const speedF = clamp01((g.brushRPM / d.needRPM) / dr.f);
-  return { eff: torqueF * speedF, torqueF, speedF, brushRPM: g.brushRPM, torque: g.torque };
+  const bladeF = BLADE_F[bk] ?? 1;
+  return { eff: torqueF * speedF * bladeF, torqueF, speedF, bladeF, brushRPM: g.brushRPM, torque: g.torque };
 }
 
 /* ═════════ 청소 실험 ═════════ */
@@ -480,10 +529,11 @@ function computeEff(gk, dk, drk) {
   const gearPick = picker($('pickGear'), onParam);
   const drivePick = picker($('pickDrive'), onParam);
   const debrisPick = picker($('pickDebris'), onParam);
+  const bladePick = picker($('pickBlade'), onParam);
 
   function readParams() {
-    const gk = gearPick.get(), dk = debrisPick.get(), drk = drivePick.get();
-    P = { gk, dk, drk, ...computeEff(gk, dk, drk) };
+    const gk = gearPick.get(), dk = debrisPick.get(), drk = drivePick.get(), bk = +bladePick.get();
+    P = { gk, dk, drk, bk, ...computeEff(gk, dk, drk, bk) };
     P.gear = GEARS[gk]; P.debris = DEBRIS[dk]; P.drive = DRIVE[drk];
     dur = P.drive.dur;
   }
@@ -504,7 +554,7 @@ function computeEff(gk, dk, drk) {
     $('roTrq').textContent = P.gear.torque;
     $('roTime').textContent = P.drive.dur.toFixed(1) + ' s';
     $('roCap').textContent = '—';
-    const spd = Math.min(100, P.gear.brushRPM / 450 * 100), trq = Math.min(100, P.gear.torque / 300 * 100);
+    const spd = Math.min(100, P.gear.brushRPM / 270 * 100), trq = Math.min(100, P.gear.torque / 180 * 100);
     $('barSpd').style.width = spd + '%'; $('valSpd').textContent = P.gear.brushRPM + ' RPM';
     $('barTrq').style.width = trq + '%'; $('valTrq').textContent = '×' + P.gear.gearRatio.toFixed(P.gear.gearRatio < 1 ? 1 : 0);
     markCurGrid();
@@ -514,7 +564,7 @@ function computeEff(gk, dk, drk) {
     t = 0; carX = 0; brushAng = 0; wheelAng = 0; finished = false; captured = 0; samples = [{ t: 0, cap: 0 }];
     preview();
     $('bd1').className = 'badge';
-    syncPieces();
+    syncPieces(); syncBlades(); syncGears();
     draw(); drawG();
   }
   function onParam() { if (!eng.running) { reset(); setSt('ready'); $('run1').disabled = false; $('pause1').disabled = true; } }
@@ -524,7 +574,7 @@ function computeEff(gk, dk, drk) {
     t += dt;
     if (t >= dur) { t = dur; finished = true; }
     const prog = t / dur;
-    // 브러시 접촉점 위치 (화면 좌표는 draw에서, 여기선 진행 비율로 판정)
+    // 날개 접촉점 위치 (화면 좌표는 draw에서, 여기선 진행 비율로 판정)
     const brushFrac = prog;
     brushAng += P.gear.brushRPM / 60 * Math.PI * 2 * dt;
     wheelAng += 3 * dt;
@@ -555,35 +605,146 @@ function computeEff(gk, dk, drk) {
   [[-4, 5.4, -13, 1.6], [2.5, 6.4, -15, 2.2], [8, 5.7, -12, 1.4]].forEach(([x, y, z, s]) => {
     const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
   });
-  /* 청소차 (초록) + 쓰레기통 + 브러시 */
-  const car = makeCar({ body: 0x2f7d3e, roof: 0x8fd0ff, len: 0.8, wid: 0.4 });
-  scene.add(car);
-  const hopper = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.28, 0.32),
-    new THREE.MeshStandardMaterial({ color: 0x13233a, roughness: 0.6 }));
-  hopper.position.set(-0.2, 0.42, 0); hopper.castShadow = true; car.add(hopper);
-  const hopperFill = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.26),
-    new THREE.MeshStandardMaterial({ color: 0x2ee06f, roughness: 0.7, transparent: true, opacity: 0.85 }));
-  hopperFill.position.set(-0.2, 0.33, 0); hopperFill.scale.y = 0.02; car.add(hopperFill);
-  const hopperLab = textSprite('쓰레기통', { size: 28, color: '#cfe0ff', bg: 'rgba(8,12,22,.6)', scale: 0.0034 });
-  hopperLab.position.set(-0.2, 0.72, 0); car.add(hopperLab);
-  // 지지 암 + 회전 브러시 (앞쪽 바닥)
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.045, 0.045),
-    new THREE.MeshStandardMaterial({ color: 0x3a4661, roughness: 0.5 }));
-  arm.position.set(0.5, 0.22, 0); arm.rotation.z = -0.35; car.add(arm);
-  const brush = new THREE.Group();
-  brush.position.set(0.64, 0.15, 0); car.add(brush);
+  /* 청소차 — 실물 조립도와 동일: 오픈 프레임 + 바닥 수평 회전날개 (무동력 — 밀면 바퀴→기어→베벨→날개) */
+  const car = new THREE.Group(); scene.add(car);
+  const wheels = [];
+  const gearA = new THREE.Group(), gearB = new THREE.Group();   // 구동기어★(회색 28T) · 피동기어(베이지 20T)
   {
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 12),
-      new THREE.MeshStandardMaterial({ color: 0x5b6982, roughness: 0.4 }));
-    hub.rotation.x = Math.PI / 2; brush.add(hub);
-    const bristleMat = new THREE.MeshStandardMaterial({ color: 0xe8c07a, roughness: 0.8 });
-    for (let k = 0; k < 8; k++) {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.28), bristleMat);
-      b.rotation.z = k * Math.PI / 8; brush.add(b);
+    const beamB = new THREE.MeshStandardMaterial({ color: 0x2f6fd4, roughness: 0.5 });
+    const beamG = new THREE.MeshStandardMaterial({ color: 0x2e8f4e, roughness: 0.5 });
+    [-0.16, 0.16].forEach(z => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.07, 0.07), beamB);
+      b.position.set(-0.05, 0.16, z); b.castShadow = true; car.add(b);
+    });
+    [-0.34, 0.26].forEach(x => {
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.4), beamG);
+      c.position.set(x, 0.21, 0); car.add(c);
+    });
+    // 바퀴 4개 (흰 림 + 검은 타이어 + 빨간 스포크)
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2e, roughness: 0.85 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xf0f3f8, roughness: 0.35 });
+    const spokeMat = new THREE.MeshStandardMaterial({ color: 0xd44a4a, roughness: 0.5 });
+    [[-0.28, -0.24], [-0.28, 0.24], [0.2, -0.24], [0.2, 0.24]].forEach(([x, z]) => {
+      const w = new THREE.Group();
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.07, 20), tireMat);
+      tire.rotation.x = Math.PI / 2; tire.castShadow = true; w.add(tire);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.075, 14), rimMat);
+      rim.rotation.x = Math.PI / 2; w.add(rim);
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 0.08), spokeMat);
+      w.add(spoke);
+      w.position.set(x, 0.13, z); car.add(w); wheels.push(w);
+    });
+    // 지지 암 + 수직축 (베벨기어가 바퀴의 가로축을 세로축으로 꺾는다)
+    const shaftArm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.055), beamG);
+    shaftArm.position.set(0.38, 0.31, 0); car.add(shaftArm);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 10),
+      new THREE.MeshStandardMaterial({ color: 0x8a94a6, roughness: 0.4 }));
+    shaft.position.set(0.54, 0.2, 0); car.add(shaft);
+    car.add(gearA); car.add(gearB);   // 크기·위치는 syncGears()가 선택한 기어비에 맞춰 만든다
+    // 레고 미니피겨 운전사 — 프레임 위에 앉아 앞을 보며 운전
+    {
+      const skin = new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.5 });
+      const shirt = new THREE.MeshStandardMaterial({ color: 0xd44a4a, roughness: 0.55 });
+      const pants = new THREE.MeshStandardMaterial({ color: 0x2f6fd4, roughness: 0.6 });
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2e, roughness: 0.5 });
+      const fig = new THREE.Group();
+      // 앉은 다리 — 허벅지 앞으로, 종아리 아래로
+      [-0.045, 0.045].forEach(z => {
+        const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.045, 0.05), pants);
+        thigh.position.set(0.05, 0.025, z); fig.add(thigh);
+        const shin = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.1, 0.05), pants);
+        shin.position.set(0.1, -0.04, z); fig.add(shin);
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.035, 0.05), capMat);
+        shoe.position.set(0.115, -0.1, z); fig.add(shoe);
+      });
+      // 엉덩이 + 몸통
+      const hip = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.11), pants);
+      hip.position.set(0, 0.03, 0); fig.add(hip);
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.065, 0.14, 4, 1), shirt);
+      torso.rotation.y = Math.PI / 4; torso.scale.z = 0.75; torso.position.set(0, 0.13, 0); torso.castShadow = true; fig.add(torso);
+      // 팔 — 앞으로 뻗어 프레임(핸들)을 잡음
+      [-0.07, 0.07].forEach(z => {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.035), shirt);
+        arm.position.set(0.08, 0.15, z); arm.rotation.z = -0.35; fig.add(arm);
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), skin);
+        hand.position.set(0.145, 0.125, z); fig.add(hand);
+      });
+      // 머리 + 얼굴 + 캡모자
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.07, 16), skin);
+      head.position.set(0, 0.245, 0); fig.add(head);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+      [-0.018, 0.018].forEach(z => {
+        const e = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 6), eyeMat);
+        e.position.set(0.041, 0.253, z); fig.add(e);
+      });
+      const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.005, 0.02), eyeMat);
+      mouth.position.set(0.044, 0.228, 0); fig.add(mouth);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.049, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), capMat);
+      cap.position.set(0, 0.275, 0); fig.add(cap);
+      const brim = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.045), capMat);
+      brim.position.set(0.05, 0.275, 0); fig.add(brim);
+      fig.position.set(-0.16, 0.22, 0);   // 프레임 뒤쪽에 앉아 앞(+x, 날개 방향)을 본다
+      car.add(fig);
     }
+  }
+  // 바닥 수평 회전날개 — 검은 기어 허브 + 빨간 액슬 (PT 사진 그대로, 세로축 중심 회전)
+  const blade = new THREE.Group();
+  blade.position.set(0.54, 0.055, 0); car.add(blade);
+  {
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.045, 24),
+      new THREE.MeshStandardMaterial({ color: 0x14171f, roughness: 0.6 }));
+    hub.castShadow = true; blade.add(hub);
+    const teeth = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.018, 8, 28),
+      new THREE.MeshStandardMaterial({ color: 0x2a3040, roughness: 0.8 }));
+    teeth.rotation.x = Math.PI / 2; blade.add(teeth);
+    const axleMat = new THREE.MeshStandardMaterial({ color: 0xd43b3b, roughness: 0.5 });
+    for (let k = 0; k < 3; k++) {
+      const a = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.03, 0.03), axleMat);
+      a.rotation.y = k * Math.PI / 3; a.userData.blade = k; blade.add(a);
+    }
+  }
+  // 회전 날개 수 반영 — 빨간 액슬 1~3개 (실물 날개 미션과 동일)
+  function syncBlades() {
+    blade.children.forEach(o => { if (o.userData.blade != null) o.visible = o.userData.blade < P.bk; });
+  }
+  // 기어 (수평으로 누워 위에서 원판이 보임) — 톱니수에 비례한 크기
+  function mkGear(T, color, group) {
+    const r = 0.02 + T * 0.0022;   // 36T→0.10 · 20T→0.064 · 12T→0.046
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.9, r * 0.9, 0.035, 24),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+    group.add(body);
+    const teeth = new THREE.Mesh(new THREE.TorusGeometry(r, 0.013, 8, 28),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.75 }));
+    teeth.rotation.x = Math.PI / 2; group.add(teeth);
+    [0, Math.PI / 2].forEach(a => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(r * 1.6, 0.012, 0.02),
+        new THREE.MeshStandardMaterial({ color: 0x3a4661, roughness: 0.5 }));
+      m.rotation.y = a; m.position.y = 0.024; group.add(m);   // 십자 마커 — 회전이 보이게
+    });
+    return r;
+  }
+  // 선택한 기어비에 맞춰 3D 기어 크기·위치 재구성 — 등속이면 같은 크기, 가속이면 큰★→작은
+  function syncGears() {
+    [gearA, gearB].forEach(g => { while (g.children.length) { const o = g.children.pop(); o.geometry?.dispose(); o.material?.dispose(); } });
+    const rA = mkGear(P.gear.drive, 0x9aa3ad, gearA);     // 구동기어★ (회색)
+    const rB = mkGear(P.gear.driven, 0xd9c08a, gearB);    // 피동기어 (베이지, 수직축 위)
+    gearB.position.set(0.54, 0.36, 0);
+    gearA.position.set(0.54 - (rA + rB - 0.005), 0.36, 0);
   }
   /* 쓰레기 12개 (먼지 클러스터 / 알갱이) */
   const X_OF = frac => 0.5 + frac * 5.2;                  // frac → 월드 x (판정과 동일 비율)
+  const FINISH_X = X_OF(1) + 0.55;                        // 도착선 안쪽 (쳐낸 쓰레기가 모이는 곳)
+  // 출발선·도착선 (PT 확장 미션: 도착선 안에 쓰레기 모으기)
+  {
+    const startLine = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.012, 2.0), new THREE.MeshBasicMaterial({ color: 0x4d7fd4 }));
+    startLine.position.set(X_OF(0) - 0.3, 0.012, 0); scene.add(startLine);
+    const startLab = textSprite('출발선', { size: 26, color: '#9fc4ff', bg: 'rgba(8,12,22,.6)', scale: 0.0032 });
+    startLab.position.set(X_OF(0) - 0.3, 0.2, 1.2); scene.add(startLab);
+    const finLine = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.012, 2.0), new THREE.MeshBasicMaterial({ color: 0xd44a4a }));
+    finLine.position.set(X_OF(1) + 0.35, 0.012, 0); scene.add(finLine);
+    const finLab = textSprite('도착선', { size: 26, color: '#ff9a94', bg: 'rgba(8,12,22,.6)', scale: 0.0032 });
+    finLab.position.set(X_OF(1) + 0.35, 0.2, 1.2); scene.add(finLab);
+  }
   const dustMat = new THREE.MeshStandardMaterial({ color: 0xcfd8e6, roughness: 0.9, transparent: true });
   const pelletMat = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: 0.7, transparent: true });
   const pieceMeshes = [];
@@ -604,7 +765,7 @@ function computeEff(gk, dk, drk) {
     pieces.forEach((pc, i) => {
       const g = pieceMeshes[i];
       g.visible = true;
-      g.position.set(X_OF(pc.frac), 0, (i % 3 - 1) * 0.42);
+      g.position.set(X_OF(pc.frac), 0, (i % 3 - 1) * 0.3);
       g.userData.dust.visible = (P.dk === 'dust');
       g.userData.pellet.visible = (P.dk === 'pellet');
       g.traverse(o => { if (o.material) o.material.opacity = 1; });
@@ -629,25 +790,23 @@ function computeEff(gk, dk, drk) {
     const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
     const prog = dur ? Math.min(1, t / dur) : 0;
     const brushX = X_OF(prog);
-    car.position.x = brushX - 0.64;                      // 브러시 접촉점 기준
-    car.userData.wheels.forEach(w => w.rotation.z = -car.position.x / car.userData.wheelR);
-    brush.rotation.z = -brushAng;
-    const fillK = Math.max(0.02, captured / TOTAL);
-    hopperFill.scale.y = fillK;
-    hopperFill.position.y = 0.3 + 0.11 * fillK;
-    // 쓰레기 상태 반영 (포획 → 통으로 포물선, 실패 → 반투명 잔류)
+    car.position.x = brushX - 0.54;                      // 날개 접촉점 기준
+    const wheelSpin = -car.position.x / 0.13;            // 밀리는 만큼 바퀴가 돈다 (동력원!)
+    wheels.forEach(w => w.rotation.z = wheelSpin);
+    blade.rotation.y = -brushAng;                        // 수직축 → 바닥 수평 회전
+    gearB.rotation.y = -brushAng;                        // 피동기어 = 수직축과 한 몸 (날개와 같이 돈다)
+    if (P.gear) gearA.rotation.y = brushAng * P.gear.driven / P.gear.drive;   // 구동기어★ — 반대 방향, 톱니수 비대로
+    // 쓰레기 상태 반영 (날개에 맞음 → 도착선 쪽으로 쳐냄, 실패 → 반투명 잔류)
     pieces.forEach((pc, i) => {
       const g = pieceMeshes[i];
       if (!pc.judged) return;
       if (pc.captured) {
-        const dtc = t - pc.jt;
-        if (dtc < 0.7) {
-          const k = dtc / 0.7;
-          const sx = X_OF(pc.frac), tx = car.position.x - 0.2, ty = 0.62;
-          g.position.x = sx + (tx - sx) * k;
-          g.position.y = ty * k + Math.sin(k * Math.PI) * 0.5;
-          g.position.z *= (1 - k);
-        } else g.visible = false;
+        const k = Math.min(1, (t - pc.jt) / 0.7);
+        const sx = X_OF(pc.frac), sz = (i % 3 - 1) * 0.3;
+        const tx = FINISH_X + (i % 5) * 0.13 - 0.26, tz = (i % 4 - 1.5) * 0.16;
+        g.position.x = sx + (tx - sx) * k;
+        g.position.z = sz + (tz - sz) * k;
+        g.position.y = Math.abs(Math.sin(k * Math.PI * 2)) * 0.07 * (1 - k);   // 통통 튀며 밀려간다
       } else {
         g.traverse(o => { if (o.material) o.material.opacity = 0.35; });
       }
@@ -673,7 +832,7 @@ function computeEff(gk, dk, drk) {
   function drawG() {
     const vMax = Math.max(2, TOTAL) * 1.1;
     drawGraph($('gr1'), [
-      { name: '쓸어담은 쓰레기', color: '#2ee06f', pts: samples.map(s => [s.t, s.cap]) },
+      { name: '모은 쓰레기', color: '#2ee06f', pts: samples.map(s => [s.t, s.cap]) },
     ], Math.max(1, dur) * 1.04, vMax, t, '쓰레기 (개)');
   }
   function onDone() {
@@ -683,12 +842,20 @@ function computeEff(gk, dk, drk) {
     if (effPct >= 75) { bd.className = 'badge same'; bd.textContent = `✓ 청소 효율 ${effPct}% — ${P.gear.label} 기어가 ${P.debris.label}에 잘 맞아요!`; }
     else if (effPct >= 45) { bd.className = 'badge diff'; bd.textContent = `△ 청소 효율 ${effPct}% — 더 맞는 기어가 있을 거예요`; }
     else { bd.className = 'badge diff'; bd.textContent = `⚠ 청소 효율 ${effPct}% — ${P.debris.label}엔 이 기어가 안 맞아요 (${P.dk === 'pellet' ? '힘형' : '속도형'} 시도!)`; }
+    // 예상하기 결과 확인 (구동★ vs 피동 톱니수 → 가속/등속/감속)
+    if (pendingChoice != null) {
+      const ok = pendingChoice === P.gear.result;
+      bd.textContent += ok
+        ? `  ·  🙋 예상 성공! ${P.gear.drive}T★→${P.gear.driven}T = ${P.gear.result}`
+        : `  ·  예상과 달랐네? ${P.gear.drive}T★→${P.gear.driven}T는 ${P.gear.result}!`;
+      pendingChoice = null;
+    }
     // 격자 기록 (분석값 저장 — 노이즈 없는 예측값)
     recordGrid(P.gk, P.dk, Math.round(P.eff * 100));
     // 로그
     const tb = $('tb1').querySelector('tbody');
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.gear.label}</td><td class="cond">${P.drive.label}</td>` +
+    tr.innerHTML = `<td>${++runCount}</td><td class="cond">${P.gear.label}</td><td class="cond">날개${P.bk}</td>` +
       `<td class="cond">${P.dk === 'dust' ? '먼지' : '알갱이'}</td><td>${effPct}%</td><td>${dur.toFixed(1)}s</td>`;
     tb.prepend(tr);
     while (tb.children.length > 8) tb.removeChild(tb.lastChild);
@@ -729,7 +896,7 @@ function computeEff(gk, dk, drk) {
     const tick = () => {
       if (i >= combos.length) { $('autoBtn').disabled = false; return; }
       const [gk, dk] = combos[i++];
-      const { eff } = computeEff(gk, dk, drk);
+      const { eff } = computeEff(gk, dk, drk, +bladePick.get());
       const td = $('gridTbl').querySelector(`td[data-g="${gk}"][data-d="${dk}"]`);
       td.style.transition = 'background .2s'; td.style.background = 'rgba(77,163,255,.25)';
       td.textContent = Math.round(eff * 100) + '%';
@@ -742,7 +909,26 @@ function computeEff(gk, dk, drk) {
   const setSt = statusUI($('led1'), $('st1'));
   const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt });
 
-  $('run1').onclick = () => { if (finished) reset(); eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸'; };
+  // 예상하기 모드 (PT 기어구조 실험: 예상하기 → 결과 확인하기)
+  let pendingChoice = null;
+  function startRun() {
+    if (finished) reset();
+    eng.start(); $('run1').disabled = true; $('pause1').disabled = false; $('pause1').textContent = '⏸';
+  }
+  $('run1').onclick = () => {
+    if (eng.running) return;
+    if ($('predictMode').checked && pendingChoice == null) {
+      readParams();
+      $('predGear').textContent = P.gear.drive + 'T';
+      $('predGear2').textContent = P.gear.driven + 'T';
+      $('predict').classList.add('on');
+      return;
+    }
+    startRun();
+  };
+  [['predAcc', '가속'], ['predEq', '등속'], ['predDec', '감속']].forEach(([id, ans]) => {
+    $(id).onclick = () => { $('predict').classList.remove('on'); pendingChoice = ans; startRun(); };
+  });
   $('pause1').onclick = () => {
     if (eng.running) { eng.pause(); $('pause1').textContent = '▶'; }
     else { eng.start(); $('pause1').textContent = '⏸'; }

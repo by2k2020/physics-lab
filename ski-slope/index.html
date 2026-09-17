@@ -177,6 +177,9 @@
           <button data-i="1" class="on">보통</button>
           <button data-i="2">가파름</button>
         </div></div>
+      <div class="toggle-row" style="border-top:none; border:1px solid var(--border); border-radius:9px; background:rgba(77,163,255,.07); padding:9px 12px; margin:2px 0 6px">
+        <input type="checkbox" id="air1"><label for="air1">💨 공기저항 켜기 (교육용 과장)</label>
+      </div>
       <div class="ctl-row" style="margin-top:2px">
         <button id="autoScan" style="flex:1">⚡ 자동 실험 — 표 한 번에 채우기</button>
         <button id="clearMx">지우기</button>
@@ -197,9 +200,6 @@
         <summary>⚙️ 선생님 설정</summary>
         <div class="inner">
           <div class="toggle-row" style="border-top:none">
-            <input type="checkbox" id="air1"><label for="air1">공기저항 켜기 (교육용 과장)</label>
-          </div>
-          <div class="toggle-row">
             <input type="checkbox" id="snow1" checked><label for="snow1">❄️ 눈 내리기 (화면이 끊기면 끄기)</label>
           </div>
           <div class="speed-row"><span>재생 속도</span>
@@ -500,7 +500,7 @@ function makeSnowfall(scene, box) {
 
 /* ═════════ 실험 1 · 3D 스키 슬로프 ═════════ */
 const E1 = (() => {
-  const K_AIR = 1.2;   // 교육용 과장 공기저항 (kg 스케일)
+  const K_AIR = 8;   // 교육용 과장 공기저항 (kg 스케일) — 활강 구간에서도 무게 차이가 보이는 크기
   let P = {}, S = null, t = 0, samples = [], finished = false, running = false;
   let followCam = false;   // 기본: 전체 화면 (추적은 버튼)
 
@@ -610,7 +610,7 @@ const E1 = (() => {
     top.position.set(-h * 0.175, h - 0.15, 0);
     top.receiveShadow = true; terrain.add(top);
     // 주변 설원
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(span * 4 + 60, span * 3 + 40), snowSideMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(span * 4 + 60, span * 5 + 40), snowSideMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(span * 0.4, -0.32, 0);
     ground.receiveShadow = true; terrain.add(ground);
@@ -688,13 +688,16 @@ const E1 = (() => {
       return grp;
     }
     for (let i = 0; i < 7; i++) {
-      const m = makeMountain(span * (0.3 + Math.random() * 0.3), h * (1.2 + Math.random() * 1.2), mMat);
-      m.position.set(-span * 0.3 + i * span * 0.28, -0.3, -(TW / 2 + h * 1.8 + Math.random() * h));
+      const r = span * (0.22 + Math.random() * 0.2);
+      const m = makeMountain(r, h * (0.9 + Math.random() * 0.8), mMat);
+      // z는 산 가장자리(중심-r) 기준 — 반지름 큰 산이 트랙을 덮지 않게
+      m.position.set(-span * 0.5 + i * span * 0.35, -0.3, -(TW / 2 + r + h * 4 + Math.random() * h * 2));
       terrain.add(m);
     }
     for (let i = 0; i < 5; i++) {   // 더 먼 배경 능선 (옅은 색, 큰 실루엣)
-      const m = makeMountain(span * (0.5 + Math.random() * 0.4), h * (2.0 + Math.random() * 1.4), mFarMat);
-      m.position.set(-span * 0.5 + i * span * 0.5, -0.3, -(TW / 2 + h * 3.6 + Math.random() * h * 1.5));
+      const r = span * (0.35 + Math.random() * 0.25);
+      const m = makeMountain(r, h * (1.3 + Math.random() * 0.9), mFarMat);
+      m.position.set(-span * 0.7 + i * span * 0.6, -0.3, -(TW / 2 + r + h * 7 + Math.random() * h * 3));
       terrain.add(m);
     }
     // 결승선 (슬로프 하단) — 체크무늬 지면 라인 + 게이트 배너

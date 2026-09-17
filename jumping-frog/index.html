@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>뜀뛰는 개구리 — 지렛대 발판 · 브릭큐 프라임 · 코딩더메이커</title>
+<title>뜀뛰는 개구리 — 스프링 발판 · 브릭큐 프라임 · 코딩더메이커</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐸</text></svg>">
 <style>
   :root {
@@ -140,7 +140,7 @@
   <div class="topbar">
     <div>
       <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 12차시</div>
-      <div class="title">🐸 뜀뛰는 개구리 — 지렛대 발판으로 튕기기<span class="t3d">3D</span></div>
+      <div class="title">🐸 뜀뛰는 개구리 — 스프링 발판으로 튕기기<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-tab="game">🎮 발판 튕기기</button>
@@ -167,13 +167,13 @@
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
-      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 지렛대를 누르고 튕겨!</span></div>
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 스프링을 눌렀다 놓아 튕겨!</span></div>
       <div class="ctl-row">
         <button class="primary" id="btnJump">🐸 튕기기!</button>
         <button id="btnRestart">↺ 처음부터</button>
       </div>
       <h3>발판 조절 — 딱 3가지만!</h3>
-      <div class="param"><label>💪 지렛대 누름 힘 · 1~5단 <b id="v_press">3</b></label>
+      <div class="param"><label>💪 스프링 누름(압축) · 1~5단 <b id="v_press">3</b></label>
         <div class="srow"><button class="step" id="pressDn">◀</button><input type="range" id="press" min="1" max="5" value="3" step="1"><button class="step" id="pressUp">▶</button></div>
         <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="gaugeFill"></div><span class="gauge-txt" id="gaugeTxt">—</span></div></div></div>
       <div class="param"><label>📐 발판 각도 (튀는 방향) <b id="v_ang">중간 45°</b></label>
@@ -202,7 +202,7 @@
       </div>
       <table id="tb"></table>
       <div class="predict" style="margin-top:13px">
-        <div class="q">🤔 <b>맞혀 봐!</b> 누름 힘을 <b>2단 → 4단</b>으로 2배 하면, 딱 <b>2배</b> 멀리 튈까?</div>
+        <div class="q">🤔 <b>맞혀 봐!</b> 스프링 누름을 <b>2단 → 4단</b>으로 2배 하면, 딱 <b>2배</b> 멀리 튈까?</div>
         <div class="ox-row">
           <button class="pickO" id="btnO">⭕ 응, 2배!</button>
           <button class="pickX" id="btnX">❌ 아니야!</button>
@@ -217,7 +217,7 @@
     <div class="theory-box">
       <div class="brief-card">
         <h2>👨‍👩‍👧 학부모님께</h2>
-        <p>이번 12차시에는 <b>지렛대(레버)</b>를 눌러 발판을 튕겨 개구리를 점프시키는 브릭큐 프라임 메커니즘으로,
+        <p>이번 12차시는 브릭큐 프라임 <b>프로젝트2 — 스프링 구동 메커니즘</b>입니다. 스프링을 눌러 두었다 놓으면 발판이 개구리를 튕겨 올리는 모델로,
           눌러서 저장한 <b>탄성 위치에너지</b>가 <b>운동에너지</b>로 바뀌며 포물선을 그리는 원리를 실험했습니다.
           누름 힘과 발판 각도를 바꿔 가며 점프 거리를 표로 기록하고, 누름 힘을 2배로 하면 거리는 약 <b>4배</b>가
           된다(에너지는 누름 힘의 <b>제곱</b>에 비례)는 것을 아이가 직접 확인했습니다. 발판 각도는 <b>45°</b>에서 가장 멀리 나갑니다.</p>
@@ -225,18 +225,19 @@
       <div class="term-card">
         <h2>🎓 오늘 배운 물리 용어</h2>
         <ul>
-          <li>⚖️ <b>지렛대(레버)</b> — 받침점을 중심으로 한쪽을 누르면 반대쪽이 튀어오르며 힘을 전달하는 도구</li>
-          <li>⚡ <b>탄성 위치에너지</b> — 발판을 눌러 놓았을 때 그 안에 저장되는 에너지 (누름 힘의 제곱에 비례)</li>
+          <li>🌀 <b>스프링(용수철)</b> — 누르거나 당기면 원래 모양으로 돌아가려는 <b>탄성력</b>이 생기는 부품. 핀볼 플리퍼·개구리 발판의 힘의 원천</li>
+          <li>⚡ <b>탄성 위치에너지</b> — 스프링을 눌러 놓았을 때 그 안에 저장되는 에너지. 누른 길이의 <b>제곱</b>에 비례 <span class="eq">E = ½·k·x²</span></li>
           <li>🏃 <b>운동에너지</b> — 움직이는 물체가 가진 에너지, 개구리가 튀어나갈 때의 에너지</li>
           <li>🔄 <b>에너지 전환</b> — 저장된 탄성 위치에너지가 운동에너지로 모양을 바꾸는 것</li>
           <li>🌈 <b>포물선 운동</b> — 비스듬히 튀어오른 물체가 곡선(포물선)을 그리며 나는 운동, 45°에서 가장 멀리!</li>
         </ul>
       </div>
-      <h2>⚖️ 지렛대 발판 — 누른 만큼 힘이 쌓여</h2>
-      <p>발판을 누르면 원래대로 되돌아가려는 <b>탄성력</b>이 생기고, 발판 속에 <b>탄성 위치에너지</b>가 저장돼.
-        손을 놓으면 저장된 에너지가 개구리를 밀어내는 <b>운동에너지</b>로 바뀌면서 개구리가 튀어나가!</p>
+      <h2>🌀 스프링 발판 — 누른 만큼 힘이 쌓여</h2>
+      <p>스프링을 누르면 원래 길이로 되돌아가려는 <b>탄성력</b>이 생기고, 스프링 속에 <b>탄성 위치에너지</b>가 저장돼.
+        손을 놓으면 스프링이 순식간에 펴지면서 저장된 에너지가 개구리를 밀어 올리는 <b>운동에너지</b>로 바뀌어!
+        핀볼 플리퍼의 스프링, 지난 시간의 발사 장치와 똑같은 원리야.</p>
       <ul>
-        <li>세게 누를수록 에너지가 <b>훨씬 많이</b> 쌓여 — 누름 2배면 에너지는 <b>4배</b>! <span class="eq">E ∝ 누름²</span></li>
+        <li>많이 누를수록 에너지가 <b>훨씬 많이</b> 쌓여 — 누른 길이 2배면 에너지는 <b>4배</b>! <span class="eq">E = ½kx² ∝ x²</span></li>
         <li>그래서 날아가는 거리도 <b>약 4배</b> (2배가 아니야!)</li>
         <li>무거운 개구리는? 같은 힘이라도 천천히, <b>짧게</b> 튀어 <span class="eq">v = √(2E ÷ m)</span></li>
       </ul>
@@ -254,12 +255,13 @@
       <p>재미있는 비밀: <b>낮게(30°)와 높게(60°)는 거리가 똑같아!</b> 거리표를 채워서 눈으로 확인해 봐.</p>
       <div class="tip">
         <b>🧱 실제 브릭큐 프라임 실험 팁</b><br>
-        · 지렛대 발판에 개구리를 올리고 <b>누름 단수</b>를 정해서 튕겨 봐 (1단~5단)<br>
+        · 스프링 발판에 개구리를 올리고 <b>누른 칸 수(스터드)</b>를 정해서 놓아 봐 (1칸~5칸)<br>
+        · 스프링을 플리퍼(지렛대)에 연결하면 핀볼처럼 튕길 수도 있어 — 설계는 자유!<br>
         · 바닥에 자를 붙여 놓고 <b>착지 지점까지 거리를 재서</b> 표에 적어 — 시뮬처럼 누름×각도 표를 만들면 최고!<br>
         · 같은 누름으로 3번 재서 평균을 내면 더 정확해<br>
         · 개구리에 브릭을 얹어 무겁게 만들면? 같은 발판인데 왜 덜 튀는지 <span class="eq">v=√(2E/m)</span>로 생각해 보기
       </div>
-    <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2><ul style="line-height:2.1"><li><b>① 예측</b> — "레버를 2배 세게 누르면 개구리는 2배 멀리 뛸까?" 손들기</li><li><b>② 첫 점프</b> — 약하게 눌러 한 번 — 거리 확인</li><li><b>③ 2배 실험</b> — 2배로 눌러 — "4배 멀리 갔어!" (제곱의 비밀)</li><li><b>④ 각도 실험</b> — 발판 각도를 바꿔 최적각 찾기 — 45°가 최고!</li><li><b>⑤ 정복 도전</b> — ⭐ 목표 발판 4개를 전부 정복!</li></ul>
+    <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2><ul style="line-height:2.1"><li><b>① 예측</b> — "스프링을 2배 더 누르면 개구리는 2배 멀리 뛸까?" 손들기</li><li><b>② 첫 점프</b> — 약하게 눌러 한 번 — 거리 확인</li><li><b>③ 2배 실험</b> — 2배로 눌러 — "4배 멀리 갔어!" (제곱의 비밀)</li><li><b>④ 각도 실험</b> — 발판 각도를 바꿔 최적각 찾기 — 45°가 최고!</li><li><b>⑤ 정복 도전</b> — ⭐ 목표 발판 4개를 전부 정복!</li></ul>
       </div>
   </section>
 </div>
@@ -281,13 +283,13 @@ const PULL_MAX = 5;
 const ANGLES = [30, 45, 60];
 const ANG_NAME = { 30: '낮게', 45: '중간', 60: '높게' };
 const SLOWMO = 0.5;
-const LOAD_DUR = 0.2;                   // 지렛대 스냅(튕김) 시간(초)
+const LOAD_DUR = 0.2;                   // 스프링 방출(튕김) 시간(초)
 
 /* ── 상태 ── */
 let state = 'ready';                    // ready | load | fly | splash | demo | auto
 let goalIdx = 0;                        // 지금 노리는 발판
 let cleared = false;
-let loadT = 0;                          // 지렛대 스냅 진행도
+let loadT = 0;                          // 스프링 방출 진행도
 let flight = null;
 let pastTrails = [];
 let splash = null;
@@ -298,6 +300,7 @@ let distPop = null;
 let celebrate = null;
 let auto = null;
 let lastDist = null, lastPeak = null;
+let landed = null;                      // 착지 후 연잎 위에 잠시 앉아 있기 { x, t }
 let clock = 0;
 const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -353,15 +356,18 @@ function refreshHud() {
 function doJump() {
   if (state !== 'ready' || cleared) return;
   state = 'load';
-  loadT = 0;
+  loadT = 0; landed = null;
   setBadge('');
-  setStatus('run', '지렛대 스냅! 튕기는 중...');
+  setStatus('run', '스프링 방출! 튕기는 중...');
   $('btnJump').disabled = true;
 }
 function launchNow() {
   const p = params();
   const rad = p.angDeg * Math.PI / 180;
-  flight = { x0: START_X, vx: p.v * Math.cos(rad), vy: p.v * Math.sin(rad), t: 0, pts: [[START_X, 0]], peak: 0, p };
+  const vx = p.v * Math.cos(rad), vy = p.v * Math.sin(rad);
+  flight = { x0: START_X, vx, vy, t: 0, pts: [[START_X, 0]], peak: 0, p,
+    dist: vx * (2 * vy / G), h0: cupWorld().y };   // h0: 발사 순간 발판 높이 (궤적·개구리 렌더 기준)
+  landed = null;
   state = 'fly';
   setStatus('run', '점프 중!');
 }
@@ -372,10 +378,11 @@ function landAt(x) {
   $('ro_h').textContent = Math.round(lastPeak) + ' cm';
   const padHit = PADS.findIndex(c => Math.abs(x - c) <= PAD_HALF);
   const ok = padHit === goalIdx;
-  pastTrails.push({ pts: flight.pts, ok });
+  pastTrails.push({ pts: flight.pts, ok, h0: flight.h0, x0: flight.x0, dist: flight.dist });
   if (pastTrails.length > 8) pastTrails.shift();
   recordGrid(flight.p, lastDist);
   distPop = { x, dist: lastDist, t: 0 };
+  if (padHit >= 0) landed = { x, t: 0 };   // 연잎에 앉아 있다가 다음 튕기기 전에 발판으로 복귀
   if (padHit === goalIdx) {
     padFx.push({ x: PADS[padHit], t: 0 });
     rings.push({ x: PADS[padHit], t: 0 });
@@ -415,10 +422,10 @@ function resetToLauncher() {
 }
 function restart() {
   goalIdx = 0; cleared = false;
-  state = 'ready'; flight = null; splash = null; demo = null; auto = null; loadT = 0;
+  state = 'ready'; flight = null; splash = null; demo = null; auto = null; loadT = 0; landed = null;
   padFx = []; rings = []; distPop = null; celebrate = null;
   setBadge('');
-  setStatus('', '준비 — 지렛대를 누르고 튕겨!');
+  setStatus('', '준비 — 스프링을 눌렀다 놓아 튕겨!');
   $('btnJump').disabled = false;
   refreshHud();
 }
@@ -478,7 +485,7 @@ function runPredict(choseDouble) {
     `<span class="verdict" style="color:${correct ? 'var(--green)' : 'var(--red)'}">${correct ? '🎉 정답!' : '😲 땡!'}</span> ` +
     `누름 ${base}단 → <b>${Math.round(t1.dist)}cm</b>, ${base * 2}단 → <b>${Math.round(t2.dist)}cm</b>. ` +
     `2배가 아니라 <b style="color:var(--purple)">약 ${ratio.toFixed(0)}배</b>! ` +
-    `누름이 2배면 발판에 쌓인 힘은 2×2 = <b>4배</b>가 되거든.`;
+    `누른 길이가 2배면 스프링에 쌓인 에너지는 2×2 = <b>4배</b>가 되거든.`;
   $('btnO').classList.toggle('on', choseDouble);
   $('btnX').classList.toggle('on', !choseDouble);
 }
@@ -495,7 +502,7 @@ function startAuto() {
   setStatus('run', '⚡ 자동 실험 중 — 표를 채우고 있어!');
 }
 
-/* ═════════ 3D 무대 (밤 연못 · 지렛대 발사대) ═════════ */
+/* ═════════ 3D 무대 (밤 연못 · 스프링 발사대) ═════════ */
 const stage = document.querySelector('.stage');
 const renderer = makeRenderer(cv);
 const scene = new THREE.Scene();
@@ -543,23 +550,44 @@ const { camera, controls } = makeCamera(cv, { maxD: 18 });
     head.position.set(x, 0.66, z); scene.add(head);
   });
 }
-// 지렛대 발사대 (시소)
-const lever = new THREE.Group(); scene.add(lever);
+// 스프링 발사대 — 교안(12차시 "스프링 구동 메커니즘")대로: 받침대 위 코일 스프링을 눌러 두었다 놓으면 위 발판이 개구리를 튕긴다.
+//   발판 윗면 중심 = x 0 (발사 원점). 발판은 발사 각도(30/45/60°)만큼 기울어진 램프.
+const SPRING_L0 = 0.34;                 // 스프링 자연 길이(m)
+const SPRING_BASE_Y = 0.08;
+const springRoot = new THREE.Group(); springRoot.position.set(0, SPRING_BASE_Y, 0); scene.add(springRoot);
 {
-  const base = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.22),
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.32),
     new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.6 }));
-  base.position.set(0, 0.1, 0); base.castShadow = true; scene.add(base);
-}
-const leverBeam = new THREE.Group();
-leverBeam.position.set(0, 0.19, 0); scene.add(leverBeam);
-{
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.035, 0.14),
-    new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.5 }));
-  beam.castShadow = true; leverBeam.add(beam);
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.065, 0.05, 12),
+  base.position.set(0, 0.04, 0); base.castShadow = true; scene.add(base);
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, SPRING_L0 * 0.9, 10),
     new THREE.MeshStandardMaterial({ color: 0x5b6982, roughness: 0.5 }));
-  cup.position.set(0.24, 0.04, 0); leverBeam.add(cup);
+  post.position.set(0, SPRING_L0 * 0.45, 0); springRoot.add(post);   // 스프링 속 가이드 봉
 }
+// 코일: y 0→1 로 만들고 scale.y 로 길이를 바꾼다
+const springMesh = (() => {
+  const pts = [];
+  const TURNS = 7, N = TURNS * 14;
+  for (let i = 0; i <= N; i++) {
+    const a = i / N * Math.PI * 2 * TURNS;
+    pts.push(new THREE.Vector3(Math.cos(a) * 0.11, i / N, Math.sin(a) * 0.11));
+  }
+  const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N * 2, 0.016, 8, false);
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.4, metalness: 0.35 }));
+  m.castShadow = true; springRoot.add(m); return m;
+})();
+const springTop = new THREE.Group(); springRoot.add(springTop);       // 스프링 꼭대기 (발판이 붙는 곳)
+const plate = new THREE.Group(); springTop.add(plate);                // 발사 각도만큼 기울어진 발판
+{
+  const board = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.28),
+    new THREE.MeshStandardMaterial({ color: 0x5b6982, roughness: 0.5 }));
+  board.position.y = 0.015; board.castShadow = true; plate.add(board);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 0.28),
+    new THREE.MeshStandardMaterial({ color: 0x39435c, roughness: 0.6 }));
+  lip.position.set(-0.16, 0.045, 0); plate.add(lip);                   // 뒤턱 — 개구리가 미끄러지지 않게
+}
+const CUP_LOCAL = new THREE.Vector3(0.01, 0.03, 0);                   // 발판 윗면(개구리 발 닿는 면), 발판 로컬
+const _cupW = new THREE.Vector3();
+function cupWorld() { plate.updateMatrixWorld(); return _cupW.copy(CUP_LOCAL).applyMatrix4(plate.matrixWorld); }
 // 발판(연잎) 4 + ⭐목표 표시
 const padMeshes = PADS.map(cm => {
   const g = new THREE.Group();
@@ -585,28 +613,37 @@ for (let i = 0; i < 6; i++) {
   scene.add(f); fireflies.push(f);
 }
 // 개구리
+// 개구리 — 원점은 발바닥(y=0), 앞은 +x. 머리·몸통·뒷다리(접힌 허벅지+긴 발)·앞다리·눈·입이 옆에서 봐도 개구리로 읽히게
 function makeFrog3d() {
   const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4cae4f, roughness: 0.5 });
-  const belly = new THREE.MeshStandardMaterial({ color: 0xa8e063, roughness: 0.6 });
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.1, 18, 14), bodyMat);
-  body.scale.set(1.15, 0.85, 1); body.position.y = 0.085; body.castShadow = true; g.add(body);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 12), belly);
-  chest.scale.set(1, 0.72, 0.9); chest.position.set(0.04, 0.06, 0); g.add(chest);
-  [-0.042, 0.042].forEach(z => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10),
-      new THREE.MeshStandardMaterial({ color: 0xeafce8, roughness: 0.35 }));
-    eye.position.set(0.062, 0.165, z); g.add(eye);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-    pup.position.set(0.09, 0.169, z); g.add(pup);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4cae4f, roughness: 0.55 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x2f7d33, roughness: 0.6 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0xc9f08a, roughness: 0.65 });
+  const M = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; g.add(m); return m;
+  };
+  M(new THREE.SphereGeometry(0.1, 20, 16), bodyMat, -0.01, 0.1, 0, 1.25, 0.8, 1);                 // 몸통
+  M(new THREE.SphereGeometry(0.08, 20, 16), bellyMat, 0.02, 0.075, 0, 1.1, 0.6, 0.85);             // 배
+  M(new THREE.SphereGeometry(0.075, 20, 16), bodyMat, 0.1, 0.15, 0, 1.15, 0.8, 1.05);             // 머리
+  M(new THREE.BoxGeometry(0.1, 0.008, 0.11), darkMat, 0.155, 0.128, 0);                            // 입
+  [-0.05, 0.05].forEach(z => {
+    M(new THREE.SphereGeometry(0.036, 14, 12), bodyMat, 0.1, 0.21, z);                             // 눈두덩
+    M(new THREE.SphereGeometry(0.03, 14, 12), new THREE.MeshStandardMaterial({ color: 0xf6fff2, roughness: 0.3 }), 0.11, 0.215, z);
+    M(new THREE.SphereGeometry(0.014, 10, 8), new THREE.MeshBasicMaterial({ color: 0x0d0d0d }), 0.134, 0.218, z);   // 동공(앞 보기)
+    M(new THREE.SphereGeometry(0.005, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), 0.142, 0.226, z + 0.005);
   });
-  [-0.073, 0.073].forEach(z => {
-    const leg = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 8), bodyMat);
-    leg.scale.set(1.3, 0.7, 0.8); leg.position.set(-0.055, 0.04, z); leg.castShadow = true; g.add(leg);
+  [-0.095, 0.095].forEach(z => {
+    M(new THREE.SphereGeometry(0.055, 14, 12), darkMat, -0.09, 0.07, z, 1.25, 0.95, 0.7);          // 접힌 허벅지
+    M(new THREE.CylinderGeometry(0.02, 0.016, 0.13, 8), darkMat, -0.06, 0.035, z, 1, 1, 1).rotation.z = Math.PI / 2 - 0.5;   // 정강이
+    M(new THREE.BoxGeometry(0.13, 0.016, 0.045), bodyMat, 0.0, 0.008, z + Math.sign(z) * 0.01);   // 긴 뒷발 (앞으로)
+    M(new THREE.CylinderGeometry(0.014, 0.012, 0.09, 8), bodyMat, 0.1, 0.05, z * 0.7).rotation.z = 0.25;   // 앞다리
+    M(new THREE.BoxGeometry(0.06, 0.014, 0.035), bodyMat, 0.115, 0.007, z * 0.7);                  // 앞발
   });
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.1),
+  [[-0.04, 0.17, 0.05], [0.0, 0.18, -0.04], [-0.08, 0.15, -0.01]].forEach(([x, y, z]) =>
+    M(new THREE.SphereGeometry(0.014, 8, 6), darkMat, x, y, z, 1.4, 0.5, 1.2));                    // 등 무늬
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.11),
     new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.5 }));
-  pack.position.set(-0.09, 0.12, 0); pack.visible = false; g.add(pack);
+  pack.position.set(-0.05, 0.19, 0); pack.visible = false; pack.castShadow = true; g.add(pack);   // 무거움 = 등에 브릭
   g.userData.pack = pack;
   return g;
 }
@@ -621,7 +658,12 @@ const pastLines = Array.from({ length: 8 }, () => mkLine(0xffffff, 0.3));
 const curLine = mkLine(0x7dffb0, 0.95);
 const demoLines = [mkLine(0x8fc4ff, 0.95), mkLine(0xffd23e, 0.95)];
 const autoLine = mkLine(0xffd02e, 0.95);
-const toV3 = pts => pts.map(p => new THREE.Vector3(p[0] / 100, p[1] / 100 + 0.1, 0));
+// 궤적 렌더: 물리는 같은 높이 포물선이지만 화면에선 발판(h0)에서 출발해 연잎(0.03)에 내려앉게 높이차를 선형으로 섞는다
+const PAD_Y = 0.03;
+const toV3 = (pts, h0 = PAD_Y, x0 = 0, dist = 1) => pts.map(p => {
+  const frac = Math.max(0, Math.min(1, (p[0] - x0) / (dist || 1)));
+  return new THREE.Vector3(p[0] / 100, p[1] / 100 + h0 + (PAD_Y - h0) * frac, 0);
+});
 const dropMeshes = Array.from({ length: 26 }, () => {
   const d = new THREE.Mesh(new THREE.SphereGeometry(0.024, 6, 6),
     new THREE.MeshBasicMaterial({ color: 0x9fd4ff, transparent: true, opacity: 0.9 }));
@@ -634,7 +676,7 @@ const ringMeshes = Array.from({ length: 5 }, () => {
 });
 let popSprite = null, popRef = null;
 camPresets(camera, controls, {
-  camSide: { pos: [0.9, 1.0, 3.4], target: [0.85, 0.4, 0] },
+  camSide: { pos: [0.8, 1.0, 3.3], target: [0.8, 0.45, 0] },
   camDiag: { pos: [-1.2, 1.9, 2.7], target: [0.8, 0.3, 0] },
   camTop:  { pos: [0.9, 5.6, 0.02], target: [0.9, 0, 0] },
 }, 'camSide');
@@ -653,29 +695,40 @@ function draw() {
   const press = +$('press').value;
   frog.userData.pack.visible = (weight === 2);
   frog.scale.setScalar(weight === 2 ? 1.18 : 1);
-  // 지렛대: 누른 만큼 기울고, load 스냅 때 튕김
+  // 스프링: 누른 단수만큼 압축돼 있다가, load 스냅 때 자연 길이(살짝 초과)로 튀어 오름
   const pressK = press / PULL_MAX;
   const snap = state === 'load' ? smooth(loadT / LOAD_DUR) : 0;
-  const tilt = state === 'load' ? lerp(-0.3 * pressK - 0.12, 0.28, snap) : -0.3 * pressK - 0.12;
-  leverBeam.rotation.z = tilt;
-  // 개구리 위치
-  const cupX = 0.24 * Math.cos(tilt), cupY = 0.19 + 0.24 * Math.sin(tilt) + 0.05;
+  const compressed = SPRING_L0 * (1 - 0.55 * pressK);
+  const springLen = state === 'load' ? lerp(compressed, SPRING_L0 * 1.12, snap) : compressed;
+  springMesh.scale.y = springLen;
+  springTop.position.y = springLen;
+  const plateRot = -(90 - angDeg) * Math.PI / 180;      // 발판을 발사 각도로 기울임 (45° → 우상향 램프)
+  plate.rotation.z = plateRot;
+  const tilt = plateRot;
+  // 개구리 위치 — 발판 끝(월드 좌표)에 발을 딛고 판과 같은 각도로 앉는다
   if (state === 'fly' && flight && flight.pts.length) {
-    const last = flight.pts[flight.pts.length - 1];
+    const v = toV3([flight.pts[flight.pts.length - 1]], flight.h0, flight.x0, flight.dist)[0];
+    const vyNow = flight.vy - G * flight.t;
     frog.visible = true;
-    frog.position.set(last[0] / 100, last[1] / 100 + 0.08, 0);
-    frog.rotation.z = -0.3;
+    frog.position.copy(v);
+    frog.rotation.z = Math.atan2(vyNow, flight.vx) * 0.6;      // 올라갈 땐 고개 들고, 내려올 땐 숙이며
   } else if (state === 'splash') {
     frog.visible = false;
+  } else if (landed) {
+    frog.visible = true;
+    frog.position.set(landed.x / 100, PAD_Y + 0.01, 0);
+    frog.rotation.z = 0;
+    frog.scale.y = 1 - 0.12 * Math.max(0, 1 - landed.t * 3);  // 착지 순간 살짝 눌림
   } else {
+    const c = cupWorld();
     frog.visible = true;
     frog.rotation.z = tilt;
-    frog.position.set(cupX, cupY, 0);
+    frog.position.copy(c);
   }
   // 목표 ⭐
   if (!cleared && goalIdx < PADS.length) {
     goalStar.visible = true;
-    goalStar.position.set(PADS[goalIdx] / 100, 0.46 + Math.sin(clock * 2.4) * 0.04, -0.55);
+    goalStar.position.set(PADS[goalIdx] / 100, 0.72 + Math.sin(clock * 2.4) * 0.04, -0.55);   // 발사대 위 개구리와 안 겹치게 높이
   } else goalStar.visible = false;
   // 정복한 발판 금색 림
   padMeshes.forEach((g, i) => {
@@ -689,12 +742,13 @@ function draw() {
     if (tr && tr.pts.length > 1) {
       l.visible = true;
       l.material.color.set(tr.ok ? 0x6fe08a : 0xff7a6e);
-      l.geometry.setFromPoints(toV3(tr.pts));
+      l.geometry.setFromPoints(toV3(tr.pts, tr.h0, tr.x0, tr.dist));
     } else l.visible = false;
   });
   if (state === 'fly' && flight && flight.pts.length > 1) {
-    curLine.visible = true; curLine.geometry.setFromPoints(toV3(flight.pts));
+    curLine.visible = true; curLine.geometry.setFromPoints(toV3(flight.pts, flight.h0, flight.x0, flight.dist));
   } else curLine.visible = false;
+  const restH0 = cupWorld().y;   // 시연·자동 궤적은 현재 발판 높이에서 출발
   if (state === 'demo' && demo) {
     const segs = [demo.t1, demo.t2];
     demoLines.forEach((l, i) => {
@@ -702,14 +756,14 @@ function draw() {
       const frac = Math.max(0, Math.min(1, demo.progress - i * 0.9));
       if (tr && frac > 0.02) {
         const n = Math.max(2, Math.floor(tr.pts.length * frac));
-        l.visible = true; l.geometry.setFromPoints(toV3(tr.pts.slice(0, n)));
+        l.visible = true; l.geometry.setFromPoints(toV3(tr.pts.slice(0, n), restH0, START_X, tr.dist));
       } else l.visible = false;
     });
   } else demoLines.forEach(l => l.visible = false);
   if (state === 'auto' && auto && auto.traj) {
     const frac = Math.min(1, auto.progress);
     const n = Math.max(2, Math.floor(auto.traj.pts.length * frac));
-    autoLine.visible = true; autoLine.geometry.setFromPoints(toV3(auto.traj.pts.slice(0, n)));
+    autoLine.visible = true; autoLine.geometry.setFromPoints(toV3(auto.traj.pts.slice(0, n), restH0, START_X, auto.traj.dist));
   } else autoLine.visible = false;
   // 첨벙·물결
   dropMeshes.forEach((m, i) => {
@@ -796,7 +850,8 @@ function loop(ts) {
     if (demo.progress > 2.6) {
       state = 'ready';
       const d = demo; demo = null;
-      pastTrails.push({ pts: d.t1.pts, ok: true }, { pts: d.t2.pts, ok: true });
+      const h0 = cupWorld().y;
+      pastTrails.push({ pts: d.t1.pts, ok: true, h0, x0: START_X, dist: d.t1.dist }, { pts: d.t2.pts, ok: true, h0, x0: START_X, dist: d.t2.dist });
       if (pastTrails.length > 8) pastTrails.splice(0, pastTrails.length - 8);
       $('btnJump').disabled = cleared;
       setStatus('done', '확인 끝! 누름 2배 = 거리 약 4배');
@@ -824,6 +879,7 @@ function loop(ts) {
       }
     }
   }
+  if (landed) landed.t += dt;
   padFx.forEach(f => f.t += dt); padFx = padFx.filter(f => f.t < 1.6);
   rings.forEach(r => r.t += dt); rings = rings.filter(r => r.t < 1.5);
   if (distPop && (distPop.t += dt) > 1.9) distPop = null;

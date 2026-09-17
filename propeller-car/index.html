@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로펠러 자동차 — 바람과 베벨기어 · 브릭큐 프라임</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0e17; --panel: #121826; --panel2: #1a2234; --border: #263046;
+    --text: #e8eef7; --dim: #8b98ad; --accent: #4da3ff; --green: #2ee06f;
+    --amber: #ffb02e; --red: #ff5a52; --purple: #c792ea; --orange: #ff9046;
+    --mono: 'Cascadia Mono', 'D2Coding', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0d1322; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .crumb { font-size: 11.5px; color: var(--dim); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.3px; }
+  .t2d { font-size: 10px; background: linear-gradient(135deg,#0e7d5a,#2ee06f); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 9px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab.on { color: #fff; background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+
+  section.exp { flex: 1; display: none; min-height: 0; }
+  section.exp.on { display: flex; }
+  .stage { flex: 1; position: relative; min-width: 0; background: #070c18; }
+  canvas.scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; top: 12px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 14px; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .chip .lab { color: var(--dim); font-size: 10.5px; display: block; font-family: 'Malgun Gothic', sans-serif; font-weight: 400; }
+  .cam-row { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; }
+  .cam-row button { background: rgba(8,12,22,.72); backdrop-filter: blur(4px); color: var(--dim); border: 1px solid rgba(120,150,200,.25); border-radius: 9px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .cam-row button.on { color: var(--accent); border-color: rgba(77,163,255,.6); }
+  .badge-wrap { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; }
+  .badge { display: none; align-items: center; gap: 7px; border-radius: 24px; padding: 9px 20px; font-size: 14.5px; font-weight: 800; backdrop-filter: blur(4px); white-space: nowrap; }
+  .badge.go { display: inline-flex; background: rgba(20,60,35,.75); color: var(--green); border: 1.5px solid rgba(46,224,111,.6); box-shadow: 0 0 24px rgba(46,224,111,.25); }
+  .badge.slow { display: inline-flex; background: rgba(70,50,10,.75); color: var(--amber); border: 1.5px solid rgba(255,176,46,.6); box-shadow: 0 0 24px rgba(255,176,46,.25); }
+  .badge.stuck { display: inline-flex; background: rgba(70,20,20,.75); color: var(--red); border: 1.5px solid rgba(255,90,82,.6); box-shadow: 0 0 24px rgba(255,90,82,.25); }
+
+  .side { width: 358px; background: #0e1424; border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; flex-shrink: 0; }
+  .side h3 { font-size: 11.5px; color: var(--dim); letter-spacing: 0.6px; margin: 4px 0 10px; }
+  .side h3 small { text-transform: none; color: #5a6a85; letter-spacing: 0; }
+  .ctl-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: inherit; transition: transform .06s, border-color .15s; }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(135deg, #0e9e63, #2ee06f); border-color: #2ee06f; font-weight: 700; flex: 1; color: #06210f; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .led-box { display: flex; align-items: center; gap: 7px; background: #0c1220; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; margin-bottom: 12px; width: fit-content; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: #55617a; }
+  .led.run { background: var(--green); animation: pulse 1.1s infinite; }
+  .led.done { background: var(--accent); box-shadow: 0 0 8px rgba(77,163,255,.7); }
+  .led.pause { background: var(--amber); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,224,111,.55); } 50% { box-shadow: 0 0 0 7px rgba(46,224,111,0); } }
+  .status-txt { font-size: 12px; color: #b7c3d8; }
+  .param { margin-bottom: 13px; }
+  .param label { display: flex; justify-content: space-between; margin-bottom: 6px; color: #c6d2e6; font-size: 13px; }
+  .param label b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .pick { display: flex; gap: 6px; }
+  .pick button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; }
+  .pick button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.12); font-weight: 700; }
+  .pick.ang button { font-family: var(--mono); }
+  .pick.ang button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.12); }
+  .stepper { display: flex; align-items: center; gap: 10px; background: #0c1220; border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; }
+  .stepper button { width: 46px; height: 46px; font-size: 20px; padding: 0; border-radius: 10px; flex: none; font-weight: 700; }
+  .stepper button:disabled { opacity: 0.3; }
+  .ang-display { flex: 1; text-align: center; }
+  .ang-val { font-family: var(--mono); font-size: 27px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .ang-state { font-size: 12.5px; margin-top: 5px; font-weight: 700; }
+  .ang-hint { font-size: 11px; color: var(--dim); text-align: center; margin: 6px 2px 0; }
+  .speed-row { display: flex; gap: 6px; padding: 11px 0; border-top: 1px dashed var(--border); align-items: center; flex-wrap: wrap; }
+  .speed-row span { font-size: 11.5px; color: var(--dim); }
+  .speed-row button { padding: 4px 11px; font-size: 12px; border-radius: 7px; }
+  .speed-row button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .readout { background: #0c1220; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+  .readout .k { font-size: 10.5px; color: var(--dim); margin-bottom: 3px; }
+  .readout .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .readout .v.a { color: var(--accent); } .readout .v.b { color: var(--orange); }
+  .readout .v.g { color: var(--green); } .readout .v.r { color: var(--red); }
+  .bars { margin: 4px 0 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; color: #c6d2e6; }
+  .bar-row .lab { width: 66px; flex: none; }
+  .bar-track { flex: 1; height: 13px; background: #0c1220; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+  .bar-row .val { width: 44px; text-align: right; font-family: var(--mono); font-size: 12px; }
+  .mx-wrap { overflow-x: auto; }
+  table.mx { width: 100%; min-width: 340px; border-collapse: collapse; font-size: 11px; font-family: var(--mono); }
+  table.mx td, table.mx th { border: 1px solid var(--border); text-align: center; padding: 6px 1px; }
+  table.mx th { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 10px; font-weight: 700; padding: 5px 0; }
+  table.mx td.rlab { background: var(--panel2); color: #b9c6da; font-family: 'Malgun Gothic',sans-serif; font-size: 11px; font-weight: 700; padding: 5px 3px; white-space: nowrap; }
+  table.mx td.best { background: rgba(46,224,111,.22); color: var(--green); font-weight: 800; }
+  table.mx td.fwd { color: var(--green); }
+  table.mx td.back { color: var(--red); font-weight: 700; background: rgba(255,90,82,.12); }
+  table.mx td.stall { color: #9fb0c9; }
+  table.mx td.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.mx td.empty { color: #38445c; }
+  canvas.graph { display: block; width: 100%; height: 250px; border: 1px solid var(--border); border-radius: 10px; background: #0b101d; cursor: zoom-in; }
+  .graph-hint { font-size: 10.5px; color: var(--dim); text-align: right; margin: 4px 2px 0; }
+  #zoom { display: none; position: fixed; inset: 0; background: rgba(4,8,16,.92); z-index: 50; cursor: zoom-out; }
+  #zoom.on { display: block; }
+  #zoom .zbox { position: absolute; inset: 4% 5% 8%; background: #0b101d; border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+  #zoom canvas { width: 100%; height: 100%; display: block; }
+  #zoom .hint { position: absolute; bottom: 2.4%; left: 50%; transform: translateX(-50%); color: var(--dim); font-size: 13px; }
+
+  #theory { display: none; flex: 1; overflow-y: auto; padding: 26px 18px; }
+  #theory.on { display: block; }
+  .theory-box { max-width: 760px; margin: 0 auto; font-size: 14px; line-height: 1.85; color: #c6d2e6; }
+  .theory-box h2 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+  .theory-box .eq { font-family: var(--mono); background: #121a2c; border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; color: var(--purple); white-space: nowrap; }
+  .theory-box ul { margin: 10px 0 10px 22px; }
+  .theory-box .tip { background: rgba(77,163,255,.06); border: 1px solid rgba(77,163,255,.22); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .theory-box table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  .theory-box th, .theory-box td { border: 1px solid var(--border); padding: 7px 10px; text-align: center; }
+  .theory-box th { background: var(--panel2); color: var(--dim); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    section.exp.on { flex-direction: column; }
+    .stage { height: 54vh; flex: none; }
+    .side { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+<script src="../vendor/ctm-fx.js"></script>
+<style>
+  .t3d { font-size: 10px; background: linear-gradient(135deg,#7c3aed,#c792ea); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; margin-left: 6px; }
+  .hint3d { position: absolute; bottom: 14px; right: 14px; font-size: 11px; color: rgba(139,152,173,.75); background: rgba(8,12,22,.55); border-radius: 8px; padding: 4px 10px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
+<style>
+  .badge { white-space: normal; text-align: center; }
+  .pick.wrap { flex-wrap: wrap; }
+  .pick.wrap button { min-width: 44%; }
+  .pick.num button { font-family: var(--mono); font-size: 14px; }
+  .pick.pred button.on { border-color: var(--purple); color: var(--purple); background: rgba(199,146,234,.12); }
+  .fixed-note { font-size: 11px; color: var(--dim); margin: -4px 2px 12px; }
+  table.mx td.away { color: var(--green); }
+  table.mx td.toward { color: var(--orange); background: rgba(255,144,70,.08); }
+  table.mx td.fast { font-weight: 800; }
+  table.mx td.best { background: rgba(46,224,111,.22); color: var(--green); font-weight: 800; }
+  table.mx td.rlab { text-align: left; padding-left: 5px; }
+  @media (max-width: 600px) {
+    .cam-row { top: 64px; left: 14px; right: auto; }
+    .badge { font-size: 12.5px; padding: 7px 14px; }
+    .cam-row button { padding: 5px 9px; font-size: 11.5px; }
+    .hint3d { display: none; }
+    .chip { padding: 4px 9px; font-size: 13px; }
+  }
+  .mx-legend { font-size: 10.5px; color: var(--dim); margin: 6px 2px 0; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 19차시</div>
+      <div class="title">🌬️ 프로펠러 자동차 시뮬레이션<span class="t3d">3D</span></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="exp">실험 · 프로펠러 자동차</button>
+      <button class="tab" data-tab="theory">📖 원리</button>
+    </div>
+  </div>
+
+  <!-- ══════ 실험 ══════ -->
+  <section class="exp on" id="exp">
+    <div class="stage">
+      <canvas class="scene" id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">현재 속도</span><span id="hud_v">0.00 m/s</span></div>
+        <div class="chip" style="color:var(--orange)"><span class="lab">출발선에서</span><span id="hud_d">0.00 m</span></div>
+        <div class="chip" style="color:#9fd3ff"><span class="lab">차에 닿는 바람</span><span id="hud_w">0.0 m/s</span></div>
+      </div>
+      <div class="cam-row">
+        <button id="camSide" class="on">▶ 옆</button>
+        <button id="camTop">🕊 위</button>
+        <button id="camGear">🔍 기어</button>
+        <button id="camFollow">🚗 따라가기</button>
+      </div>
+      <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
+      <div class="badge-wrap"><span class="badge" id="bd"></span></div>
+    </div>
+    <div class="side">
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
+      <div class="ctl-row">
+        <button class="primary" id="run">▶ 선풍기 켜기!</button>
+        <button id="pause" disabled>⏸</button>
+        <button id="reset">↺</button>
+      </div>
+
+      <h3>실험 조건 <small>(바꾸는 변수)</small></h3>
+      <div class="param"><label>자동차 방향 <b id="v_face">마주보기</b></label>
+        <div class="pick" id="pickFace">
+          <button data-f="1" class="on">😀 선풍기 마주보기</button>
+          <button data-f="-1">🔙 선풍기 등지기</button>
+        </div>
+      </div>
+      <div class="param"><label>베벨기어(회색) 위치 <b id="v_gear">아래쪽</b></label>
+        <div class="pick" id="pickGear">
+          <button data-g="아래" class="on">⬇ 아래쪽</button>
+          <button data-g="위">⬆ 위쪽</button>
+        </div>
+      </div>
+      <div class="param"><label>프로펠러 날개 수 <small style="color:var(--dim)">기본 미션</small> <b id="v_bl">2개</b></label>
+        <div class="pick num" id="pickBl">
+          <button data-b="2" class="on">2</button>
+          <button data-b="3">3</button>
+          <button data-b="4">4</button>
+          <button data-b="6">6</button>
+        </div>
+      </div>
+      <div class="param"><label>날개 길이 <small style="color:var(--dim)">확장 미션</small> <b id="v_len">기본</b></label>
+        <div class="pick" id="pickLen">
+          <button data-l="기본" class="on">기본 날개</button>
+          <button data-l="긴">긴 날개 (확장)</button>
+        </div>
+      </div>
+
+      <h3>예측하기 <small>(출발 전에 골라 보세요)</small></h3>
+      <div class="param">
+        <div class="pick pred wrap" id="pickPred">
+          <button data-p="toward">← 가까워진다</button>
+          <button data-p="stay">⚪ 제자리</button>
+          <button data-p="away">멀어진다 →</button>
+          <button data-p="none" class="on">안 함</button>
+        </div>
+      </div>
+
+      <h3>같게 둘 조건 <small>(통제 변수)</small></h3>
+      <div class="param"><label>선풍기 세기 <b id="v_fan">2단</b></label>
+        <div class="pick" id="pickFan">
+          <button data-s="1">1단 (약)</button>
+          <button data-s="2" class="on">2단 (중)</button>
+          <button data-s="3">3단 (강)</button>
+        </div>
+      </div>
+      <div class="param"><label>선풍기 ↔ 출발선 거리 <b id="v_dist">1.0 m</b></label>
+        <div class="pick num" id="pickDist">
+          <button data-d="1" class="on">1.0 m</button>
+          <button data-d="1.5">1.5 m</button>
+          <button data-d="2">2.0 m</button>
+        </div>
+      </div>
+      <div class="fixed-note">교안 준비: 줄자 · 선풍기 · 마스킹테이프 — 출발선에서 앞뒤 <b>0.5 m</b>에 결승 테이프</div>
+
+      <div class="speed-row"><span>재생 속도</span>
+        <button class="on" id="spa">1×</button>
+        <button id="spb">0.5×</button>
+        <button id="spc">0.25×</button>
+      </div>
+
+      <h3>지금 차에 걸린 힘 <small>(+ 멀어지는 쪽 · − 가까워지는 쪽)</small></h3>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">바퀴 힘<br><small style="color:var(--dim)">프로펠러→기어</small></span><div class="bar-track"><div class="bar-fill" id="barDrv" style="width:0%"></div></div><span class="val" id="valDrv">—</span></div>
+        <div class="bar-row"><span class="lab">바람이 미는 힘</span><div class="bar-track"><div class="bar-fill" id="barAir" style="background:linear-gradient(90deg,#2a6fb8,#5aaaff);width:0%"></div></div><span class="val" id="valAir">—</span></div>
+        <div class="bar-row"><span class="lab">마찰 (버팀)</span><div class="bar-track"><div class="bar-fill" id="barFr" style="background:linear-gradient(90deg,#8a2a24,#ff5a52);width:0%"></div></div><span class="val" id="valFr">—</span></div>
+      </div>
+
+      <h3>측정값</h3>
+      <div class="readouts">
+        <div class="readout"><div class="k">움직인 방향</div><div class="v" id="ro_dir">—</div></div>
+        <div class="readout"><div class="k">0.5 m 걸린 시간</div><div class="v a" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">평균 속도</div><div class="v b" id="ro_avg">—</div></div>
+        <div class="readout"><div class="k">느린 / 빠른</div><div class="v" id="ro_ts" style="color:#fff">—</div></div>
+      </div>
+
+      <h3>실험 결과표 <small>(워크시트 · 방향 × 기어 × 날개 수)</small></h3>
+      <div class="mx-wrap"><table class="mx" id="matrix"></table></div>
+      <div class="mx-legend"><span style="color:var(--green)">→ 멀어짐</span> · <span style="color:var(--orange)">← 가까워짐</span> · ⚪ 제자리 · 🐇 빠름(0.25 m/s↑) 🐢 느림 · 숫자 = 0.5 m 걸린 초 · 초록 칸 = 가장 빠름<br><span id="mxCond"></span></div>
+      <div class="ctl-row" style="margin-top:10px">
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 표 전부 채우기</button>
+        <button id="clearMx">지우기</button>
+      </div>
+
+      <h3>속력–시간 그래프</h3>
+      <canvas class="graph" id="gr" height="250"></canvas>
+      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
+    </div>
+  </section>
+
+  <!-- ══════ 원리 ══════ -->
+  <section id="theory">
+    <div class="theory-box">
+      <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
+        <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
+        이번 차시에서는 선풍기 바람으로 프로펠러를 돌리고, 그 회전을 <b>베벨기어</b>로 바퀴에 전해 달리는 <b>프로펠러 자동차</b>를 만듭니다.
+        아이는 자동차 방향(선풍기를 마주보기·등지기)과 회색 베벨기어 위치(위·아래)를 바꿔 가며
+        "선풍기에서 <b>멀어질까, 가까워질까?</b> <b>느릴까, 빠를까?</b>"를 예측하고 실험해 표에 기록합니다.
+        레고에듀케이션 공식 레슨 <b>Propeller Car</b>와 같은 내용이며, 핵심은 <b>"기계 장치(기어)로 움직이는 방향을 바꿀 수 있다"</b>와
+        <b>"한 가지 조건만 바꿔 비교한다(변수 통제)"</b>입니다.
+      </div>
+
+      <h2>🌬️ 바람 → 프로펠러 → 기어 → 바퀴</h2>
+      <p style="font-size:15.5px">풍력 터빈이 <b>바람 에너지를 회전(기계적 에너지)으로 바꾸듯</b>, 프로펠러 자동차도 바람을 받아 프로펠러가 돕니다.
+        그 회전이 <b>베벨기어</b>를 거쳐 방향을 90° 꺾어 아래로 내려가고, 다시 바퀴 축을 돌려 자동차가 달립니다.
+        선풍기는 차에 닿지 않고 멀리서 힘을 줍니다 — 이것이 <b>원거리에서 작용하는 힘</b>입니다.</p>
+      <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+        <b>프로펠러 축</b> ──(회색 베벨기어)──▶ <b>세로 축</b> ──(아래 기어)──▶ <b>바퀴 축</b><br>
+        회색 기어를 검은 기어의 <b>위쪽</b>에 물리느냐 <b>아래쪽</b>에 물리느냐에 따라 세로 축이 <b>반대로</b> 돕니다 → 바퀴도 반대로 → 차가 <b>반대 방향</b>으로!
+      </p>
+
+      <h2 style="margin-top:22px">🧪 네 가지 조합 결과 (이 시뮬 기준)</h2>
+      <table>
+        <thead><tr><th>자동차 방향</th><th>베벨기어</th><th>바퀴 회전</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>😀 마주보기</td><td>⬇ 아래쪽</td><td>반시계 → 뒤로</td><td>→ <b>멀어짐</b> 🐇</td></tr>
+          <tr style="background:rgba(255,144,70,.08)"><td>😀 마주보기</td><td>⬆ 위쪽</td><td>시계 → 앞으로</td><td>← <b>가까워짐</b> 🐢 (바람을 거슬러!)</td></tr>
+          <tr style="background:rgba(46,224,111,.08)"><td>🔙 등지기</td><td>⬇ 아래쪽</td><td>시계 → 앞으로</td><td>→ <b>멀어짐</b> 🐇 <b>가장 빠름 (순풍)</b></td></tr>
+          <tr><td>🔙 등지기</td><td>⬆ 위쪽</td><td>반시계 → 뒤로</td><td>← <b>가까워짐</b> 🐢 (가장 느림)</td></tr>
+        </tbody>
+      </table>
+      <p><b>발견 ①</b> 자동차를 돌려 세워도, <b>기어 위치가 같으면 선풍기 기준으로 가는 방향은 같다</b> — 방향을 정하는 건 <b>기어</b>다.<br>
+        <b>발견 ②</b> 선풍기에서 <b>멀어지는 쪽(순풍)</b>이 더 빠르다. 바퀴 힘과 바람이 미는 힘이 <b>같은 쪽</b>이기 때문이다.
+        가까워지는 쪽(역풍)은 바퀴 힘이 바람을 <b>이겨야</b> 해서 느리고, 힘이 모자라면 <b>제자리</b>에 멈춘다.<br>
+        <b>발견 ③</b> 등지고 서면 차체의 넓은 뒷면이 바람을 더 받는다 → 순풍에선 더 빠르고, 역풍에선 더 느리다.</p>
+      <p style="color:var(--dim);font-size:13px">※ 실물은 프로펠러 날개가 비틀린 방향(조립 방향)에 따라 멀어짐/가까워짐이 이 표와 <b>서로 바뀌어</b> 나올 수 있어요.
+        그래도 "기어 위치를 바꾸면 방향이 뒤집힌다"는 결론은 똑같습니다.</p>
+
+      <h2 style="margin-top:22px">🪭 날개를 더 달면? (기본 미션)</h2>
+      <p>날개가 많을수록 바람을 받는 면이 늘어 <b>돌리는 힘(토크)</b>이 커진다 → 약한 바람에서도 출발하고, <b>역풍 주행</b>이 빨라진다.
+        하지만 날개가 너무 많으면 무겁고 바람에 <b>막히는 힘</b>도 커져 오히려 느려진다(6개).
+        <b>긴 날개</b>는 바람 받는 원이 넓어져 돌리는 힘이 세진다 — 특히 <b>역풍 주행</b>이 눈에 띄게 빨라진다.
+        순풍에서는 바람이 이미 밀어 주기 때문에 날개를 바꿔도 차이가 작다. 확장 미션에서는 표를 비교해 "어떤 조합이 가장 빠른지" 근거를 찾아보자!</p>
+
+      <h2 style="margin-top:22px">🎓 오늘 배운 과학 용어</h2>
+      <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
+        <b style="color:#9fd3ff">풍력 에너지</b> — 바람(움직이는 공기)이 가진 에너지. 프로펠러를 돌리는 '연료' 역할이에요.<br>
+        <b style="color:var(--amber)">터빈</b> — 바람·물 같은 흐름을 받아 도는 회전식 기계장치. 풍력 발전기의 날개가 대표적이에요.<br>
+        <b style="color:var(--accent)">베벨기어</b> — 비스듬히 깎인 톱니로 <b>회전 방향을 90° 꺾어</b> 전달하는 기어.<br>
+        <b style="color:var(--green)">기어 어셈블리</b> — 여러 기어가 맞물려 힘을 전달하고 운동을 바꾸는 장치.<br>
+        <b style="color:var(--purple)">원거리 작용</b> — 닿지 않아도 멀리서 미치는 힘. 선풍기 바람이 차를 움직여요.<br>
+        <b style="color:var(--orange)">순풍 · 역풍</b> — 바람 부는 쪽으로 가면 순풍, 바람을 거슬러 가면 역풍.<br>
+        <b style="color:#9fb0c9">변수 통제</b> — 한 가지 조건만 바꾸고 나머지(선풍기 세기·거리)는 똑같이 두고 비교하는 실험 방법.<br>
+        <b style="color:var(--red)">마찰</b> — 바퀴와 바닥 사이에서 움직임을 막는 힘. 바퀴 힘이 마찰보다 약하면 제자리!
+      </div>
+
+      <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (교안 순서)</h2>
+      <ul style="line-height:2.1">
+        <li><b>① 들어가기</b> — "풍력 터빈은 무엇으로 움직일까?" → 바람! 육상용 요트(11차시)는 역풍으로 갈 수 있었나?</li>
+        <li><b>② 예측</b> — 마주보기+아래쪽으로 두고 <b>예측하기</b> 버튼 선택 → 선풍기 켜기 → 맞혔는지 확인</li>
+        <li><b>③ 조건별 실험</b> — 선풍기 세기·거리는 그대로, 방향·기어만 바꿔 네 칸을 채우기 (워크시트 🐢/🐇 체크)</li>
+        <li><b>④ 비교</b> — "어떤 것이 가장 빨랐나요?" → 등지기+아래쪽(순풍). "기어 위치는 어떤 영향을 주었나요?" → 방향이 뒤집힘</li>
+        <li><b>⑤ 기본 미션</b> — 날개 수 2→3→4→6 바꿔 표 채우기 (1단 선풍기 역풍에서 2날개는 제자리 — 왜일까?)</li>
+        <li><b>⑥ 확장 미션</b> — 긴 날개·날개 수·방향·기어를 조합해 <b>가장 빠른 프로펠러 자동차</b> 찾기</li>
+      </ul>
+
+      <div class="tip">
+        <b>🧱 레고 브릭큐 실험 팁</b><br>
+        · 출발선은 선풍기에서 1 m, 마스킹테이프로 앞뒤 결승선을 붙이고 <b>앞바퀴 기준</b>으로 잰다<br>
+        · 선풍기 세기와 거리는 모든 실험에서 <b>똑같이</b> — 바꾸는 건 한 번에 하나만<br>
+        · 역풍에서 프로펠러만 부르르 떨고 차가 안 가면 <b>실패가 아니라 발견</b> — 날개를 늘리거나 선풍기를 세게 해서 원인을 확인<br>
+        · 시뮬로 예측 → 레고로 실험 → 결과표 비교 순서로 진행
+      </div>
+
+      <details style="margin-top:18px; border:1px solid var(--border); border-radius:10px; background:#0c1220">
+        <summary style="padding:9px 13px; font-size:12.5px; color:#c6d2e6; cursor:pointer; font-weight:700">🔎 계산 방법이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
+        <div style="padding:12px 16px; line-height:2; font-size:13px">
+          차가 느끼는 바람 <span class="eq">w상대 = 바람 − 차 속도</span>, 바람의 압력 <span class="eq">q = ½ρ·w상대²</span> (ρ=1.2 kg/m³)<br>
+          선풍기 바람은 거리에 따라 약해짐: <span class="eq">바람(d) = 세기 ÷ (1 + (d−0.3)/2.2)</span> — 1단 3.2 · 2단 4.2 · 3단 5.2 m/s<br>
+          <b>바퀴 힘</b> <span class="eq">= k(날개 수) × 날개원 넓이 × q × (1 − 차 속도 / 프로펠러 한계 속도)</span> — 방향은 <b>기어 위치</b>가 정함<br>
+          <b>바람이 미는 힘</b> <span class="eq">= (프로펠러 막힘 + 차체 면적) × q</span> — 항상 선풍기 반대쪽(등지면 차체 면적이 큼)<br>
+          <b>마찰</b> <span class="eq">= 0.03 × 무게</span>. 바퀴 힘과 바람 힘의 합이 마찰보다 작으면 출발하지 못합니다.<br>
+          <span style="color:var(--dim)">교구 크기(차 약 0.2 kg, 날개 길이 약 10 cm · 긴 날개 13 cm)에 맞춘 근사 모델이며, 날개 넓이는 휘어진 날개가 실제로 바람을 받는 넓이로 환산했습니다.</span>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
+         canvasTex, makeFlag, makeMinifig } from '../vendor/ctm-3d.js';
+const $ = id => document.getElementById(id);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ═════════ 물리 (교구 스케일, m·kg·s) ═════════ */
+const RHO = 1.2, G = 9.8, MU = 0.03;
+const GOAL = 0.5;                       // 결승 테이프: 출발선 앞뒤 0.5 m
+const T_MAX = 10;                       // 최대 측정 시간(초)
+const FAST = 0.25;                      // 🐇 기준 평균 속도(m/s)
+const FAN = { 1: 3.2, 2: 4.2, 3: 5.2 }; // 선풍기 바로 앞 풍속
+// k: 돌리는 힘 계수 · ct: 프로펠러가 바람에 막히는 정도 · c: 프로펠러 한계 속도 비율
+const BLADE = { 2: { k: 2.4, ct: 1.1, c: 0.13 }, 3: { k: 3.0, ct: 1.25, c: 0.12 },
+                4: { k: 3.4, ct: 1.35, c: 0.11 }, 6: { k: 3.7, ct: 1.5, c: 0.095 } };
+const BLADES = [2, 3, 4, 6];
+const LEN = { '기본': { R: 0.07, c: 1 }, '긴': { R: 0.09, c: 0.85 } };
+const CONFIGS = [[1, '아래'], [1, '위'], [-1, '아래'], [-1, '위']];
+const windAt = (fan, d) => FAN[fan] / (1 + Math.max(0, d - 0.3) / 2.2);
+
+function carSpec(o) {
+  const L = LEN[o.len], b = BLADE[o.bl];
+  return {
+    A: Math.PI * L.R * L.R, b, cMul: L.c,
+    m: 0.2 + 0.004 * o.bl + (o.len === '긴' ? 0.008 : 0),
+    CdA: o.face > 0 ? 0.004 : 0.008,          // 등지면 넓은 뒷면이 바람을 받음
+    dirW: o.gear === '아래' ? 1 : -1,          // +1 = 선풍기에서 멀어지는 쪽으로 바퀴 구동
+  };
+}
+/* 힘 계산 (x = 선풍기로부터 거리, u = 속도, + = 멀어짐) */
+function forces(o, s, x, u) {
+  const w = windAt(o.fan, x), rel = w - u, q = 0.5 * RHO * rel * Math.abs(rel);
+  const uf = s.b.c * s.cMul * Math.abs(rel);
+  const drive = s.dirW * s.b.k * s.A * Math.abs(q) * Math.max(-0.5, 1 - Math.abs(u) / Math.max(uf, 1e-3));
+  const air = (s.b.ct * s.A + s.CdA) * q;
+  return { w, drive, air, fr: MU * s.m * G };
+}
+function advance(o, s, x, u, dt) {
+  const f = forces(o, s, x, u), F = f.drive + f.air;
+  if (Math.abs(u) < 1e-4 && Math.abs(F) <= f.fr) return { u: 0, f, stuck: true };
+  const dir = Math.abs(u) > 1e-4 ? Math.sign(u) : Math.sign(F);
+  let nu = u + (F - f.fr * dir) / s.m * dt;
+  if (u !== 0 && Math.sign(nu) !== Math.sign(u)) nu = 0;
+  return { u: nu, f, stuck: false };
+}
+function computeRun(o) {
+  const s = carSpec(o);
+  let x = o.dist, u = 0, t = 0; const dt = 0.01;
+  while (t < T_MAX) {
+    u = advance(o, s, x, u, dt).u; x += u * dt; t += dt;
+    if (Math.abs(x - o.dist) >= GOAL) break;
+  }
+  return summarize(x - o.dist, t);
+}
+function summarize(d, t) {
+  const reached = Math.abs(d) >= GOAL - 1e-6;
+  const dd = reached ? Math.sign(d) * GOAL : d;
+  if (Math.abs(dd) < 0.02) return { dir: 0, d: dd, t, reached: false, avg: 0, fast: false };
+  const avg = Math.abs(dd) / t;
+  return { dir: Math.sign(dd), d: dd, t, reached, avg, fast: avg >= FAST };
+}
+
+/* ═════════ 그래프 · 엔진 공용 (육상 요트와 동일) ═════════ */
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  }
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { c, W: w, H: h };
+}
+function niceStep(max) {
+  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
+  return 10 * p;
+}
+function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  const { c, W, H } = fit(cv);
+  if (W < 20) return;
+  const fs = Math.max(13, Math.round(Math.min(W, H) / 20));
+  const L = fs * 3.4, R = fs, T = fs * 1.8, B = fs * 3.0;
+  c.clearRect(0, 0, W, H);
+  const px = t => L + (t / tMax) * (W - L - R);
+  const py = v => H - B - (v / vMax) * (H - T - B);
+  c.font = fs + 'px sans-serif';
+  const tS = niceStep(tMax), vS = niceStep(vMax);
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
+  for (let t = 0; t <= tMax + 1e-9; t += tS) {
+    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText(t.toFixed(0), px(t), H - B + fs * 1.3);
+  }
+  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+    c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
+    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 0.1 ? 2 : 1), L - fs * 0.5, py(v) + fs * 0.35);
+  }
+  c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center';
+  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.4);
+  c.save(); c.translate(fs * 0.9, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
+  if (tNow > 0 && tNow < tMax) {
+    c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
+    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
+  }
+  series.forEach(s => {
+    if (s.pts.length < 2) return;
+    c.save(); c.shadowColor = s.color; c.shadowBlur = 8;
+    c.strokeStyle = s.color; c.lineWidth = Math.max(3, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
+    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
+    c.stroke();
+    const last = s.pts[s.pts.length - 1];
+    c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4, fs * 0.3), 0, 7); c.fill();
+    c.restore();
+  });
+  if (series.some(s => s.name)) {
+    c.textAlign = 'right'; c.font = 'bold ' + fs + 'px sans-serif';
+    series.forEach((s, i) => { if (s.name) { c.fillStyle = s.color; c.fillText(s.name, W - R - 4, T + fs * (0.4 + i * 1.3)); } });
+  }
+}
+const graphArgs = new Map(); let zoomSrc = null;
+function drawGraph(cv, series, tMax, vMax, tNow, yLabel) {
+  renderGraph(cv, series, tMax, vMax, tNow, yLabel);
+  graphArgs.set(cv, [series, tMax, vMax, tNow, yLabel]);
+  if (zoomSrc === cv) renderGraph($('zoomCv'), series, tMax, vMax, tNow, yLabel);
+}
+$('gr').addEventListener('click', () => {
+  zoomSrc = $('gr'); $('zoom').classList.add('on');
+  requestAnimationFrame(() => { const a = graphArgs.get(zoomSrc); if (a) renderGraph($('zoomCv'), ...a); });
+});
+$('zoom').onclick = () => { zoomSrc = null; $('zoom').classList.remove('on'); };
+
+function makeEngine(o) {
+  let running = false, raf = null, lastTs = null;
+  function frame(ts) {
+    if (!running) return;
+    if (lastTs == null) lastTs = ts;
+    const real = Math.min((ts - lastTs) / 1000, 0.05); lastTs = ts;
+    o.step(real * o.scale()); o.draw();
+    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
+    pause() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); o.setStatus('pause'); },
+    stop() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
+    get running() { return running; },
+  };
+}
+function statusUI(led, txt) {
+  return m => {
+    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : m === 'pause' ? 'pause' : '');
+    txt.textContent = m === 'run' ? '선풍기 작동 중' : m === 'done' ? '측정 완료' : m === 'pause' ? '일시정지' : '준비';
+  };
+}
+function speedCtl(btns) {
+  let v = 1; const vals = [1, 0.5, 0.25];
+  btns.forEach((b, i) => b.onclick = () => { v = vals[i]; btns.forEach((x, k) => x.classList.toggle('on', k === i)); });
+  return () => v;
+}
+function pick(container, attr, onChange) {
+  const btns = [...container.querySelectorAll('button')];
+  let val = container.querySelector('button.on').dataset[attr];
+  btns.forEach(b => b.onclick = () => {
+    val = b.dataset[attr];
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    onChange && onChange(val);
+  });
+  return () => val;
+}
+
+/* ═════════ 실험 ═════════ */
+(() => {
+  const S = 4;                           // 3D 배율: 실제 1 m = 4 유닛
+  const cv = $('cv');
+  let P = {}, spec = null;
+  let t = 0, x = 1, u = 0, finished = false, samples = [], stuckNow = false, lastF = null;
+  let axleAng = 0, fanAng = 0, jitter = 0;
+  const grids = {};                      // key(선풍기·길이·거리) → {cfgIdx: {bl: result}}
+  const gkey = () => `${P.fan}|${P.len}|${P.dist}`;
+
+  const getFace = pick($('pickFace'), 'f', onParam);
+  const getGear = pick($('pickGear'), 'g', onParam);
+  const getBl = pick($('pickBl'), 'b', onParam);
+  const getLen = pick($('pickLen'), 'l', onParam);
+  const getFan = pick($('pickFan'), 's', onParam);
+  const getDist = pick($('pickDist'), 'd', onParam);
+  const getPred = pick($('pickPred'), 'p');
+
+  /* ── 3D 무대: 밝은 교실 마루 · 선풍기(x=0) → +x로 바람 (실물 사진 기준) ── */
+  const stage = document.querySelector('.stage');
+  const renderer = makeRenderer(cv);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdfe3e8);
+  scene.fog = new THREE.Fog(0xdfe3e8, 16, 48);
+  const { camera, controls } = makeCamera(cv, { maxD: 30, far: 200, minD: 0.25 });
+
+  // 반사용 환경맵 — 천장 조명·창문이 크롬과 플라스틱에 비치도록
+  {
+    const env = new THREE.Scene();
+    env.add(new THREE.Mesh(new THREE.BoxGeometry(30, 12, 30),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(0.55, 0.56, 0.58), side: THREE.BackSide })));
+    const panel = (w, h, pos, rot, k, tint = [1, 1, 1]) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(k * tint[0], k * tint[1], k * tint[2]), side: THREE.DoubleSide }));
+      m.position.set(...pos); m.rotation.set(...rot); env.add(m);
+    };
+    panel(3, 14, [-4, 5.9, 0], [Math.PI / 2, 0, 0], 6);          // 천장 형광등 줄
+    panel(3, 14, [4, 5.9, 0], [Math.PI / 2, 0, 0], 6);
+    panel(10, 5, [0, 3, -14.9], [0, 0, 0], 3.5, [1, 0.97, 0.9]); // 창문
+    panel(30, 30, [0, -5.9, 0], [Math.PI / 2, 0, 0], 0.7, [0.95, 0.92, 0.88]);
+    const pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(env, 0.035).texture;
+    pm.dispose();
+  }
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xcfc6ba, 0.5));
+  const sun = new THREE.DirectionalLight(0xfff4e6, 1.7);
+  sun.position.set(2.5, 11, 6); sun.target.position.set(4, 0, 0); scene.add(sun.target);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 7, bottom: -7, near: 1, far: 30 });
+  sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.015; sun.shadow.radius = 5;
+  scene.add(sun);
+
+  // 결정적 난수 (새로고침해도 같은 무늬)
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+  // 밝은 회색 오크 마루 (판재가 주행 방향과 수직 — 교실 사진과 같음)
+  {
+    const tex = canvasTex(1024, 1024, (c, w, h) => {
+      const cols = 8, cw = w / cols;
+      for (let ci = 0; ci < cols; ci++) {
+        let y0 = -rnd() * 500;
+        while (y0 < h) {
+          const len = 380 + rnd() * 320;
+          const b = 196 + rnd() * 22;
+          c.fillStyle = `rgb(${b|0},${(b - 3)|0},${(b - 8)|0})`;
+          c.fillRect(ci * cw, y0, cw, len);
+          for (let i = 0; i < 26; i++) {           // 나뭇결
+            const gx = ci * cw + rnd() * cw, amp = 2 + rnd() * 5;
+            c.strokeStyle = `rgba(110,98,86,${0.05 + rnd() * 0.08})`; c.lineWidth = 0.6 + rnd() * 1.2;
+            c.beginPath(); c.moveTo(gx, y0);
+            for (let yy = 0; yy <= len; yy += 20) c.lineTo(gx + Math.sin(yy / (30 + i * 3) + i) * amp, y0 + yy);
+            c.stroke();
+          }
+          if (rnd() < 0.35) {                      // 옹이
+            const kx = ci * cw + cw * (0.25 + rnd() * 0.5), ky = y0 + len * rnd();
+            for (let r = 9; r > 1; r -= 2) { c.strokeStyle = 'rgba(95,82,70,.16)'; c.beginPath(); c.ellipse(kx, ky, r * 0.7, r * 1.8, 0, 0, 7); c.stroke(); }
+          }
+          c.fillStyle = 'rgba(70,62,55,.45)'; c.fillRect(ci * cw, y0, cw, 2);
+          y0 += len;
+        }
+        c.fillStyle = 'rgba(70,62,55,.5)'; c.fillRect(ci * cw, 0, 2, h);
+      }
+    }, [40 / 8, 24 / 8]);
+    tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(40, 0.2, 24),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5, metalness: 0, envMapIntensity: 0.35 }));
+    floor.position.set(8, -0.1, 0); floor.receiveShadow = true; scene.add(floor);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(40, 8, 0.2), new THREE.MeshStandardMaterial({ color: 0xf1efeb, roughness: 0.95 }));
+    wall.position.set(8, 4, -7); wall.receiveShadow = true; scene.add(wall);
+    const skirting = new THREE.Mesh(new THREE.BoxGeometry(40, 0.35, 0.06), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }));
+    skirting.position.set(8, 0.175, -6.87); scene.add(skirting);
+  }
+
+  // 줄자 (노란 테이프, 선풍기에서 잰 cm)
+  {
+    const X0 = 0.2, X1 = 3.0, PX = 24;           // m, cm당 픽셀
+    const tex = canvasTex(Math.round((X1 - X0) * 100 * PX), 64, (c, w, h) => {
+      c.fillStyle = '#f2c417'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#1b1b1b'; c.textAlign = 'left'; c.font = 'bold 26px Arial, sans-serif';
+      for (let cm = X0 * 100; cm <= X1 * 100; cm++) {
+        const px = (cm - X0 * 100) * PX;
+        const len = cm % 10 === 0 ? 30 : cm % 5 === 0 ? 20 : 12;
+        c.fillRect(px, 0, 2, len);
+        if (cm % 10 === 0) { c.fillStyle = cm % 100 === 0 ? '#c3170f' : '#1b1b1b'; c.fillText(String(cm), px + 4, 58); c.fillStyle = '#1b1b1b'; }
+      }
+    });
+    tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const len = (X1 - X0) * S;
+    const tape = new THREE.Mesh(new THREE.BoxGeometry(len, 0.006, 0.1),
+      [0, 0, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, metalness: 0.2 }), 0, 0, 0]
+        .map(m => m || new THREE.MeshStandardMaterial({ color: 0xd9ae12, roughness: 0.4 })));
+    tape.position.set((X0 * S + X1 * S) / 2, 0.004, -1.15); tape.receiveShadow = true; scene.add(tape);
+    const caseM = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.26, 0.3), new THREE.MeshStandardMaterial({ color: 0xf2c417, roughness: 0.4 }));
+    caseM.position.set(X1 * S + 0.16, 0.13, -1.15); caseM.castShadow = true; scene.add(caseM);
+    const caseB = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.12, 0.31), new THREE.MeshStandardMaterial({ color: 0x1d1d1d, roughness: 0.6 }));
+    caseB.position.set(X1 * S + 0.16, 0.13, -1.15); scene.add(caseB);
+    for (let m = 0.5; m <= 3.0; m += 0.5) {
+      const lab = textSprite(m.toFixed(1) + ' m', { size: 30, color: '#26303f', bg: 'rgba(255,255,255,.78)', scale: 0.0032 });
+      lab.position.set(m * S, 0.12, -1.45); scene.add(lab);
+    }
+  }
+
+  // 출발선(초록 테이프) · 0.5 m 표시선(파란 테이프)
+  const tapes = new THREE.Group(); scene.add(tapes);
+  [[0, '출발선', '#1f6b3a', 0x1f7a45, 2.6], [-GOAL, '← 가까워짐 0.5 m', '#b4541a', 0x2346a8, 1.5], [GOAL, '멀어짐 0.5 m →', '#1f6b3a', 0x2346a8, 1.5]]
+    .forEach(([off, text, col, tc, L]) => {
+      const tp = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.005, L), new THREE.MeshStandardMaterial({ color: tc, roughness: 0.75 }));
+      tp.position.set(off * S, 0.003, 0.15); tp.rotation.y = (rnd() - 0.5) * 0.02; tp.receiveShadow = true; tapes.add(tp);
+      const lab = textSprite(text, { size: 30, color: col, bg: 'rgba(255,255,255,.82)', scale: 0.0034 });
+      lab.position.set(off * S, 0.13, off === 0 ? 1.55 : 1.05); tapes.add(lab);
+    });
+  const placeTapes = () => tapes.position.x = P.dist * S;
+
+  // 정적 부품 합치기 — 같은 재질끼리 한 메시로 (그리기 호출 수 절감, 태블릿 대비)
+  function mergeGroup(root, skip = []) {
+    root.updateMatrixWorld(true);
+    const inv = root.matrixWorld.clone().invert();
+    const buckets = new Map(), dead = [];
+    const walk = o => {
+      if (o !== root && skip.includes(o)) return;
+      if (o.isMesh) {
+        const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone());
+        g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+        if (!buckets.has(o.material)) buckets.set(o.material, []);
+        buckets.get(o.material).push(g); dead.push(o);
+      }
+      o.children.forEach(walk);
+    };
+    walk(root);
+    dead.forEach(o => o.parent.remove(o));
+    buckets.forEach((geos, mat) => {
+      let n = 0; geos.forEach(g => n += g.attributes.position.count);
+      const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+      let off = 0;
+      geos.forEach(g => {
+        pos.set(g.attributes.position.array, off * 3);
+        if (!g.attributes.normal) g.computeVertexNormals();
+        nor.set(g.attributes.normal.array, off * 3);
+        off += g.attributes.position.count; g.dispose();
+      });
+      const mg = new THREE.BufferGeometry();
+      mg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      mg.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+      const m = new THREE.Mesh(mg, mat); m.castShadow = true; m.receiveShadow = true;
+      root.add(m);
+    });
+  }
+
+  /* ── 선풍기: 크롬 망 서큘레이터 (x=0, +x로 바람) ── */
+  const FAN_H = 0.85, FAN_R = 0.62;
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xf0f2f5, metalness: 1, roughness: 0.16 });
+  const alu = new THREE.MeshStandardMaterial({ color: 0xc9ced6, metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide });
+  const darkPl = new THREE.MeshStandardMaterial({ color: 0x1c1e22, metalness: 0.1, roughness: 0.42 });
+  const fan = new THREE.Group(); scene.add(fan);
+  const fanBlades = new THREE.Group();
+  {
+    const head = new THREE.Group(); head.position.y = FAN_H; fan.add(head);
+    const wire = (pts, r = 0.006) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length > 3 ? 10 : 16, r, 4), chrome);
+    const guard = (side, dome, rings, spokes) => {
+      for (let i = 1; i <= rings; i++) {
+        const r = FAN_R * i / rings;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r, i === rings ? 0.014 : 0.005, 4, 48), chrome);
+        ring.rotation.y = Math.PI / 2; ring.position.x = side * (0.2 + dome * (1 - (r / FAN_R) ** 2)); head.add(ring);
+      }
+      for (let k = 0; k < spokes; k++) {
+        const a = k / spokes * Math.PI * 2, pts = [];
+        for (let j = 0; j <= 8; j++) {
+          const r = 0.09 + (FAN_R - 0.09) * j / 8;
+          pts.push(new THREE.Vector3(side * (0.2 + dome * (1 - (r / FAN_R) ** 2)), Math.cos(a) * r, Math.sin(a) * r));
+        }
+        head.add(wire(pts));
+      }
+    };
+    guard(1, 0.13, 13, 28);
+    guard(-1, 0.1, 7, 18);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(FAN_R + 0.004, FAN_R + 0.004, 0.4, 72, 1, true), chrome);
+    band.rotation.z = Math.PI / 2; band.material = chrome; head.add(band);
+    const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 32), chrome);
+    badge.rotation.z = Math.PI / 2; badge.position.x = 0.34; head.add(badge);
+    const logo = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.022, 32), darkPl);
+    logo.rotation.z = Math.PI / 2; logo.position.x = 0.345; head.add(logo);
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.34, 32), darkPl);
+    motor.rotation.z = Math.PI / 2; motor.position.x = -0.42; motor.castShadow = true; head.add(motor);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.17, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), darkPl);
+    cap.rotation.z = Math.PI / 2; cap.position.x = -0.59; head.add(cap);
+    // 알루미늄 날개 3장
+    fanBlades.position.x = 0.02; head.add(fanBlades);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.12, 24), alu);
+    hub.rotation.z = Math.PI / 2; fanBlades.add(hub);
+    const bs = new THREE.Shape();
+    bs.moveTo(0.06, -0.05); bs.bezierCurveTo(0.25, -0.22, 0.5, -0.24, 0.56, -0.05);
+    bs.bezierCurveTo(0.58, 0.08, 0.4, 0.14, 0.06, 0.05); bs.closePath();
+    const bGeo = new THREE.ShapeGeometry(bs, 16);
+    for (let i = 0; i < 3; i++) {
+      const arm = new THREE.Group(); arm.rotation.x = i / 3 * Math.PI * 2; fanBlades.add(arm);
+      const wrap = new THREE.Group(); wrap.rotation.y = Math.PI / 2 - 0.55; arm.add(wrap);
+      const m = new THREE.Mesh(bGeo, alu); m.rotation.z = Math.PI / 2; m.castShadow = true; wrap.add(m);
+    }
+    // 스탠드: 양옆 크롬 다리 + 고무발
+    [-1, 1].forEach(sz => {
+      const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 20), darkPl);
+      knob.rotation.x = Math.PI / 2; knob.position.set(0, FAN_H, sz * (FAN_R + 0.06)); fan.add(knob);
+      const leg = wire([new THREE.Vector3(0, FAN_H, sz * (FAN_R + 0.04)), new THREE.Vector3(0.02, FAN_H * 0.5, sz * (FAN_R + 0.1)),
+                        new THREE.Vector3(0, 0.06, sz * (FAN_R + 0.14))], 0.022);
+      leg.castShadow = true; fan.add(leg);
+      const foot = wire([new THREE.Vector3(-0.32, 0.03, sz * (FAN_R + 0.14)), new THREE.Vector3(0.32, 0.03, sz * (FAN_R + 0.14))], 0.024);
+      foot.castShadow = true; fan.add(foot);
+      [-0.33, 0.33].forEach(fx => {
+        const pad = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), darkPl);
+        pad.scale.y = 0.6; pad.position.set(fx, 0.025, sz * (FAN_R + 0.14)); fan.add(pad);
+      });
+    });
+    // 전원선
+    const cord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.72, FAN_H - 0.08, 0), new THREE.Vector3(-0.9, 0.3, 0.1), new THREE.Vector3(-1.0, 0.02, 0.4),
+      new THREE.Vector3(-1.6, 0.02, -0.6), new THREE.Vector3(-1.2, 0.02, -3.5), new THREE.Vector3(-2.2, 0.02, -6.8)]), 60, 0.018, 6), darkPl);
+    cord.castShadow = true; fan.add(cord);
+  }
+  mergeGroup(fanBlades);
+  mergeGroup(fan, [fanBlades]);
+  let fanLab = null;
+  function setFanLabel() {
+    if (fanLab) scene.remove(fanLab);
+    fanLab = textSprite(`선풍기 ${P.fan}단 · ${FAN[P.fan]} m/s`, { size: 30, color: '#1d4f8f', bg: 'rgba(255,255,255,.85)', scale: 0.0036 });
+    fanLab.position.set(0, FAN_H + FAN_R + 0.22, 0); scene.add(fanLab);
+  }
+
+  /* ── 프로펠러 자동차 (레고 브릭큐 프라임 조립도 기준, 1 = 레고 1칸 8 mm) ── */
+  const K = 0.008 * S;                   // 레고 칸 → 월드 유닛
+  const YP = 23;                       // 프로펠러 가로축 높이(칸)
+  const WR_L = 2.5;                      // 뒷바퀴 반지름(칸)
+  const WR = WR_L * K;
+  const car = new THREE.Group(); scene.add(car);
+  const model = new THREE.Group(); model.scale.setScalar(K); car.add(model);
+  const parts = {};
+  const PM = (c, r = 0.32) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: 0, envMapIntensity: 0.7 });
+  const MAT = {
+    azure: PM(0x3fb4e5), blue: PM(0x1f5fcf), yellow: PM(0xf7c81e), lime: PM(0xa6cf1c), red: PM(0xc8170c),
+    purple: PM(0x6b3db8), white: PM(0xf5f5f3, 0.28), grey: PM(0xa4a9ae, 0.3), dgrey: PM(0x5f6366), black: PM(0x19191b, 0.4),
+    tyre: PM(0x141416, 0.85), hole: new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 1 }),
+  };
+  const holeGeo = new THREE.CylinderGeometry(0.29, 0.29, 0.93, 14); holeGeo.rotateX(Math.PI / 2);
+  const endGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.88, 20); endGeo.rotateX(Math.PI / 2);
+  // 테크닉 빔: 길이 x, 구멍 z 방향 (중앙 정렬)
+  function beam(n, mat) {
+    const g = new THREE.Group(), L = n - 1;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(L, 0.92, 0.88), mat); g.add(body);
+    [-L / 2, L / 2].forEach(ex => { const e = new THREE.Mesh(endGeo, mat); e.position.x = ex; g.add(e); });
+    for (let i = 0; i < n; i++) { const h = new THREE.Mesh(holeGeo, MAT.hole); h.position.x = i - L / 2; g.add(h); }
+    return g;
+  }
+  const place = (obj, pos, rot = [0, 0, 0], parent = model) => { obj.position.set(...pos); obj.rotation.set(...rot); parent.add(obj); return obj; };
+  // 구멍 방향별 배치 래퍼: 'z'(기본) · 'y'(눕힌 빔) · 'x'
+  function beamAt(n, mat, pos, len = 'x', holes = 'z') {
+    const outer = new THREE.Group(), b = beam(n, mat); outer.add(b);
+    if (len === 'x' && holes === 'y') b.rotation.x = Math.PI / 2;
+    if (len === 'y' && holes === 'z') b.rotation.z = Math.PI / 2;
+    if (len === 'y' && holes === 'x') { b.rotation.z = Math.PI / 2; outer.rotation.y = Math.PI / 2; }
+    if (len === 'z' && holes === 'x') outer.rotation.y = Math.PI / 2;
+    if (len === 'z' && holes === 'y') { b.rotation.x = Math.PI / 2; outer.rotation.y = Math.PI / 2; }
+    outer.position.set(...pos); model.add(outer); return outer;
+  }
+  // 십자 축 (y 방향)
+  function axle(len, mat) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.34, len, 0.12), mat));
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, len, 0.34), mat));
+    return g;
+  }
+  // 기어 (축 y) — bevel=true면 양면 베벨(회색 20T), 아니면 베벨 12T
+  function gear(teeth, r, thick, mat, dbl) {
+    const g = new THREE.Group();
+    if (dbl) {
+      const up = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.72, r * 0.95, thick / 2, 32), mat); up.position.y = thick / 4; g.add(up);
+      const dn = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.95, r * 0.72, thick / 2, 32), mat); dn.position.y = -thick / 4; g.add(dn);
+      const web = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, thick * 1.05, 24), PM(0x8d9297)); g.add(web);
+    } else {
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.9, thick, 24), mat); g.add(body);
+    }
+    const tGeo = new THREE.BoxGeometry(r * 0.22, thick * (dbl ? 0.95 : 0.8), r * 0.14);
+    for (let i = 0; i < teeth; i++) {
+      const a = i / teeth * Math.PI * 2, tt = new THREE.Mesh(tGeo, mat);
+      tt.position.set(Math.cos(a) * r * 0.93, 0, Math.sin(a) * r * 0.93); tt.rotation.y = -a; g.add(tt);
+    }
+    const hub = new THREE.Mesh(new THREE.BoxGeometry(0.34, thick * 1.1, 0.12), MAT.hole); g.add(hub);
+    const hub2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, thick * 1.1, 0.34), MAT.hole); g.add(hub2);
+    return g;
+  }
+  // 바퀴 (축 z): 둥근 타이어 + 림
+  function wheel(R, W, rimMat, hubMat, holes) {
+    const g = new THREE.Group();
+    const prof = [];
+    const rin = R * 0.68;
+    for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 + i / 12 * Math.PI; prof.push(new THREE.Vector2(R - W * 0.28 + Math.cos(a) * W * 0.28, Math.sin(a) * W / 2)); }
+    prof.unshift(new THREE.Vector2(rin, -W / 2 * 0.9)); prof.push(new THREE.Vector2(rin, W / 2 * 0.9));
+    const tyre = new THREE.Mesh(new THREE.LatheGeometry(prof, 40), MAT.tyre); tyre.rotation.x = Math.PI / 2; g.add(tyre);
+    for (let i = 0; i < 28; i++) {                      // 트레드
+      const a = i / 28 * Math.PI * 2;
+      const tr = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, W * 0.7), MAT.tyre);
+      tr.position.set(Math.cos(a) * (R + 0.01), Math.sin(a) * (R + 0.01), 0); tr.rotation.z = a + Math.PI / 2; g.add(tr);
+    }
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(rin, rin, W * 0.86, 36), rimMat); rim.rotation.x = Math.PI / 2; g.add(rim);
+    const dish = new THREE.Mesh(new THREE.CylinderGeometry(rin * 0.8, rin * 0.8, W * 0.92, 36), PM(new THREE.Color(rimMat.color).multiplyScalar(0.88))); dish.rotation.x = Math.PI / 2; g.add(dish);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(rin * 0.36, rin * 0.36, W * 1.02, 20), hubMat); hub.rotation.x = Math.PI / 2; g.add(hub);
+    const ax = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, W * 1.06), MAT.hole); g.add(ax);
+    const ax2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.34, W * 1.06), MAT.hole); g.add(ax2);
+    for (let i = 0; i < holes; i++) {
+      const a = i / holes * Math.PI * 2, h = new THREE.Mesh(new THREE.CylinderGeometry(rin * 0.13, rin * 0.13, W * 0.95, 12), MAT.hole);
+      h.rotation.x = Math.PI / 2; h.position.set(Math.cos(a) * rin * 0.6, Math.sin(a) * rin * 0.6, 0); g.add(h);
+    }
+    return g;
+  }
+  {
+    // 뒤 구동축 + 뒷바퀴(흰 림·빨간 허브)
+    place(axle(12.5, MAT.red), [0, WR_L, 0], [Math.PI / 2, 0, 0]);
+    parts.wheels = [-5.3, 5.3].map(z => place(wheel(WR_L, 1.5, MAT.white, MAT.red, 5), [0, WR_L, z]));
+    // 뒤 받침: 하늘색 빔 2개 + 파란 가로 빔
+    beamAt(5, MAT.azure, [0, WR_L, -3.3]);
+    beamAt(5, MAT.azure, [0, WR_L, 3.3]);
+    beamAt(7, MAT.blue, [-2, WR_L + 1, 0], 'z', 'y');
+    // 뒤 구동 기어: 바퀴축의 회색 20T ↔ 세로축 아래 검은 12T
+    parts.rearGear = place(new THREE.Group(), [0, WR_L, -1.1]);
+    { const gg = gear(20, 1.28, 0.8, MAT.grey, true); gg.rotation.x = Math.PI / 2; parts.rearGear.add(gg); }
+    // 긴 노란 차체 빔 (눕힘, 세로축이 x=0 구멍을 통과) + 앞 포크
+    beamAt(21, MAT.yellow, [9, 5.3, 0], 'x', 'y');
+    beamAt(7, MAT.lime, [1, 6.22, 0], 'x', 'y');
+    beamAt(5, MAT.lime, [19, 3.5, -1.05], 'y', 'z');
+    beamAt(5, MAT.lime, [19, 3.5, 1.05], 'y', 'z');
+    place(axle(3.2, MAT.dgrey), [19, 1.5, 0], [Math.PI / 2, 0, 0]);
+    parts.front = place(wheel(1.5, 0.9, MAT.lime, MAT.lime, 6), [19, 1.5, 0]);
+    // 보라색 레이서 + 미니피겨
+    {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0); s.lineTo(5.2, 0); s.lineTo(5.2, 0.7); s.quadraticCurveTo(3.6, 1.0, 2.4, 1.5);
+      s.lineTo(1.3, 1.5); s.lineTo(1.1, 2.6); s.lineTo(0, 2.6); s.closePath();
+      const geo = new THREE.ExtrudeGeometry(s, { depth: 3, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 2 });
+      geo.translate(0, 0, -1.5);
+      place(new THREE.Mesh(geo, MAT.purple), [12.6, 5.8, 0]);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 2.2), new THREE.MeshStandardMaterial({ color: 0x9fd6ff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.55 }));
+      place(glass, [15.1, 7.7, 0], [0, 0, -0.5]);
+      const fig = makeMinifig({ shirt: 0x2f8f3a, pants: 0x2b2b2b, hair: 0xf5f5f5 });
+      fig.scale.setScalar(11); place(fig, [13.9, 4.7, 0]);
+    }
+    // 기둥 (연두·노랑) + 하늘색 사각 프레임
+    beamAt(13, MAT.lime, [0, 12.5, 1.35], 'y', 'z');
+    beamAt(13, MAT.yellow, [0, 12.5, -1.35], 'y', 'z');
+    beamAt(7, MAT.azure, [0, 19, 0], 'x', 'y');
+    beamAt(7, MAT.azure, [0, 27, 0], 'x', 'y');
+    beamAt(9, MAT.azure, [-3, 23, 0], 'y', 'x');
+    beamAt(9, MAT.azure, [3, 23, 0], 'y', 'x');
+    beamAt(9, MAT.blue, [4, 23, 0], 'y', 'x');
+    // 세로축 (빨강, 위로 회색 끝) + 아래 검은 12T + 회색 20T(위치 선택)
+    parts.vert = place(new THREE.Group(), [0, 0, 0]);
+    { const a = axle(23.6, MAT.red); a.position.y = 15.6; parts.vert.add(a);
+      const top = axle(2.4, MAT.grey); top.position.y = 28.6; parts.vert.add(top);
+      const low = gear(12, 0.78, 0.7, MAT.black, false); low.position.y = 4.2; low.rotation.x = Math.PI; parts.vert.add(low);
+      parts.bigGear = gear(20, 1.28, 0.8, MAT.grey, true); parts.vert.add(parts.bigGear);
+      [19.8, 26.2].forEach(y => { const bsh = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.45, 16), MAT.red); bsh.position.y = y; parts.vert.add(bsh); });
+    }
+    // 가로 프로펠러축 (x 방향 회전)
+    parts.spin = place(new THREE.Group(), [0, YP, 0]);
+    { const a = axle(8.2, MAT.dgrey); a.rotation.z = Math.PI / 2; a.position.x = 4.3; parts.spin.add(a);
+      const pin = gear(12, 0.78, 0.7, MAT.black, false); pin.rotation.z = Math.PI / 2; pin.position.x = 1.25; parts.spin.add(pin);
+      const conn = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.5, 1.5), MAT.dgrey); conn.position.x = 7.2; parts.spin.add(conn);
+      parts.prop = new THREE.Group(); parts.prop.position.x = 7.4; parts.spin.add(parts.prop);
+    }
+    parts.wheels.forEach(w => mergeGroup(w));
+    mergeGroup(parts.front); mergeGroup(parts.rearGear);
+    mergeGroup(parts.bigGear); mergeGroup(parts.vert, [parts.bigGear]);
+    mergeGroup(parts.spin, [parts.prop]);
+    mergeGroup(model, [...parts.wheels, parts.front, parts.rearGear, parts.vert, parts.spin]);
+  }
+  const bladeGeoCache = {};
+  function bladeGeo(R) {
+    if (bladeGeoCache[R]) return bladeGeoCache[R];
+    const s = new THREE.Shape();
+    s.moveTo(1.3, -0.45);
+    s.bezierCurveTo(R * 0.4, -1.7, R * 0.78, -2.3, R, -0.25);
+    s.lineTo(R, 0.15);
+    s.bezierCurveTo(R * 0.8, 0.7, R * 0.4, 0.55, 1.3, 0.45);
+    s.closePath();
+    const g = new THREE.ExtrudeGeometry(s, { depth: 0.1, bevelEnabled: false, curveSegments: 20 });
+    g.translate(0, 0, -0.05);
+    return (bladeGeoCache[R] = g);
+  }
+  const PROP_R = { '기본': 13, '긴': 16.5 };   // 날개 길이(칸) — 실물 약 10 cm / 13 cm
+  function buildProp() {
+    const pr = parts.prop;
+    while (pr.children.length) pr.remove(pr.children[0]);
+    const R = PROP_R[P.len];
+    for (let i = 0; i < P.bl; i++) {
+      const arm = new THREE.Group(); arm.rotation.x = i / P.bl * Math.PI * 2; pr.add(arm);
+      const holder = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.2, 0.9), MAT.white); holder.position.y = 1.2; arm.add(holder);
+      const pinH = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.4, 10), MAT.black); pinH.position.y = 1.9; pinH.rotation.x = Math.PI / 2; arm.add(pinH);
+      const wrap = new THREE.Group(); wrap.rotation.y = Math.PI / 2 - 0.42; arm.add(wrap);
+      const b = new THREE.Mesh(bladeGeo(R), MAT.white); b.rotation.z = Math.PI / 2; wrap.add(b);
+    }
+    mergeGroup(pr);
+  }
+  const GEAR_Y = { '아래': YP - 1.2, '위': YP + 1.2 };
+  function placeGear() {
+    // 회색 20T가 검은 12T(가로축)의 아래 또는 위에 물림
+    parts.bigGear.position.y = GEAR_Y[P.gear];
+    if (parts.gearLab) model.remove(parts.gearLab);
+    parts.gearLab = textSprite(P.gear === '위' ? '회색 기어 ⬆ 위쪽' : '회색 기어 ⬇ 아래쪽', { size: 28, color: '#26303f', bg: 'rgba(255,255,255,.88)', scale: 0.0022 / K });
+    parts.gearLab.position.set(0, 32, 0);
+    model.add(parts.gearLab);
+  }
+
+  /* 바람 입자 (옅은 흰 줄) */
+  const puffs = [];
+  {
+    const geo = new THREE.BoxGeometry(0.26, 0.008, 0.008);
+    for (let i = 0; i < 80; i++) {
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x7fb4e8, transparent: true, opacity: 0.4, depthWrite: false }));
+      m.userData = { r: rnd(), a: rnd() * Math.PI * 2, x: rnd() * 12 };
+      scene.add(m); puffs.push(m);
+    }
+  }
+
+  let flag3d = null;
+  function setFlag3d(r) {
+    if (flag3d) scene.remove(flag3d);
+    const col = r.dir > 0 ? 0x2ee06f : r.dir < 0 ? 0xff9046 : 0x9fb0c9;
+    flag3d = makeFlag(r.dir === 0 ? '⚪ 제자리' : `${r.dir > 0 ? '→' : '←'} ${r.fast ? '🐇' : '🐢'} ${r.avg.toFixed(2)}m/s`, col);
+    flag3d.scale.setScalar(0.9);
+    flag3d.position.set(x * S, 0, -1.25); scene.add(flag3d);
+  }
+  const clearFlag3d = () => { if (flag3d) { scene.remove(flag3d); flag3d = null; } };
+
+  const narrow = stage.clientWidth < 600;
+  camPresets(camera, controls, {
+    camSide: narrow ? { pos: [5.9, 1.9, 4.4], target: [2.5, 0.45, 0] } : { pos: [6.3, 1.45, 3.5], target: [2.5, 0.45, 0] },
+    camTop: { pos: [5, 12, 0.05], target: [5, 0, 0] },
+  }, 'camSide');
+  let follow = null;   // 'follow' | 'gear'
+  ['camSide', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
+    follow = null; $('camFollow').classList.remove('on'); $('camGear').classList.remove('on');
+  }));
+  const GEAR_H = YP * K;
+  const setFollow = (mode, id) => {
+    follow = mode;
+    ['camSide', 'camTop', 'camFollow', 'camGear'].forEach(k => $(k).classList.toggle('on', k === id));
+    const cx = x * S;
+    if (mode === 'gear') { camera.position.set(cx + 0.28, GEAR_H + 0.16, 0.62); controls.target.set(cx, GEAR_H, 0); }
+  };
+  $('camFollow').onclick = () => setFollow('follow', 'camFollow');
+  $('camGear').onclick = () => setFollow('gear', 'camGear');
+
+  let lastRT = performance.now();
+  function animate(now) {
+    const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
+    const running = eng.running;
+    const cx = x * S;
+    car.position.x = cx;
+    car.rotation.y = P.face > 0 ? Math.PI : 0;
+    // 바퀴·기어 회전 (모두 뒷바퀴 회전에서 유도 → 기어 위치에 따라 프로펠러 방향이 뒤집힘)
+    parts.wheels.forEach(w => w.rotation.z = axleAng);
+    parts.front.rotation.z = axleAng * WR_L / 1.5;
+    parts.rearGear.rotation.z = axleAng;
+    const vAng = axleAng * 20 / 12;
+    parts.vert.rotation.y = vAng;
+    const gs = P.gear === '아래' ? 1 : -1;
+    jitter = stuckNow && running ? Math.sin(now / 45) * 0.12 : 0;
+    parts.spin.rotation.x = vAng * 20 / 12 * gs + jitter;
+    // 선풍기 날개
+    const fanOn = running || (finished && t > 0);
+    fanAng += (fanOn ? FAN[P.fan] * 5 : 0) * rdt;
+    fanBlades.rotation.x = fanAng;
+    // 바람 입자
+    puffs.forEach(m => {
+      const d = m.userData;
+      m.visible = fanOn && d.r < 0.35 + P.fan * 0.2;
+      if (!m.visible) return;
+      d.x += windAt(P.fan, Math.max(0.3, d.x / S)) * S * 0.35 * rdt;
+      if (d.x > 12) { d.x = 0.4; d.a = rnd() * Math.PI * 2; }
+      const spread = (0.1 + d.x * 0.06) * d.r * 3;
+      m.position.set(d.x, Math.max(0.05, FAN_H - 0.15 * Math.min(1, d.x / 5) + Math.sin(d.a) * spread * 0.7), Math.cos(d.a) * spread);
+      m.material.opacity = 0.45 * Math.min(1, d.x / 0.8) * Math.max(0, 1 - d.x / 12);
+    });
+    if (follow === 'follow') {
+      controls.target.lerp(new THREE.Vector3(cx, 0.4, 0), 1 - Math.exp(-4 * rdt));
+      camera.position.lerp(new THREE.Vector3(cx + 1.3, 0.95, 1.9), 1 - Math.exp(-3 * rdt));
+    } else if (follow === 'gear') {
+      const tgt = new THREE.Vector3(cx, GEAR_H, 0);
+      const delta = tgt.clone().sub(controls.target);
+      controls.target.add(delta); camera.position.add(delta);
+    }
+    if (parts.gearLab) parts.gearLab.visible = follow !== 'gear';
+    controls.update();
+    if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  function readParams() {
+    P = { face: +getFace(), gear: getGear(), bl: +getBl(), len: getLen(), fan: +getFan(), dist: +getDist() };
+    P.ci = CONFIGS.findIndex(([f, g]) => f === P.face && g === P.gear);
+    spec = carSpec(P);
+  }
+  function labels() {
+    $('v_face').textContent = P.face > 0 ? '마주보기' : '등지기';
+    $('v_gear').textContent = P.gear === '위' ? '위쪽' : '아래쪽';
+    $('v_bl').textContent = P.bl + '개';
+    $('v_len').textContent = P.len === '긴' ? '긴 날개' : '기본';
+    $('v_fan').textContent = P.fan + '단';
+    $('v_dist').textContent = P.dist.toFixed(1) + ' m';
+    $('mxCond').textContent = `표 조건: 선풍기 ${P.fan}단 · 거리 ${P.dist.toFixed(1)} m · ${P.len === '긴' ? '긴 날개' : '기본 날개'} (조건을 바꾸면 표가 따로 저장돼요)`;
+  }
+  const FSCALE = 0.4;   // 막대 100% 기준 힘(N)
+  function showForces(f) {
+    const bar = (id, vid, val, pos, neg) => {
+      $(id).style.width = Math.min(100, Math.abs(val) / FSCALE * 100) + '%';
+      if (pos) $(id).style.background = val >= 0 ? pos : neg;
+      $(vid).textContent = f ? (val >= 0 ? '+' : '−') + Math.abs(val).toFixed(3) : '—';
+    };
+    const g = 'linear-gradient(90deg,#0e9e63,#2ee06f)', o = 'linear-gradient(90deg,#b35a1e,#ff9046)';
+    if (!f) { ['barDrv', 'barAir', 'barFr'].forEach(i => $(i).style.width = '0%'); ['valDrv', 'valAir', 'valFr'].forEach(i => $(i).textContent = '—'); return; }
+    bar('barDrv', 'valDrv', f.drive, g, o);
+    bar('barAir', 'valAir', f.air);
+    $('barFr').style.width = Math.min(100, f.fr / FSCALE * 100) + '%';
+    $('valFr').textContent = f.fr.toFixed(3);
+  }
+  function reset() {
+    readParams(); labels();
+    t = 0; x = P.dist; u = 0; finished = false; samples = []; stuckNow = false; lastF = null; axleAng = 0;
+    placeTapes(); buildProp(); placeGear(); setFanLabel();
+    ['ro_dir', 'ro_time', 'ro_avg', 'ro_ts'].forEach(i => $(i).textContent = '—');
+    $('ro_dir').style.color = '#fff';
+    $('bd').className = 'badge';
+    clearFlag3d();
+    // 출발 순간 힘 미리보기 (선풍기 켠 직후)
+    showForces(forces(P, spec, x, 0));
+    renderGrid(); draw(); drawG();
+  }
+  function onParam() {
+    if (!eng.running) { reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; $('pause').textContent = '⏸'; }
+    else {   // 달리는 중에 조건을 바꾸면 그 판은 취소하고 새 조건으로 준비
+      eng.stop(); reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; $('pause').textContent = '⏸';
+      const bd = $('bd'); bd.className = 'badge slow'; bd.textContent = '조건이 바뀌어 이번 주행은 취소했어요 — 다시 ▶ 선풍기 켜기!';
+    }
+  }
+  function step(dt) {
+    if (finished) return;
+    let rem = dt;
+    while (rem > 1e-6 && !finished) {
+      const h = Math.min(0.01, rem); rem -= h;
+      const r = advance(P, spec, x, u, h);
+      u = r.u; stuckNow = r.stuck; lastF = r.f;
+      x += u * h; t += h;
+      axleAng -= (u * S) / WR * h * (P.face > 0 ? -1 : 1);
+      if (Math.abs(x - P.dist) >= GOAL) { x = P.dist + Math.sign(x - P.dist) * GOAL; finished = true; }
+      if (t >= T_MAX) { t = T_MAX; finished = true; }
+    }
+    if (samples.length === 0 || t - samples[samples.length - 1].t > 0.05) samples.push({ t, v: u });
+  }
+  function draw() {
+    $('hud_t').textContent = t.toFixed(1) + ' s';
+    $('hud_v').textContent = Math.abs(u).toFixed(2) + ' m/s' + (u > 0.005 ? ' →' : u < -0.005 ? ' ←' : '');
+    const d = x - P.dist;
+    $('hud_d').textContent = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2) + ' m';
+    $('hud_w').textContent = windAt(P.fan, x).toFixed(1) + ' m/s';
+    if (lastF) showForces(lastF);
+  }
+  function drawG() {
+    const vM = Math.max(0.3, ...samples.map(s => Math.abs(s.v))) * 1.2;
+    const away = samples.filter(s => s.v >= 0).length >= samples.filter(s => s.v < 0).length;
+    drawGraph($('gr'), [{ name: samples.length > 2 ? (away ? '멀어짐 →' : '← 가까워짐') : '', color: away ? '#2ee06f' : '#ff9046',
+      pts: samples.map(s => [s.t, Math.abs(s.v)]) }], Math.max(3, Math.min(T_MAX, Math.ceil(t + 0.5))), vM, t, '속력 (m/s)');
+  }
+  const CFG_LAB = ['😀마주 · ⬇아래', '😀마주 · ⬆위', '🔙등지 · ⬇아래', '🔙등지 · ⬆위'];
+  function cellHTML(r, cur, best) {
+    if (!r) return `<td class="empty${cur}">·</td>`;
+    if (r.dir === 0) return `<td class="stall${cur}">⚪</td>`;
+    const cls = (r === best ? 'best' : r.dir > 0 ? 'away' : 'toward') + (r.fast ? ' fast' : '');
+    const val = r.reached ? r.t.toFixed(1) + 's' : Math.abs(r.d).toFixed(2) + 'm';
+    return `<td class="${cls}${cur}">${r.dir > 0 ? '→' : '←'}${r.fast ? '🐇' : '🐢'}<br>${val}</td>`;
+  }
+  function renderGrid() {
+    const g = grids[gkey()] || {};
+    let best = null;
+    Object.values(g).forEach(row => Object.values(row).forEach(r => { if (r && r.dir !== 0 && (!best || r.avg > best.avg)) best = r; }));
+    let html = '<thead><tr><th>방향 · 기어 \\ 날개</th>' + BLADES.map(b => `<th>${b}개</th>`).join('') + '</tr></thead><tbody>';
+    CONFIGS.forEach((_, ci) => {
+      html += `<tr><td class="rlab">${CFG_LAB[ci]}</td>`;
+      BLADES.forEach(b => html += cellHTML((g[ci] || {})[b], ci === P.ci && b === P.bl ? ' cur' : '', best));
+      html += '</tr>';
+    });
+    $('matrix').innerHTML = html + '</tbody>';
+  }
+  function record(r, o) {
+    const k = `${o.fan}|${o.len}|${o.dist}`;
+    grids[k] = grids[k] || {};
+    grids[k][o.ci] = grids[k][o.ci] || {};
+    grids[k][o.ci][o.bl] = r;
+  }
+  function onDone() {
+    const r = summarize(x - P.dist, t);
+    record(r, P);
+    renderGrid(); setFlag3d(r);
+    const dirTxt = r.dir > 0 ? '→ 멀어짐' : r.dir < 0 ? '← 가까워짐' : '⚪ 제자리';
+    $('ro_dir').textContent = dirTxt;
+    $('ro_dir').style.color = r.dir > 0 ? 'var(--green)' : r.dir < 0 ? 'var(--orange)' : '#9fb0c9';
+    $('ro_time').textContent = r.reached ? r.t.toFixed(1) + ' s' : r.dir === 0 ? '출발 못 함' : `10초에 ${Math.abs(r.d).toFixed(2)} m`;
+    $('ro_avg').textContent = r.avg.toFixed(2) + ' m/s';
+    $('ro_ts').textContent = r.dir === 0 ? '—' : r.fast ? '🐇 빠름' : '🐢 느림';
+    // 예측 채점
+    const pred = getPred();
+    const actual = r.dir > 0 ? 'away' : r.dir < 0 ? 'toward' : 'stay';
+    const predTxt = pred === 'none' ? '' : pred === actual ? ' · 🎯 예측 성공!' : ' · 🤔 예측과 달라요 — 왜일까?';
+    const bd = $('bd');
+    if (r.dir === 0) {
+      bd.className = 'badge stuck';
+      bd.textContent = `⚪ 제자리 — 프로펠러가 부르르 떨기만! 바퀴 힘이 바람·마찰을 못 이겨요 (날개 추가·선풍기 세게)${predTxt}`;
+    } else if (r.dir > 0) {
+      bd.className = r.fast ? 'badge go' : 'badge slow';
+      bd.textContent = `→ 선풍기에서 멀어짐 ${r.fast ? '🐇' : '🐢'} ${r.reached ? `0.5 m를 ${r.t.toFixed(1)}초` : `${r.d.toFixed(2)} m`} · 바퀴 힘과 바람이 같은 쪽(순풍)${predTxt}`;
+    } else {
+      bd.className = 'badge slow';
+      bd.textContent = `← 바람을 거슬러 가까워짐 ${r.fast ? '🐇' : '🐢'} ${r.reached ? `0.5 m를 ${r.t.toFixed(1)}초` : `${Math.abs(r.d).toFixed(2)} m`} · 기어가 바람을 이겼어요(역풍)${predTxt}`;
+    }
+    $('pause').disabled = true; $('run').disabled = false;
+    stuckNow = false;
+    drawG();
+  }
+  const setSt = statusUI($('led'), $('st'));
+  const scale = speedCtl([$('spa'), $('spb'), $('spc')]);
+  const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
+
+  $('run').onclick = () => { if (finished || t > 0) reset(); eng.start(); $('run').disabled = true; $('pause').disabled = false; $('pause').textContent = '⏸'; };
+  $('pause').onclick = () => {
+    if (eng.running) { eng.pause(); $('pause').textContent = '▶'; }
+    else { eng.start(); $('pause').textContent = '⏸'; }
+  };
+  $('reset').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run').disabled = false; $('pause').disabled = true; $('pause').textContent = '⏸'; };
+  $('autoScan').onclick = () => {
+    CONFIGS.forEach(([face, gear], ci) => BLADES.forEach(bl => {
+      const o = { ...P, face, gear, bl, ci };
+      record(computeRun(o), o);
+    }));
+    renderGrid();
+    const bd = $('bd'); bd.className = 'badge go';
+    bd.textContent = '⚡ 자동 실험 완료 — 기어 위치가 방향을 정하고, 등지기+아래쪽(순풍)이 가장 빨라요!';
+  };
+  $('clearMx').onclick = () => { delete grids[gkey()]; renderGrid(); };
+
+  const redraw = () => { if (!eng.running) { draw(); drawG(); } };
+  window.addEventListener('resize', redraw);
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+    $('exp').classList.toggle('on', b.dataset.tab === 'exp');
+    $('theory').classList.toggle('on', b.dataset.tab === 'theory');
+    if (b.dataset.tab === 'exp') requestAnimationFrame(redraw);
+  });
+
+  readParams();
+  requestAnimationFrame(animate);
+  requestAnimationFrame(() => { reset(); setSt('ready'); });
+})();
+</script>
+</body>
+</html>

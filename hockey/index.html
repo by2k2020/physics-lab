@@ -74,10 +74,14 @@
   .param { margin: 6px 0 14px; }
   .param label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c6d2e6; font-size: 13px; }
   .param label b { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: 17px; }
-  .dir3 { display: flex; gap: 6px; }
-  .dir3 button { flex: 1; padding: 13px 4px; font-size: 15px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; transition: .1s; }
-  .dir3 button:hover { border-color: var(--accent); }
-  .dir3 button.on { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; color: #fff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+  .dir3, .dir5 { display: flex; gap: 6px; }
+  .dir3 button, .dir5 button { flex: 1; padding: 13px 4px; font-size: 15px; font-weight: 800; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 10px; cursor: pointer; font-family: inherit; transition: .1s; }
+  .dir5 button { padding: 12px 2px; font-size: 12.5px; }
+  .dir3 button:hover, .dir5 button:hover { border-color: var(--accent); }
+  .dir3 button.on, .dir5 button.on { background: linear-gradient(135deg, #1f5eff, #3d8bff); border-color: #3d8bff; color: #fff; box-shadow: 0 3px 12px rgba(45,120,255,.3); }
+  details.floorbox { margin: 4px 0 10px; }
+  details.floorbox summary { cursor: pointer; font-size: 12px; color: var(--dim); padding: 6px 0; }
+  details.floorbox summary:hover { color: var(--text); }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; }
   .toggle-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px dashed var(--border); color: #c6d2e6; font-size: 13px; }
   .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
@@ -155,7 +159,7 @@
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
         <div class="chip"><span class="lab">슛 세기</span><span id="hud_pw">4</span></div>
-        <div class="chip" style="color:var(--accent)"><span class="lab">슛 방향</span><span id="hud_ang">가운데</span></div>
+        <div class="chip" style="color:var(--accent)"><span class="lab">퍽 놓는 위치</span><span id="hud_pos">가운데</span></div>
         <div class="chip" style="color:var(--orange)"><span class="lab">바닥 (마찰력)</span><span id="hud_sf">🧊 빙판</span></div>
       </div>
       <div class="cam-row">
@@ -166,11 +170,12 @@
       </div>
       <div class="hint">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="predict" id="predict">
-        <div class="q">🤔 이 세기면 퍽이 골대까지 갈까?</div>
-        <div class="sub">바닥을 잘 봐 — 지금 바닥은 <b id="predSurf">빙판</b>!</div>
+        <div class="q">🤔 이 자리에 퍽을 놓고 치면, 퍽은 어디로 갈까?</div>
+        <div class="sub">지금 퍽 위치: <b id="predPos">가운데</b> — 스윙 호를 잘 보고 생각해!</div>
         <div class="btns">
-          <button id="predIn">⭕ 간다</button>
-          <button id="predOut">❌ 못 간다</button>
+          <button id="predL">⬅ 왼쪽으로 휜다</button>
+          <button id="predC">🎯 똑바로 간다</button>
+          <button id="predR">오른쪽으로 휜다 ➡</button>
         </div>
       </div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
@@ -184,18 +189,23 @@
 
       <div class="param"><label>💪 슛 세기 (미는 힘 · 작용) <b id="v_pw">4</b></label>
         <div class="srow"><button class="step" data-t="pw" data-s="-1">◀</button><input type="range" id="pw" min="1" max="8" value="4" step="1"><button class="step" data-t="pw" data-s="1">▶</button></div></div>
-      <div class="param"><label>🎯 슛 방향 <b id="v_ang">가운데</b></label>
-        <div class="dir3">
-          <button data-a="-2">⬅ 왼쪽</button>
-          <button data-a="0" class="on">가운데</button>
-          <button data-a="2">오른쪽 ➡</button>
-        </div></div>
+      <div class="param"><label>🏒 퍽 놓는 위치 (스윙 호 위) <b id="v_pos">가운데</b></label>
+        <div class="dir5">
+          <button data-p="-2">뒤로 2</button>
+          <button data-p="-1">뒤로 1</button>
+          <button data-p="0" class="on">가운데</button>
+          <button data-p="1">앞으로 1</button>
+          <button data-p="2">앞으로 2</button>
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:5px">스틱은 피벗(회전축)을 중심으로 호를 그리며 돌아요 — 퍽을 어디에 놓느냐가 발사 각도를 정해요</div></div>
 
-      <h3>🧊 바닥 고르기</h3>
-      <div class="presets">
-        <button class="p on" id="sfIce">🧊 빙판<small>미끌미끌 — 마찰력이 작아요</small></button>
-        <button class="p" id="sfRough">🟫 거친 바닥<small>까끌까끌 — 마찰력이 커요</small></button>
-      </div>
+      <details class="floorbox">
+        <summary>🧊 더 실험해보기 — 바닥 바꾸기 (마찰력)</summary>
+        <div class="presets" style="margin-top:8px">
+          <button class="p on" id="sfIce">🧊 빙판<small>미끌미끌 — 마찰력이 작아요</small></button>
+          <button class="p" id="sfRough">🟫 거친 바닥<small>까끌까끌 — 마찰력이 커요</small></button>
+        </div>
+      </details>
 
       <div class="toggle-row">
         <input type="checkbox" id="keeper" checked><label for="keeper">🧤 골키퍼 넣기 (좌우로 왔다갔다)</label>
@@ -209,7 +219,7 @@
         <button class="ghost" id="reset">↺</button>
       </div>
       <div class="ctl-row">
-        <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 세기 1~8 거리 전부 재기</button>
+        <button class="ghost" id="autoScan" style="flex:1">⚡ 자동 실험 — 위치×세기 전부 재보기</button>
         <button class="ghost" id="clearMx">지우기</button>
       </div>
       <div class="speed-row"><span>재생 속도</span>
@@ -218,14 +228,16 @@
         <button id="spc">0.25×</button>
       </div>
 
-      <h3>📋 결과 정리표 — 세기 × 바닥 <span style="text-transform:none;color:#5a6a85">(간 거리 m · ⚽ 골! · ❌ 못 미침)</span></h3>
+      <h3>📋 결과 정리표 — 퍽 위치 × 세기 <span id="mxSurf" style="text-transform:none;color:#5a6a85">(🧊 빙판)</span> <span style="text-transform:none;color:#5a6a85">· ⚽ 골 · ⬅➡ 빗나감 · 숫자 = 간 거리 m</span></h3>
       <table class="mx" id="matrix"></table>
 
       <h3 style="margin-top:14px">측정값</h3>
       <div class="readouts">
+        <div class="readout"><div class="k">발사 각도</div><div class="v a" id="ro_angle">—</div></div>
         <div class="readout"><div class="k">처음 속도 (m/s)</div><div class="v a" id="ro_v0">—</div></div>
         <div class="readout"><div class="k">이동 거리 (m)</div><div class="v g" id="ro_dist">—</div></div>
-        <div class="readout"><div class="k">걸린 시간 (s)</div><div class="v b" id="ro_time">—</div></div>
+        <div class="readout"><div class="k">좌우 벗어남 (골라인)</div><div class="v b" id="ro_off">—</div></div>
+        <div class="readout"><div class="k">걸린 시간 (s)</div><div class="v s" id="ro_time">—</div></div>
         <div class="readout"><div class="k">판정</div><div class="v a" id="ro_res">—</div></div>
       </div>
 
@@ -244,33 +256,42 @@
     <div class="theory-box">
       <div class="card" style="border-color:rgba(199,146,234,.5); background:rgba(199,146,234,.07)">
         <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
-        이번 차시에서는 <b>밀기 힘(작용)</b>과 <b>마찰력</b>을 배웁니다.
-        같은 세기로 쳐도 바닥의 마찰력에 따라 퍽이 가는 거리가 달라지는 것을 3D 시뮬레이션과 레고 브릭큐 실험으로 직접 확인합니다.<br>
-        아이는 속도(m/s)·거리(m) 측정값과 속도–시간 그래프를 스스로 읽으며, 초등 과학의 핵심 개념인 '힘과 운동'을 놀이처럼 체득합니다.
+        이번 차시에서는 <b>밀기 힘(작용)</b>과 <b>회전축(피벗) 중심의 스윙</b>을 배웁니다.
+        하키 스틱은 피벗을 중심으로 호를 그리며 돌기 때문에, <b>퍽을 몸의 어디에 놓느냐(뒤·가운데·앞)에 따라 발사 각도가 달라져</b>
+        가운데에 놓아야 퍽이 똑바로 갑니다 — 레고 브릭큐 하키 모델의 핵심 미션과 같은 원리입니다.<br>
+        아이는 발사 각도(°)·거리(m) 측정값과 위치×세기 결과표를 스스로 읽으며, 초등 과학의 핵심 개념인 '힘과 운동'을 놀이처럼 체득합니다.
       </div>
 
-      <h2>🏒 원리 카드 — 밀기 힘(작용)과 마찰력</h2>
+      <h2>🏒 원리 카드 — 퍽 놓는 위치와 발사 각도</h2>
       <div class="card">
-        스틱으로 퍽을 <b>탁!</b> 치는 게 바로 <b style="color:var(--accent)">미는 힘 (작용)</b>이야.<br>
-        세게 밀수록 퍽은 빨라지고, 더 멀리 가!
+        스틱은 <b style="color:var(--purple)">피벗(회전축)</b>을 중심으로 <b>호(둥근 길)</b>를 그리며 돌아.<br>
+        퍽은 스틱 날에 맞는 순간, 그 자리에서 <b style="color:var(--accent)">스틱 날이 향하는 방향(접선)</b>으로 날아가!
       </div>
       <div class="card">
-        그런데 퍽은 왜 점점 느려질까? 바닥이 퍽을 붙잡는 힘, <b style="color:var(--orange)">마찰력</b> 때문이야.<br>
-        🧊 <b>빙판</b>은 미끌미끌 → 마찰력이 작아서 <b>쭉~</b> 미끄러져.<br>
-        🟫 <b>거친 바닥</b>은 까끌까끌 → 마찰력이 커서 <b>금방 멈춰</b> 버려.
+        그래서 퍽을 놓는 자리가 중요해.<br>
+        🔙 몸 <b>뒤쪽</b>에 놓으면 → 스틱 날이 아직 덜 돌아서 → 퍽이 <b>왼쪽으로 휘어</b> 날아가.<br>
+        🎯 몸 <b>가운데</b>(정면)에 놓으면 → 스틱 날이 골대와 딱 직각 → 퍽이 <b>똑바로</b> 가!<br>
+        🔜 몸 <b>앞쪽</b>에 놓으면 → 스틱 날이 너무 많이 돌아서 → 퍽이 <b>오른쪽으로 휘어</b> 날아가.
       </div>
       <div class="card" style="border-color:rgba(46,224,111,.4)">
         ⭐ 그래서 규칙은 이거야!<br>
-        <b>미는 힘이 셀수록, 마찰력이 작을수록 → 퍽은 더 멀리 간다!</b><br>
-        거친 바닥에서 골을 넣고 싶으면? 훨씬 <b>더 세게</b> 쳐야 해.
+        <b>퍽이 똑바로 가길 원하면 → 가운데(정면)에 놓고 쳐라!</b><br>
+        한 칸 앞·뒤는 구석으로 아슬아슬, 두 칸 벗어나면 옆으로 빗나가 버려.
+      </div>
+      <div class="card">
+        그리고 퍽은 왜 점점 느려질까? 바닥이 퍽을 붙잡는 힘, <b style="color:var(--orange)">마찰력</b> 때문이야.<br>
+        🧊 <b>빙판</b>은 미끌미끌 → 마찰력이 작아서 <b>쭉~</b> 미끄러져.<br>
+        🟫 <b>거친 바닥</b>은 까끌까끌 → 마찰력이 커서 <b>금방 멈춰</b> 버려.
+        <b>미는 힘이 셀수록, 마찰력이 작을수록 퍽은 더 멀리 간다!</b>
       </div>
 
       <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
       <div class="card" style="line-height:2">
-        <b style="color:var(--accent)">밀기 힘 (작용)</b> — 스틱으로 퍽을 탁! 밀어주는 힘. 힘이 클수록 퍽이 빨라져요.<br>
-        <b style="color:var(--orange)">마찰력</b> — 바닥이 퍽을 붙잡아 느려지게 하는 힘. 미끌미끌하면 작고, 까끌까끌하면 커요.<br>
-        <b style="color:var(--green)">속도</b> — 얼마나 빠른지를 나타내는 값. m/s(미터/초)로 재고, 그래프의 세로축이에요.<br>
-        <b style="color:var(--purple)">감속</b> — 마찰력 때문에 속도가 점점 줄어드는 것. 그래프 선이 내려가는 이유예요.
+        <b style="color:var(--purple)">피벗 (회전축)</b> — 스틱이 돌 때 중심이 되는 축. 스틱 날은 피벗을 중심으로 호를 그려요.<br>
+        <b style="color:var(--accent)">접선 방향</b> — 호 위의 한 점에서 튀어나가는 방향. 퍽은 맞는 순간의 접선 방향으로 날아가요.<br>
+        <b style="color:var(--accent)">발사 각도</b> — 퍽이 날아가는 방향과 정면 사이의 각. 퍽 놓는 위치가 정할 수 있어요.<br>
+        <b style="color:var(--green)">밀기 힘 (작용)</b> — 스틱으로 퍽을 탁! 밀어주는 힘. 힘이 클수록 퍽이 빨라져요.<br>
+        <b style="color:var(--orange)">마찰력</b> — 바닥이 퍽을 붙잡아 느려지게 하는 힘. 미끌미끌하면 작고, 까끌까끌하면 커요.
       </div>
       <div class="card">
         🧤 골키퍼는 좌우로 왔다갔다 해. 키퍼가 <b>반대쪽으로 갈 때</b>를 노려서
@@ -279,23 +300,25 @@
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2>
       <ul style="line-height:2.1">
-        <li><b>① 예측</b> — "예측 모드"를 켜고, 슛 전에 "이 세기면 골대까지 갈까?" 손들기</li>
-        <li><b>② 슛!</b> — 퍽이 미끄러지다 느려지는 모습 관찰. 예측과 비교</li>
-        <li><b>③ 바닥 바꾸기</b> — 같은 세기로 빙판 → 거친 바닥. "왜 금방 멈추지?" (마찰력!)</li>
-        <li><b>④ 자동 실험</b> — 세기 1~8 거리를 표로 채우고, 몇부터 골대에 닿는지 찾기</li>
-        <li><b>⑤ 골키퍼 대결</b> — 골키퍼를 켜고, 타이밍·방향을 읽어 3골 넣기 미션</li>
+        <li><b>① 예측</b> — "예측 모드"를 켜고, 퍽 위치를 바꿔가며 "이 자리면 퍽이 어디로 갈까?" 손들기 (PT 기본 미션)</li>
+        <li><b>② 슛!</b> — 퍽이 휘어 가거나 똑바로 가는 모습 관찰. 예측과 비교</li>
+        <li><b>③ 위치 실험</b> — 뒤2 → 뒤1 → 가운데 → 앞1 → 앞2 순서로 쏘며 "어디에 놓아야 똑바로 가지?" 찾기</li>
+        <li><b>④ 자동 실험</b> — 위치×세기 표를 채우고 규칙 찾기: 가운데만 정면 ⚽ · 세기 몇부터 골대에 닿는지</li>
+        <li><b>⑤ 골키퍼 대결</b> — 골키퍼를 켜고 발견: 가운데 슛은 키퍼가 막는다! 한 칸 옆 구석슛으로 3골 넣기</li>
       </ul>
 
       <div class="tip">
         <b>🧱 레고 실험 팁</b><br>
-        · 실물 BricQ 하키 모델도 똑같다 — 고무줄을 많이 감을수록(=세기↑) 퍽이 멀리 간다<br>
-        · 책상 위(매끈)와 카펫 위(거침)에서 같은 세기로 쏘아 거리 비교 — 시뮬 표와 맞춰보기<br>
+        · 실물 BricQ 하키 모델도 똑같다 — 퍽을 슈터 정면·앞·뒤에 놓고 쏘아 어디로 가는지 비교 (PT 미션 그대로)<br>
+        · 슈터 바를 길게/짧게 바꿔보기 — 길수록 날 끝이 빨라져(🐇) 퍽이 멀리 간다, 짧으면 🐢 (지레의 원리)<br>
         · 순서는 항상: 시뮬로 예측 → 레고로 실험 → "왜 다르지?" 이야기
       </div>
 
       <details style="margin-top:18px">
         <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
         <div class="inner" style="padding:12px 16px; line-height:2">
+          발사 각도: 스윙은 피벗 중심의 회전이라 퍽이 맞는 순간 스틱 날의 법선(≈호의 접선)이 발사 방향이 됩니다.
+          퍽 위치 1칸당 접촉 시점의 스틱 각이 4.5°씩 달라지게 두었습니다 — 골라인(6 m)에서 1칸 ≈ 0.6 m, 2칸 ≈ 1.2 m 벗어남 (골대 반폭 0.8 m).<br>
           마찰 감속: <span class="eq">a = μg</span> — 퍽 속도가 일정하게 줄어듭니다 (그래프가 직선인 이유).<br>
           도달 거리: <span class="eq">d = v₀² / (2μg)</span> — 속도의 <b>제곱</b>에 비례해, 세기 2배면 거리는 4배.<br>
           시뮬 값: 빙판 μ=0.05, 거친 바닥 μ=0.20 (4배) → 같은 세기의 거리도 ¼로 줄어듭니다.<br>
@@ -318,14 +341,37 @@ let activeTab = 'exp';
 /* ── 눈금 → 물리량 (미터·초) : 빙판은 세기 3부터, 거친 바닥은 7부터 골대(6 m) 도달 ── */
 const MU_ICE = 0.05, MU_ROUGH = 0.20;
 const V0_OF = pw => 1.0 + pw * 0.58;               // 슛 세기 1~8 → 퍽 초기 속도
-const ANG_OF = a => a * 3 * Math.PI / 180;         // 방향 3택: 왼쪽 -2 · 가운데 0 · 오른쪽 +2 → ±6°
 const START_X = 0.35, GOAL_X = 6.35, NEED = 6.0;   // 퍽 출발점 → 골라인 6 m
 const GOAL_HALF = 0.8, GOAL_H = 0.62;
 const KEEPER_X = 5.85, KEEP_HALF = 0.34, PUCK_R = 0.07;
 const RINK_HALF = 1.9, BACK_X = 7.35;
+/* ── PT 기본 미션: 퍽 놓는 위치 → 발사 각도 (스윙 호의 접선) ──
+   퍽 자리는 피벗 중심 스윙 원호 위, 몸 뒤쪽(x−) → 앞쪽(x+·골대 방향)으로 1칸 = 호 0.14 m 간격
+   접촉 시점 스틱 각 4.5°/칸 차이 → 가운데 = 정면 ⚽ · ±1칸 = 구석 아슬 (골라인 ≈ 0.6 m) · ±2칸 = 빗나감 (≈ 1.2 m) */
+const PIVOT_X = 0.11, PIVOT_Z = 0.27, ARC_R = 0.36;             // 슈터 스틱 피벗 바닥 투영 · 블레이드 반경
+const ARC_BASE = Math.atan2(0 - PIVOT_Z, START_X - PIVOT_X);    // 가운데 자리의 기준 원호 각
+const ARC_DPHI = 0.14 / ARC_R;                                  // 1칸당 원호 각 (호 길이 0.14 m)
+const POS_ANG = 4.5 * Math.PI / 180;
+const ARC_ROT_DEG = -45;                                        // 호 방향 (원장 확정값 2026-07-31)
+const arcPhi0 = () => ARC_BASE + ARC_ROT_DEG * Math.PI / 180;
+const puckStartOf = pos => {
+  const phi = arcPhi0() + pos * ARC_DPHI;
+  return { x: PIVOT_X + ARC_R * Math.cos(phi), z: PIVOT_Z + ARC_R * Math.sin(phi) };
+};
+const POS_LABEL = { '-2': '뒤로 2', '-1': '뒤로 1', '0': '가운데', '1': '앞으로 1', '2': '앞으로 2' };
+const posLabel = p => POS_LABEL[p];
 const muOf = () => cfg.rough ? MU_ROUGH : MU_ICE;
 const reachOf = (pw, rough) => { const v = V0_OF(pw); return v * v / (2 * (rough ? MU_ROUGH : MU_ICE) * G); };
-const angLabel = a => a === 0 ? '가운데' : (a < 0 ? '왼쪽' : '오른쪽');
+// 격자표·자동실험용 계산 결과 (장애물 없다고 칠 때): 못 미침 / 좌우 벗어남 / 골
+function outcomeOf(pos, pw, rough) {
+  const { x, z } = puckStartOf(pos);
+  const a = pos * POS_ANG;
+  const reach = reachOf(pw, rough);
+  const needDist = (GOAL_X - x) / Math.cos(a);
+  if (reach < needDist) return { short: true, dist: reach };
+  const off = z + Math.tan(a) * (GOAL_X - x);
+  return { short: false, off, goal: Math.abs(off) <= GOAL_HALF - PUCK_R };
+}
 
 /* ── 탭 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -806,10 +852,74 @@ function makeShooter() {
 }
 const shooter = makeShooter();
 shooter.position.set(-0.05, 0, 0.22);
+shooter.rotation.y = Math.PI / 2;   // 호 방향(-45° 확정)에 맞춰 몸을 +90° 돌려 스윙 자세
 scene.add(shooter);
 const stickPivot = shooter.userData.stickPivot;
 const shooterBody = shooter.userData.body;
 const STICK_READY = 0.85, STICK_HIT = -0.5, STICK_FOLLOW = -1.25;   // 백스윙 → 임팩트 → 팔로우스루 (y축 스윙)
+
+// ── 스윙 호 시각화 (PT '검은 선' — 피벗 중심 스윙 범위 + 퍽 놓는 자리 5개, 호 각도 조절 가능) ──
+const posMarkers = [];
+let arcLine, arcRays, arcBackLab, arcFrontLab;
+{
+  const arcMat = new THREE.LineBasicMaterial({ color: 0x1a2234, transparent: true, opacity: 0.85 });
+  arcLine = new THREE.Line(new THREE.BufferGeometry(), arcMat);
+  scene.add(arcLine);
+  // 피벗 점 (회전 중심 — 각도 조절과 무관하게 고정)
+  const pivotDot = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.014, 18),
+    new THREE.MeshBasicMaterial({ color: 0xc792ea }));
+  pivotDot.position.set(PIVOT_X, 0.008, PIVOT_Z); scene.add(pivotDot);
+  const pivotLab = textSprite('피벗 (회전축)', { size: 26, color: '#c792ea', bg: 'rgba(10,16,30,.7)', scale: 0.0026 });
+  pivotLab.position.set(PIVOT_X - 0.2, 0.3, PIVOT_Z + 0.3); scene.add(pivotLab);
+  arcRays = [0, 1].map(() => { const l = new THREE.Line(new THREE.BufferGeometry(), arcMat); scene.add(l); return l; });
+  // 퍽 놓는 자리 마커 5개
+  for (const pos of [-2, -1, 0, 1, 2]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(PUCK_R + 0.025, 0.012, 8, 26),
+      new THREE.MeshBasicMaterial({ color: 0x5a6a85, transparent: true, opacity: 0.55 }));
+    ring.rotation.x = Math.PI / 2;
+    ring.userData.pos = pos; scene.add(ring); posMarkers.push(ring);
+  }
+  arcBackLab = textSprite('뒤', { size: 26, color: '#8b98ad', scale: 0.003 });
+  scene.add(arcBackLab);
+  arcFrontLab = textSprite('앞', { size: 26, color: '#8b98ad', scale: 0.003 });
+  scene.add(arcFrontLab);
+  // 골대 좌우 이름표 — 예측 답(왼쪽/오른쪽) 기준을 화면에 고정
+  const leftLab = textSprite('⬅ 왼쪽', { size: 26, color: '#cfdcef', bg: 'rgba(10,16,30,.6)', scale: 0.0028 });
+  leftLab.position.set(GOAL_X - 0.4, 0.18, -GOAL_HALF - 0.35); scene.add(leftLab);
+  const rightLab = textSprite('오른쪽 ➡', { size: 26, color: '#cfdcef', bg: 'rgba(10,16,30,.6)', scale: 0.0028 });
+  rightLab.position.set(GOAL_X - 0.4, 0.18, GOAL_HALF + 0.35); scene.add(rightLab);
+}
+function rebuildArcVis() {
+  const pts = [];
+  for (let t = -2.6; t <= 2.6001; t += 0.2) {
+    const s = puckStartOf(t);
+    pts.push(new THREE.Vector3(s.x, 0.012, s.z));
+  }
+  arcLine.geometry.dispose();
+  arcLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+  [-2.6, 2.6].forEach((t, i) => {
+    const s = puckStartOf(t);
+    arcRays[i].geometry.dispose();
+    arcRays[i].geometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(PIVOT_X, 0.012, PIVOT_Z), new THREE.Vector3(s.x, 0.012, s.z)]);
+  });
+  posMarkers.forEach(m => {
+    const s = puckStartOf(m.userData.pos);
+    m.position.set(s.x, 0.01, s.z);
+  });
+  const b = puckStartOf(-2.9), f = puckStartOf(2.9);
+  arcBackLab.position.set(b.x, 0.16, b.z);
+  arcFrontLab.position.set(f.x, 0.16, f.z);
+}
+rebuildArcVis();
+function updatePosMarkers() {
+  posMarkers.forEach(m => {
+    const on = m.userData.pos === cfg.pos;
+    m.material.color.setHex(on ? 0x4da3ff : 0x5a6a85);
+    m.material.opacity = on ? 1 : 0.55;
+    m.scale.setScalar(on ? 1.25 : 1);
+  });
+}
 
 // ── 골키퍼 (패드 낀 미니피겨 — 좌우 왕복) ──
 const keeperGrp = new THREE.Group(); scene.add(keeperGrp);
@@ -980,12 +1090,12 @@ function stepSpray(dt) {
 }
 
 /* ── 상태 ── */
-let cfg = { pw: 4, ang: 0, rough: false };
+let cfg = { pw: 4, pos: 0, rough: false };
 // state: ready → swing → sliding → done
-let state = 'ready', swingA = STICK_READY;
+let state = 'ready', swingA = STICK_READY, stickHitA = STICK_HIT;
 let P = null;                 // 진행 중 슛 데이터
-const results = {};           // '0|pw' (빙판) / '1|pw' (거친) → 도달 거리
-let pendingChoice = null;     // 예측 모드 답 ('go'|'no')
+const results = { 0: {}, 1: {} };   // [바닥]['pos|pw'] → outcomeOf 결과
+let pendingChoice = null;     // 예측 모드 답 ('L'|'C'|'R')
 
 function applySurface() {
   floor.material = cfg.rough ? roughMat : iceMat;
@@ -994,19 +1104,26 @@ function applySurface() {
   $('sfRough').classList.toggle('on', cfg.rough);
   $('sfRough').classList.toggle('rough', cfg.rough);
   $('hud_sf').textContent = cfg.rough ? '🟫 거친 · 큼' : '🧊 빙판 · 작음';
-  $('predSurf').textContent = cfg.rough ? '거친 바닥 (마찰력이 커요)' : '빙판 (마찰력이 작아요)';
+  $('mxSurf').textContent = cfg.rough ? '(🟫 거친 바닥)' : '(🧊 빙판)';
+}
+
+function angleText(pos) {
+  if (pos === 0) return '0° 정면';
+  return Math.abs(pos * 4.5) + '° ' + (pos < 0 ? '왼쪽 ⬅' : '오른쪽 ➡');
 }
 
 function aimLineUpdate() {
   $('hud_pw').textContent = cfg.pw;
-  $('hud_ang').textContent = angLabel(cfg.ang);
+  $('hud_pos').textContent = posLabel(cfg.pos);
+  updatePosMarkers();
 }
 
 function resetPuck() {
   state = 'ready'; swingA = STICK_READY; stickPivot.rotation.y = swingA; P = null;
-  puck.position.set(START_X, 0.018, 0);
+  const s0 = puckStartOf(cfg.pos);
+  puck.position.set(s0.x, 0.018, s0.z);
   $('bd').className = 'badge';
-  ['ro_v0', 'ro_dist', 'ro_time', 'ro_res'].forEach(id => $(id).textContent = '—');
+  ['ro_angle', 'ro_v0', 'ro_dist', 'ro_off', 'ro_time', 'ro_res'].forEach(id => $(id).textContent = '—');
   drawVTGraph([], 1, 1);
   aimLineUpdate();
   setSt('ready');
@@ -1014,14 +1131,16 @@ function resetPuck() {
 }
 
 function beginSlide() {
-  const v0 = V0_OF(cfg.pw), a = ANG_OF(cfg.ang);
+  const v0 = V0_OF(cfg.pw), a = cfg.pos * POS_ANG;
+  const s0 = puckStartOf(cfg.pos);
   P = {
-    x: START_X, z: 0, vx: v0 * Math.cos(a), vz: v0 * Math.sin(a),
-    v0, mu: muOf(), t: 0, dist: 0, samples: [[0, v0]], trail: [[START_X, 0]],
-    blocked: false, goal: false, crossedGoal: false,
+    x: s0.x, z: s0.z, vx: v0 * Math.cos(a), vz: v0 * Math.sin(a),
+    v0, mu: muOf(), t: 0, dist: 0, samples: [[0, v0]], trail: [[s0.x, s0.z]],
+    blocked: false, goal: false, crossedGoal: false, offGoal: null,
     reach: reachOf(cfg.pw, cfg.rough)
   };
   $('ro_v0').textContent = v0.toFixed(1) + ' m/s';
+  $('ro_angle').textContent = angleText(cfg.pos);
   state = 'sliding';
 }
 
@@ -1051,6 +1170,7 @@ function stepPuck(dt) {
     p.crossedGoal = true;
     const f = (GOAL_X - px) / (p.x - px);
     const cz = pz + (p.z - pz) * f;
+    p.offGoal = cz;
     if (Math.abs(cz) <= GOAL_HALF - PUCK_R) p.goal = true;
   }
   // 골이면 그물에 걸림, 아니면 뒷보드에서 정지
@@ -1067,39 +1187,48 @@ function finishShot() {
   const p = P; state = 'done';
   shots++;
   let cls, txt, res;
-  if (p.goal) { goals++; cheerT = 1.4; burst(GOAL_X, 0); buzz(); cls = 'in'; txt = '🚨 골!!!'; res = '골!'; setSt('done', '골! — 세기·방향·타이밍 모두 성공'); }
-  else if (p.blocked) { cls = 'blk'; txt = '🧤 골키퍼가 막았다!'; res = '막힘'; setSt('done', '막힘 — 키퍼가 없는 쪽을 노려보자'); }
-  else if (p.crossedGoal) { cls = 'out'; txt = '✗ 옆으로 빗나감'; res = '빗나감'; setSt('done', '빗나감 — 방향을 가운데로 돌려보자'); }
+  const missSide = p.offGoal != null ? (p.offGoal < 0 ? '왼쪽' : '오른쪽') : '';
+  if (p.goal) {
+    goals++; cheerT = 1.4; burst(GOAL_X, 0); buzz(); cls = 'in';
+    txt = cfg.pos === 0 ? '🚨 골!!! 한가운데로 똑바로!' : `🚨 골! ${missSide} 구석으로 아슬아슬!`;
+    res = '골!'; setSt('done', '골! — 퍽 위치·세기·타이밍 모두 성공');
+  }
+  else if (p.blocked) { cls = 'blk'; txt = '🧤 골키퍼가 막았다!'; res = '막힘'; setSt('done', '막힘 — 퍽 위치를 한 칸 옮겨 구석을 노려보자'); }
+  else if (p.crossedGoal) { cls = 'out'; txt = `✗ ${missSide}으로 빗나감 — 퍽을 가운데 쪽으로!`; res = '빗나감'; setSt('done', `${missSide}으로 빗나감 — 퍽 놓는 위치를 가운데 쪽으로 옮겨보자`); }
   else { cls = 'out'; txt = '✗ 골대까지 못 갔어 — 마찰력이 이겼다, 더 세게!'; res = '못 미침'; setSt('done', '마찰력이 퍽을 멈췄다 — 더 큰 힘으로 쳐보자'); }
   updateScore();
-  // 예측 모드 비교 (질문: 골대까지 갈까? = 도달 거리 기준)
+  // 예측 모드 비교 (질문: 퍽이 어디로 갈까? — 퍽 위치가 정한 발사 각도로 판정)
   if (pendingChoice != null) {
-    const reached = p.crossedGoal || p.blocked;   // 배지 판정과 동일 기준 (골라인·키퍼 도달)
-    const correct = (pendingChoice === 'go') === reached;
-    txt += correct ? '  ·  🙋 예측 성공!' : '  ·  예측과 달랐네?';
+    const actual = cfg.pos < 0 ? 'L' : cfg.pos > 0 ? 'R' : 'C';
+    txt += pendingChoice === actual ? '  ·  🙋 예측 성공!' : '  ·  예측과 달랐네?';
   }
   pendingChoice = null;
   const bd = $('bd'); bd.className = 'badge ' + cls; bd.textContent = txt;
   addTraj(p.trail, p.goal ? 0x2ee06f : p.blocked ? 0xff5a52 : 0xffb02e);
   $('ro_dist').textContent = p.dist.toFixed(1) + ' m';
   $('ro_time').textContent = p.t.toFixed(1) + ' s';
+  $('ro_off').textContent = p.offGoal == null ? '골라인 못 감'
+    : Math.abs(p.offGoal) < 0.05 ? '0 m (정면)'
+    : Math.abs(p.offGoal).toFixed(1) + ' m ' + (p.offGoal < 0 ? '⬅' : '➡');
   $('ro_res').textContent = res;
-  // 결과표: 이 세기×바닥의 자유 도달 거리(장애물 없다고 칠 때) 기록
-  results[(cfg.rough ? 1 : 0) + '|' + cfg.pw] = p.reach;
+  // 결과표: 이 위치×세기의 계산 결과(키퍼 없다고 칠 때) 기록
+  results[cfg.rough ? 1 : 0][cfg.pos + '|' + cfg.pw] = outcomeOf(cfg.pos, cfg.pw, cfg.rough);
   drawMatrix();
   $('fire').disabled = false;
 }
 
 function drawMatrix() {
+  const s = cfg.rough ? 1 : 0;
   const pws = [1, 2, 3, 4, 5, 6, 7, 8];
-  let html = '<tr><th style="font-size:10.5px">바닥＼세기</th>' + pws.map(p => `<th>${p}</th>`).join('') + '</tr>';
-  [['🧊 빙판', 0], ['🟫 거친', 1]].forEach(([lab, s]) => {
-    html += `<tr><td class="lab">${lab}</td>` + pws.map(p => {
-      const r = results[s + '|' + p];
-      const cur = (p === cfg.pw && s === (cfg.rough ? 1 : 0)) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
+  let html = '<tr><th style="font-size:10.5px">위치＼세기</th>' + pws.map(p => `<th>${p}</th>`).join('') + '</tr>';
+  [-2, -1, 0, 1, 2].forEach(pos => {
+    html += `<tr><td class="lab">${posLabel(pos)}</td>` + pws.map(p => {
+      const r = results[s][pos + '|' + p];
+      const cur = (p === cfg.pw && pos === cfg.pos) ? ' style="outline:2px solid var(--accent);outline-offset:-2px"' : '';
       if (r == null) return '<td class="empty"' + cur + '></td>';
-      const v = r < 10 ? r.toFixed(1) : Math.round(r) + '';
-      return `<td class="${r >= NEED ? 'hit' : 'miss'}"${cur}>${v}<span class="sub">${r >= NEED ? '⚽' : '❌'}</span></td>`;
+      if (r.short) return `<td class="miss"${cur}>${r.dist.toFixed(1)}<span class="sub">🐌</span></td>`;
+      if (r.goal) return `<td class="hit"${cur}>⚽<span class="sub">${pos === 0 ? '정면' : '구석'}</span></td>`;
+      return `<td class="miss"${cur}>${r.off < 0 ? '⬅' : '➡'}<span class="sub">❌</span></td>`;
     }).join('') + '</tr>';
   });
   $('matrix').innerHTML = html;
@@ -1113,11 +1242,12 @@ function setSt(mode, txt) {
 
 /* ── 슬라이더 ── */
 $('pw').addEventListener('input', () => { cfg.pw = +$('pw').value; $('v_pw').textContent = cfg.pw; if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate(); drawMatrix(); });
-document.querySelectorAll('.dir3 button').forEach(b => b.onclick = () => {
-  cfg.ang = +b.dataset.a;
-  document.querySelectorAll('.dir3 button').forEach(x => x.classList.toggle('on', x === b));
-  $('v_ang').textContent = angLabel(cfg.ang);
+document.querySelectorAll('.dir5 button').forEach(b => b.onclick = () => {
+  cfg.pos = +b.dataset.p;
+  document.querySelectorAll('.dir5 button').forEach(x => x.classList.toggle('on', x === b));
+  $('v_pos').textContent = posLabel(cfg.pos);
   if (state !== 'sliding' && state !== 'swing') resetPuck(); else aimLineUpdate();
+  drawMatrix();
 });
 document.querySelectorAll('.step').forEach(b => b.onclick = () => {
   const el = $(b.dataset.t);
@@ -1133,6 +1263,7 @@ function startFire() {
   if (state === 'sliding' || state === 'swing' || scanTimer) return;
   if (state === 'done') resetPuck();
   if ($('predictMode').checked) {
+    $('predPos').textContent = posLabel(cfg.pos);
     $('predict').classList.add('on');
     return;
   }
@@ -1140,22 +1271,25 @@ function startFire() {
 }
 function launch() {
   state = 'swing'; swingA = STICK_READY; stickPivot.rotation.y = swingA;
+  stickHitA = STICK_HIT - cfg.pos * 0.3;   // 뒤쪽 퍽은 스윙 초반, 앞쪽 퍽은 스윙 후반에 맞는다
   $('fire').disabled = true; setSt('run', '슛 하는 중…');
 }
 $('fire').onclick = startFire;
 $('reset').onclick = () => { clearTraj(); $('analysis').classList.remove('on'); $('predict').classList.remove('on'); pendingChoice = null; resetPuck(); };
-$('predIn').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'go'; launch(); };
-$('predOut').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'no'; launch(); };
+$('predL').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'L'; launch(); };
+$('predC').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'C'; launch(); };
+$('predR').onclick = () => { $('predict').classList.remove('on'); pendingChoice = 'R'; launch(); };
 
-/* ── ⚡ 자동 실험 — 세기 1~8 × 두 바닥 도달 거리 표 채우기 ── */
+/* ── ⚡ 자동 실험 — 퍽 위치 5 × 세기 1~8 표 채우기 (현재 바닥) ── */
 let scanTimer = null;
 $('autoScan').onclick = () => {
   if (state === 'sliding' || state === 'swing' || scanTimer) return;
+  const s = cfg.rough ? 1 : 0;
   const combos = [];
-  for (let s = 0; s <= 1; s++) for (let p = 1; p <= 8; p++) combos.push([s, p]);
+  for (const pos of [-2, -1, 0, 1, 2]) for (let p = 1; p <= 8; p++) combos.push([pos, p]);
   $('analysis').classList.remove('on'); $('bd').className = 'badge';
   let i = 0;
-  setSt('run', '자동 실험 중… (세기 1~8 거리 재기)');
+  setSt('run', '자동 실험 중… (위치×세기 표 채우기)');
   scanTimer = setInterval(() => {
     if (i >= combos.length) {
       clearInterval(scanTimer); scanTimer = null;
@@ -1163,14 +1297,15 @@ $('autoScan').onclick = () => {
       showAnalysis();
       return;
     }
-    const [s, p] = combos[i++];
-    results[s + '|' + p] = reachOf(p, s === 1);
+    const [pos, p] = combos[i++];
+    results[s][pos + '|' + p] = outcomeOf(pos, p, s === 1);
     drawMatrix();
-  }, 130);
+  }, 90);
 };
 $('clearMx').onclick = () => {
   if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
-  for (const k in results) delete results[k];
+  for (const k in results[0]) delete results[0][k];
+  for (const k in results[1]) delete results[1][k];
   $('analysis').classList.remove('on');
   clearTraj();
   drawMatrix(); setSt('ready');
@@ -1178,14 +1313,17 @@ $('clearMx').onclick = () => {
 
 // 표에서 규칙 계산해 분석 카드 표시 (전부 계산값)
 function showAnalysis() {
-  const minPw = s => { for (let p = 1; p <= 8; p++) { const r = results[s + '|' + p]; if (r != null && r >= NEED) return p; } return null; };
-  const mi = minPw(0), mr = minPw(1);
+  const s = cfg.rough ? 1 : 0;
+  const minPw = pos => { for (let p = 1; p <= 8; p++) { const r = results[s][pos + '|' + p]; if (r && !r.short && r.goal) return p; } return null; };
+  const mc = minPw(0);
+  const straightPw = mc ?? '—';
   const el = $('anBody');
   el.innerHTML = `<div class="big">결과 정리표 완성!</div>
-    <div class="row">🧊 빙판(미끌미끌): 세기 <b>${mi ?? '—'}</b>부터 골대(6 m)까지 간다 ⚽</div>
-    <div class="row">🟫 거친 바닥(까끌까끌): 세기 <b>${mr ?? '8로도 안 됨'}</b>${mr ? '부터 골대까지 간다 ⚽' : ''}</div>
-    <div class="row">같은 세기라도 마찰력이 큰 까끌까끌 바닥에선 <b>훨씬 짧게</b> 간다!</div>
-    <div class="why">왜? 까끌까끌한 바닥은 <b>마찰력</b>(퍽을 붙잡는 힘)이 커서 브레이크처럼 작동해. 그래서 <b>미는 힘이 셀수록, 마찰력이 작을수록 퍽은 더 멀리 간다!</b></div>`;
+    <div class="row">🎯 <b>가운데</b>에 놓으면 한가운데로 <b>똑바로</b> 간다 ⚽ (발사 각도 0°)</div>
+    <div class="row">🔙🔜 <b>1칸</b> 앞·뒤 = 4.5° 휘어 <b>구석으로 아슬아슬</b> ⚽ · <b>2칸</b> = 9° 휘어 <b>옆으로 빗나감</b> ❌</div>
+    <div class="row">💪 세기 <b>${straightPw}</b>부터 골대(6 m)까지 힘이 닿는다 — 위치가 맞아도 힘이 모자라면 🐌</div>
+    <div class="why">왜? 스틱은 <b>피벗(회전축)</b>을 중심으로 호를 그리며 돌아서, 퍽이 맞는 순간 <b>스틱 날이 향하는 방향(접선)</b>으로 날아가.
+    그래서 <b>퍽을 놓는 위치가 발사 각도를 정한다!</b> 골 = 알맞은 위치 + 충분한 힘.</div>`;
   $('analysis').classList.add('on');
 }
 
@@ -1227,7 +1365,7 @@ function frame(ts) {
   // 스틱 스윙 → 임팩트 순간 퍽 발사
   if (state === 'swing') {
     swingA -= real * 11;
-    if (swingA <= STICK_HIT) { swingA = STICK_HIT; beginSlide(); }
+    if (swingA <= stickHitA) { swingA = stickHitA; beginSlide(); }
     stickPivot.rotation.y = swingA;
   } else if (state === 'sliding') {
     stepPuck(dt);

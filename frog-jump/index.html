@@ -166,13 +166,13 @@
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
-      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 고무줄을 당기고 점프!</span></div>
+      <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비 — 스프링을 누르고 점프!</span></div>
       <div class="ctl-row">
         <button class="primary" id="btnJump">🐸 점프!</button>
         <button id="btnRestart">↺ 처음부터</button>
       </div>
       <h3>점프 조절 — 딱 3가지만!</h3>
-      <div class="param"><label>💪 고무줄 당기기 (탄성력) · 1~5칸 <b id="v_pull">3</b></label>
+      <div class="param"><label>💪 스프링 누르기 (탄성력) · 1~5칸 <b id="v_pull">3</b></label>
         <div class="srow"><button class="step" id="pullDn">◀</button><input type="range" id="pull" min="1" max="5" value="3" step="1"><button class="step" id="pullUp">▶</button></div>
         <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="gaugeFill"></div><span class="gauge-txt" id="gaugeTxt">—</span></div></div></div>
       <div class="param"><label>📐 점프 방향 (발사 각도) <b id="v_ang">중간 45°</b></label>
@@ -201,7 +201,7 @@
       </div>
       <table id="tb"></table>
       <div class="predict" style="margin-top:13px">
-        <div class="q">🤔 <b>맞혀 봐!</b> 당김을 <b>2칸 → 4칸</b>으로 2배 하면, 딱 <b>2배</b> 멀리 갈까?</div>
+        <div class="q">🤔 <b>맞혀 봐!</b> 스프링 누름을 <b>2칸 → 4칸</b>으로 2배 하면, 딱 <b>2배</b> 멀리 갈까?</div>
         <div class="ox-row">
           <button class="pickO" id="btnO">⭕ 응, 2배!</button>
           <button class="pickX" id="btnX">❌ 아니야!</button>
@@ -216,27 +216,29 @@
     <div class="theory-box">
       <div class="brief-card">
         <h2>👨‍👩‍👧 학부모 브리핑</h2>
-        <p>이번 차시에는 고무줄의 <b>탄성 에너지</b>가 <b>운동 에너지</b>로 바뀌면서 개구리가 점프하는 원리를 시뮬레이션으로 실험했습니다.
-          고무줄을 당기는 정도와 발사 각도를 바꿔 가며 점프 거리를 표로 기록하고,
-          당김을 2배로 하면 거리는 약 <b>4배</b>가 된다는 것(에너지는 당김의 <b>제곱</b>에 비례)을 아이가 직접 확인했습니다.</p>
+        <p>이번 19차시는 브릭큐 에센셜 <b>개구리</b> 모형입니다. 뒷다리에 든 <b>스프링</b>을 눌렀다 놓으면 저장된 <b>탄성 에너지</b>가 <b>운동 에너지</b>로 바뀌며 점프하는 원리를 실험했습니다.
+          누르는 정도와 발사 각도를 바꿔 가며 점프 거리를 표로 기록하고, 누름을 2배로 하면 거리는 약 <b>4배</b>(에너지는 누름의 <b>제곱</b>에 비례)가 된다는 것,
+          그리고 다리가 연잎을 미는 만큼 연잎이 개구리를 밀어 올린다는 <b>작용-반작용</b>, 뒷다리가 <b>지레</b>(힘점·받침점·작용점)로 움직인다는 것을 아이가 직접 확인했습니다.</p>
       </div>
       <div class="term-card">
         <h2>🎓 오늘 배운 물리 용어</h2>
         <ul>
-          <li>💪 <b>탄성력</b> — 늘어난 고무줄이 원래 모양으로 되돌아가려는 힘</li>
-          <li>⚡ <b>탄성 에너지</b> — 고무줄을 당겨 놓았을 때 그 안에 저장되는 에너지 (당김의 제곱에 비례)</li>
+          <li>💪 <b>탄성력</b> — 눌린 스프링(용수철)이 원래 길이로 되돌아가려는 힘. 고무줄·풍선도 같은 탄성체</li>
+          <li>⚡ <b>탄성 에너지</b> — 스프링을 눌러 놓았을 때 그 안에 저장되는 에너지 (누른 길이의 제곱에 비례)</li>
+          <li>↔️ <b>작용-반작용</b> — 개구리 발이 연잎을 아래로 밀면, 연잎도 똑같은 힘으로 개구리를 위로 밀어 올려</li>
+          <li>⚖️ <b>지레</b> — 뒷다리의 무릎이 받침점, 스프링이 미는 곳이 힘점, 발끝이 작용점</li>
           <li>🏃 <b>운동 에너지</b> — 움직이는 물체가 가진 에너지, 개구리가 날아갈 때의 에너지</li>
           <li>🔄 <b>에너지 전환</b> — 탄성 에너지가 운동 에너지로 모양을 바꾸는 것</li>
           <li>🌈 <b>포물선 운동</b> — 비스듬히 발사된 물체가 곡선(포물선)을 그리며 나는 운동, 45°에서 가장 멀리!</li>
         </ul>
       </div>
-      <h2>📖 고무줄 탄성 에너지 — 당긴 만큼 에너지가 쌓여</h2>
-      <p>고무줄을 당기면 원래대로 돌아가려는 힘이 생겨. 이때 고무줄 속에 <b>탄성 에너지</b>가 저장되는 거야.
-        손을 놓으면 저장된 에너지가 개구리를 밀어내는 <b>운동 에너지</b>로 바뀌면서 개구리가 날아가!</p>
+      <h2>📖 스프링 탄성 에너지 — 누른 만큼 에너지가 쌓여</h2>
+      <p>개구리 뒷다리 사이의 스프링을 누르면 원래 길이로 돌아가려는 힘이 생겨. 이때 스프링 속에 <b>탄성 에너지</b>가 저장되는 거야.
+        손을 놓으면 스프링이 순식간에 펴지면서 뒷다리(지레)가 연잎을 밀고, 연잎이 개구리를 밀어 올려(작용-반작용) 개구리가 날아가!</p>
       <ul>
-        <li>많이 당길수록 에너지가 <b>훨씬 많이</b> 쌓여 — 당김 2배면 에너지는 <b>4배</b>!</li>
+        <li>많이 누를수록 에너지가 <b>훨씬 많이</b> 쌓여 — 누름 2배면 에너지는 <b>4배</b>!</li>
         <li>그래서 날아가는 거리도 <b>약 4배</b> (2배가 아니야!)</li>
-        <li>무거운 개구리는? 같은 고무줄이라도 천천히, <b>짧게</b> 날아가</li>
+        <li>무거운 개구리는? 같은 스프링이라도 천천히, <b>짧게</b> 날아가</li>
       </ul>
       <h2>📐 중간(45°)이 가장 멀리 가는 이유</h2>
       <p>낮게(30°) 쏘면 빨리 가지만 금방 물에 떨어지고, 높게(60°) 쏘면 높이 떴다가 가까이에 떨어져.
@@ -252,12 +254,12 @@
       <p>재미있는 비밀: <b>낮게(30°)와 높게(60°)는 거리가 똑같아!</b> 거리표를 채워서 눈으로 확인해 봐.</p>
       <div class="tip">
         <b>🧱 실제 레고 개구리 실험 팁</b><br>
-        · 고무줄을 다리 링키지에 걸고 <b>당기는 칸 수</b>를 정해서 실험해 봐 (1칸~5칸)<br>
-        · 바닥에 자를 붙여 놓고 <b>착지 지점까지 거리를 재서</b> 표에 적어 — 시뮬처럼 당김×각도 표를 만들면 최고!<br>
-        · 같은 당김으로 3번 재서 평균을 내면 더 정확해<br>
-        · 개구리에 브릭을 얹어 무겁게 만들면? 같은 고무줄인데 왜 덜 날아갈까 생각해 보기
+        · 개구리 뒷다리 스프링을 <b>누르는 칸 수</b>를 정해서 놓아 봐 (1칸~5칸)<br>
+        · 바닥에 자를 붙여 놓고 <b>착지 지점까지 거리를 재서</b> 표에 적어 — 시뮬처럼 누름×각도 표를 만들면 최고!<br>
+        · 같은 누름으로 3번 재서 평균을 내면 더 정확해<br>
+        · 개구리에 브릭을 얹어 무겁게 만들면? 같은 스프링인데 왜 덜 날아갈까 생각해 보기
       </div>
-    <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2><ul style="line-height:2.1"><li><b>① 예측</b> — "고무줄을 2배 당기면 개구리는 2배 멀리 갈까?" 손들기</li><li><b>② 첫 점프</b> — 당김 2로 한 번 점프 — 거리 확인</li><li><b>③ 2배 실험</b> — 당김 4로 점프 — "어? 4배나 멀리 갔어!" (제곱의 비밀)</li><li><b>④ 각도 실험</b> — 당김 고정, 각도만 바꿔 최적 각 찾기</li><li><b>⑤ 클리어 도전</b> — 연잎을 골라 밟아 연못 끝까지 건너기!</li></ul>
+    <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (5단계)</h2><ul style="line-height:2.1"><li><b>① 예측</b> — "스프링을 2배 더 누르면 개구리는 2배 멀리 갈까?" 손들기</li><li><b>② 첫 점프</b> — 누름 2로 한 번 점프 — 거리 확인</li><li><b>③ 2배 실험</b> — 누름 4로 점프 — "어? 4배나 멀리 갔어!" (제곱의 비밀)</li><li><b>④ 각도 실험</b> — 누름 고정, 각도만 바꿔 최적 각 찾기</li><li><b>⑤ 클리어 도전</b> — 연잎을 골라 밟아 연못 끝까지 건너기!</li></ul>
       </div>
   </section>
 </div>
@@ -275,7 +277,7 @@ const BANK_X = 420;                     // 건너편 둑 시작
 const WORLD_L = -70, WORLD_R = 490;
 const START_X = -14;                    // 출발 위치
 const G = 980;                          // cm/s²
-const K_E = 0.038;                      // 탄성 계수 (J / 당김²) — 당김 1~5단 기준, 최대 사거리로도 한 번에 골인 불가
+const K_E = 0.038;                      // 탄성 계수 (J / 누름²) — 당김 1~5단 기준, 최대 사거리로도 한 번에 골인 불가
 const PULL_MAX = 5;
 const ANGLES = [30, 45, 60];
 const ANG_NAME = { 30: '낮게', 45: '중간', 60: '높게' };
@@ -396,7 +398,7 @@ function landAt(x) {
       splash.drops.push({ x, y: 0, dx: 0, vx: Math.cos(a) * sp * (Math.random() < 0.5 ? -1 : 1) * 0.6, vy: Math.sin(a) * sp });
     }
     setBadge('bad', '💦 첨벙! 물에 빠졌어 — 처음부터 다시!');
-    setStatus('fail', '풍덩... 당김이나 각도를 바꿔 보자');
+    setStatus('fail', '풍덩... 누름이나 각도를 바꿔 보자');
   }
   refreshHud();
   flight = null;
@@ -406,7 +408,7 @@ function restart() {
   state = 'ready'; flight = null; splash = null; demo = null; auto = null;
   padFx = []; rings = []; distPop = null; celebrate = null;
   setBadge('');
-  setStatus('', '준비 — 고무줄을 당기고 점프!');
+  setStatus('', '준비 — 스프링을 누르고 점프!');
   $('btnJump').disabled = false;
   refreshHud();
 }
@@ -421,7 +423,7 @@ function recordGrid(p, dist) {
 function drawGrid() {
   const g = grid[weight];
   const cur = params();
-  let html = '<tr><th style="font-size:10.5px">당김＼방향</th>' +
+  let html = '<tr><th style="font-size:10.5px">누름＼방향</th>' +
     ANGLES.map(a => `<th>${ANG_NAME[a]}<br>${a}°</th>`).join('') + '</tr>';
   for (let pu = 1; pu <= PULL_MAX; pu++) {
     html += `<tr><td class="cond">${pu}칸</td>` + ANGLES.map(a => {
@@ -457,16 +459,16 @@ function runPredict(choseDouble) {
   state = 'demo';
   setBadge('');
   $('btnJump').disabled = true;
-  setStatus('run', `확인 실험: 당김 ${base}칸 vs ${base * 2}칸 비교 중...`);
+  setStatus('run', `확인 실험: 누름 ${base}칸 vs ${base * 2}칸 비교 중...`);
   const ratio = t2.dist / t1.dist;
   const correct = !choseDouble;
   const ans = $('predAns');
   ans.className = 'ans show';
   ans.innerHTML =
     `<span class="verdict" style="color:${correct ? 'var(--green)' : 'var(--red)'}">${correct ? '🎉 정답!' : '😲 땡!'}</span> ` +
-    `당김 ${base}칸 → <b>${Math.round(t1.dist)}cm</b>, ${base * 2}칸 → <b>${Math.round(t2.dist)}cm</b>. ` +
+    `누름 ${base}칸 → <b>${Math.round(t1.dist)}cm</b>, ${base * 2}칸 → <b>${Math.round(t2.dist)}cm</b>. ` +
     `2배가 아니라 <b style="color:var(--purple)">약 ${ratio.toFixed(0)}배</b>! ` +
-    `당김이 2배면 고무줄에 쌓인 힘은 2×2 = <b>4배</b>가 되거든.`;
+    `누른 길이가 2배면 스프링에 쌓인 에너지는 2×2 = <b>4배</b>가 되거든.`;
   $('btnO').classList.toggle('on', choseDouble);
   $('btnX').classList.toggle('on', !choseDouble);
 }
@@ -564,33 +566,64 @@ const fireflies = [];
   }
 }
 // 개구리
+// 개구리 — 교안(BQE 19차시)대로 뒷다리 밑에 코일 스프링이 든 점프 모형. 원점은 발바닥(y=0), 앞은 +x.
+//   스프링을 누른 만큼(당김 칸수) 몸이 낮게 웅크리고, 점프 순간 스프링이 펴지며 몸이 솟는다. 눌린 스프링 = 탄성 위치에너지.
+const SPRING_FULL = 0.13;
 function makeFrog3d() {
   const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4cae4f, roughness: 0.5 });
-  const belly = new THREE.MeshStandardMaterial({ color: 0xa8e063, roughness: 0.6 });
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 14), bodyMat);
-  body.scale.set(1.15, 0.85, 1); body.position.y = 0.11; body.castShadow = true; g.add(body);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 12), belly);
-  chest.scale.set(1, 0.72, 0.9); chest.position.set(0.05, 0.08, 0); g.add(chest);
-  [-0.055, 0.055].forEach(z => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10),
-      new THREE.MeshStandardMaterial({ color: 0xeafce8, roughness: 0.35 }));
-    eye.position.set(0.08, 0.215, z); g.add(eye);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-    pup.position.set(0.117, 0.22, z); g.add(pup);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4cae4f, roughness: 0.55 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x2f7d33, roughness: 0.6 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0xc9f08a, roughness: 0.65 });
+  const M = (parent, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; parent.add(m); return m;
+  };
+  // 바닥에 붙는 것: 긴 뒷발·앞발
+  [-0.1, 0.1].forEach(z => {
+    M(g, new THREE.BoxGeometry(0.15, 0.018, 0.05), bodyMat, -0.02, 0.009, z + Math.sign(z) * 0.01);
+    M(g, new THREE.BoxGeometry(0.06, 0.014, 0.035), bodyMat, 0.12, 0.007, z * 0.7);
+  });
+  // 코일 스프링 (뒷다리 사이, y 0→1 로 만들고 scale.y 로 길이)
+  const spring = (() => {
+    const pts = []; const TURNS = 5, N = TURNS * 12;
+    for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2 * TURNS; pts.push(new THREE.Vector3(Math.cos(a) * 0.045, i / N, Math.sin(a) * 0.045)); }
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N * 2, 0.009, 6, false),
+      new THREE.MeshStandardMaterial({ color: 0xff5a52, roughness: 0.4, metalness: 0.35 }));
+    m.position.set(-0.04, 0.012, 0); m.scale.y = SPRING_FULL; m.castShadow = true; g.add(m); return m;
+  })();
+  // 스프링 위에 얹히는 몸통 뭉치
+  const body = new THREE.Group(); body.position.y = SPRING_FULL; g.add(body);
+  M(body, new THREE.SphereGeometry(0.1, 20, 16), bodyMat, -0.01, 0.06, 0, 1.25, 0.8, 1);
+  M(body, new THREE.SphereGeometry(0.08, 20, 16), bellyMat, 0.02, 0.035, 0, 1.1, 0.6, 0.85);
+  M(body, new THREE.SphereGeometry(0.075, 20, 16), bodyMat, 0.1, 0.11, 0, 1.15, 0.8, 1.05);
+  M(body, new THREE.BoxGeometry(0.1, 0.008, 0.11), darkMat, 0.155, 0.088, 0);
+  [-0.05, 0.05].forEach(z => {
+    M(body, new THREE.SphereGeometry(0.036, 14, 12), bodyMat, 0.1, 0.17, z);
+    M(body, new THREE.SphereGeometry(0.03, 14, 12), new THREE.MeshStandardMaterial({ color: 0xf6fff2, roughness: 0.3 }), 0.11, 0.175, z);
+    M(body, new THREE.SphereGeometry(0.014, 10, 8), new THREE.MeshBasicMaterial({ color: 0x0d0d0d }), 0.134, 0.178, z);
+    M(body, new THREE.SphereGeometry(0.005, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), 0.142, 0.186, z + 0.005);
   });
   [-0.095, 0.095].forEach(z => {
-    const leg = new THREE.Mesh(new THREE.SphereGeometry(0.062, 10, 8), bodyMat);
-    leg.scale.set(1.3, 0.7, 0.8); leg.position.set(-0.07, 0.05, z); leg.castShadow = true; g.add(leg);
+    M(body, new THREE.SphereGeometry(0.055, 14, 12), darkMat, -0.09, 0.03, z, 1.25, 0.95, 0.7);          // 접힌 허벅지
+    M(body, new THREE.CylinderGeometry(0.018, 0.015, 0.16, 8), darkMat, -0.06, -0.05, z).rotation.z = 0.35;   // 정강이 (아래로)
+    M(body, new THREE.CylinderGeometry(0.014, 0.012, 0.1, 8), bodyMat, 0.1, -0.02, z * 0.7).rotation.z = 0.2;   // 앞다리
   });
-  // 무거움 표시용 배낭
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12),
+  [[-0.04, 0.13, 0.05], [0.0, 0.14, -0.04], [-0.08, 0.11, -0.01]].forEach(([x, y, z]) =>
+    M(body, new THREE.SphereGeometry(0.014, 8, 6), darkMat, x, y, z, 1.4, 0.5, 1.2));
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.11),
     new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.5 }));
-  pack.position.set(-0.12, 0.16, 0); pack.visible = false; g.add(pack);
-  g.userData.pack = pack;
+  pack.position.set(-0.05, 0.15, 0); pack.visible = false; pack.castShadow = true; body.add(pack);
+  g.userData = { pack, spring, body };
+  g.scale.setScalar(1.35);   // 이 연못은 BQP 것보다 넓어서 개구리도 크게
   return g;
 }
-const frog = makeFrog3d(); scene.add(frog);
+const frogModel = makeFrog3d();
+const frog = new THREE.Group(); frog.add(frogModel); scene.add(frog);
+// 스프링 눌림 0(다 펴짐)~1(최대 압축) → 몸 높이·스프링 길이
+function setCrouch(k) {
+  const len = SPRING_FULL * (1 - 0.55 * k);
+  frogModel.userData.spring.scale.y = len;
+  frogModel.userData.body.position.y = len;
+}
 // 궤적 라인 풀
 function mkLine(color, opacity) {
   const l = new THREE.Line(new THREE.BufferGeometry(),
@@ -634,20 +667,24 @@ $('camFollow').onclick = () => {
 function draw() {
   // (메인 루프가 매 프레임 호출) — 3D 씬 동기화 + 렌더
   // 개구리 위치·모습
-  frog.userData.pack.visible = (weight === 2);
+  frogModel.userData.pack.visible = (weight === 2);
   frog.scale.setScalar(weight === 2 ? 1.18 : 1);
+  const pullK = +$('pull').value / PULL_MAX;
   if (state === 'fly' && flight && flight.pts.length) {
     const last = flight.pts[flight.pts.length - 1];
     frog.visible = true;
     frog.position.set(last[0] / 100, last[1] / 100 + 0.05, 0);
-    frog.rotation.z = -0.35;
+    const vyNow = flight.vy - G * flight.t;
+    frog.rotation.z = Math.atan2(vyNow, flight.vx) * 0.6;          // 올라갈 땐 고개 들고 내려올 땐 숙임
+    setCrouch(Math.max(0, pullK * (1 - flight.t / 0.12)));           // 점프 순간 스프링이 쫙 펴짐
   } else if (state === 'splash') {
     frog.visible = false;
   } else {
     frog.visible = true;
     frog.rotation.z = 0;
     const onBank = posX < 20 || posX >= BANK_X - 10;
-    frog.position.set(posX / 100 + (cleared ? 0 : 0), onBank ? 0.18 : 0.055, 0);
+    frog.position.set(posX / 100, onBank ? 0.18 : 0.055, 0);
+    setCrouch(cleared ? 0 : pullK);                                  // 당긴 칸수만큼 스프링이 눌려 웅크림
   }
   // 궤적 라인
   pastLines.forEach((l, i) => {
@@ -772,7 +809,7 @@ function loop(ts) {
       pastTrails.push({ pts: d.t1.pts, ok: true }, { pts: d.t2.pts, ok: true });
       if (pastTrails.length > 8) pastTrails.splice(0, pastTrails.length - 8);
       $('btnJump').disabled = cleared;
-      setStatus('done', '확인 끝! 당김 2배 = 거리 약 4배');
+      setStatus('done', '확인 끝! 누름 2배 = 거리 약 4배');
     }
   } else if (state === 'auto' && auto) {
     if (!auto.traj) {
