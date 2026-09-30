@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>낚시대 — 도르래·윈치와 래칫 · 브릭큐 프라임 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg:#0a0e17; --panel:#121826; --panel2:#1a2234; --border:#263046;
+    --text:#e8eef7; --dim:#8b98ad; --accent:#4da3ff; --green:#2ee06f;
+    --amber:#ffb02e; --red:#ff5a52; --purple:#c792ea;
+    --mono:'Cascadia Mono','D2Coding','Consolas',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR',sans-serif}
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:#0d1322;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .crumb{font-size:11.5px;color:var(--dim)} .crumb a{color:var(--accent);text-decoration:none}
+  .title{font-size:16.5px;font-weight:800}
+  .tabs{display:flex;gap:6px;margin-left:auto}
+  .tab{background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:9px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+  .tab.on{color:#fff;background:linear-gradient(135deg,#1f5eff,#3d8bff);border-color:#3d8bff}
+  section{display:none} section.on{display:block}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px;padding:12px}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  .stage{position:relative;background:#070c18;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:420px}
+  canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+  .hud{position:absolute;top:10px;left:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+  .chip{background:rgba(8,12,22,.8);border:1px solid rgba(120,150,200,.3);border-radius:10px;padding:5px 12px;font-family:var(--mono);font-size:18px;font-weight:700}
+  .chip .lab{color:var(--dim);font-size:11px;font-weight:400;display:block;font-family:inherit}
+  @media (max-width:520px){.chip{font-size:14px;padding:4px 8px}.chip .lab{font-size:10px}}
+  .badge{position:absolute;top:78px;left:12px;padding:8px 16px;border-radius:16px;font-weight:800;font-size:15px;display:none;max-width:min(58%,430px);line-height:1.4}
+  .badge.good{display:block;background:rgba(20,60,35,.88);color:var(--green);border:1.5px solid var(--green)}
+  .badge.bad{display:block;background:rgba(70,18,14,.88);color:var(--red);border:1.5px solid var(--red)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .panel h3{font-size:13px;color:var(--dim);margin:10px 0 6px} .panel h3:first-child{margin-top:0}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:70px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 6px;font-size:13px;cursor:pointer;font-family:inherit}
+  .seg button small{display:block;color:var(--dim);font-size:10.5px}
+  .seg button.on{border-color:var(--accent);background:#16305a}
+  .seg.off{opacity:.4;pointer-events:none}
+  .seg.two button{min-width:46%}
+  .pred{display:grid;grid-template-columns:42px 1fr;gap:6px;align-items:center;margin-bottom:6px;font-size:12.5px;color:var(--dim)}
+  .go{margin-top:12px;display:flex;gap:6px}
+  .go button{flex:1;padding:12px 8px;border-radius:10px;border:0;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .primary{background:linear-gradient(135deg,#1f5eff,#3d8bff);color:#fff}
+  .primary.down{filter:brightness(1.3)}
+  .ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)!important;flex:0 0 auto!important;padding:12px 14px!important}
+  .note{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.55}
+  .note b{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+  th,td{border:1px solid var(--border);padding:6px 4px;text-align:center}
+  th{background:var(--panel2);color:var(--dim);font-weight:600}
+  td.hit{color:var(--green);font-weight:800} td.miss{color:var(--amber);font-weight:800}
+  td.res{font-weight:700}
+  .tables{padding:0 12px 16px}
+  .scroll{overflow-x:auto}
+  .theory{max-width:860px;margin:16px auto;padding:0 16px;line-height:1.75}
+  .theory h2{font-size:18px;margin:22px 0 8px;color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .card b{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 20차시</div>
+    <div class="title">🎣 낚시대 — 도르래·윈치와 래칫</div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="exp">실험 · 물고기 들어 올리기</button>
+    <button class="tab" data-tab="theory">📖 원리</button>
+  </div>
+</div>
+
+<section id="exp" class="on">
+  <div class="wrap">
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">드는 힘 (물고기 무게의)</span><span id="hF">×1</span></div>
+        <div class="chip"><span class="lab">당긴 줄</span><span id="hL">0.0</span> 칸</div>
+        <div class="chip"><span class="lab">물고기 높이</span><span id="hH">0.0</span> 칸</div>
+        <div class="chip"><span class="lab">시간</span><span id="hT">0.0</span> 초</div>
+      </div>
+      <div class="badge" id="badge"></div>
+    </div>
+    <div class="panel">
+      <h3>① 어떻게 들어 올릴까? (조건 고르기)</h3>
+      <div class="seg two" id="segCond">
+        <button data-v="0">손으로 직접<small>비교 기준</small></button>
+        <button data-v="1" class="on">고정 도르래 1개<small>줄을 손으로 당기기</small></button>
+        <button data-v="2">고정 1개 + 릴<small>윈치로 감기</small></button>
+        <button data-v="3">고정 1 + 움직 1 + 릴<small>움직도르래 추가</small></button>
+      </div>
+      <h3>② 먼저 예상하기 — 손으로 직접 들 때와 비교하면?</h3>
+      <div id="predBox">
+        <div class="pred"><span>무게</span><div class="seg" data-k="w"><button data-v="무거움">무거움</button><button data-v="가벼움">가벼움</button><button data-v="차이없음">차이 없음</button></div></div>
+        <div class="pred"><span>속도</span><div class="seg" data-k="s"><button data-v="빠름">빠름</button><button data-v="느림">느림</button><button data-v="차이없음">차이 없음</button></div></div>
+        <div class="pred"><span>방향</span><div class="seg" data-k="d"><button data-v="같다">같다</button><button data-v="다르다">다르다</button></div></div>
+      </div>
+      <h3>③ 폴·래칫 (릴의 안전장치)</h3>
+      <div class="seg" id="segRatchet">
+        <button data-v="1" class="on">켜기<small>폴이 걸려 있음</small></button>
+        <button data-v="0">끄기<small>폴을 들어 올림</small></button>
+      </div>
+      <div class="go">
+        <button class="primary" id="btnWind">🎣 당기기 (누르고 있기)</button>
+        <button class="ghost" id="btnAuto" title="끝까지 한 번에">▶ 끝까지</button>
+        <button class="ghost" id="btnReset" title="처음으로">↺</button>
+      </div>
+      <p class="note">버튼을 <b>누르고 있는 동안만</b> 줄이 당겨져요. 중간에 손을 떼 보세요 — 물고기는 어떻게 될까요?<br>
+      레고 낚시대로 할 때도 같은 표에 예상과 결과를 적어요.</p>
+    </div>
+  </div>
+  <div class="tables">
+    <div class="panel">
+      <h3>📋 예상 · 결과표 — 손으로 직접 들 때와 비교 (물고기를 10칸 들어 올리기)</h3>
+      <div class="scroll">
+      <table id="tbl"><thead><tr><th>조건</th><th></th><th>무게</th><th>속도</th><th>방향</th><th>드는 힘</th><th>당긴 줄</th><th>시간</th></tr></thead><tbody></tbody></table>
+      </div>
+      <p class="note">초록 = 예상과 결과가 같음 · 주황 = 예상과 다름 · 방향은 "내가 줄을 당기는(감는) 방향과 물고기가 움직이는 방향"을 비교해요.</p>
+    </div>
+  </div>
+</section>
+
+<section id="theory">
+  <div class="theory">
+    <h2>🎣 릴 — 낚시줄을 감는 장치</h2>
+    <div class="card">릴은 낚시줄을 <b>감거나 풀어 주는 장치</b>예요. 손으로 바로 잡아당기면 줄이 엉키기 쉽지만, 릴을 돌리면 줄이 둥근 통(스풀)에 차곡차곡 감기면서 물고기를 <b>일정한 힘으로</b> 끌어 올릴 수 있어요. 핸들을 돌리는 방향과 줄이 움직이는 방향은 서로 달라요.</div>
+    <h2>⚙️ 윈치 — 줄을 감아 끌어당기기</h2>
+    <div class="card">윈치는 줄이나 철사를 감아서 무거운 물건을 <b>끌어당기거나 들어 올리는 장치</b>예요. 손잡이(핸들)를 돌리면 드럼이 돌면서 줄이 감기거나 풀려요. 낚시대의 릴, 자동차 견인기, 배의 닻을 올리는 장치가 모두 윈치의 원리를 써요.</div>
+    <h2>🔵 고정 도르래 — 힘의 방향을 바꿔요</h2>
+    <div class="card">고정 도르래는 바퀴가 <b>한자리에 고정</b>되어 있어요. 드는 힘의 크기는 그대로지만, 줄을 아래로 당기면 물체가 위로 올라가요. 즉 <b>힘의 방향을 바꾸어 주는 도구</b>예요. 깃발을 올리거나 우물에서 물을 길을 때 써요.</div>
+    <h2>🟡 움직도르래 — 힘을 줄여 줘요</h2>
+    <div class="card">움직도르래는 물체와 함께 <b>위아래로 움직이는 도르래</b>예요. 두 가닥의 줄이 무게를 나누어 들기 때문에 <b>절반의 힘</b>으로 들 수 있어요. 대신 줄을 <b>두 배로 길게</b> 당겨야 해서 올라오는 속도는 느려져요. 크레인이나 건설 현장에서 볼 수 있어요.</div>
+    <h2>🔒 폴과 래칫 — 줄이 풀리지 않게</h2>
+    <div class="card">래칫은 <b>한 방향으로만 돌게</b> 하는 장치예요. 톱니바퀴(래칫)와 걸쇠(폴)로 이루어져 있어서, 감는 방향으로는 잘 돌지만 반대 방향으로 돌려고 하면 폴에 걸려 멈춰요. 그래서 릴에서 손을 떼도 물고기가 떨어지지 않아요.</div>
+    <h2>🧪 이 시뮬레이터의 약속</h2>
+    <div class="card">물고기를 <b>10칸</b> 들어 올리고, 줄은 언제나 같은 빠르기로 당겨요(한 가지 조건만 바꾸기). 결과는 교안의 실험 결과표와 같게 정해 두었어요 — 고정 도르래와 릴은 힘·속도가 그대로이고 방향만 달라지며, 움직도르래를 더하면 힘은 절반, 당기는 줄은 두 배가 돼요.
+    실제 레고 낚시대는 축이 빡빡하거나 핸들 길이에 따라 느낌이 다를 수 있으니 <b>꼭 직접 들어 보고 비교</b>하세요.</div>
+    <h2>🧑‍🏫 수업 흐름 (교안 순서)</h2>
+    <div class="card">① 릴과 윈치 알아보기 → ② 낚시대 만들기(고정 도르래·릴 찾기) → ③ 조건 3가지로 물건 들어 보기: 예상 → 결과(무게·속도·방향) → ④ "들어 올리면 줄이 풀리나요?" 폴·래칫 찾기 → ⑤ 나만의 낚시대 · 나만의 물고기 만들기</div>
+    <h2>👨‍👩‍👧 학부모님께</h2>
+    <div class="card">이번 차시에서는 레고로 낚시대를 만들고, 고정 도르래·릴(윈치)·움직도르래를 하나씩 더하면서 드는 힘과 속도, 방향이 어떻게 달라지는지 예상하고 실험으로 확인합니다.
+    줄이 풀리지 않게 잡아 주는 폴·래칫 구조도 함께 배웁니다.</div>
+  </div>
+</section>
+
+<script>
+(() => {
+  // ── 모델 (교육용 단순화) ──
+  // 결과 기준: 교안 「BQP 20 낚시대(25년)」 19·20·22장 실험 결과표, 23장(움직도르래: 힘↓ 줄 이동거리↑), 24~28장(폴·래칫).
+  // '절반의 힘 · 두 배의 줄'은 레고 에듀케이션 공식 레슨 Fishing Rod(수업 PT/레고레슨/스파이크프라임/spm__fishing-rod).
+  const COND = [
+    { name: '손으로 직접',           n: 1, fixed: false, reel: false, mov: false },
+    { name: '고정 도르래 1개',       n: 1, fixed: true,  reel: false, mov: false },
+    { name: '고정 1개 + 릴(윈치)',   n: 1, fixed: true,  reel: true,  mov: false },
+    { name: '고정 1 + 움직 1 + 릴',  n: 2, fixed: true,  reel: true,  mov: true  },
+  ];                       // n = 물고기를 나눠 드는 줄 가닥 수 → 힘 1/n, 당길 줄 n배
+  const H = 10;            // 들어 올릴 높이 (칸) — 화면용 단위
+  const RATE = 2;          // 줄을 당기는(감는) 빠르기 (칸/초) — 모든 조건에서 같게
+  const FALL = 12;         // 줄이 풀릴 때 물고기가 내려가는 빠르기 (칸/초)
+
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  let cond = 1, ratchet = true;
+  let pulled = 0, t = 0, crank = 0, winding = false, auto = false, done = false, state = 'idle';
+  const preds = [{}, {}, {}, {}], results = [null, null, null, null];
+
+  const C = () => COND[cond];
+  const height = () => pulled / C().n;
+  const holds = () => C().reel && ratchet;          // 손을 떼도 버티는가
+  const verdict = c => ({ w: c.n > 1 ? '가벼움' : '차이없음', s: c.n > 1 ? '느림' : '차이없음', d: c.fixed ? '다르다' : '같다' });
+  const fmtF = n => n === 1 ? '×1' : '×½';
+
+  function segBind(box, cb) {
+    box.querySelectorAll('button').forEach(b => b.onclick = () => {
+      box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      cb(b.dataset.v);
+    });
+  }
+  function segSet(box, v) { box.querySelectorAll('button').forEach(x => x.classList.toggle('on', v != null && x.dataset.v === String(v))); }
+
+  segBind($('segCond'), v => { cond = +v; syncUI(); reset(); });
+  segBind($('segRatchet'), v => { ratchet = v === '1'; });
+  document.querySelectorAll('#predBox .seg').forEach(box => segBind(box, v => { preds[cond][box.dataset.k] = v; renderTable(); }));
+  document.querySelectorAll('.tab').forEach(tb => tb.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === tb));
+    document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === tb.dataset.tab));
+    resize();
+  });
+
+  function syncUI() {
+    const c = C();
+    $('segRatchet').classList.toggle('off', !c.reel);
+    $('predBox').style.opacity = cond === 0 ? .4 : 1;
+    $('predBox').style.pointerEvents = cond === 0 ? 'none' : '';
+    document.querySelectorAll('#predBox .seg').forEach(box => segSet(box, preds[cond][box.dataset.k]));
+    $('btnWind').textContent = c.reel ? '🎣 릴 감기 (누르고 있기)' : '🎣 당기기 (누르고 있기)';
+    $('hF').textContent = fmtF(c.n);
+  }
+  function badge(msg, kind) { const b = $('badge'); b.textContent = msg || ''; b.className = 'badge' + (msg ? ' ' + kind : ''); }
+  function reset() { pulled = 0; t = 0; crank = 0; winding = false; auto = false; done = false; state = 'idle'; badge(); hud(); draw(); }
+
+  const wind = $('btnWind');
+  const press = on => { winding = on && !done; wind.classList.toggle('down', winding); };
+  wind.addEventListener('pointerdown', e => { e.preventDefault(); try { wind.setPointerCapture(e.pointerId); } catch (_) {} press(true); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => wind.addEventListener(ev, () => press(false)));
+  wind.addEventListener('contextmenu', e => e.preventDefault());
+  wind.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); press(true); } });
+  wind.addEventListener('keyup', () => press(false));
+  $('btnAuto').onclick = () => { if (!done) auto = true; };
+  $('btnReset').onclick = reset;
+
+  function finish() {
+    done = true; winding = false; auto = false; wind.classList.remove('down'); state = 'done';
+    const c = C(), v = verdict(c);
+    results[cond] = { ...v, f: fmtF(c.n), line: pulled, time: t };
+    renderTable();
+    let msg = `🎣 잡았다! 힘 ${fmtF(c.n)} · 줄 ${pulled.toFixed(0)}칸 · ${t.toFixed(1)}초`;
+    const p = preds[cond], keys = ['w', 's', 'd'].filter(k => p[k]);
+    if (cond > 0 && keys.length) { const hit = keys.filter(k => p[k] === v[k]).length; msg += hit === keys.length ? ' · 예상 성공 🎉' : ` · 예상 ${keys.length}개 중 ${hit}개 맞음 🤔`; }
+    badge(msg, 'good');
+  }
+
+  function renderTable() {
+    const tb = $('tbl').tBodies[0]; tb.innerHTML = '';
+    const cell = (r, p, k) => !r ? '<td>—</td>' : `<td class="res ${p && p[k] ? (p[k] === r[k] ? 'hit' : 'miss') : ''}">${r[k] === '차이없음' ? '차이 없음' : r[k]}</td>`;
+    const nums = r => r ? `<td>${r.f}</td><td>${r.line.toFixed(0)}칸</td><td>${r.time.toFixed(1)}초</td>` : '<td>—</td><td>—</td><td>—</td>';
+    const b = results[0];
+    tb.insertAdjacentHTML('beforeend', `<tr><th>${COND[0].name}</th><th>기준</th><td>—</td><td>—</td>${b ? `<td class="res">${b.d}</td>` : '<td>—</td>'}${nums(b)}</tr>`);
+    for (let i = 1; i < COND.length; i++) {
+      const p = preds[i], r = results[i], show = k => p[k] ? (p[k] === '차이없음' ? '차이 없음' : p[k]) : '';
+      tb.insertAdjacentHTML('beforeend',
+        `<tr><th rowspan="2">${COND[i].name}</th><th>예상</th><td>${show('w')}</td><td>${show('s')}</td><td>${show('d')}</td><td colspan="3" rowspan="1"></td></tr>` +
+        `<tr><th>결과</th>${cell(r, p, 'w')}${cell(r, p, 's')}${cell(r, p, 'd')}${nums(r)}</tr>`);
+    }
+  }
+  function hud() { $('hL').textContent = pulled.toFixed(1); $('hH').textContent = height().toFixed(1); $('hT').textContent = t.toFixed(1); }
+
+  // ── 그리기 ──
+  let Wd = 0, Hd = 0, dpr = 1;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    Wd = cv.clientWidth; Hd = cv.clientHeight;
+    if (!Wd) return;
+    cv.width = Wd * dpr; cv.height = Hd * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  function arrow(x1, y1, x2, y2, color) {
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - 10 * Math.cos(a - .45), y2 - 10 * Math.sin(a - .45)); ctx.lineTo(x2 - 10 * Math.cos(a + .45), y2 - 10 * Math.sin(a + .45)); ctx.closePath(); ctx.fill();
+  }
+  function wheel(x, y, r, color, spin) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#0a0e17'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) { const a = spin + i * Math.PI * 2 / 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); ctx.stroke(); }
+    ctx.fillStyle = '#0a0e17'; ctx.beginPath(); ctx.arc(x, y, r * .25, 0, 7); ctx.fill();
+  }
+  function label(txt, x, y, color, align) { ctx.font = 'bold 12px sans-serif'; ctx.textAlign = align || 'left'; ctx.fillStyle = color || '#e8eef7'; ctx.fillText(txt, x, y); }
+
+  function draw() {
+    if (!Wd) return;
+    const c = C(), h = height(), moving = winding || auto;
+    ctx.clearRect(0, 0, Wd, Hd);
+    const water = Hd - 96;
+    // 바다 · 부두
+    ctx.fillStyle = '#0d2748'; ctx.fillRect(0, water, Wd, Hd - water);
+    ctx.strokeStyle = '#3d8bff'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let x = 0; x <= Wd; x += 8) ctx.lineTo(x, water + Math.sin(x / 22 + t * 2) * 2.5);
+    ctx.stroke();
+    const pierR = Wd * 0.33;
+    ctx.fillStyle = '#2a3550'; ctx.fillRect(0, water - 22, pierR, Hd - water + 22);
+    ctx.fillStyle = '#3a4a6b'; ctx.fillRect(0, water - 28, pierR + 6, 8);
+
+    // 낚시대 (레고 모형처럼 노란 빔)
+    const B = { x: Wd * 0.13, y: water - 40 }, T = { x: Math.min(Wd * 0.62, Wd - 150), y: Wd < 520 ? 128 : 74 };
+    const along = k => ({ x: B.x + (T.x - B.x) * k, y: B.y + (T.y - B.y) * k });
+    const rodA = Math.atan2(T.y - B.y, T.x - B.x), tipEnd = along(1.09);
+    ctx.globalAlpha = c.fixed ? 1 : .22;
+    ctx.strokeStyle = '#f2c230'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(B.x, B.y); ctx.lineTo(tipEnd.x, tipEnd.y); ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#3a4a6b'; ctx.fillRect(B.x - 14, B.y - 4, 28, water - 24 - B.y);      // 받침
+    wheel(T.x, T.y, 11, '#4da3ff', c.fixed ? -pulled * .6 : 0);                              // 고정 도르래
+    if (c.fixed) label('고정 도르래', tipEnd.x + 12, tipEnd.y + 2, '#4da3ff');
+    // 릴(윈치) + 폴·래칫
+    const R = along(0.30);
+    ctx.globalAlpha = c.reel ? 1 : .22;
+    wheel(R.x, R.y, 14, '#9aa6bb', crank);
+    const kx = R.x + 26 * Math.cos(crank), ky = R.y + 26 * Math.sin(crank);
+    ctx.strokeStyle = '#e8eef7'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(R.x, R.y); ctx.lineTo(kx, ky); ctx.stroke();
+    ctx.fillStyle = '#2ee06f'; ctx.beginPath(); ctx.arc(kx, ky, 5.5, 0, 7); ctx.fill();   // 핸들
+    if (c.reel) {
+      label('릴(윈치)', R.x + 22, R.y + 34, '#9aa6bb');
+      const G = { x: R.x - 30 * Math.cos(rodA) , y: R.y - 30 * Math.sin(rodA) };            // 래칫 톱니바퀴
+      ctx.fillStyle = '#566580'; ctx.beginPath();
+      for (let i = 0; i < 16; i++) { const a = crank + i * Math.PI / 8, rr = i % 2 ? 10 : 6.5; ctx.lineTo(G.x + rr * Math.cos(a), G.y + rr * Math.sin(a)); }
+      ctx.closePath(); ctx.fill();
+      const lift = ratchet ? 0 : -9;                                                        // 폴(걸쇠)
+      ctx.strokeStyle = ratchet ? '#2ee06f' : '#ff5a52'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(G.x - 18, G.y - 20); ctx.lineTo(G.x - 4, G.y - 9 + lift); ctx.stroke();
+      const rl = ratchet ? '폴·래칫 켜짐' : '폴·래칫 꺼짐', rc = ratchet ? '#2ee06f' : '#ff5a52';
+      if (G.x < 120) label(rl, 8, G.y - 34, rc); else label(rl, G.x - 22, G.y - 26, rc, 'right');
+    }
+    ctx.globalAlpha = 1;
+
+    // 물고기 위치
+    const fx = T.x + (c.mov ? 22 : 11), yBot = Hd - 30, yTop = T.y + 138;
+    const fy = yBot - (yBot - yTop) * (h / H);
+    // 눈금 자 (10칸)
+    const rx = fx + 66;
+    ctx.strokeStyle = '#566580'; ctx.fillStyle = '#8b98ad'; ctx.font = '10.5px sans-serif'; ctx.textAlign = 'left'; ctx.lineWidth = 1;
+    for (let i = 0; i <= H; i++) {
+      const y = yBot - (yBot - yTop) * i / H;
+      ctx.beginPath(); ctx.moveTo(rx, y); ctx.lineTo(rx + (i % 5 ? 6 : 11), y); ctx.stroke();
+      if (i % 5 === 0) ctx.fillText(i + '칸', rx + 15, y + 4);
+    }
+    ctx.setLineDash([5, 5]); ctx.strokeStyle = '#2ee06f'; ctx.beginPath(); ctx.moveTo(fx - 46, yTop); ctx.lineTo(rx, yTop); ctx.stroke(); ctx.setLineDash([]);
+
+    // 줄
+    ctx.strokeStyle = '#f4f6fa'; ctx.lineWidth = 1.8;
+    const hookY = fy - 16;
+    let hand = null, pullDir = null;
+    if (!c.fixed) {                                     // 손으로 직접: 줄을 위로 끌어올림
+      hand = { x: fx, y: fy - 84 };
+      ctx.beginPath(); ctx.moveTo(fx, hand.y); ctx.lineTo(fx, hookY); ctx.stroke();
+      pullDir = [hand.x - 30, hand.y + 16, hand.x - 30, hand.y - 22];
+    } else {
+      const sx = T.x + 11;                              // 고정 도르래에서 내려오는 가닥
+      if (c.mov) {
+        const M = { x: T.x + 22, y: fy - 36 }, ax = T.x + 33, ay = tipEnd.y + 4;
+        ctx.beginPath(); ctx.moveTo(sx, T.y); ctx.lineTo(sx, M.y); ctx.stroke();
+        ctx.beginPath(); ctx.arc(M.x, M.y, 11, Math.PI, 0, true); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ax, M.y); ctx.lineTo(ax, ay); ctx.stroke();
+        ctx.fillStyle = '#f2c230'; ctx.fillRect(ax - 4, ay - 6, 8, 8);                       // 줄 끝 고정점
+        wheel(M.x, M.y, 10, '#ffb02e', pulled * .6);
+        ctx.strokeStyle = '#f4f6fa'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(M.x, M.y + 10); ctx.lineTo(M.x, hookY); ctx.stroke();
+        label('움직도르래', M.x - 16, M.y + 4, '#ffb02e', 'right');
+        label('두 가닥이 나눠 들어요', ax + 8, (M.y + ay) / 2, '#ffb02e');
+      } else { ctx.beginPath(); ctx.moveTo(sx, T.y); ctx.lineTo(sx, hookY); ctx.stroke(); }
+      // 도르래 위를 넘어 낚시대를 따라 내려오는 줄
+      const off = { x: 9 * Math.sin(rodA), y: -9 * Math.cos(rodA) };
+      const end = c.reel ? R : along(0.78 - 0.42 * (pulled / (H * c.n)));
+      ctx.strokeStyle = '#f4f6fa'; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(T.x + off.x, T.y + off.y); ctx.lineTo(end.x + off.x, end.y + off.y); ctx.stroke();
+      if (c.reel) { hand = { x: kx, y: ky }; }
+      else {
+        hand = { x: end.x + off.x, y: end.y + off.y };
+        pullDir = [hand.x - 8, hand.y + 30, hand.x - 8 - 34 * Math.cos(rodA), hand.y + 30 - 34 * Math.sin(rodA)];
+      }
+    }
+    // 물고기
+    ctx.strokeStyle = '#f4f6fa'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(fx, hookY + 5, 5, -Math.PI / 2, Math.PI * .9); ctx.stroke();
+    ctx.fillStyle = '#ff9046'; ctx.beginPath(); ctx.ellipse(fx, fy + 6, 27, 13, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(fx - 24, fy + 6); ctx.lineTo(fx - 42, fy - 6); ctx.lineTo(fx - 42, fy + 18); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fx + 14, fy + 2, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#0a0e17'; ctx.beginPath(); ctx.arc(fx + 15, fy + 2, 2, 0, 7); ctx.fill();
+    // 손 · 방향 화살표
+    if (hand) { ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('✊', hand.x, hand.y + 8); }
+    if (moving && !done) {
+      arrow(fx - 58, fy + 22, fx - 58, fy - 16, '#2ee06f');                                 // 물고기: 위로
+      if (pullDir) arrow(...pullDir, '#ff5a52');
+      else { ctx.strokeStyle = '#ff5a52'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(R.x, R.y, 36, crank - 1.1, crank - .2); ctx.stroke(); }
+    }
+    if (state === 'slip') arrow(fx - 58, fy - 16, fx - 58, fy + 22, '#ff5a52');
+    // 범례
+    ctx.font = '11.5px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#ff5a52'; ctx.fillText('→ 내가 당기는(감는) 방향', 12, Hd - 30);
+    ctx.fillStyle = '#2ee06f'; ctx.fillText('→ 물고기가 움직이는 방향', 12, Hd - 12);
+  }
+
+  let last = 0;
+  function loop(ts) {
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
+    const c = C();
+    if (!done) {
+      if (winding || auto) {
+        pulled = Math.min(H * c.n, pulled + RATE * dt); t += dt; crank += RATE * dt * 1.6;
+        if (state !== 'wind') { state = 'wind'; badge(); }
+        if (pulled >= H * c.n) finish();
+      } else if (pulled > 0) {
+        if (holds()) {
+          if (state !== 'hold') { state = 'hold'; badge('🔒 딸깍! 폴이 래칫에 걸려서 줄이 풀리지 않아요', 'good'); }
+        } else {
+          pulled = Math.max(0, pulled - FALL * c.n * dt); crank -= FALL * dt * 1.6;
+          if (state !== 'slip') { state = 'slip'; badge(c.reel ? '⚠️ 폴·래칫이 꺼져 있어요 — 줄이 풀려 물고기가 내려가요!' : '⚠️ 손을 놓으면 물고기가 다시 내려가요!', 'bad'); }
+          if (pulled <= 0) { t = 0; state = 'idle'; }
+        }
+      }
+      hud();
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  window.addEventListener('resize', resize);
+  syncUI(); renderTable(); resize(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
