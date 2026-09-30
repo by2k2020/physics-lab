@@ -432,9 +432,11 @@ function step(dt) {
     stalled = false;
     lineSpeed = 0;                        // 폴-래칫이 걸려 안 감아도 버팀
   } else {
+    // 폴-래칫이 없으면 구동 기어가 물고기 무게에 눌려 반대로 돌면서 줄이 풀린다(핸들·릴 기어 화면 모두 반영)
     stalled = false;
-    lineSpeed = 0;
-    depth += 0.45 * dt;                   // 폴-래칫이 없으면 초록 기어가 반대로 돌아 줄이 풀려 도망감
+    lineSpeed = -0.45;
+    crankAng -= (0.45 / LINE_PER_REV) * Math.PI * 2 * dt;
+    depth += 0.45 * dt;                   // 초록 기어가 반대로 돌아 줄이 풀려 도망감
   }
   depth = Math.max(0, depth);
 
