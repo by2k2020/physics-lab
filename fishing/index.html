@@ -48,6 +48,11 @@
   .pick3 button small { display: block; font-size: 10px; color: var(--dim); font-family: var(--mono); }
   .pick3 button.on { border-color: var(--accent); color: var(--accent); background: rgba(77,163,255,.1); font-weight: 700; }
   .pick3 button.on small { color: var(--accent); }
+  .pick2 { display: flex; gap: 6px; margin-bottom: 12px; }
+  .pick2 button { flex: 1; padding: 8px 0; font-size: 12.5px; border-radius: 8px; line-height: 1.4; }
+  .pick2 button small { display: block; font-size: 10px; color: var(--dim); font-family: var(--mono); }
+  .pick2 button.on { border-color: var(--green); color: var(--green); background: rgba(46,224,111,.1); font-weight: 700; }
+  .pick2 button.on small { color: var(--green); }
   .quiz { border: 1px dashed rgba(199,146,234,.5); background: rgba(199,146,234,.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
   .quiz .q { font-size: 12.5px; color: var(--purple); font-weight: 700; margin-bottom: 8px; }
   .quiz .a { display: flex; gap: 6px; }
@@ -155,6 +160,11 @@
         <button data-g="even" class="on">⚖️ 등속 구조<small>균형 · 같은 크기</small></button>
         <button data-g="power">💪 감속 구조<small>힘형 · 작은→큰</small></button>
       </div>
+      <h3>3️⃣ 폴·래칫 — 안 감을 때 줄이 풀리지 않게</h3>
+      <div class="pick2" id="pickRatchet">
+        <button data-r="0" class="on">🔓 끄기<small>안 감으면 풀림</small></button>
+        <button data-r="1">🔒 켜기<small>폴이 걸려 버팀</small></button>
+      </div>
       <h3>2️⃣ 물고기 고르기</h3>
       <div class="pick3" id="pickFish">
         <button data-f="small" class="on">🐟 소형<small>붕어 · 얕고 가벼움</small></button>
@@ -232,12 +242,18 @@
         속도형은 빠르지만 힘이 ⅓이라 큰 물고기 앞에선 꼼짝도 못 해.
         반대로 힘형은 느리지만 힘이 3배라 대형도 끌어올릴 수 있지.
         <b>세상에 공짜는 없어 — 빠르면 약하고, 세면 느려!</b></p>
+      <h2 style="margin-top:22px">🔒 폴·래칫 — 손을 놔도 줄이 안 풀리게</h2>
+      <p>초록 기어(구동 기어)를 손으로 잡고 있지 않으면 물고기 무게에 눌려 줄이 반대로 풀려 버려.
+        <b>폴-래칫</b>은 톱니바퀴(래칫)에 걸쇠(폴)를 걸어서 <b>한쪽 방향으로만 돌게</b> 막는 장치야.
+        감는 방향으로는 잘 돌아가지만, 반대로 돌려는 순간 폴이 톱니에 걸려서 멈춰 — 그래서 손을 놔도 물고기가 도망 안 가.
+        헬리콥터의 프로펠러 고정, 조절식 침대가 눕혀진 채 안 접히는 것도 같은 폴-래칫 원리야.</p>
       <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
       <div class="tip" style="background:rgba(77,163,255,.06); line-height:2">
         <b>기어비</b> — 맞물린 두 기어의 잇수 비. 속력과 힘이 얼마나 바뀌는지 정해요.<br>
         <b>토크(돌리는 힘)</b> — 축을 돌리는 힘. 기어비가 클수록 커져 무거운 물고기를 끌어요.<br>
         <b>속력</b> — 줄을 얼마나 빨리 감는지. 기어비가 작을수록 빨라요.<br>
-        <b>저항</b> — 물고기가 버티는 힘. 내 당기는 힘이 이보다 세야 줄이 감겨요.
+        <b>저항</b> — 물고기가 버티는 힘. 내 당기는 힘이 이보다 세야 줄이 감겨요.<br>
+        <b>폴-래칫</b> — 톱니바퀴(래칫)와 걸쇠(폴)로 한 방향으로만 돌게 막는 장치. 손을 놔도 줄이 안 풀려요.
       </div>
       <div class="tip">
         <b>🧱 실제 브릭큐 낚싯대 팁</b><br>
@@ -293,7 +309,7 @@ const FISH = {
 };
 
 /* ── 상태 ── */
-let gearKey = 'even', fishKey = 'small';
+let gearKey = 'even', fishKey = 'small', ratchet = false;
 let mode = 'idle';                 // idle | fight | done
 let t = 0, depth = 0, crankAng = 0, boost = 0, holdingPtr = false, holdingKey = false;
 let lineSpeed = 0, stalled = false, struggling = false, hintShown = false;
@@ -317,6 +333,11 @@ function pick3(el, attr, onSel) {
 }
 pick3($('pickGear'), 'g', k => { gearKey = k; refreshStatic(); });
 pick3($('pickFish'), 'f', k => { fishKey = k; prediction = null; refreshQuiz(); refreshStatic(); });
+document.querySelectorAll('#pickRatchet button').forEach(b => b.onclick = () => {
+  if (mode === 'fight') return;
+  ratchet = b.dataset.r === '1';
+  document.querySelectorAll('#pickRatchet button').forEach(x => x.classList.toggle('on', x === b));
+});
 
 $('quizA').querySelectorAll('button').forEach(b => b.onclick = () => {
   if (mode === 'fight') return;
@@ -360,7 +381,7 @@ $('castBtn').onclick = () => {
 $('giveupBtn').onclick = () => { if (mode === 'fight') finish(false, '스스로 그만뒀어'); };
 
 function lockPicks(lock) {
-  document.querySelectorAll('#pickGear button, #pickFish button, #quizA button')
+  document.querySelectorAll('#pickGear button, #pickFish button, #quizA button, #pickRatchet button')
     .forEach(b => b.disabled = lock);
 }
 
@@ -407,15 +428,21 @@ function step(dt) {
     lineSpeed = 0;
     depth += 0.3 * dt;
     crankAng += crankRate * 0.25 * Math.PI * 2 * dt;   // 헛도는 느낌
+  } else if (ratchet) {
+    stalled = false;
+    lineSpeed = 0;                        // 폴-래칫이 걸려 안 감아도 버팀
   } else {
     stalled = false;
     lineSpeed = 0;
-    depth += 0.45 * dt;                   // 안 감으면 물고기가 도망감
+    depth += 0.45 * dt;                   // 폴-래칫이 없으면 초록 기어가 반대로 돌아 줄이 풀려 도망감
   }
   depth = Math.max(0, depth);
 
   if (stalled && !hintShown && t > 2.5 && pullForce() <= f.res) {
     setBadge('warn', `🐟 물고기가 버텨! 힘 ${pullForce().toFixed(1)} < 저항 ${f.res.toFixed(1)} — 더 힘센 기어가 필요해`);
+    hintShown = true;
+  } else if (!cranking && !hintShown && t > 1.5) {
+    setBadge(ratchet ? 'good' : 'bad', ratchet ? '🔒 폴·래칫이 걸려서 손을 놔도 안 풀려요' : '⚠️ 폴·래칫이 꺼져 있어요 — 초록 기어를 안 잡으면 줄이 풀려요!');
     hintShown = true;
   }
 
