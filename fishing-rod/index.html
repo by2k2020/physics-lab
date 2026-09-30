@@ -192,14 +192,14 @@
   };
   const H = 10;            // 들어 올릴 높이 (칸) — 화면용 단위
   const RATE = 2;          // 손으로 줄을 당기는 · 핸들을 돌리는 빠르기 (등속일 때 칸/초) — 모든 조건에서 같게
-  const FALL = 12;         // 줄이 풀릴 때 물고기가 내려가는 빠르기 (칸/초)
+  const FALL = 3.5;        // 줄이 풀릴 때 물고기가 내려가는 빠르기 (칸/초) — 릴이 반대로 도는 게 눈에 보이게 감는 속도(RATE)와 비슷하게 맞춤
 
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d');
   const gv = $('gv'), gtx = gv.getContext('2d');
   let cond = 1, ratchet = true, gearKey = 'even';
   const gearRes = { up: null, even: null, down: null };
-  let pulled = 0, t = 0, crank = 0, winding = false, auto = false, done = false, state = 'idle';
+  let pulled = 0, t = 0, crank = 0, winding = false, auto = false, done = false, state = 'idle', releasing = false;
   const preds = [{}, {}, {}, {}], results = [null, null, null, null];
 
   const C = () => COND[cond];
@@ -343,6 +343,14 @@
     ctx.fillStyle = '#2ee06f'; ctx.beginPath(); ctx.arc(kx, ky, 5.5, 0, 7); ctx.fill();   // 핸들
     if (c.reel) {
       label('릴(윈치)', R.x + 22, R.y + 34, '#9aa6bb');
+      if (releasing) {
+        const rr = 34, a0 = crank - 1.3, a1 = crank + 0.3;
+        ctx.strokeStyle = '#ff5a52'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(R.x, R.y, rr, a0, a1); ctx.stroke();
+        const ex = R.x + rr * Math.cos(a1), ey = R.y + rr * Math.sin(a1), ta = a1 + Math.PI / 2;
+        ctx.fillStyle = '#ff5a52'; ctx.beginPath();
+        ctx.moveTo(ex + 9 * Math.cos(ta), ey + 9 * Math.sin(ta)); ctx.lineTo(ex + 7 * Math.cos(ta + 2.5), ey + 7 * Math.sin(ta + 2.5)); ctx.lineTo(ex + 7 * Math.cos(ta - 2.5), ey + 7 * Math.sin(ta - 2.5)); ctx.closePath(); ctx.fill();
+        label('릴이 거꾸로 돌아요!', R.x - 10, R.y - 40, '#ff5a52', 'right');
+      }
       const G = { x: R.x - 30 * Math.cos(rodA) , y: R.y - 30 * Math.sin(rodA) };            // 래칫 톱니바퀴
       ctx.fillStyle = '#566580'; ctx.beginPath();
       for (let i = 0; i < 16; i++) { const a = crank * gf(c) + i * Math.PI / 8, rr = i % 2 ? 10 : 6.5; ctx.lineTo(G.x + rr * Math.cos(a), G.y + rr * Math.sin(a)); }
@@ -461,6 +469,7 @@
   function loop(ts) {
     const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
     const c = C();
+    releasing = false;
     if (!done) {
       if (winding || auto) {
         pulled = Math.min(H * c.n, pulled + RATE * gf(c) * dt); t += dt; crank += RATE * dt * 1.6;
@@ -470,9 +479,10 @@
         if (holds()) {
           if (state !== 'hold') { state = 'hold'; badge('🔒 딸깍! 폴이 래칫에 걸려서 줄이 풀리지 않아요', 'good'); }
         } else {
+          releasing = true;
           pulled = Math.max(0, pulled - FALL * c.n * dt); crank -= FALL * dt * 1.6 / gf(c);
           if (state !== 'slip') { state = 'slip'; badge(c.reel ? '⚠️ 폴·래칫이 꺼져 있어요 — 기어를 잡고 있지 않으면 줄이 풀려요!' : '⚠️ 손을 놓으면 물고기가 다시 내려가요!', 'bad'); }
-          if (pulled <= 0) { t = 0; state = 'idle'; }
+          if (pulled <= 0) { t = 0; state = 'idle'; releasing = false; }
         }
       }
       hud();
