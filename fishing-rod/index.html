@@ -24,7 +24,8 @@
   .wrap{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px;padding:12px}
   @media (max-width:900px){.wrap{grid-template-columns:1fr}}
   .stage{position:relative;background:#070c18;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:420px}
-  canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+  .stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+  .gearview{display:block;width:100%;height:118px;margin-top:8px;background:#0b1120;border:1px solid var(--border);border-radius:10px}
   .hud{position:absolute;top:10px;left:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
   .chip{background:rgba(8,12,22,.8);border:1px solid rgba(120,150,200,.3);border-radius:10px;padding:5px 12px;font-family:var(--mono);font-size:18px;font-weight:700}
   .chip .lab{color:var(--dim);font-size:11px;font-weight:400;display:block;font-family:inherit}
@@ -54,6 +55,7 @@
   td.hit{color:var(--green);font-weight:800} td.miss{color:var(--amber);font-weight:800}
   td.res{font-weight:700}
   .tables{padding:0 12px 16px}
+  .tables .panel+.panel{margin-top:12px}
   .scroll{overflow-x:auto}
   .theory{max-width:860px;margin:16px auto;padding:0 16px;line-height:1.75}
   .theory h2{font-size:18px;margin:22px 0 8px;color:var(--accent)}
@@ -99,7 +101,14 @@
         <div class="pred"><span>속도</span><div class="seg" data-k="s"><button data-v="빠름">빠름</button><button data-v="느림">느림</button><button data-v="차이없음">차이 없음</button></div></div>
         <div class="pred"><span>방향</span><div class="seg" data-k="d"><button data-v="같다">같다</button><button data-v="다르다">다르다</button></div></div>
       </div>
-      <h3>③ 폴·래칫 (릴의 안전장치)</h3>
+      <h3>③ 릴 속 기어 구조 바꾸기 (구동 기어 → 피동 기어)</h3>
+      <div class="seg" id="segGear">
+        <button data-v="up">가속 구조<small>큰 기어 → 작은 기어</small></button>
+        <button data-v="even" class="on">등속 구조<small>같은 크기</small></button>
+        <button data-v="down">감속 구조<small>작은 기어 → 큰 기어</small></button>
+      </div>
+      <canvas id="gv" class="gearview"></canvas>
+      <h3>④ 폴·래칫 (릴의 안전장치)</h3>
       <div class="seg" id="segRatchet">
         <button data-v="1" class="on">켜기<small>폴이 걸려 있음</small></button>
         <button data-v="0">끄기<small>폴을 들어 올림</small></button>
@@ -110,6 +119,7 @@
         <button class="ghost" id="btnReset" title="처음으로">↺</button>
       </div>
       <p class="note">버튼을 <b>누르고 있는 동안만</b> 줄이 당겨져요. 중간에 손을 떼 보세요 — 물고기는 어떻게 될까요?<br>
+      기어 구조는 릴이 있는 조건에서 바꿀 수 있어요. 교안 실험표는 <b>등속 구조</b>로 해요.<br>
       레고 낚시대로 할 때도 같은 표에 예상과 결과를 적어요.</p>
     </div>
   </div>
@@ -117,9 +127,16 @@
     <div class="panel">
       <h3>📋 예상 · 결과표 — 손으로 직접 들 때와 비교 (물고기를 10칸 들어 올리기)</h3>
       <div class="scroll">
-      <table id="tbl"><thead><tr><th>조건</th><th></th><th>무게</th><th>속도</th><th>방향</th><th>드는 힘</th><th>당긴 줄</th><th>시간</th></tr></thead><tbody></tbody></table>
+      <table id="tbl"><thead><tr><th>조건</th><th></th><th>무게</th><th>속도</th><th>방향</th><th>릴 기어</th><th>드는 힘</th><th>당긴 줄</th><th>시간</th></tr></thead><tbody></tbody></table>
       </div>
       <p class="note">초록 = 예상과 결과가 같음 · 주황 = 예상과 다름 · 방향은 "내가 줄을 당기는(감는) 방향과 물고기가 움직이는 방향"을 비교해요.</p>
+    </div>
+    <div class="panel">
+      <h3>⚙️ 릴 기어 구조 비교 — 같은 빠르기로 핸들을 돌릴 때</h3>
+      <div class="scroll">
+      <table id="tblGear"><thead><tr><th>기어 구조</th><th>구동 기어 → 피동 기어</th><th>낚시대 조건</th><th>드는 힘</th><th>시간</th><th>손으로 직접 들 때보다</th></tr></thead><tbody></tbody></table>
+      </div>
+      <p class="note"><b>미션</b> — 가장 무거운 물고기를 들어 올리려면 어떤 기어 구조와 도르래를 골라야 할까요? 가장 빨리 낚으려면요?</p>
     </div>
   </div>
 </section>
@@ -130,17 +147,25 @@
     <div class="card">릴은 낚시줄을 <b>감거나 풀어 주는 장치</b>예요. 손으로 바로 잡아당기면 줄이 엉키기 쉽지만, 릴을 돌리면 줄이 둥근 통(스풀)에 차곡차곡 감기면서 물고기를 <b>일정한 힘으로</b> 끌어 올릴 수 있어요. 핸들을 돌리는 방향과 줄이 움직이는 방향은 서로 달라요.</div>
     <h2>⚙️ 윈치 — 줄을 감아 끌어당기기</h2>
     <div class="card">윈치는 줄이나 철사를 감아서 무거운 물건을 <b>끌어당기거나 들어 올리는 장치</b>예요. 손잡이(핸들)를 돌리면 드럼이 돌면서 줄이 감기거나 풀려요. 낚시대의 릴, 자동차 견인기, 배의 닻을 올리는 장치가 모두 윈치의 원리를 써요.</div>
+    <h2>⚙️ 기어 — 구동 기어와 피동 기어</h2>
+    <div class="card">기어는 <b>톱니를 내어 만든 바퀴</b>예요. 가장 먼저 회전하는 바퀴가 <b>구동 기어</b>, 구동 기어를 따라 돌게 되는 바퀴가 <b>피동 기어</b>예요. 낚시대에서는 손으로 돌리는 초록 기어가 구동 기어, 줄을 감는 쪽 보라 기어가 피동 기어예요. 맞물린 두 기어는 <b>서로 반대 방향</b>으로 돌아요.</div>
+    <h2>⏩ 가속 구조 · 감속 구조 · 등속 구조</h2>
+    <div class="card"><b>가속 구조</b> — 큰 구동 기어가 작은 피동 기어를 돌려요. 줄이 빨리 감기지만 힘이 더 들어요.<br>
+    <b>감속 구조</b> — 작은 구동 기어가 큰 피동 기어를 돌려요. 줄은 천천히 감기지만 적은 힘으로 들 수 있어요.<br>
+    <b>등속 구조</b> — 같은 크기의 기어끼리 맞물려요. 빠르기와 힘이 그대로예요.</div>
     <h2>🔵 고정 도르래 — 힘의 방향을 바꿔요</h2>
     <div class="card">고정 도르래는 바퀴가 <b>한자리에 고정</b>되어 있어요. 드는 힘의 크기는 그대로지만, 줄을 아래로 당기면 물체가 위로 올라가요. 즉 <b>힘의 방향을 바꾸어 주는 도구</b>예요. 깃발을 올리거나 우물에서 물을 길을 때 써요.</div>
     <h2>🟡 움직도르래 — 힘을 줄여 줘요</h2>
     <div class="card">움직도르래는 물체와 함께 <b>위아래로 움직이는 도르래</b>예요. 두 가닥의 줄이 무게를 나누어 들기 때문에 <b>절반의 힘</b>으로 들 수 있어요. 대신 줄을 <b>두 배로 길게</b> 당겨야 해서 올라오는 속도는 느려져요. 크레인이나 건설 현장에서 볼 수 있어요.</div>
     <h2>🔒 폴과 래칫 — 줄이 풀리지 않게</h2>
-    <div class="card">래칫은 <b>한 방향으로만 돌게</b> 하는 장치예요. 톱니바퀴(래칫)와 걸쇠(폴)로 이루어져 있어서, 감는 방향으로는 잘 돌지만 반대 방향으로 돌려고 하면 폴에 걸려 멈춰요. 그래서 릴에서 손을 떼도 물고기가 떨어지지 않아요.</div>
+    <div class="card">래칫은 <b>한 방향으로만 돌게</b> 하는 장치예요. 톱니바퀴(래칫)와 걸쇠(폴)로 이루어져 있어서, 감는 방향으로는 잘 돌지만 반대 방향으로 돌려고 하면 폴에 걸려 멈춰요. 그래서 릴에서 손을 떼도 물고기가 떨어지지 않아요. 폴·래칫이 없으면 초록 기어를 손으로 잡고 있지 않는 한 줄이 풀려 버려요.</div>
     <h2>🧪 이 시뮬레이터의 약속</h2>
     <div class="card">물고기를 <b>10칸</b> 들어 올리고, 줄은 언제나 같은 빠르기로 당겨요(한 가지 조건만 바꾸기). 결과는 교안의 실험 결과표와 같게 정해 두었어요 — 고정 도르래와 릴은 힘·속도가 그대로이고 방향만 달라지며, 움직도르래를 더하면 힘은 절반, 당기는 줄은 두 배가 돼요.
+    릴 기어는 <b>등속 구조</b>가 기본이에요. 화면 속 큰 기어는 작은 기어보다 톱니가 2배 많다고 정해 두어서, 가속 구조는 2배 빠르고 힘이 2배, 감속 구조는 절반 빠르기에 절반의 힘이에요(레고 기어의 실제 톱니 수는 직접 세어 보세요).
     실제 레고 낚시대는 축이 빡빡하거나 핸들 길이에 따라 느낌이 다를 수 있으니 <b>꼭 직접 들어 보고 비교</b>하세요.</div>
     <h2>🧑‍🏫 수업 흐름 (교안 순서)</h2>
-    <div class="card">① 릴과 윈치 알아보기 → ② 낚시대 만들기(고정 도르래·릴 찾기) → ③ 조건 3가지로 물건 들어 보기: 예상 → 결과(무게·속도·방향) → ④ "들어 올리면 줄이 풀리나요?" 폴·래칫 찾기 → ⑤ 나만의 낚시대 · 나만의 물고기 만들기</div>
+    <div class="card"><b>브릭큐 프라임 20 「낚시대」</b> ① 릴과 윈치 알아보기 → ② 낚시대 만들기(고정 도르래·릴 찾기) → ③ 조건 3가지로 물건 들어 보기: 예상 → 결과(무게·속도·방향) → ④ "들어 올리면 줄이 풀리나요?" 폴·래칫 찾기 → ⑤ 나만의 낚시대 · 나만의 물고기 만들기<br>
+    <b>브릭큐 에센셜 20 「낚시하러 가자」</b> ① 초록 기어와 보라 기어의 회전 방향 확인 → ② 회전 속도 확인: 감속 구조 VS 가속 구조 → ③ "초록 기어를 손으로 고정하지 않으면?" 줄이 풀려요 → 폴-래칫 추가 → ④ 가장 무거운 물고기를 들어 올리는 낚시대 · 낚시 대회</div>
     <h2>👨‍👩‍👧 학부모님께</h2>
     <div class="card">이번 차시에서는 레고로 낚시대를 만들고, 고정 도르래·릴(윈치)·움직도르래를 하나씩 더하면서 드는 힘과 속도, 방향이 어떻게 달라지는지 예상하고 실험으로 확인합니다.
     줄이 풀리지 않게 잡아 주는 폴·래칫 구조도 함께 배웁니다.</div>
@@ -158,21 +183,33 @@
     { name: '고정 1개 + 릴(윈치)',   n: 1, fixed: true,  reel: true,  mov: false },
     { name: '고정 1 + 움직 1 + 릴',  n: 2, fixed: true,  reel: true,  mov: true  },
   ];                       // n = 물고기를 나눠 드는 줄 가닥 수 → 힘 1/n, 당길 줄 n배
+  // 릴 기어 구조 — 브릭큐 에센셜 1·8차시(가속·감속·등속 구조, 구동/피동 기어), 20차시 「낚시하러 가자」(감속 VS 가속, 회전 방향).
+  // g = 핸들 한 바퀴에 줄감개가 도는 바퀴 수. 큰 기어 톱니 = 작은 기어의 2배는 화면용 약속(교안에 톱니 수 없음).
+  const GEAR = {
+    up:   { name: '가속 구조', g: 2,   rd: 30, rn: 15, td: 16, tn: 8,  pair: '큰 기어 → 작은 기어', msg: '줄감개가 2배 빨리 돌아요 · 힘은 2배 들어요' },
+    even: { name: '등속 구조', g: 1,   rd: 22, rn: 22, td: 12, tn: 12, pair: '같은 크기 기어',       msg: '빠르기와 힘이 그대로예요' },
+    down: { name: '감속 구조', g: 0.5, rd: 15, rn: 30, td: 8,  tn: 16, pair: '작은 기어 → 큰 기어', msg: '줄감개가 느리게 돌아요 · 절반의 힘으로 돼요' },
+  };
   const H = 10;            // 들어 올릴 높이 (칸) — 화면용 단위
-  const RATE = 2;          // 줄을 당기는(감는) 빠르기 (칸/초) — 모든 조건에서 같게
+  const RATE = 2;          // 손으로 줄을 당기는 · 핸들을 돌리는 빠르기 (등속일 때 칸/초) — 모든 조건에서 같게
   const FALL = 12;         // 줄이 풀릴 때 물고기가 내려가는 빠르기 (칸/초)
 
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d');
-  let cond = 1, ratchet = true;
+  const gv = $('gv'), gtx = gv.getContext('2d');
+  let cond = 1, ratchet = true, gearKey = 'even';
+  const gearRes = { up: null, even: null, down: null };
   let pulled = 0, t = 0, crank = 0, winding = false, auto = false, done = false, state = 'idle';
   const preds = [{}, {}, {}, {}], results = [null, null, null, null];
 
   const C = () => COND[cond];
   const height = () => pulled / C().n;
   const holds = () => C().reel && ratchet;          // 손을 떼도 버티는가
-  const verdict = c => ({ w: c.n > 1 ? '가벼움' : '차이없음', s: c.n > 1 ? '느림' : '차이없음', d: c.fixed ? '다르다' : '같다' });
-  const fmtF = n => n === 1 ? '×1' : '×½';
+  const gf = (c = C()) => c.reel ? GEAR[gearKey].g : 1;        // 기어는 릴에만 있다
+  const force = (c = C()) => gf(c) / c.n;                        // 손으로 직접 들 때의 몇 배 힘
+  const verdict = c => { const f = force(c);                     // 물고기 빠르기 배수도 g/n 으로 같다
+    return { w: f > 1 ? '무거움' : f < 1 ? '가벼움' : '차이없음', s: f > 1 ? '빠름' : f < 1 ? '느림' : '차이없음', d: c.fixed ? '다르다' : '같다' }; };
+  const fmtF = f => ({ 2: '×2', 1: '×1', 0.5: '×½', 0.25: '×¼' })[f] || '×' + f;
 
   function segBind(box, cb) {
     box.querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -184,6 +221,7 @@
 
   segBind($('segCond'), v => { cond = +v; syncUI(); reset(); });
   segBind($('segRatchet'), v => { ratchet = v === '1'; });
+  segBind($('segGear'), v => { gearKey = v; syncUI(); reset(); });
   document.querySelectorAll('#predBox .seg').forEach(box => segBind(box, v => { preds[cond][box.dataset.k] = v; renderTable(); }));
   document.querySelectorAll('.tab').forEach(tb => tb.onclick = () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === tb));
@@ -194,11 +232,13 @@
   function syncUI() {
     const c = C();
     $('segRatchet').classList.toggle('off', !c.reel);
+    $('segGear').classList.toggle('off', !c.reel);
+    gv.style.opacity = c.reel ? 1 : .4;
     $('predBox').style.opacity = cond === 0 ? .4 : 1;
     $('predBox').style.pointerEvents = cond === 0 ? 'none' : '';
     document.querySelectorAll('#predBox .seg').forEach(box => segSet(box, preds[cond][box.dataset.k]));
     $('btnWind').textContent = c.reel ? '🎣 릴 감기 (누르고 있기)' : '🎣 당기기 (누르고 있기)';
-    $('hF').textContent = fmtF(c.n);
+    $('hF').textContent = fmtF(force(c));
   }
   function badge(msg, kind) { const b = $('badge'); b.textContent = msg || ''; b.className = 'badge' + (msg ? ' ' + kind : ''); }
   function reset() { pulled = 0; t = 0; crank = 0; winding = false; auto = false; done = false; state = 'idle'; badge(); hud(); draw(); }
@@ -216,9 +256,10 @@
   function finish() {
     done = true; winding = false; auto = false; wind.classList.remove('down'); state = 'done';
     const c = C(), v = verdict(c);
-    results[cond] = { ...v, f: fmtF(c.n), line: pulled, time: t };
+    results[cond] = { ...v, f: fmtF(force(c)), line: pulled, time: t, gear: c.reel ? GEAR[gearKey].name : '—' };
+    if (c.reel) gearRes[gearKey] = { cond: c.name, f: fmtF(force(c)), time: t, w: v.w, s: v.s };
     renderTable();
-    let msg = `🎣 잡았다! 힘 ${fmtF(c.n)} · 줄 ${pulled.toFixed(0)}칸 · ${t.toFixed(1)}초`;
+    let msg = `🎣 잡았다! 힘 ${fmtF(force(c))} · 줄 ${pulled.toFixed(0)}칸 · ${t.toFixed(1)}초`;
     const p = preds[cond], keys = ['w', 's', 'd'].filter(k => p[k]);
     if (cond > 0 && keys.length) { const hit = keys.filter(k => p[k] === v[k]).length; msg += hit === keys.length ? ' · 예상 성공 🎉' : ` · 예상 ${keys.length}개 중 ${hit}개 맞음 🤔`; }
     badge(msg, 'good');
@@ -227,14 +268,21 @@
   function renderTable() {
     const tb = $('tbl').tBodies[0]; tb.innerHTML = '';
     const cell = (r, p, k) => !r ? '<td>—</td>' : `<td class="res ${p && p[k] ? (p[k] === r[k] ? 'hit' : 'miss') : ''}">${r[k] === '차이없음' ? '차이 없음' : r[k]}</td>`;
-    const nums = r => r ? `<td>${r.f}</td><td>${r.line.toFixed(0)}칸</td><td>${r.time.toFixed(1)}초</td>` : '<td>—</td><td>—</td><td>—</td>';
+    const nums = r => r ? `<td>${r.gear}</td><td>${r.f}</td><td>${r.line.toFixed(0)}칸</td><td>${r.time.toFixed(1)}초</td>` : '<td>—</td><td>—</td><td>—</td><td>—</td>';
     const b = results[0];
     tb.insertAdjacentHTML('beforeend', `<tr><th>${COND[0].name}</th><th>기준</th><td>—</td><td>—</td>${b ? `<td class="res">${b.d}</td>` : '<td>—</td>'}${nums(b)}</tr>`);
     for (let i = 1; i < COND.length; i++) {
       const p = preds[i], r = results[i], show = k => p[k] ? (p[k] === '차이없음' ? '차이 없음' : p[k]) : '';
       tb.insertAdjacentHTML('beforeend',
-        `<tr><th rowspan="2">${COND[i].name}</th><th>예상</th><td>${show('w')}</td><td>${show('s')}</td><td>${show('d')}</td><td colspan="3" rowspan="1"></td></tr>` +
+        `<tr><th rowspan="2">${COND[i].name}</th><th>예상</th><td>${show('w')}</td><td>${show('s')}</td><td>${show('d')}</td><td colspan="4"></td></tr>` +
         `<tr><th>결과</th>${cell(r, p, 'w')}${cell(r, p, 's')}${cell(r, p, 'd')}${nums(r)}</tr>`);
+    }
+    const tg = $('tblGear').tBodies[0]; tg.innerHTML = '';
+    const nice = x => x === '차이없음' ? '차이 없음' : x;
+    for (const k of ['up', 'even', 'down']) {
+      const G = GEAR[k], r = gearRes[k];
+      tg.insertAdjacentHTML('beforeend', `<tr><th>${G.name}</th><td>${G.pair}</td>` +
+        (r ? `<td>${r.cond}</td><td class="res">${r.f}</td><td class="res">${r.time.toFixed(1)}초</td><td>무게 ${nice(r.w)} · 속도 ${nice(r.s)}</td>` : '<td>—</td><td>—</td><td>—</td><td>—</td>') + '</tr>');
     }
   }
   function hud() { $('hL').textContent = pulled.toFixed(1); $('hH').textContent = height().toFixed(1); $('hT').textContent = t.toFixed(1); }
@@ -289,7 +337,7 @@
     // 릴(윈치) + 폴·래칫
     const R = along(0.30);
     ctx.globalAlpha = c.reel ? 1 : .22;
-    wheel(R.x, R.y, 14, '#9aa6bb', crank);
+    wheel(R.x, R.y, 14, '#9aa6bb', crank * gf(c));
     const kx = R.x + 26 * Math.cos(crank), ky = R.y + 26 * Math.sin(crank);
     ctx.strokeStyle = '#e8eef7'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(R.x, R.y); ctx.lineTo(kx, ky); ctx.stroke();
     ctx.fillStyle = '#2ee06f'; ctx.beginPath(); ctx.arc(kx, ky, 5.5, 0, 7); ctx.fill();   // 핸들
@@ -297,7 +345,7 @@
       label('릴(윈치)', R.x + 22, R.y + 34, '#9aa6bb');
       const G = { x: R.x - 30 * Math.cos(rodA) , y: R.y - 30 * Math.sin(rodA) };            // 래칫 톱니바퀴
       ctx.fillStyle = '#566580'; ctx.beginPath();
-      for (let i = 0; i < 16; i++) { const a = crank + i * Math.PI / 8, rr = i % 2 ? 10 : 6.5; ctx.lineTo(G.x + rr * Math.cos(a), G.y + rr * Math.sin(a)); }
+      for (let i = 0; i < 16; i++) { const a = crank * gf(c) + i * Math.PI / 8, rr = i % 2 ? 10 : 6.5; ctx.lineTo(G.x + rr * Math.cos(a), G.y + rr * Math.sin(a)); }
       ctx.closePath(); ctx.fill();
       const lift = ratchet ? 0 : -9;                                                        // 폴(걸쇠)
       ctx.strokeStyle = ratchet ? '#2ee06f' : '#ff5a52'; ctx.lineWidth = 4;
@@ -372,27 +420,64 @@
     ctx.fillStyle = '#2ee06f'; ctx.fillText('→ 물고기가 움직이는 방향', 12, Hd - 12);
   }
 
+  // 릴 속 기어 — 초록 = 구동 기어(핸들), 보라 = 피동 기어(줄감개). 서로 반대 방향으로 돈다.
+  let gW = 0, gH = 0;
+  function gearShape(x, y, r, teeth, ang, color) {
+    gtx.fillStyle = color; gtx.beginPath();
+    for (let i = 0; i < teeth * 2; i++) { const a = ang + i * Math.PI / teeth, rr = i % 2 ? r + 3.5 : r - 2.5; gtx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+    gtx.closePath(); gtx.fill();
+    gtx.fillStyle = '#0b1120'; gtx.beginPath(); gtx.arc(x, y, 4, 0, 7); gtx.fill();
+    gtx.strokeStyle = '#0b1120'; gtx.lineWidth = 2; gtx.beginPath(); gtx.moveTo(x, y); gtx.lineTo(x + (r - 5) * Math.cos(ang), y + (r - 5) * Math.sin(ang)); gtx.stroke();
+  }
+  function spinArrow(x, y, r, cw, color) {
+    const a0 = -2.2, a1 = -0.9, e = cw ? a1 : a0, d = cw ? 1 : -1;
+    gtx.strokeStyle = color; gtx.fillStyle = color; gtx.lineWidth = 2.5;
+    gtx.beginPath(); gtx.arc(x, y, r, a0, a1); gtx.stroke();
+    const ex = x + r * Math.cos(e), ey = y + r * Math.sin(e), ta = e + d * Math.PI / 2;
+    gtx.beginPath(); gtx.moveTo(ex + 7 * Math.cos(ta), ey + 7 * Math.sin(ta)); gtx.lineTo(ex + 5 * Math.cos(ta + 2.4), ey + 5 * Math.sin(ta + 2.4)); gtx.lineTo(ex + 5 * Math.cos(ta - 2.4), ey + 5 * Math.sin(ta - 2.4)); gtx.closePath(); gtx.fill();
+  }
+  function drawGears() {
+    const w = gv.clientWidth, h = gv.clientHeight;
+    if (!w) return;
+    if (w !== gW || h !== gH) { gW = w; gH = h; gv.width = w * dpr; gv.height = h * dpr; }
+    gtx.setTransform(dpr, 0, 0, dpr, 0, 0); gtx.clearRect(0, 0, w, h);
+    const G = GEAR[gearKey], cy = 50, x1 = 46, x2 = x1 + G.rd + G.rn;
+    gearShape(x1, cy, G.rd, G.td, crank, '#2ee06f');
+    gearShape(x2, cy, G.rn, G.tn, -crank * G.g + Math.PI / G.tn, '#c792ea');
+    spinArrow(x1, cy, G.rd + 9, true, '#2ee06f'); spinArrow(x2, cy, G.rn + 9, false, '#c792ea');
+    gtx.font = '11px sans-serif'; gtx.textAlign = 'center';
+    gtx.fillStyle = '#2ee06f'; gtx.fillText('구동 기어(핸들)', x1, h - 8);
+    gtx.fillStyle = '#c792ea'; gtx.fillText('피동 기어(줄감개)', Math.max(x2, x1 + 84), h - 8);
+    const tx = Math.max(x2 + G.rn + 18, 170);
+    if (w - tx > 90) {
+      gtx.textAlign = 'left'; gtx.fillStyle = '#ffb02e'; gtx.font = 'bold 13px sans-serif'; gtx.fillText(G.name, tx, 30);
+      gtx.fillStyle = '#e8eef7'; gtx.font = '11.5px sans-serif';
+      G.msg.split(' · ').forEach((ln, i) => gtx.fillText(ln, tx, 50 + i * 17));
+      gtx.fillStyle = '#8b98ad'; gtx.fillText('두 기어는 반대 방향', tx, 50 + 2 * 17);
+    }
+  }
+
   let last = 0;
   function loop(ts) {
     const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
     const c = C();
     if (!done) {
       if (winding || auto) {
-        pulled = Math.min(H * c.n, pulled + RATE * dt); t += dt; crank += RATE * dt * 1.6;
+        pulled = Math.min(H * c.n, pulled + RATE * gf(c) * dt); t += dt; crank += RATE * dt * 1.6;
         if (state !== 'wind') { state = 'wind'; badge(); }
         if (pulled >= H * c.n) finish();
       } else if (pulled > 0) {
         if (holds()) {
           if (state !== 'hold') { state = 'hold'; badge('🔒 딸깍! 폴이 래칫에 걸려서 줄이 풀리지 않아요', 'good'); }
         } else {
-          pulled = Math.max(0, pulled - FALL * c.n * dt); crank -= FALL * dt * 1.6;
-          if (state !== 'slip') { state = 'slip'; badge(c.reel ? '⚠️ 폴·래칫이 꺼져 있어요 — 줄이 풀려 물고기가 내려가요!' : '⚠️ 손을 놓으면 물고기가 다시 내려가요!', 'bad'); }
+          pulled = Math.max(0, pulled - FALL * c.n * dt); crank -= FALL * dt * 1.6 / gf(c);
+          if (state !== 'slip') { state = 'slip'; badge(c.reel ? '⚠️ 폴·래칫이 꺼져 있어요 — 기어를 잡고 있지 않으면 줄이 풀려요!' : '⚠️ 손을 놓으면 물고기가 다시 내려가요!', 'bad'); }
           if (pulled <= 0) { t = 0; state = 'idle'; }
         }
       }
       hud();
     }
-    draw();
+    draw(); drawGears();
     requestAnimationFrame(loop);
   }
   window.addEventListener('resize', resize);

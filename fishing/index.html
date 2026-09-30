@@ -149,11 +149,11 @@
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
     </div>
     <div class="side">
-      <h3>1️⃣ 릴 기어비 고르기 (크랭크 → 줄감개)</h3>
+      <h3>1️⃣ 릴 기어 구조 고르기 (구동 기어 → 피동 기어)</h3>
       <div class="pick3" id="pickGear">
-        <button data-g="speed">⚡ 속도형<small>기어비 1:3 · 24T→8T</small></button>
-        <button data-g="even" class="on">⚖️ 균형<small>기어비 1:1 · 16T→16T</small></button>
-        <button data-g="power">💪 힘형<small>기어비 3:1 · 8T→24T</small></button>
+        <button data-g="speed">⚡ 가속 구조<small>속도형 · 큰→작은</small></button>
+        <button data-g="even" class="on">⚖️ 등속 구조<small>균형 · 같은 크기</small></button>
+        <button data-g="power">💪 감속 구조<small>힘형 · 작은→큰</small></button>
       </div>
       <h3>2️⃣ 물고기 고르기</h3>
       <div class="pick3" id="pickFish">
@@ -164,9 +164,9 @@
       <div class="quiz" id="quizBox">
         <div class="q" id="quizQ">❓ 예측! 소형 물고기엔 어떤 기어가 좋을까?</div>
         <div class="a" id="quizA">
-          <button data-g="speed">⚡ 속도형</button>
-          <button data-g="even">⚖️ 균형</button>
-          <button data-g="power">💪 힘형</button>
+          <button data-g="speed">⚡ 가속 구조</button>
+          <button data-g="even">⚖️ 등속 구조</button>
+          <button data-g="power">💪 감속 구조</button>
         </div>
         <div class="msg" id="quizMsg">골라 놓고 직접 낚아서 맞는지 확인해 봐!</div>
       </div>
@@ -222,9 +222,9 @@
       <table>
         <thead><tr><th>릴 종류</th><th>기어 (크랭크→줄감개)</th><th>결과</th><th>어울리는 물고기</th></tr></thead>
         <tbody>
-          <tr><td class="cond">⚡ 속도형 1:3</td><td>24T → 8T</td><td class="cond">줄은 3배 빨리 · 힘은 ⅓</td><td class="cond">가벼운 소형 — 순식간에 낚아채기</td></tr>
-          <tr><td class="cond">⚖️ 균형 1:1</td><td>16T → 16T</td><td class="cond">속도·힘 그대로</td><td class="cond">중형 — 무난하게</td></tr>
-          <tr><td class="cond">💪 힘형 3:1</td><td>8T → 24T</td><td class="cond">힘은 3배 · 줄은 ⅓ 속도</td><td class="cond">무거운 대형 — 천천히, 하지만 확실하게</td></tr>
+          <tr><td class="cond">⚡ 가속 구조(속도형) 1:3</td><td>24T → 8T</td><td class="cond">줄은 3배 빨리 · 힘은 ⅓</td><td class="cond">가벼운 소형 — 순식간에 낚아채기</td></tr>
+          <tr><td class="cond">⚖️ 등속 구조(균형) 1:1</td><td>16T → 16T</td><td class="cond">속도·힘 그대로</td><td class="cond">중형 — 무난하게</td></tr>
+          <tr><td class="cond">💪 감속 구조(힘형) 3:1</td><td>8T → 24T</td><td class="cond">힘은 3배 · 줄은 ⅓ 속도</td><td class="cond">무거운 대형 — 천천히, 하지만 확실하게</td></tr>
         </tbody>
       </table>
       <p><b>왜 대형 물고기는 힘형으로만 잡힐까?</b> 물고기 저항보다 내 당김 힘이 세야 줄이 감겨.
@@ -279,9 +279,9 @@ const BASE_FORCE = 10;            // 내 기본 힘
 const LINE_PER_REV = 0.45;        // 줄감개 1회전당 감기는 줄(m)
 const CRANK_RPS = 2.0;            // 꾹 눌렀을 때 크랭크 회전/초
 const GEARS = {
-  speed: { name: '⚡ 속도형', short: '속도형', label: '1:3', drvT: 24, flwT: 8,  spd: 3,   frc: 1/3 },
-  even:  { name: '⚖️ 균형',  short: '균형',  label: '1:1', drvT: 16, flwT: 16, spd: 1,   frc: 1 },
-  power: { name: '💪 힘형',  short: '힘형',  label: '3:1', drvT: 8,  flwT: 24, spd: 1/3, frc: 3 },
+  speed: { name: '⚡ 가속 구조(속도형)', short: '속도형', label: '1:3', drvT: 24, flwT: 8,  spd: 3,   frc: 1/3 },
+  even:  { name: '⚖️ 등속 구조(균형)',  short: '균형',  label: '1:1', drvT: 16, flwT: 16, spd: 1,   frc: 1 },
+  power: { name: '💪 감속 구조(힘형)',  short: '힘형',  label: '3:1', drvT: 8,  flwT: 24, spd: 1/3, frc: 3 },
 };
 const FISH = {
   small: { name: '소형', icon: '🐟', species: 'crucian', depth: 3.2, res: 2,  size: 15, color: '#2ee06f', light: '#a8f5c8', best: 'speed',
