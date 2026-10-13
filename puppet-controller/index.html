@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>꼭두각시 컨트롤러 · 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg:#0a0e17; --panel:#121826; --panel2:#1a2234; --border:#263046;
+    --text:#e8eef7; --dim:#8b98ad; --accent:#4da3ff; --green:#2ee06f;
+    --amber:#ffb02e; --red:#ff5a52; --purple:#c792ea;
+    --mono:'Cascadia Mono','D2Coding','Consolas',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR',sans-serif}
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:#0d1322;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .crumb{font-size:11.5px;color:var(--dim)} .crumb a{color:var(--accent);text-decoration:none}
+  .title{font-size:16.5px;font-weight:800}
+  .tabs{display:flex;gap:6px;margin-left:auto}
+  .tab{background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:9px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+  .tab.on{color:#fff;background:linear-gradient(135deg,#1f5eff,#3d8bff);border-color:#3d8bff}
+  section{display:none} section.on{display:block}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px}
+  @media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}} .wrap>*{min-width:0}
+  .stage{position:relative;background:#070c18;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  canvas{display:block;width:100%;height:340px}
+  .hud{position:absolute;top:10px;left:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:rgba(8,12,22,.8);border:1px solid rgba(120,150,200,.3);border-radius:10px;padding:5px 12px;font-family:var(--mono);font-size:18px;font-weight:700}
+  .chip .lab{color:var(--dim);font-size:11px;font-weight:400;display:block;font-family:inherit}
+  .badge{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:8px 20px;border-radius:22px;font-weight:800;font-size:16px;display:none;background:rgba(20,60,35,.85);color:var(--green);border:1.5px solid var(--green);white-space:nowrap}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .panel h3{font-size:13px;color:var(--dim);margin:10px 0 6px} .panel h3:first-child{margin-top:0}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:70px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 6px;font-size:13px;cursor:pointer;font-family:inherit}
+  .seg button small{display:block;color:var(--dim);font-size:10.5px}
+  .seg button.on{border-color:var(--accent);background:#16305a}
+  .go{margin-top:12px;display:flex;gap:6px}
+  .go button{flex:1;padding:10px;border-radius:10px;border:0;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  .primary{background:linear-gradient(135deg,#1f5eff,#3d8bff);color:#fff}
+  .ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)!important}
+  .note{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+  th,td{border:1px solid var(--border);padding:6px;text-align:center}
+  th{background:var(--panel2);color:var(--dim);font-weight:600}
+  td.best{color:var(--green);font-weight:800}
+  .tables{padding:0 12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.tables{grid-template-columns:1fr}}
+  .theory{max-width:860px;margin:16px auto;padding:0 16px;line-height:1.75}
+  .theory h2{font-size:18px;margin:22px 0 8px;color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .card b{color:var(--amber)}
+  .warn{margin:10px 12px 0;padding:8px 12px;border:1px solid #4a3b16;background:#1d1708;color:var(--amber);border-radius:10px;font-size:12.5px}
+  .canvas-tall canvas{height:380px}
+  input[type=range]{width:100%}
+  .row{display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+  .row label{flex:1}
+
+  @media (max-width:600px){.badge{white-space:normal;width:90%;text-align:center;font-size:14px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 10차시 (크레이지 극장)</div>
+    <div class="title">🪆 꼭두각시 컨트롤러 — 4바 연결</div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="exp">실험</button>
+    <button class="tab" data-tab="theory">📖 원리</button>
+  </div>
+</div>
+<div class="warn">⚠️ 가상 모형입니다. 실물 조립과 결과는 따로 확인하세요.</div>
+<script>
+const $ = id => document.getElementById(id);
+function seg(id, cb) {
+  const box = $(id);
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    cb(b.dataset.v, b);
+  });
+}
+function fitCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { c, w: r.width, h: r.height };
+}
+function gearPath(c, x, y, r, teeth, ang, color) {
+  c.save(); c.translate(x, y); c.rotate(ang); c.beginPath();
+  const n = teeth * 2;
+  for (let i = 0; i <= n; i++) {
+    const a = i / n * Math.PI * 2, rr = i % 2 ? r : r * 0.82;
+    const a1 = a - Math.PI / n * 0.5, a2 = a + Math.PI / n * 0.5;
+    c.lineTo(Math.cos(a1) * rr, Math.sin(a1) * rr); c.lineTo(Math.cos(a2) * rr, Math.sin(a2) * rr);
+  }
+  c.closePath(); c.fillStyle = color; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke();
+  c.beginPath(); c.arc(0, 0, r * 0.18, 0, 7); c.fillStyle = '#0a0e17'; c.fill();
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 0.7, 0); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
+  c.restore();
+}
+function badge(msg, ok = true) {
+  const b = $('badge'); if (!b) return;
+  b.textContent = msg; b.style.display = 'block';
+  b.style.color = ok ? 'var(--green)' : 'var(--amber)';
+  b.style.borderColor = ok ? 'var(--green)' : 'var(--amber)';
+  b.style.background = ok ? 'rgba(20,60,35,.85)' : 'rgba(60,45,10,.85)';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t.dataset.tab));
+    window.dispatchEvent(new Event('resize'));
+  });
+});
+
+</script>
+
+<section id="exp" class="on">
+  <div class="wrap">
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">크랭크</span><span id="hC">0</span>°</div>
+        <div class="chip"><span class="lab">로커 흔들림 폭</span><span id="hR">0</span></div>
+        <div class="chip"><span class="lab">다리 움직임 폭</span><span id="hL">0</span></div>
+      </div>
+      <div class="badge" id="badge"></div>
+    </div>
+    <div class="panel">
+      <h3>① 탭 댄스 — 먼저 예상하기</h3>
+      <p class="note" style="margin-top:0">노브를 ⟳ 방향으로 처음 돌리면 오른쪽 다리는?</p>
+      <div class="seg" id="segPred">
+        <button data-v="down">아래로</button>
+        <button data-v="up">위로</button>
+      </div>
+      <div class="go">
+        <button class="ghost" id="btnL">⟲ 노브</button>
+        <button class="primary" id="btnR">⟳ 노브</button>
+        <button class="ghost" id="btnAuto">자동</button>
+      </div>
+      <h3>② 줄을 다리 어디에 묶을까?</h3>
+      <div class="seg" id="segStr">
+        <button data-v="0.45">몸에 가깝게</button>
+        <button data-v="0.7" class="on">가운데</button>
+        <button data-v="1">발 쪽</button>
+      </div>
+      <h3>③ 4바 연결 바꾸기 — 한 번에 하나만!</h3>
+      <div class="row"><label>크랭크(초록)</label></div>
+      <div class="seg" id="segA"><button data-v="0.7">짧게</button><button data-v="1" class="on">원래</button><button data-v="1.6">길게</button></div>
+      <div class="row"><label>커플러(빨강)</label></div>
+      <div class="seg" id="segB"><button data-v="2.4">짧게</button><button data-v="3.2" class="on">원래</button><button data-v="4.4">길게</button></div>
+      <div class="row"><label>로커(파랑)</label></div>
+      <div class="seg" id="segC"><button data-v="1.6">짧게</button><button data-v="2.2" class="on">원래</button><button data-v="2.8">길게</button></div>
+      <div class="go"><button class="ghost" id="btnRec">📋 지금 설정 기록</button></div>
+      <p class="note" id="changeNote"></p>
+    </div>
+  </div>
+  <div class="tables">
+    <div class="panel">
+      <h3>📋 설정별 움직임 (가상 모형 값)</h3>
+      <table id="tbl"><thead><tr><th>크랭크</th><th>커플러</th><th>로커</th><th>줄 위치</th><th>로커 폭</th><th>다리 폭</th></tr></thead><tbody></tbody></table>
+      <p class="note">초록 = 앞 줄과 비교해 <b>한 가지만</b> 바꾼 기록이에요.</p>
+    </div>
+    <div class="panel">
+      <h3>🦵 탭 댄스 관찰</h3>
+      <table id="tblTap"><thead><tr><th>노브</th><th>내 예상</th><th>오른쪽 다리</th><th>왼쪽 다리</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="theory">
+  <div class="theory">
+    <h2>🪆 꼭두각시 컨트롤러 — 4바 연결</h2>
+    <div class="card">기계 부착물이 있는 꼭두각시 인형을 만들어요. 이것은 <b>4바 연결 기계 시스템</b>이에요.
+    움직이지 않는 노란색 축은 <b>프레임</b>, 기어에 연결된 녹색 핸들은 <b>입력 링크(크랭크)</b>, 빨간색 빔은 <b>커플러</b>, 회전 출력 링크는 <b>로커</b>예요.
+    로커는 피벗을 중심으로 <b>반원 운동</b>을 하며 앞뒤로 흔들려요.</div>
+    <h2>🦵 탭 댄스</h2>
+    <div class="card">핸들을 돌리면 인형 다리가 움직여요. 교안 예: <b>오른쪽 다리는 아래로, 왼쪽 다리는 위로</b> 움직여요.
+    다리에 묶은 줄이 <b>몸에 가까워지면 다리의 움직임이 커져요.</b></div>
+    <h2>🔧 한 번에 하나만 바꾸기</h2>
+    <div class="card">움직임을 바꾸고 싶으면 한 번에 <b>하나의 구성 요소만</b> 바꿔요. 줄의 위치나 크랭크·로커·커플러의 크기를 바꿔 볼 수 있어요.
+    길이를 잘못 고르면 크랭크가 한 바퀴를 못 돌고 걸려요. 화면의 각도는 가상 모형 값이니 실물로 확인하세요.</div>
+    <h2>🧑‍🏫 생각해 볼 질문</h2>
+    <div class="card">· 노브를 돌리면 다리가 왜 움직일까요?<br>· 다리의 두 위치에 줄을 놓으면 어떻게 될까요?<br>· "4바 연결"이 어떻게 작동하는지 설명해 줄 수 있나요?</div>
+    <h2>👨‍👩‍👧 학부모님께</h2>
+    <div class="card">이번 차시는 손잡이를 돌려 춤추는 꼭두각시를 만들며, 크랭크·커플러·로커로 이루어진 4바 연결과 변인 통제를 배웁니다.</div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const cv = $('cv'), D = 3;                         // 프레임 길이(가상 단위)
+  let A = 1, B = 3.2, C = 2.2, R = 0.7, th = Math.PI / 2, hold = 0, auto = false, pred = null, jam = false;
+  let prev = null, tapLogged = false, startTh = th;
+  const NAME = { A: { 0.7: '짧게', 1: '원래', 1.6: '길게' }, B: { 2.4: '짧게', 3.2: '원래', 4.4: '길게' }, C: { 1.6: '짧게', 2.2: '원래', 2.8: '길게' }, R: { 0.45: '몸에 가깝게', 0.7: '가운데', 1: '발 쪽' } };
+  // 크랭크 각 → 로커 끝 B (위쪽 해). 해가 없으면 null(걸림)
+  function solve(t) {
+    const ax = A * Math.cos(t), ay = A * Math.sin(t), dx = D - ax, dy = -ay, d = Math.hypot(dx, dy);
+    if (d > B + C || d < Math.abs(B - C)) return null;
+    const a = (B * B - C * C + d * d) / (2 * d), hh = Math.sqrt(Math.max(0, B * B - a * a));
+    const mx = ax + a * dx / d, my = ay + a * dy / d;
+    return { ax, ay, bx: mx - hh * dy / d, by: my + hh * dx / d };
+  }
+  function rockAng(t) { const s = solve(t); return s ? Math.atan2(s.by, s.bx - D) : null; }
+  function range() {
+    let mn = 9, mx = -9, ok = true;
+    for (let i = 0; i < 360; i++) { const r = rockAng(i * Math.PI / 180); if (r == null) { ok = false; continue; } mn = Math.min(mn, r); mx = Math.max(mx, r); }
+    return { ok, mn, mx, mid: (mn + mx) / 2, amp: (mx - mn) * 180 / Math.PI };
+  }
+  let rg = range();
+  const LEG = 0.55;                                   // 줄 이동 → 다리 각도 변환(가상)
+  const legAmp = () => Math.min(170, rg.amp * LEG / R);
+
+  function changed(key, v) {
+    const old = { A, B, C, R }; ({ A, B, C, R } = Object.assign(old, { [key]: +v }));
+    rg = range(); jam = false; setSgn(); startTh = th; tapLogged = false;
+    $('changeNote').innerHTML = rg.ok ? '' : '⚠️ 이 길이로는 크랭크가 한 바퀴를 못 돌아요. 걸리는 곳에서 멈춰요.';
+  }
+  seg('segA', v => changed('A', v)); seg('segB', v => changed('B', v)); seg('segC', v => changed('C', v)); seg('segStr', v => changed('R', v));
+  seg('segPred', v => { pred = v; tapLogged = false; startTh = th; setSgn(); });
+  function bindHold(btn, d) {
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); if (d < 0 && !pred) { badge('먼저 ①에서 오른쪽 다리를 예상하세요', false); return; } hold = d; auto = false; });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => hold = 0));
+  }
+  bindHold($('btnL'), 1); bindHold($('btnR'), -1);    // 화면 좌표: 각도 감소 = 시계 방향
+  $('btnAuto').onclick = () => { auto = !auto; };
+  $('btnRec').onclick = () => {
+    const cur = { A, B, C, R }, diff = prev ? Object.keys(cur).filter(k => cur[k] !== prev[k]).length : 0;
+    $('tbl').tBodies[0].insertAdjacentHTML('beforeend',
+      `<tr><td>${NAME.A[A]}</td><td>${NAME.B[B]}</td><td>${NAME.C[C]}</td><td>${NAME.R[R]}</td><td class="${diff === 1 ? 'best' : ''}">${rg.ok ? rg.amp.toFixed(0) + '°' : '걸림'}</td><td class="${diff === 1 ? 'best' : ''}">${rg.ok ? legAmp().toFixed(0) + '°' : '—'}</td></tr>`);
+    if (diff > 1) badge('두 가지 이상을 한꺼번에 바꿨어요. 무엇 때문인지 알기 어려워요', false);
+    prev = cur;
+  };
+
+  // 로커가 기준(가운데)보다 위로 → 오른쪽 다리 아래, 왼쪽 다리 위 (교안 탭 댄스)
+  let rightLeg = 0, leftLeg = 0;
+  let SGN = 1, rStart = 0;
+  function setSgn() { const a = rockAng(th), b = rockAng(th - 0.05); SGN = (a != null && b != null && b < a) ? -1 : 1; }   // ⟳ 첫 동작에서 오른쪽 다리가 내려가도록(교안)
+  setSgn();
+  function step(dt) {
+    const dir = auto ? -1 : hold;
+    if (!tapLogged && Math.abs(th - startTh) < 1e-6) rStart = rightLeg;
+    if (dir) {
+      const nt = th + dir * dt * 2.2;
+      if (solve(nt)) th = nt; else if (!jam) { jam = true; badge('걸렸어요! 크랭크가 더 못 돌아요', false); }
+    }
+    const r = rockAng(th) ?? rg.mid;
+    const s = (r - rg.mid) / (Math.PI / 2);
+    rightLeg = SGN * s * legAmp() / 90; leftLeg = -rightLeg;   // +는 아래
+    if (!tapLogged && pred && dir < 0 && Math.abs(th - startTh) > 0.6) {
+      tapLogged = true;
+      const rd = rightLeg > rStart ? 'down' : 'up';
+      const rr = rd === 'down' ? '아래로' : '위로', ll = rd === 'down' ? '위로' : '아래로';
+      $('tblTap').tBodies[0].insertAdjacentHTML('beforeend', `<tr><td>⟳</td><td>${pred === 'down' ? '아래로' : '위로'}</td><td class="${pred === rd ? 'best' : ''}">${rr}</td><td>${ll}</td></tr>`);
+      badge(pred === rd ? '예상 성공! 오른쪽 다리 아래, 왼쪽 다리 위' : '오른쪽 다리는 아래로, 왼쪽 다리는 위로 움직였어요', pred === rd);
+    }
+    $('hC').textContent = (((-th * 180 / Math.PI) % 360 + 360) % 360).toFixed(0);
+    $('hR').textContent = rg.ok ? rg.amp.toFixed(0) + '°' : '걸림';
+    $('hL').textContent = rg.ok ? legAmp().toFixed(0) + '°' : '—';
+  }
+  function draw() {
+    const { c, w, h } = fitCanvas(cv);
+    c.fillStyle = '#0e1220'; c.fillRect(0, 0, w, h);
+    const s = Math.min(w * 0.5, h) / 6.2, ox = w * 0.06 + s * 1.6, oy = h * 0.68;
+    const P = (x, y) => [ox + x * s, oy - y * s];
+    const k = solve(th) || solve(th - 0.01);
+    const line = (p, q, col, wd) => { c.strokeStyle = col; c.lineWidth = wd; c.lineCap = 'round'; c.beginPath(); c.moveTo(...p); c.lineTo(...q); c.stroke(); };
+    line(P(0, 0), P(D, 0), '#ffcc00', 9);                                     // 프레임
+    if (k) {
+      line(P(0, 0), P(k.ax, k.ay), '#2ee06f', 8);                              // 크랭크
+      line(P(k.ax, k.ay), P(k.bx, k.by), '#ff5a52', 7);                        // 커플러
+      line(P(D, 0), P(k.bx, k.by), '#4da3ff', 8);                              // 로커
+    }
+    c.fillStyle = '#fff'; [P(0, 0), P(D, 0)].forEach(p => { c.beginPath(); c.arc(...p, 5, 0, 7); c.fill(); });
+    c.font = '12px sans-serif'; c.textAlign = 'center';
+    [['프레임', P(D / 2, -0.75), '#ffcc00'], ['크랭크', P(-0.6, 0.9), '#2ee06f'], ['커플러', P(D / 2, 3.4), '#ff5a52'], ['로커', P(D + 0.8, 1.2), '#4da3ff']]
+      .forEach(([t, p, col]) => { c.fillStyle = col; c.fillText(t, ...p); });
+    // 인형
+    const px = w * 0.78, py = h * 0.32;
+    c.fillStyle = '#c792ea'; c.fillRect(px - 22, py, 44, 60);
+    c.fillStyle = '#ffd36a'; c.beginPath(); c.arc(px, py - 16, 16, 0, 7); c.fill();
+    const leg = (hx, v) => {
+      const L = 70, fy = py + 60, ang = Math.max(-1.3, Math.min(0, v * 0.9 - 0.45));   // 무릎 들기(가상)
+      const fx2 = hx + Math.sin(-ang) * L * (hx > px ? 1 : -1), fy2 = fy + Math.cos(ang) * L;
+      line([hx, fy], [fx2, fy2], '#ffb02e', 8);
+      const sx = hx + (fx2 - hx) * R, sy = fy + (fy2 - fy) * R;                        // 줄 묶은 곳
+      c.strokeStyle = 'rgba(232,238,247,.6)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx, sy); c.lineTo(hx, 18); c.stroke();
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(sx, sy, 3, 0, 7); c.fill();
+    };
+    leg(px + 14, rightLeg);
+    leg(px - 14, leftLeg);
+    c.fillStyle = '#8b98ad'; c.fillText('오른쪽', px + 30, py + 150); c.fillText('왼쪽', px - 30, py + 150);
+  }
+  let last = performance.now();
+  function loop(t) { const dt = Math.min(0.05, (t - last) / 1000); last = t; step(dt); draw(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>

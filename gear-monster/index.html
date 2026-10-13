@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기어 몬스터 · 브릭큐 에센셜 · 코딩더메이커</title>
+<style>
+  :root {
+    --bg:#0a0e17; --panel:#121826; --panel2:#1a2234; --border:#263046;
+    --text:#e8eef7; --dim:#8b98ad; --accent:#4da3ff; --green:#2ee06f;
+    --amber:#ffb02e; --red:#ff5a52; --purple:#c792ea;
+    --mono:'Cascadia Mono','D2Coding','Consolas',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR',sans-serif}
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:#0d1322;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .crumb{font-size:11.5px;color:var(--dim)} .crumb a{color:var(--accent);text-decoration:none}
+  .title{font-size:16.5px;font-weight:800}
+  .tabs{display:flex;gap:6px;margin-left:auto}
+  .tab{background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:9px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+  .tab.on{color:#fff;background:linear-gradient(135deg,#1f5eff,#3d8bff);border-color:#3d8bff}
+  section{display:none} section.on{display:block}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px}
+  @media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}} .wrap>*{min-width:0}
+  .stage{position:relative;background:#070c18;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  canvas{display:block;width:100%;height:340px}
+  .hud{position:absolute;top:10px;left:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:rgba(8,12,22,.8);border:1px solid rgba(120,150,200,.3);border-radius:10px;padding:5px 12px;font-family:var(--mono);font-size:18px;font-weight:700}
+  .chip .lab{color:var(--dim);font-size:11px;font-weight:400;display:block;font-family:inherit}
+  .badge{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:8px 20px;border-radius:22px;font-weight:800;font-size:16px;display:none;background:rgba(20,60,35,.85);color:var(--green);border:1.5px solid var(--green);white-space:nowrap}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .panel h3{font-size:13px;color:var(--dim);margin:10px 0 6px} .panel h3:first-child{margin-top:0}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:70px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 6px;font-size:13px;cursor:pointer;font-family:inherit}
+  .seg button small{display:block;color:var(--dim);font-size:10.5px}
+  .seg button.on{border-color:var(--accent);background:#16305a}
+  .go{margin-top:12px;display:flex;gap:6px}
+  .go button{flex:1;padding:10px;border-radius:10px;border:0;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  .primary{background:linear-gradient(135deg,#1f5eff,#3d8bff);color:#fff}
+  .ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)!important}
+  .note{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+  th,td{border:1px solid var(--border);padding:6px;text-align:center}
+  th{background:var(--panel2);color:var(--dim);font-weight:600}
+  td.best{color:var(--green);font-weight:800}
+  .tables{padding:0 12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.tables{grid-template-columns:1fr}}
+  .theory{max-width:860px;margin:16px auto;padding:0 16px;line-height:1.75}
+  .theory h2{font-size:18px;margin:22px 0 8px;color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .card b{color:var(--amber)}
+  .warn{margin:10px 12px 0;padding:8px 12px;border:1px solid #4a3b16;background:#1d1708;color:var(--amber);border-radius:10px;font-size:12.5px}
+  .canvas-tall canvas{height:380px}
+  input[type=range]{width:100%}
+  .row{display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+  .row label{flex:1}
+  .quiz label{display:block;font-size:13px;margin:4px 0}
+  .cv2{height:220px!important}
+
+  @media (max-width:600px){.badge{white-space:normal;width:90%;text-align:center;font-size:14px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 에센셜 과정 · 8차시 (크레이지 극장)</div>
+    <div class="title">👾 기어 몬스터 — 베벨 기어</div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="exp">실험</button>
+    <button class="tab" data-tab="theory">📖 원리</button>
+  </div>
+</div>
+<div class="warn">⚠️ 가상 모형입니다. 실물 조립과 결과는 따로 확인하세요.</div>
+<script>
+const $ = id => document.getElementById(id);
+function seg(id, cb) {
+  const box = $(id);
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    cb(b.dataset.v, b);
+  });
+}
+function fitCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { c, w: r.width, h: r.height };
+}
+function gearPath(c, x, y, r, teeth, ang, color) {
+  c.save(); c.translate(x, y); c.rotate(ang); c.beginPath();
+  const n = teeth * 2;
+  for (let i = 0; i <= n; i++) {
+    const a = i / n * Math.PI * 2, rr = i % 2 ? r : r * 0.82;
+    const a1 = a - Math.PI / n * 0.5, a2 = a + Math.PI / n * 0.5;
+    c.lineTo(Math.cos(a1) * rr, Math.sin(a1) * rr); c.lineTo(Math.cos(a2) * rr, Math.sin(a2) * rr);
+  }
+  c.closePath(); c.fillStyle = color; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke();
+  c.beginPath(); c.arc(0, 0, r * 0.18, 0, 7); c.fillStyle = '#0a0e17'; c.fill();
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 0.7, 0); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
+  c.restore();
+}
+function badge(msg, ok = true) {
+  const b = $('badge'); if (!b) return;
+  b.textContent = msg; b.style.display = 'block';
+  b.style.color = ok ? 'var(--green)' : 'var(--amber)';
+  b.style.borderColor = ok ? 'var(--green)' : 'var(--amber)';
+  b.style.background = ok ? 'rgba(20,60,35,.85)' : 'rgba(60,45,10,.85)';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t.dataset.tab));
+    window.dispatchEvent(new Event('resize'));
+  });
+});
+
+</script>
+
+<section id="exp" class="on">
+  <div class="wrap">
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <div class="chip"><span class="lab">노브</span><span id="hKnob">0.0</span> 바퀴</div>
+        <div class="chip"><span class="lab">몸통</span><span id="hBody">0.0</span> 바퀴</div>
+        <div class="chip"><span class="lab">머리</span><span id="hHead">0.0</span> 바퀴</div>
+      </div>
+      <div class="badge" id="badge"></div>
+    </div>
+    <div class="panel">
+      <h3>① 숨은 기어 찾기 — 먼저 예상하세요</h3>
+      <div class="quiz" id="quiz">
+        <label><input type="checkbox" value="spur"> 맞물린 기어 (회전 방향이 바뀜)</label>
+        <label><input type="checkbox" value="side"> 나란히 붙은 기어</label>
+        <label><input type="checkbox" value="rack"> 랙과 피니언</label>
+        <label><input type="checkbox" value="bevel"> 베벨 기어</label>
+      </div>
+      <div class="go"><button class="ghost" id="btnReveal">📄 종이 걷기 (뒷면 보기)</button></div>
+      <h3>② 노브 돌리기 (누르고 있기)</h3>
+      <div class="go">
+        <button class="ghost" id="btnL">⟲ 노브</button>
+        <button class="ghost" id="btnR">⟳ 노브</button>
+        <button class="ghost" id="btnZero">0으로</button>
+      </div>
+      <h3>③ 몸통 기어 크기 바꾸기</h3>
+      <div class="seg" id="segBig">
+        <button data-v="1" class="on">원래 기어</button>
+        <button data-v="2">더 큰 톱니 기어</button>
+      </div>
+      <p class="note">화면 회전 방향은 그림일 뿐이에요. <b>실물 모델</b>에서 노브를 돌리며 방향을 관찰해 아래 표에 기록하세요.</p>
+    </div>
+  </div>
+  <div class="tables">
+    <div class="panel">
+      <h3>📋 방향 관찰 기록 (실물 보고 고르기)</h3>
+      <table id="tblDir"><thead><tr><th>노브</th><th>몸통</th><th>머리</th></tr></thead><tbody>
+        <tr><td>⟳ 시계</td><td><select><option>?</option><option>⟳ 시계</option><option>⟲ 반시계</option></select></td><td><select><option>?</option><option>⟳ 시계</option><option>⟲ 반시계</option></select></td></tr>
+        <tr><td>⟲ 반시계</td><td><select><option>?</option><option>⟳ 시계</option><option>⟲ 반시계</option></select></td><td><select><option>?</option><option>⟳ 시계</option><option>⟲ 반시계</option></select></td></tr>
+      </tbody></table>
+      <h3>🔩 기어 크기 비교 (몸통 한 바퀴 돌리기)</h3>
+      <table id="tblGear"><thead><tr><th>몸통 기어</th><th>노브 회전 수 (가상)</th></tr></thead><tbody></tbody></table>
+      <div class="go"><button class="ghost" id="btnMeasure">몸통 한 바퀴 측정하기</button></div>
+    </div>
+    <div class="panel">
+      <h3>⚖️ 균형 맞추기 게임 (2:2 시합)</h3>
+      <canvas id="cv2" class="cv2"></canvas>
+      <div class="go">
+        <button class="ghost" id="gL">⟲</button>
+        <button class="primary" id="gStart">▶ 시작</button>
+        <button class="ghost" id="gR">⟳</button>
+      </div>
+      <p class="note">노브로 막대를 기울여 노란 휠이 떨어지지 않게 왕복시켜요. <b>막대 가운데를 지날 때마다 1점.</b> 팀마다 3번 시도, 가장 높은 점수로 겨뤄요.</p>
+      <table id="tblGame"><thead><tr><th>팀</th><th>1번</th><th>2번</th><th>3번</th><th>최고</th></tr></thead><tbody>
+        <tr><th>A팀</th><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><th>B팀</th><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="theory">
+  <div class="theory">
+    <h2>👾 기어 몬스터</h2>
+    <div class="card">베벨 기어를 사용해 <b>노브를 돌려 조작</b>하는, 회전하는 머리와 몸통이 있는 피규어를 만들어요.
+    작동을 살펴보면 <b>기어 헤드가 본체보다 빠르게 회전</b>하는 것을 관찰할 수 있어요.</div>
+    <h2>🔍 숨은 기어</h2>
+    <div class="card">모델 뒷면을 종이로 가리고 시연한 뒤 어떤 기어가 숨어 있는지 물어봐요. 공개하면 90°로 꺾는 <b>베벨 기어</b>를 볼 수 있어요.
+    워크북에서는 <b>랙과 피니언을 제외한</b> 기어 메커니즘이 사용돼요.</div>
+    <h2>🔩 더 큰 톱니로 바꾸면?</h2>
+    <div class="card">톱니를 더 큰 톱니로 교체하면, 모델을 같은 만큼 회전시키려면 <b>노브를 더 돌려야</b> 해요.
+    (이 화면의 회전 수는 비교용 가상 값이에요. 실물로 세어 보세요.)</div>
+    <h2>⚖️ 균형 맞추기</h2>
+    <div class="card">모델에 막대를 추가하고 그 위에 노란색 휠을 올려요. 휠이 막대에서 앞뒤로 몇 번 움직일 수 있는지 2:2로 시합해요.
+    막대 가운데를 지날 때마다 점수를 세고, 3번 시도해 가장 높은 점수로 겨뤄요. (화면의 기울기 게임은 연습용으로 단순화한 것이에요.)</div>
+    <h2>🧑‍🏫 생각해 볼 질문</h2>
+    <div class="card">· 작은 기어를 더 큰 기어로 교체하면 어떻게 될까요?<br>· 균형을 더 쉽게 또는 어렵게 만들려면 기어 구조를 어떻게 바꿀까요?<br>· 머리 위에 3단 기어를 추가하면 다른 기어에 비해 어느 방향으로 움직일까요?</div>
+    <h2>👨‍👩‍👧 학부모님께</h2>
+    <div class="card">이번 차시는 베벨 기어와 상하 기어로 움직이는 몬스터를 만들며, 숨은 구조를 추론하고 기어 크기와 회전의 관계를 관찰합니다.</div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const cv = $('cv'), cv2 = $('cv2');
+  const HEAD = 2;                // 머리가 몸통보다 빠른 정도(비교용 가상 값)
+  let knob = 0, hold = 0, big = 1, revealed = false, measuring = null;
+  seg('segBig', v => { big = +v; knob = 0; });
+  function bindHold(btn, set) {
+    const off = () => set(0);
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); set(+btn.dataset.d); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, off));
+  }
+  $('btnL').dataset.d = -1; $('btnR').dataset.d = 1;
+  bindHold($('btnL'), v => hold = v); bindHold($('btnR'), v => hold = v);
+  $('btnZero').onclick = () => { knob = 0; };
+  $('btnReveal').onclick = () => {
+    const picked = [...document.querySelectorAll('#quiz input:checked')].map(x => x.value).sort().join();
+    const answer = ['bevel', 'side', 'spur'].join();
+    revealed = true;
+    if (!picked) badge('예상을 고르지 않았어요. 다음엔 먼저 골라 보세요', false);
+    else badge(picked === answer ? '🎉 정답! 랙과 피니언만 빼고 모두 있어요' : '공개! 랙과 피니언을 뺀 나머지가 들어 있어요', picked === answer);
+  };
+  $('btnMeasure').onclick = () => { knob = 0; measuring = { start: 0 }; };
+
+  const body = () => knob / big, head = () => body() * HEAD;
+  function step(dt) {
+    if (measuring) {
+      knob += dt * 1.2;
+      if (body() >= 1) {
+        knob = big; measuring = null;
+        $('tblGear').tBodies[0].insertAdjacentHTML('beforeend', `<tr><td>${big === 1 ? '원래 기어' : '더 큰 톱니 기어'}</td><td class="${big === 2 ? 'best' : ''}">${big}바퀴</td></tr>`);
+        badge(big === 2 ? '큰 톱니 기어는 노브를 더 많이 돌려야 해요' : '원래 기어 기록 완료. 이제 더 큰 톱니로 바꿔 비교하세요');
+      }
+    } else if (hold) knob += hold * dt * 0.8;
+    $('hKnob').textContent = knob.toFixed(1); $('hBody').textContent = body().toFixed(1); $('hHead').textContent = head().toFixed(1);
+    game(dt);
+  }
+  function draw() {
+    const { c, w, h } = fitCanvas(cv);
+    c.fillStyle = '#0e1220'; c.fillRect(0, 0, w, h);
+    const bx = w * 0.42, by = h * 0.62;
+    // 몸통(위에서 본 회전판) + 머리
+    const ab = body() * Math.PI * 2, ah = head() * Math.PI * 2;
+    c.save(); c.translate(bx, by); c.rotate(ab);
+    c.fillStyle = '#2b7a3d'; c.beginPath(); c.ellipse(0, 0, 70, 40, 0, 0, 7); c.fill();
+    c.fillStyle = '#ffb02e'; c.fillRect(50, -6, 30, 12); c.fillRect(-80, -6, 30, 12);   // 팔
+    c.restore();
+    c.save(); c.translate(bx, by - 90); c.rotate(ah);
+    c.fillStyle = '#c792ea'; c.beginPath(); c.arc(0, 0, 30, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(12, -8, 7, 0, 7); c.arc(12, 8, 7, 0, 7); c.fill();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(16, -8, 3, 0, 7); c.arc(16, 8, 3, 0, 7); c.fill();
+    c.restore();
+    c.fillStyle = '#8b98ad'; c.font = '11px sans-serif'; c.textAlign = 'center';
+    c.fillText('몸통', bx, by + 60); c.fillText('머리', bx, by - 130);
+    // 뒷면 기어(종이로 가림)
+    const gx = w * 0.78, gy = h * 0.5;
+    gearPath(c, gx, gy + 60, 18 * big, 10 * big, knob * Math.PI * 2, '#4da3ff');
+    gearPath(c, gx, gy, 22, 12, -body() * Math.PI * 2, '#ffb02e');
+    c.fillStyle = '#ff5a52'; c.beginPath(); c.moveTo(gx - 16, gy - 40); c.lineTo(gx + 16, gy - 40); c.lineTo(gx + 10, gy - 52); c.lineTo(gx - 10, gy - 52); c.fill();
+    c.fillStyle = '#e8eef7'; c.fillText('노브', gx, gy + 100); c.fillText('베벨', gx, gy - 58);
+    if (!revealed) {
+      c.fillStyle = '#e9e4d8'; c.fillRect(gx - 60, gy - 80, 120, 200);
+      c.fillStyle = '#555'; c.font = '13px sans-serif'; c.fillText('📄 종이로 가림', gx, gy + 20);
+    }
+  }
+  // 균형 게임: 막대 기울기 → 휠이 굴러감 (연습용 단순 모델)
+  const G = { on: false, tilt: 0, x: 0, v: 0, hold: 0, score: 0, side: 0, team: 0, tries: [[], []] };
+  $('gL').dataset.d = -1; $('gR').dataset.d = 1;
+  bindHold($('gL'), v => G.hold = v); bindHold($('gR'), v => G.hold = v);
+  $('gStart').onclick = () => {
+    if (G.on) return;
+    if (G.tries[0].length >= 3 && G.tries[1].length >= 3) { G.tries = [[], []]; G.team = 0; renderGame(); }
+    Object.assign(G, { on: true, tilt: 0, x: 0.3, v: 0, score: 0, side: 1 });
+  };
+  function renderGame() {
+    const rows = $('tblGame').tBodies[0].rows;
+    [0, 1].forEach(t => {
+      const r = G.tries[t];
+      for (let i = 0; i < 3; i++) rows[t].cells[i + 1].textContent = r[i] == null ? '—' : r[i];
+      rows[t].cells[4].textContent = r.length ? Math.max(...r) : '—';
+    });
+  }
+  function game(dt) {
+    if (!G.on) return;
+    G.tilt = Math.max(-0.35, Math.min(0.35, G.tilt + G.hold * dt * 0.9));
+    G.v += Math.sin(G.tilt) * 9.8 * dt * 0.6; G.v *= 0.995; G.x += G.v * dt;
+    const side = Math.sign(G.x);
+    if (side && side !== G.side) { G.score++; G.side = side; }
+    if (Math.abs(G.x) > 1) {
+      G.on = false; G.tries[G.team].push(G.score);
+      badge(`${G.team ? 'B' : 'A'}팀 ${G.tries[G.team].length}번째: ${G.score}점`);
+      if (G.tries[1 - G.team].length < 3) G.team = 1 - G.team;
+      renderGame();
+      if (G.tries[0].length >= 3 && G.tries[1].length >= 3) {
+        const a = Math.max(...G.tries[0]), b = Math.max(...G.tries[1]);
+        badge(a === b ? `무승부! (${a}점)` : `🏆 ${a > b ? 'A' : 'B'}팀 승리! (${Math.max(a, b)}점)`);
+      }
+    }
+  }
+  function draw2() {
+    const { c, w, h } = fitCanvas(cv2);
+    c.fillStyle = '#0e1220'; c.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h * 0.55, L = w * 0.4;
+    c.save(); c.translate(cx, cy); c.rotate(G.tilt);
+    c.fillStyle = '#8b98ad'; c.fillRect(-L, -4, L * 2, 8);
+    c.fillStyle = '#ff5a52'; c.fillRect(-1, -10, 2, 20);
+    c.fillStyle = '#ffcc00'; c.beginPath(); c.arc(G.x * L, -14, 10, 0, 7); c.fill();
+    c.restore();
+    c.fillStyle = '#2b7a3d'; c.fillRect(cx - 20, cy + 6, 40, h - cy);
+    c.fillStyle = '#e8eef7'; c.font = '14px sans-serif'; c.textAlign = 'center';
+    c.fillText(G.on ? `${G.team ? 'B' : 'A'}팀 · ${G.score}점` : `다음: ${G.team ? 'B' : 'A'}팀`, cx, 20);
+  }
+  let last = performance.now();
+  function loop(t) { const dt = Math.min(0.05, (t - last) / 1000); last = t; step(dt); draw(); draw2(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
