@@ -204,11 +204,46 @@ const COURSES = [
         tags: ['조건 3가지', '가속·감속·등속 기어', '래칫 켜기·끄기'],
         ready: true,
       },
+      {
+        id: 'rotation-lab', href: 'rotation-lab/?scene=wheel', icon: '🛞', title: '굴렁쇠 측정 · 회전 실험실',
+        lesson: '21차시 · 전통 단위와 굴렁쇠 측정',
+        desc: '실물 바퀴 지름을 자로 재서 넣고, 몇 바퀴 굴리면 1M(100cm)가 되는지 가상으로 확인한다. 지름은 교안에 없어 실측값으로만 계산한다.',
+        tags: ['실측 지름 입력', '1M = 100cm', '기록표'],
+        ready: true,
+      },
+      {
+        id: 'rotation-lab', href: 'rotation-lab/?scene=ride', icon: '🎡', title: '원심력 회전놀이기구 · 회전 실험실',
+        lesson: '22차시 · 가속구조와 원심력',
+        desc: '40톱니 → 8톱니 가속 구조로 손잡이 1바퀴에 놀이기구가 5바퀴! 먼저 바깥으로 얼마나 밀릴지 예상하고 기어 구조를 바꿔 비교한다.',
+        tags: ['먼저 예상하기', '40→8 가속 구조', '크기 비교'],
+        ready: true,
+      },
     ],
   },
   {
     name: '🏀 브릭큐 에센셜 과정',
     sims: [
+      {
+        id: 'hospital-door', icon: '🚪', title: '병원문을 열어요 · 기어와 피벗 3D',
+        lesson: '1차시 · 등속·감속·가속',
+        desc: '활성 PT의 병원문을 가상 3D 브릭으로 재구성해 손잡이와 기어를 돌리고 문 열림을 비교한다. 실물 조립과 결과는 별도로 확인한다.',
+        tags: ['3D · 카메라 회전', '기어 손잡이', '같은 입력 조건 비교'],
+        ready: true,
+      },
+      {
+        id: 'adjustable-bed', icon: '🛏️', title: '조절식 침대 · 기어와 가위 구조 3D',
+        lesson: '2차시 · 랙 피니언·폴 래칫',
+        desc: '기어를 돌리면 랙과 X자 링크가 움직여 침대가 오르고, 잠금장치가 내리기를 막는다. 실물 조립과 결과는 별도로 확인한다.',
+        tags: ['3D · 카메라 회전', '기어와 랙', '가위 구조와 잠금'],
+        ready: true,
+      },
+      {
+        id: 'unusual-pet', icon: '🐰', title: '이상한 애완동물 · 캠과 팔로어 3D',
+        lesson: '3차시 · 토끼 도입·애완동물 본 모형',
+        desc: '손잡이를 돌려 캠과 팔로어의 위아래 운동을 관찰한다. 두 모형의 점프 횟수와 바퀴 크기에 따른 높이 차이를 비교한다.',
+        tags: ['3D · 카메라 회전', '캠과 팔로어', '점프 비교'],
+        ready: true,
+      },
       {
         id: 'free-throw', icon: '🏀', title: '자유투 시뮬레이션',
         lesson: '힘과 포물선 · 균형과 불균형',
@@ -287,10 +322,10 @@ const COURSES = [
         ready: true,
       },
       {
-        id: 'gripper', icon: '🦞', title: '집게 시뮬레이션',
-        lesson: '21차시 · 지렛대 배율',
-        desc: '손잡이 길이를 바꿔 스펀지·나무·유리컵을 옮긴다 — 세게 집으면 유리가 쨍그랑! 지렛대 힘 배율과 힘 조절을 배운다.',
-        tags: ['지렛대 게이지', '미션 운반', '예측 퀴즈'],
+        id: 'gripper', icon: '🦞', title: '집게 · 기어와 그래버 가상 실험',
+        lesson: '21차시 · 기어 방향·부품 옮기기·지레',
+        desc: '현재 집게 PT의 1~4번 기어 방향을 비교하고, 네 가지 부품을 옮겨 본다. 미끄럼 방지 구조와 지레 확장은 실물 교구로 확인한다.',
+        tags: ['기어 방향', '그래버 옮기기', '마찰과 지레'],
         ready: true,
       },
       {
@@ -338,7 +373,7 @@ const COURSES = [
 
 const root = document.getElementById('courses');
 renderStatic();
-document.getElementById('statSims').textContent = COURSES.reduce((n, c) => n + c.sims.filter(s => s.ready).length, 0);
+document.getElementById('statSims').textContent = new Set(COURSES.flatMap(c => c.sims.filter(s => s.ready).map(s => s.id))).size;
 
 /* ── 수업 시뮬레이터(AI 생성) — 수업 PT 서버(:9410, 게이트웨이 /lessons/)에서 동적 로드 ── */
 const LESSONS_BASE = 'https://hub.ctmrobotics.com/lessons/';
@@ -401,7 +436,7 @@ COURSES.forEach(course => {
   course.sims.forEach(s => {
     const a = document.createElement('a');
     a.className = 'sim' + (s.ready ? '' : ' soon');
-    a.href = s.ready ? s.id + '/' : '#';
+    a.href = s.ready ? (s.href || s.id + '/') : '#';
     a.innerHTML = `
       <div class="top">
         <div class="icon">${s.icon}</div>

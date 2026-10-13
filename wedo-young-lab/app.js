@@ -1,0 +1,20 @@
+'use strict';
+(()=>{
+ const $=id=>document.getElementById(id),scene=new URLSearchParams(location.search).get('scene');
+ const config={spider:{lessonId:'ppt-75b1c19583ab4ad67dc3e16c08c420a6',version:'1753929482000',name:'거미 로봇'},frog:{lessonId:'ppt-86f565b6a3f9a3a341b72fb67c9d6eb3',version:'1754634415000',name:'개구리 로봇'}}[scene];
+ if(!config){document.querySelector('main').textContent='이 차시의 가상 실험을 찾을 수 없습니다.';return}
+ $('title').textContent=config.name;$('missionTitle').textContent=scene==='spider'?'줄을 타는 거미':'반복해서 점프하는 개구리';$('source').textContent='현재 연결된 위두 7세 PT · 자료 버전 '+config.version;
+ const spider=scene==='spider';$('spiderVisual').hidden=!spider;$('spiderControls').hidden=!spider;$('spiderRules').hidden=!spider;$('frogVisual').hidden=spider;$('frogControls').hidden=spider;$('frogRules').hidden=spider;
+ $('lede').textContent=spider?'U·D 방향으로 줄이 감기고 풀릴 때 가상 높이가 어떻게 바뀌는지 관찰합니다. 바닥 감지 상태는 상대 위치 0으로 나타냅니다.':'점프를 반복해 3회 목표를 채우고, PT의 마이크 입력 예시 3을 비교합니다. 실제 소리 측정이나 모터 구동은 하지 않습니다.';
+ $('teacherNote').textContent=spider?'교사용 원본 PT의 모델 라이브러리와 조립도를 열어 실제 릴·줄 방향을 확인한 뒤, 학생이 키보드 블록과 동작 센서로 움직임을 시험합니다.':'교사용 원본 PT에서 조립과 프로그램 블록을 확인하고 실물 개구리의 3회 점프·난수·마이크 활동을 별도로 진행합니다.';
+ $('notice').textContent=spider?'PT의 아래로 내려가기 설명에도 줄이 “감겼다”라고 적혀 있습니다. 실제 감김·풀림 방향은 교사와 실물로 대조하세요.':'이 화면은 가상 점프 횟수와 숫자 일치만 나타냅니다. 실제 마이크 값·개구리 소리·난수 범위는 원본 앱과 교구에서 확인해야 합니다.';
+ let latest=null,saved=false,height=50,jumps=0,goal=3;
+ function spiderRender(direction){$('height').textContent=height;$('bottom').textContent=height===0?'예':'아니오';$('spiderIcon').style.top=`${10+(100-height)*.7}%`;$('line').style.height=`${10+(100-height)*.7}%`;$('spiderStatus').textContent=direction?`가상 ${direction} 방향 · ${height===0?'바닥 감지 위치':'상대 높이 '+height}`:'방향을 눌러 가상 줄 움직임을 확인하세요.'}
+ function spiderStep(direction){const r=CTMWedoYoungModel.spider(height,direction);height=r.position;latest={id:crypto.randomUUID(),scene:'spider',position:height,direction,bottom:r.bottom};saved=false;$('saveSpider').disabled=false;spiderRender(direction)}
+ $('up').onclick=()=>spiderStep('U');$('down').onclick=()=>spiderStep('D');$('resetSpider').onclick=()=>{height=50;latest=null;saved=false;$('saveSpider').disabled=true;spiderRender()};spiderRender();
+ function frogRender(){let v;try{v=CTMWedoYoungModel.frog(Number($('repeat').value),Number($('microphone').value))}catch(e){$('frogStatus').textContent=e.message;return null}goal=v.repetitions;$('jumps').textContent=jumps;$('micMatch').textContent=v.exampleMatch?'일치':'다름';$('jump').disabled=jumps>=goal;$('frogStatus').textContent=jumps>=goal?`가상 점프 ${goal}회를 마쳤습니다.`:`${goal}회 목표 중 ${jumps}회 점프했습니다.`;return v}
+ $('repeat').oninput=()=>{jumps=0;latest=null;$('saveFrog').disabled=true;frogRender()};$('microphone').oninput=()=>{latest=null;$('saveFrog').disabled=true;frogRender()};$('jump').onclick=()=>{const v=frogRender();if(!v||jumps>=goal)return;jumps++;$('frogIcon').classList.add('jumping');setTimeout(()=>$('frogIcon').classList.remove('jumping'),220);latest={id:crypto.randomUUID(),scene:'frog',jumps,goal,microphone:v.microphone,exampleMatch:v.exampleMatch};saved=false;$('saveFrog').disabled=false;frogRender()};$('resetFrog').onclick=()=>{jumps=0;latest=null;saved=false;$('saveFrog').disabled=true;frogRender()};frogRender();
+ function requestSave(){if(!latest||saved)return;if(parent===window){$(spider?'spiderStatus':'frogStatus').textContent='학생 수업 화면에서 열면 가상 결과를 기록할 수 있습니다.';return}parent.postMessage({type:'ctm.wedo.young.v1',lessonId:config.lessonId,materialVersion:config.version,experimentId:'wedo-young-'+scene,modelVersion:1,trialId:latest.id,mode:'simulation',...latest},location.origin)}
+ $('saveSpider').onclick=requestSave;$('saveFrog').onclick=requestSave;
+ window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==parent)return;const d=event.data;if(d?.type!=='ctm.wedo.young.saved.v1'||d.trialId!==latest?.id)return;if(d.ok){saved=true;$(spider?'saveSpider':'saveFrog').disabled=true}$(spider?'spiderStatus':'frogStatus').textContent=d.ok?'가상 결과를 수업 기록에 저장했습니다. 실물 동작은 선생님과 확인하세요.':String(d.error||'저장하지 못했습니다.').slice(0,120)});
+})();

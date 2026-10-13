@@ -265,7 +265,7 @@
 <div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas><div id="zoomTbl" style="display:none"></div></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
 
 <script type="module">
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.js';
 import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
          grassGround, dirtTrack, distanceRuler, makeCar, makeMinifig, makeTree, makeCloud, makeRock, makeFlag } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);

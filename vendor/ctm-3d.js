@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
    CTM-3D — 가상실험실 공용 three.js 키트
    free-throw · ski-slope에서 검증된 패턴 추출.
-   사용: <script type="module"> import * as THREE from 'three';
+   사용: <script type="module"> import * as THREE from './three.module.js';
         import { makeRenderer, ... } from '../vendor/ctm-3d.js';
    ═══════════════════════════════════════════════════════════════ */
-import * as THREE from 'three';
+import * as THREE from './three.module.js';
 import { OrbitControls } from './OrbitControls.js';
 
 export const DPR = Math.min(window.devicePixelRatio || 1, 2);
