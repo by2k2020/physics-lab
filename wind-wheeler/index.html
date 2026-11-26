@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>미스터 윈 휠러 — 관성 주행 자동차 · 브릭큐 프라임</title>
+<title>미스터 윈 휠러 — 크랭크로 팔 움직이기 · 브릭큐 프라임</title>
 <link rel="icon" href="data:,">
 <style>
   :root {
@@ -121,6 +121,7 @@
 </style>
 <script src="../vendor/ctm-fx.js"></script>
 <script>CtmFX.badgeMap({pop:['on']})</script>
+<script src="../_shared/ctm-result.js"></script>
 <script type="importmap">
 { "imports": { "three": "../vendor/three.module.js" } }
 </script>
@@ -129,29 +130,28 @@
 <div class="app">
   <div class="topbar">
     <div>
-      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정</div>
-      <div class="title">🏎️ 미스터 윈 휠러 — 관성 주행 자동차<span class="t3d">3D</span></div>
+      <div class="crumb"><a href="../">🔬 가상실험실</a> › 브릭큐 프라임 과정 · 1차시</div>
+      <div class="title">🎪 미스터 윈 휠러 — 크랭크로 팔 움직이기<span class="t3d">3D</span></div>
     </div>
     <div class="tabs">
-      <button class="tab on" data-tab="exp">실험 · 관성 주행</button>
+      <button class="tab on" data-tab="exp">실험 · 연결 핀 바꾸기</button>
       <button class="tab" data-tab="theory">📖 원리</button>
     </div>
   </div>
 
-  <!-- ══════ 실험 · 관성 주행 ══════ -->
+  <!-- ══════ 실험 ══════ -->
   <section class="exp on" id="exp">
     <div class="stage">
       <canvas class="scene" id="cv"></canvas>
       <div class="hud">
-        <div class="chip"><span class="lab">경과 시간</span><span id="hud_t">0.0 s</span></div>
-        <div class="chip" style="color:var(--green)"><span class="lab">현재 속도 (관성)</span><span id="hud_v">0.0 m/s</span></div>
-        <div class="chip" style="color:var(--accent)"><span class="lab">이동 거리</span><span id="hud_d">0.00 m</span></div>
+        <div class="chip"><span class="lab">바퀴 회전</span><span id="hud_turn">0.0 바퀴</span></div>
+        <div class="chip" style="color:var(--red)"><span class="lab">팔 각도</span><span id="hud_ang">0°</span></div>
+        <div class="chip" style="color:var(--green)"><span class="lab">팔 움직임 범위</span><span id="hud_rng">—</span></div>
       </div>
       <div class="cam-row">
         <button id="camSide" class="on">▶ 옆</button>
         <button id="camDiag">◤ 대각선</button>
-        <button id="camTop">⬇ 위</button>
-        <button id="camFollow">🏎️ 따라가기</button>
+        <button id="camFront">● 앞</button>
       </div>
       <div class="hint3d">드래그: 회전 · 휠/핀치: 확대</div>
       <div class="badge-wrap"><span class="badge" id="bd"></span></div>
@@ -159,30 +159,31 @@
     <div class="side">
       <div class="led-box"><span class="led" id="led"></span><span class="status-txt" id="st">준비</span></div>
       <div class="ctl-row">
-        <button class="primary" id="run">👉 자동차 밀기</button>
+        <button class="primary" id="run">🔄 바퀴 돌리기 (2바퀴)</button>
         <button id="reset">↺</button>
       </div>
 
+      <h3>🤔 먼저 예측하기 <span>— 초록 빔을 어깨에서 더 멀리 연결하면?</span></h3>
+      <div class="param">
+        <div class="pick floor" id="pickQ">
+          <button data-q="more">더 많이 움직인다</button>
+          <button data-q="less">더 적게 움직인다</button>
+          <button data-q="same" class="on">똑같다</button>
+        </div>
+      </div>
+
       <h3>실험 조건</h3>
-      <div class="param"><label>👉 미는 힘 (밀어주는 세기) <b id="v_p">4단계</b></label>
-        <div class="pick" id="pickP">
-          <button data-p="1">1</button><button data-p="2">2</button>
-          <button data-p="3">3</button><button data-p="4" class="on">4</button>
-          <button data-p="5">5</button><button data-p="6">6</button>
-          <button data-p="7">7</button><button data-p="8">8</button>
+      <div class="param"><label>📍 팔의 연결 핀 (어깨에서 거리) <b id="v_d">가운데</b></label>
+        <div class="pick floor" id="pickD">
+          <button data-d="3">가깝게 (3칸)</button>
+          <button data-d="5" class="on">가운데 (5칸)</button>
+          <button data-d="7">멀리 (7칸)</button>
         </div>
       </div>
-      <div class="param"><label>🛣️ 바닥 (붙잡는 힘 = 마찰력) <b id="v_f">보통</b></label>
-        <div class="pick floor" id="pickF">
-          <button data-f="smooth">매끈</button>
-          <button data-f="normal" class="on">보통</button>
-          <button data-f="rough">거침</button>
-        </div>
-      </div>
-      <div class="param"><label>⚖️ 자동차 무게 <b id="v_m">가벼움</b></label>
-        <div class="pick mass" id="pickM">
-          <button data-m="light" class="on">가벼움</button>
-          <button data-m="heavy">무거움</button>
+      <div class="param"><label>⚙️ 바퀴의 크랭크 핀 (바퀴 중심에서) <b id="v_r">1칸</b></label>
+        <div class="pick floor" id="pickR">
+          <button data-r="1" class="on">안쪽 (1칸)</button>
+          <button data-r="2">바깥 (2칸)</button>
         </div>
       </div>
       <div class="speed-row"><span>재생 속도</span>
@@ -192,21 +193,21 @@
       </div>
 
       <h3>측정값</h3>
-      <div class="dist-hero"><div class="k">🏁 도달 거리 (얼마나 굴러갔나)</div><div class="v" id="ro_dist">—</div><div class="sub" id="ro_sub"></div></div>
+      <div class="dist-hero"><div class="k">💪 팔이 움직이는 범위 (위 끝 ~ 아래 끝)</div><div class="v" id="ro_rng">—</div><div class="sub" id="ro_sub"></div></div>
       <div class="readouts">
-        <div class="readout"><div class="k">밀린 직후 속도 (관성)</div><div class="v a" id="ro_v0">—</div></div>
-        <div class="readout"><div class="k">붙잡는 힘 = 감속도</div><div class="v b" id="ro_a">—</div></div>
-        <div class="readout"><div class="k">멈출 때까지 시간</div><div class="v c" id="ro_time">—</div></div>
-        <div class="readout"><div class="k">움직임 상태</div><div class="v" id="ro_state" style="font-size:14px">준비</div></div>
+        <div class="readout"><div class="k">위로 올라간 끝</div><div class="v a" id="ro_up">—</div></div>
+        <div class="readout"><div class="k">아래로 내려간 끝</div><div class="v b" id="ro_dn">—</div></div>
+        <div class="readout"><div class="k">손끝이 오르내린 거리</div><div class="v c" id="ro_hand">—</div></div>
+        <div class="readout"><div class="k">바퀴 1바퀴에 팔은</div><div class="v" id="ro_cyc" style="font-size:14px">1번 왕복</div></div>
       </div>
 
-      <h3>속도–시간 그래프 <span>(관성 → 마찰로 감속)</span></h3>
+      <h3>팔 각도 그래프 <span>(바퀴가 돌면 팔은 위↕아래 반복)</span></h3>
       <canvas class="graph" id="gr" height="250"></canvas>
-      <div class="graph-hint">🔍 그래프를 클릭하면 크게 볼 수 있어요</div>
+      <div class="graph-hint">🔍 그래프를 누르면 크게 볼 수 있어요 · 회색 점선 = 바로 전 실험</div>
 
-      <h3>격자 결과표 · 미는 힘 × 바닥 <span>(도달 거리 m)</span></h3>
+      <h3>결과표 · 팔의 연결 핀 × 바퀴의 크랭크 핀 <span>(팔 움직임 범위 °)</span></h3>
       <div class="ctl-row">
-        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 이 무게로 표 전부 채우기</button>
+        <button id="autoScan" style="flex:1">⚡ 자동 실험 — 6칸 전부 채우기</button>
         <button id="clearMx">지우기</button>
       </div>
       <table class="mx" id="matrix"></table>
@@ -215,7 +216,7 @@
         <summary>📋 실험 기록 (최근 8회)</summary>
         <div class="inner">
           <table class="log" id="logtb">
-            <thead><tr><th>#</th><th>힘</th><th>바닥</th><th>무게</th><th>초속</th><th>거리</th></tr></thead>
+            <thead><tr><th>#</th><th>팔 핀</th><th>바퀴 핀</th><th>위</th><th>아래</th><th>범위</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -228,456 +229,452 @@
     <div class="theory-box">
       <div class="tip" style="border-color:rgba(199,146,234,.45); background:rgba(199,146,234,.08); margin-top:0; margin-bottom:20px">
         <b>👨‍👩‍👧 학부모님께 — 이번 차시 안내</b><br>
-        이번 차시에서는 <b>관성</b>과 <b>마찰력</b>을 배웁니다. 자동차를 손으로 한 번 밀고 놓으면, 아무도 밀지 않는데도 계속 굴러가다(관성) 바닥이 붙잡는 힘(마찰) 때문에 서서히 멈춥니다.
-        아이는 미는 세기·바닥 종류·무게를 바꿔가며 "얼마나 멀리 갈까?"를 예측하고, 격자 결과표로 규칙을 스스로 찾아냅니다. 레고에듀케이션 브릭큐 프라임의 실물 관성 자동차 실험과 같은 원리입니다.
+        이번 차시에서는 외발 자전거를 탄 서커스 인형 <b>미스터 윈 휠러</b>를 만듭니다. 바퀴가 돌면 인형의 팔이 위아래로 움직입니다.
+        이렇게 <b>도는 움직임(회전 운동)</b>을 <b>오르내리는 움직임(왕복 운동)</b>으로 바꾸는 장치가 <b>크랭크</b>입니다.
+        아이는 연결 핀의 위치를 바꿔 보며 "팔이 더 많이 움직일까, 더 적게 움직일까?"를 예측하고 확인합니다.
       </div>
 
-      <h2>🏎️ 손을 놓았는데 왜 계속 굴러갈까?</h2>
-      <p style="font-size:16px">한 번 세게 밀어주면 자동차는 <b>움직이려는 성질(관성)</b>을 얻어 손을 놓아도 계속 굴러간다. 하지만 바닥이 바퀴를 살짝 <b>붙잡는 힘(마찰력)</b> 때문에 속도가 조금씩 줄다가 결국 멈춘다.</p>
+      <h2>🎪 바퀴가 도는데 왜 팔은 위아래로만 움직일까?</h2>
+      <p style="font-size:16px">바퀴 가장자리 근처에 <b>크랭크 핀</b>이 있습니다. 바퀴가 돌면 이 핀은 동그랗게 돕니다.
+      초록 빔이 이 핀과 팔을 이어 줍니다. 핀이 위로 가면 팔을 밀어 올리고, 아래로 가면 팔을 끌어 내립니다.
+      팔은 어깨에 고정되어 있어서 빙글 돌지 못하고 <b>위아래로만 왔다 갔다</b> 합니다.</p>
 
-      <h2 style="margin-top:22px">🤔 굴러가는 힘 vs 붙잡는 힘</h2>
+      <h2 style="margin-top:22px">📏 연결 핀을 어깨에서 멀리 꽂으면?</h2>
       <p style="background:#121a2c;border:1px solid var(--border);border-radius:10px;padding:12px 16px">
-        굴러가게 하는 힘 = <b>관성</b> · 멈추게 하는 힘 = <b>마찰력</b> → 관성이 마찰에 다 붙잡히는 순간 자동차가 <b>정지</b>한다.
+        초록 빔이 밀어 올리는 높이는 늘 같습니다(크랭크 핀이 그리는 원의 크기). <br>
+        같은 높이를 밀어도 <b>어깨 가까이</b> 밀면 팔이 <b>크게</b> 꺾이고, <b>어깨에서 멀리</b> 밀면 팔이 <b>조금만</b> 꺾입니다.<br>
+        → 정답: 어깨에서 멀리 연결하면 팔이 <b style="color:var(--amber)">위아래로 더 적게 움직인다</b>.
       </p>
-      <ul>
-        <li>세게 밀수록 <b>운동 에너지</b>가 커져 → 더 멀리 간다</li>
-        <li>바닥이 거칠수록 <b>마찰력</b>이 커져 → 빨리 멈춰 덜 간다</li>
-        <li>무거운 차는 같은 힘으로 밀면 <b>느리게 출발</b>해 → 덜 굴러간다</li>
-      </ul>
-
       <table>
-        <thead><tr><th>바꾼 것</th><th>커지면</th><th>도달 거리</th></tr></thead>
+        <thead><tr><th>바꾼 것</th><th>이렇게 바꾸면</th><th>팔 움직임 범위</th></tr></thead>
         <tbody>
-          <tr><td>미는 힘 👉</td><td>관성 ↑ (운동 에너지 ↑)</td><td style="color:var(--green)">멀어진다 ▲</td></tr>
-          <tr><td>바닥 거칠기 🛣️</td><td>마찰력 ↑</td><td style="color:var(--red)">짧아진다 ▼</td></tr>
-          <tr><td>자동차 무게 ⚖️</td><td>같은 힘엔 느리게 출발</td><td style="color:var(--red)">짧아진다 ▼</td></tr>
+          <tr><td>팔의 연결 핀 📍</td><td>어깨에서 멀리</td><td style="color:var(--red)">작아진다 ▼</td></tr>
+          <tr><td>팔의 연결 핀 📍</td><td>어깨에 가깝게</td><td style="color:var(--green)">커진다 ▲</td></tr>
+          <tr><td>바퀴의 크랭크 핀 ⚙️</td><td>바퀴 중심에서 멀리(바깥)</td><td style="color:var(--green)">커진다 ▲</td></tr>
         </tbody>
       </table>
 
-      <h2 style="margin-top:22px">🎓 오늘 배운 물리 용어</h2>
+      <h2 style="margin-top:22px">🎓 오늘 배운 용어</h2>
       <div style="line-height:2.1; background:#121a2c; border:1px solid var(--border); border-radius:10px; padding:14px 18px">
-        <b style="color:var(--green)">관성 (굴러가는 힘)</b> — 움직이던 물체가 계속 움직이려는 성질. 손을 놓아도 자동차가 굴러가는 이유예요.<br>
-        <b style="color:var(--accent)">운동 에너지</b> — 움직이는 물체가 가진 힘. 세게 밀수록 커져서 더 멀리 굴러가요.<br>
-        <b style="color:var(--amber)">마찰력 (붙잡는 힘)</b> — 바닥이 바퀴를 붙잡아 방해하는 힘. 거친 바닥일수록 커져서 빨리 멈춰요.<br>
-        <b style="color:var(--purple)">감속 (등가속 운동)</b> — 속도가 일정한 비율로 줄어드는 것. 그래서 속도–시간 그래프가 <b>곧은 내리막 직선</b>이 돼요.
+        <b style="color:var(--green)">크랭크</b> — 도는 움직임을 왔다 갔다 하는 움직임으로 바꾸는 장치예요.<br>
+        <b style="color:var(--accent)">회전 운동</b> — 바퀴처럼 빙글빙글 도는 움직임이에요.<br>
+        <b style="color:var(--amber)">왕복 운동</b> — 위아래나 앞뒤로 왔다 갔다 하는 움직임이에요.<br>
+        <b style="color:var(--purple)">연결 핀</b> — 두 부품을 이어 주는 작은 막대예요. 꽂는 자리를 바꾸면 움직임이 달라져요.
       </div>
+
+      <h2 style="margin-top:22px">🚂 크랭크는 어디에 쓰일까?</h2>
+      <ul>
+        <li>자동차 엔진 — 위아래로 움직이는 피스톤이 크랭크를 돌려 바퀴를 굴립니다(이 실험의 반대 방향).</li>
+        <li>재봉틀 — 모터가 돌면 바늘이 위아래로 움직입니다.</li>
+        <li>증기 기관차 — 바퀴 옆 막대가 크랭크입니다.</li>
+        <li>자전거 페달 — 다리의 오르내림을 바퀴의 회전으로 바꿉니다.</li>
+      </ul>
 
       <h2 style="margin-top:22px">🧑‍🏫 수업 이렇게 진행하세요 (4단계)</h2>
       <ul style="line-height:2.1">
-        <li><b>① 밀어보기</b> — 미는 힘 4, 바닥 보통으로 "밀기"를 눌러 자동차가 굴러가다 멈추는 걸 관찰</li>
-        <li><b>② 힘 실험</b> — 바닥 고정, 미는 힘을 2→4→6→8로 올리며 "더 멀리 가네!" (격자 표에 기록)</li>
-        <li><b>③ 바닥 실험</b> — 힘 고정, 바닥을 매끈→보통→거침으로 바꾸며 "거칠면 빨리 멈춰!"</li>
-        <li><b>④ 자동 실험</b> — ⚡버튼으로 표를 한 번에 채우고, 가장 멀리 가는 조합 찾기</li>
+        <li><b>① 관찰</b> — "바퀴 돌리기"를 누르고 빨간 점(크랭크 핀)과 파란 점(팔 끝)이 어떻게 움직이는지 봅니다.</li>
+        <li><b>② 예측</b> — "초록 빔을 어깨에서 더 멀리 연결하면?" 세 가지 중 하나를 고릅니다.</li>
+        <li><b>③ 실험</b> — 팔의 연결 핀을 가깝게 → 가운데 → 멀리로 바꾸며 돌리고, 범위 숫자를 비교합니다.</li>
+        <li><b>④ 실물 확인</b> — 레고 모델에서 연결 핀을 실제로 옮겨 꽂고 시뮬과 같은지 확인합니다.</li>
       </ul>
-
       <div class="tip">
         <b>🧱 레고 브릭큐 실험 팁</b><br>
-        · 실물 관성 자동차를 바닥에 놓고 <b>같은 세기로 밀어</b> 도달 거리를 줄자로 재기 — 시뮬 예측과 비교<br>
-        · 바닥을 바꿔보기: 마룻바닥(매끈) → 카펫(거침) 위에서 굴려 거리 차이 확인<br>
-        · 차 위에 브릭을 더 얹어 무겁게 만든 뒤 같은 힘으로 밀어보기 — "왜 덜 갈까?" 이야기<br>
-        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → 격자 표 비교하며 "왜 다르지?"
+        · 팔 끝에 반지나 바벨을 올리고 돌려 보세요. 범위가 작을수록 물건이 덜 떨어집니다.<br>
+        · 팔 옆에 자를 세우고 손끝이 오르내린 높이를 재서 시뮬 숫자와 비교해 보세요.<br>
+        · 순서는 항상: 시뮬로 예측 → 레고로 실험 → "왜 다르지?" 이야기하기.
       </div>
 
       <details style="margin-top:18px">
         <summary>🔎 공식이 궁금한 선생님만 (수업에선 안 써도 됩니다)</summary>
         <div class="inner" style="padding:12px 16px; line-height:2">
-          손을 놓은 뒤에는 마찰만 작용해 <b>일정하게 감속</b>합니다: 감속도 <span class="eq">a = μg</span> (μ=마찰계수, g=9.8).<br>
-          미는 힘이 준 운동 에너지 <span class="eq">E</span>에서 초기 속도 <span class="eq">v₀ = √(2E/m)</span>, 도달 거리 <span class="eq">d = v₀² ÷ (2a)</span>.<br>
-          정리하면 <span class="eq">d = E ÷ (m·μ·g)</span> — 미는 힘(E)에 비례, 무게(m)·마찰(μ)에 반비례합니다.<br>
-          속도–시간 그래프가 곧은 직선인 이유는 감속도 a가 일정(등가속)하기 때문입니다.
+          크랭크 반지름 <span class="eq">r</span>, 어깨에서 연결점까지 거리 <span class="eq">d</span>일 때,
+          초록 빔이 거의 세로로 서 있으면 팔의 흔들림 각도는 대략 <span class="eq">±asin(r ÷ d)</span>입니다.<br>
+          그래서 <span class="eq">d</span>가 커질수록(멀리 연결) 각도가 작아지고, <span class="eq">r</span>이 커질수록 각도가 커집니다.<br>
+          시뮬은 두 원의 교점(어깨 중심 원 · 크랭크 핀 중심 원)을 매 순간 풀어 정확한 각도를 그립니다. 1칸 = 레고 구멍 간격 8mm.
         </div>
       </details>
     </div>
   </section>
 </div>
 
-<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 클릭하면 닫힙니다</div></div>
+<div id="zoom"><div class="zbox"><canvas id="zoomCv"></canvas></div><div class="hint">화면을 누르면 닫힙니다</div></div>
 
 <script type="module">
 import * as THREE from '../vendor/three.module.js';
-import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite,
-         grassGround, dirtTrack, distanceRuler, makeCar, makeTree, makeCloud, makeRock, makeFlag } from '../vendor/ctm-3d.js';
+import { makeRenderer, fitStage, makeScene, stdLights, makeCamera, camPresets, textSprite, canvasTex } from '../vendor/ctm-3d.js';
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-/* ── 물리 상수·매핑 ── */
-const G = 9.8;
-const E0 = 0.9;                                          // 미는 힘 1단계당 운동 에너지 계수
-const MU = { smooth: 0.12, normal: 0.22, rough: 0.38 };  // 붙잡는 힘(마찰) 계수
-const MASS = { light: 1.0, heavy: 1.7 };
-const FLOOR_KO = { smooth: '매끈', normal: '보통', rough: '거침' };
-const MASS_KO = { light: '가벼움', heavy: '무거움' };
-const TRACK_M = 7;                                       // 화면 트랙 길이(m)
-const WHEEL_M = 0.16;                                    // 바퀴 반지름(m) — 회전 표시용
+/* ── 기구 치수 (장면 1단위 = 10cm, 1칸 = 레고 구멍 8mm) ── */
+const HOLE = 0.08;
+const WHEEL_R = 0.42;                 // 바퀴 반지름
+const C = { x: 0.30, y: WHEEL_R };    // 바퀴 중심 (어깨보다 앞쪽 아래)
+const S = { x: 0.0, y: 1.32 };        // 어깨(팔 회전축)
+const ARM_HOLES = 9;                  // 팔 길이 9칸
+const ARM_LEN = ARM_HOLES * HOLE;
+const D_KO = { 3: '가깝게', 5: '가운데', 7: '멀리' };
+const R_KO = { 1: '안쪽', 2: '바깥' };
+const TURNS = 2;                      // 한 번 실험 = 2바퀴
+const OMEGA = Math.PI * 1.1;          // 바퀴 각속도(rad/s, 1×)
+const deg = r => r * 180 / Math.PI;
 
-function physics(p, floor, massKey) {
-  const m = MASS[massKey], mu = MU[floor];
-  const a = mu * G;                     // 감속도 (붙잡는 힘)
-  const v0 = Math.sqrt(2 * E0 * p / m); // 밀린 직후 속도 (관성)
-  const dist = v0 * v0 / (2 * a);       // 도달 거리
-  const tStop = v0 / a;                 // 멈출 때까지 시간
-  return { m, mu, a, v0, dist, tStop };
+/* 팔 각도 θ(수평 0, 위 +) — 어깨 원(반지름 d)과 핀 원(반지름 L)의 교점 중 앞쪽 */
+function linkLen(dH) {
+  // 크랭크 핀이 바퀴 중심 높이(앞쪽 φ=0이 아닌 '평균 위치')일 때 팔이 수평이 되도록 빔 길이를 정한다
+  const ax = S.x + dH * HOLE, ay = S.y;
+  return Math.hypot(ax - C.x, ay - C.y);
+}
+function armAngle(phi, dH, rH, L) {
+  const d = dH * HOLE, r = rH * HOLE;
+  const px = C.x + r * Math.cos(phi), py = C.y + r * Math.sin(phi);
+  const dx = px - S.x, dy = py - S.y, D = Math.hypot(dx, dy);
+  const a = (d * d - L * L + D * D) / (2 * D);
+  const h = Math.sqrt(Math.max(0, d * d - a * a));
+  const mx = S.x + a * dx / D, my = S.y + a * dy / D;
+  // 두 교점 중 x가 큰(앞쪽) 것
+  const x1 = mx + h * dy / D, y1 = my - h * dx / D;
+  const x2 = mx - h * dy / D, y2 = my + h * dx / D;
+  const [ax, ay] = x1 > x2 ? [x1, y1] : [x2, y2];
+  return { th: Math.atan2(ay - S.y, ax - S.x), px, py, ax, ay };
+}
+function sweep(dH, rH) {
+  const L = linkLen(dH);
+  let up = -9, dn = 9;
+  for (let i = 0; i <= 720; i++) {
+    const { th } = armAngle(i / 720 * Math.PI * 2, dH, rH, L);
+    up = Math.max(up, th); dn = Math.min(dn, th);
+  }
+  return { L, up, dn, range: up - dn, hand: ARM_LEN * (Math.sin(up) - Math.sin(dn)) };
 }
 
-/* ── 캔버스 헬퍼 (기어비 시뮬 공용) ── */
+/* ── 그래프 ── */
 function fit(cv) {
   const w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
-  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) {
-    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
-  }
-  const c = cv.getContext('2d');
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (cv.width !== Math.round(w * DPR) || cv.height !== Math.round(h * DPR)) { cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR); }
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
   return { c, W: w, H: h };
 }
-function niceStep(max) {
-  const raw = max / 5, p = Math.pow(10, Math.floor(Math.log10(raw)));
-  for (const m of [1, 2, 5, 10]) if (raw <= m * p) return m * p;
-  return 10 * p;
-}
-function renderGraph(cv, series, tMax, vMax, tNow, yLabel) {
+function renderGraph(cv, series, yMax) {
   const { c, W, H } = fit(cv);
   if (W < 20) return;
-  const fs = Math.max(13, Math.round(Math.min(W, H) / 20));
-  const L = fs * 3.6, R = fs, T = fs * 2.2, B = fs * 3.1;
+  const fs = Math.max(12, Math.round(Math.min(W, H) / 20));
+  const L = fs * 3.4, R = fs, T = fs * 2.2, B = fs * 3.0;
   c.clearRect(0, 0, W, H);
-  const px = t => L + (t / tMax) * (W - L - R);
-  const py = v => H - B - (v / vMax) * (H - T - B);
-  c.font = fs + 'px sans-serif';
-  const tS = niceStep(tMax), vS = niceStep(vMax);
-  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba'; c.lineWidth = 1;
-  for (let t = 0; t <= tMax + 1e-9; t += tS) {
-    c.beginPath(); c.moveTo(px(t), T); c.lineTo(px(t), H - B); c.stroke();
-    c.textAlign = 'center'; c.fillText(t.toFixed(tS < 1 ? 1 : 0), px(t), H - B + fs * 1.35);
+  const xMax = TURNS * 360;
+  const px = x => L + (x / xMax) * (W - L - R);
+  const py = v => T + (1 - (v + yMax) / (2 * yMax)) * (H - T - B);
+  c.font = fs + 'px sans-serif'; c.lineWidth = 1;
+  c.strokeStyle = 'rgba(90,110,150,.14)'; c.fillStyle = '#8fa0ba';
+  for (let x = 0; x <= xMax; x += 180) {
+    c.beginPath(); c.moveTo(px(x), T); c.lineTo(px(x), H - B); c.stroke();
+    c.textAlign = 'center'; c.fillText((x / 360).toString().replace('.5', '½'), px(x), H - B + fs * 1.35);
   }
-  for (let v = 0; v <= vMax + 1e-9; v += vS) {
+  const yS = yMax > 30 ? 20 : 10;
+  for (let v = -Math.floor(yMax / yS) * yS; v <= yMax; v += yS) {
     c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke();
-    c.textAlign = 'right'; c.fillText(v.toFixed(vS < 1 ? 1 : 0), L - fs * 0.5, py(v) + fs * 0.35);
+    c.textAlign = 'right'; c.fillText(v + '°', L - fs * 0.4, py(v) + fs * 0.35);
   }
   c.strokeStyle = '#3a4661'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(L, T); c.lineTo(L, H - B); c.lineTo(W - R, H - B); c.stroke();
-  c.fillStyle = '#9aa8bf'; c.textAlign = 'center'; c.font = fs + 'px sans-serif';
-  c.fillText('시간 (s)', (L + W - R) / 2, H - fs * 0.5);
-  c.save(); c.translate(fs * 0.95, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(yLabel, 0, 0); c.restore();
-  if (tNow > 0 && tNow < tMax) {
-    c.strokeStyle = 'rgba(255,255,255,.16)'; c.setLineDash([4, 5]);
-    c.beginPath(); c.moveTo(px(tNow), T); c.lineTo(px(tNow), H - B); c.stroke(); c.setLineDash([]);
-  }
+  c.strokeStyle = 'rgba(255,255,255,.22)'; c.setLineDash([3, 4]);
+  c.beginPath(); c.moveTo(L, py(0)); c.lineTo(W - R, py(0)); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#9aa8bf'; c.textAlign = 'center';
+  c.fillText('바퀴 회전 (바퀴)', (L + W - R) / 2, H - fs * 0.45);
+  c.save(); c.translate(fs * 0.9, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText('팔 각도 (위 +)', 0, 0); c.restore();
   series.forEach(s => {
     if (s.pts.length < 2) return;
     c.save();
     if (s.dash) c.setLineDash([6, 5]); else { c.shadowColor = s.color; c.shadowBlur = 8; }
     c.strokeStyle = s.color; c.lineWidth = Math.max(2.5, fs * 0.22); c.lineJoin = 'round'; c.beginPath();
-    s.pts.forEach((p, i) => { i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])); });
-    c.stroke();
-    c.setLineDash([]);
-    if (!s.dash) {
-      const last = s.pts[s.pts.length - 1];
-      c.fillStyle = s.color; c.beginPath(); c.arc(px(last[0]), py(last[1]), Math.max(4, fs * 0.32), 0, 7); c.fill();
+    s.pts.forEach((p, i) => i ? c.lineTo(px(p[0]), py(p[1])) : c.moveTo(px(p[0]), py(p[1])));
+    c.stroke(); c.setLineDash([]);
+    if (!s.dash) { const l = s.pts[s.pts.length - 1]; c.fillStyle = s.color; c.beginPath(); c.arc(px(l[0]), py(l[1]), Math.max(4, fs * 0.3), 0, 7); c.fill(); }
+    if (s.band) {   // 위·아래 끝 표시
+      c.setLineDash([2, 4]); c.shadowBlur = 0; c.strokeStyle = 'rgba(46,224,111,.55)'; c.lineWidth = 1.2;
+      [s.band[0], s.band[1]].forEach(v => { c.beginPath(); c.moveTo(L, py(v)); c.lineTo(W - R, py(v)); c.stroke(); });
     }
     c.restore();
   });
-  let lx = fs;
-  c.font = 'bold ' + fs + 'px sans-serif';
+  let lx = fs; c.font = 'bold ' + fs + 'px sans-serif';
   series.forEach(s => {
     c.fillStyle = s.color; c.fillRect(lx, fs * 0.7, fs * 1.4, fs * 0.34);
     c.fillStyle = '#d7e1f2'; c.textAlign = 'left'; c.fillText(s.name, lx + fs * 1.75, fs * 1.25);
     lx += fs * 1.75 + c.measureText(s.name).width + fs;
   });
 }
-/* 그래프 클릭 확대 */
 let zoomArgs = null, zoomOn = false;
-function drawGraph(series, tMax, vMax, tNow, yLabel) {
-  renderGraph($('gr'), series, tMax, vMax, tNow, yLabel);
-  zoomArgs = [series, tMax, vMax, tNow, yLabel];
+function drawGraph(series, yMax) {
+  renderGraph($('gr'), series, yMax);
+  zoomArgs = [series, yMax];
   if (zoomOn) renderGraph($('zoomCv'), ...zoomArgs);
 }
-$('gr').addEventListener('click', () => {
-  zoomOn = true; $('zoom').classList.add('on');
-  requestAnimationFrame(() => { if (zoomArgs) renderGraph($('zoomCv'), ...zoomArgs); });
-});
+$('gr').addEventListener('click', () => { zoomOn = true; $('zoom').classList.add('on'); requestAnimationFrame(() => zoomArgs && renderGraph($('zoomCv'), ...zoomArgs)); });
 $('zoom').onclick = () => { zoomOn = false; $('zoom').classList.remove('on'); };
 
-/* ── 애니메이션 엔진 (기어비 시뮬 공용) ── */
-function makeEngine(o) {
-  let running = false, raf = null, lastTs = null;
-  function frame(ts) {
-    if (!running) return;
-    if (lastTs == null) lastTs = ts;
-    const real = Math.min((ts - lastTs) / 1000, 0.05);
-    lastTs = ts;
-    o.step(real * o.scale());
-    o.draw();
-    if (o.isDone()) { running = false; lastTs = null; o.setStatus('done'); o.onDone(); return; }
-    raf = requestAnimationFrame(frame);
-  }
-  return {
-    start() { if (running) return; running = true; lastTs = null; o.setStatus('run'); raf = requestAnimationFrame(frame); },
-    stop() { running = false; lastTs = null; if (raf) cancelAnimationFrame(raf); },
-    get running() { return running; },
-  };
-}
-function statusUI(led, txt) {
-  return m => {
-    led.className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : '');
-    txt.textContent = m === 'run' ? '굴러가는 중' : m === 'done' ? '정지 (완료)' : '준비';
-  };
-}
-function speedCtl(btns) {
-  let v = 1; const vals = [1, 0.5, 0.25];
-  btns.forEach((b, i) => b.onclick = () => { v = vals[i]; btns.forEach((x, k) => x.classList.toggle('on', k === i)); });
-  return () => v;
-}
 function pick(container, attr, onChange) {
   const btns = [...container.querySelectorAll('button')];
   let val = container.querySelector('button.on').dataset[attr];
-  btns.forEach(b => b.onclick = () => {
-    val = b.dataset[attr];
-    btns.forEach(x => x.classList.toggle('on', x === b));
-    onChange && onChange(val);
-  });
+  btns.forEach(b => b.onclick = () => { val = b.dataset[attr]; btns.forEach(x => x.classList.toggle('on', x === b)); onChange && onChange(val); });
   return () => val;
 }
 
-/* ═════════ 3D 무대 (야외 잔디 + 흙길 트랙) ═════════ */
+/* ═════════ 3D 무대 (실내 수업 책상) ═════════ */
 const stage = document.querySelector('.stage');
 const cv3 = $('cv');
 const renderer = makeRenderer(cv3);
-const scene = makeScene('day', 30, 220);
-stdLights(scene, { pos: [-5, 9, 6], shadowArea: 12 });
-const { camera, controls } = makeCamera(cv3, { maxD: 40 });
-grassGround(scene, { size: 80, x: 3.5 });
-// 바닥 3종 — 매끈(아이스 블루) / 보통(흙) / 거침(자갈 브라운) 트랙을 겹쳐 두고 토글
-const tracks = {
-  smooth: dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#a9cfe8' }),
-  normal: dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#b39268' }),
-  rough:  dirtTrack(scene, { len: 9.5, w: 2.3, x: 3.3, base: '#8a6a44' }),
-};
-distanceRuler(scene, { from: 0, to: 7, step: 1, z: 1.45, unit: 'm', labCol: '#eaf2ff' });
-// 출발선
+const scene = makeScene('indoor', 8, 40);
+stdLights(scene, { pos: [-2.5, 5, 4], shadowArea: 3, dark: true });
+const { camera, controls } = makeCamera(cv3, { minD: 0.8, maxD: 8 });
+// 책상
 {
-  const line = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.014, 2.3), new THREE.MeshBasicMaterial({ color: 0x2ee06f }));
-  line.position.set(0, 0.035, 0); scene.add(line);
-  const lab = textSprite('출발', { size: 36, color: '#b8ffd2', bg: 'rgba(8,30,16,.65)', scale: 0.004 });
-  lab.position.set(0, 0.62, -1.3); scene.add(lab);
+  const wood = canvasTex(256, 256, (c, w, h) => {
+    c.fillStyle = '#b98a5a'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { c.strokeStyle = `rgba(90,55,25,${0.08 + Math.random() * 0.1})`; c.lineWidth = 1 + Math.random() * 2;
+      c.beginPath(); const y = Math.random() * h; c.moveTo(0, y); c.bezierCurveTo(w * .3, y + 6, w * .7, y - 6, w, y + 2); c.stroke(); }
+  }, [3, 3]);
+  const desk = new THREE.Mesh(new THREE.BoxGeometry(5, 0.08, 3), new THREE.MeshStandardMaterial({ map: wood, roughness: 0.7 }));
+  desk.position.set(0.3, -0.04, 0); desk.receiveShadow = true; scene.add(desk);
 }
-// 소품 — 나무·바위·구름
-// 나무는 배경(z−)과 트랙 양끝 밖에만 — 카메라 시야(z+)를 가리지 않게
-[[-1.5, -2.6, 1.0], [8.6, -2.9, 1.25], [2.2, -3.5, 0.9], [5.8, -2.5, 1.15], [0.5, -4.6, 1.3], [-2.8, 2.4, 0.95], [10.2, 2.8, 1.2]]
-  .forEach(([x, z, s]) => { const tr = makeTree(s); tr.position.set(x, 0, z); scene.add(tr); });
-[[-2.2, 1.9, 1], [9.3, 1.7, 1.4], [1.2, -2.2, 0.8]].forEach(([x, z, s]) => { const r = makeRock(s); r.position.set(x, 0, z); scene.add(r); });
-const clouds = [];
-[[-4, 5.6, -14, 1.6], [3, 6.6, -16, 2.2], [9, 5.9, -13, 1.4]].forEach(([x, y, z, s]) => {
-  const cl = makeCloud(s); cl.position.set(x, y, z); scene.add(cl); clouds.push(cl);
-});
-// 자동차 + 무게추 브릭
-const car = makeCar({ body: 0x2f9fe0 });
-car.castShadow = true; scene.add(car);
-const heavyBrick = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.13, 0.24),
-  new THREE.MeshStandardMaterial({ color: 0xffd23e, roughness: 0.45 }));
-heavyBrick.position.set(0.16, 0.31, 0); heavyBrick.castShadow = true; heavyBrick.visible = false; car.add(heavyBrick);
-// 밀기 손
-const hand = textSprite('👉', { size: 72, scale: 0.006 });
-hand.visible = false; scene.add(hand);
-// 정지 깃발
-let flag = null;
-function setFlag(dist) {
-  if (flag) scene.remove(flag);
-  flag = makeFlag('🏁 ' + dist.toFixed(2) + 'm', 0xff5a52);
-  flag.position.set(Math.min(dist, TRACK_M + 1.5), 0, -1.15);
-  scene.add(flag);
+const M = (col, rough = 0.45) => new THREE.MeshStandardMaterial({ color: col, roughness: rough });
+const matWhite = M(0xeef2f7), matGray = M(0x9aa3ad), matDark = M(0x2a2f38, 0.6), matYellow = M(0xffd23e),
+      matRed = M(0xd8342b), matGreen = M(0x34b34a), matBlue = M(0x2f7fe0), matTire = M(0x1c1f24, 0.85);
+/* 레고 빔(구멍 줄) — 길이 n칸, 원점 = 첫 구멍, +x 방향 */
+function beam(n, mat, w = 0.075, t = 0.07) {
+  const g = new THREE.Group();
+  const len = (n - 1) * HOLE;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(len, w, t), mat);
+  body.position.x = len / 2; body.castShadow = true; g.add(body);
+  [0, len].forEach(x => { const cap = new THREE.Mesh(new THREE.CylinderGeometry(w / 2, w / 2, t, 18), mat); cap.rotation.x = Math.PI / 2; cap.position.x = x; cap.castShadow = true; g.add(cap); });
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0x111418 });
+  for (let i = 0; i < n; i++) {
+    const hgeo = new THREE.CircleGeometry(0.018, 14);
+    [t / 2 + 0.001, -t / 2 - 0.001].forEach((z, k) => { const hm = new THREE.Mesh(hgeo, holeMat); hm.position.set(i * HOLE, 0, z); if (k) hm.rotation.y = Math.PI; g.add(hm); });
+  }
+  return g;
 }
-function clearFlag() { if (flag) { scene.remove(flag); flag = null; } }
-// 카메라 프리셋 + 따라가기
+function pin(mat, len = 0.16) {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, len, 12), mat);
+  p.rotation.x = Math.PI / 2; return p;
+}
+const rig = new THREE.Group(); scene.add(rig);
+/* 바퀴 (z=0 평면, z축으로 회전) */
+const wheel = new THREE.Group(); wheel.position.set(C.x, C.y, 0); rig.add(wheel);
+{
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(WHEEL_R - 0.05, 0.055, 16, 48), matTire); tire.castShadow = true; wheel.add(tire);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R - 0.08, WHEEL_R - 0.08, 0.06, 40), matGray); rim.rotation.x = Math.PI / 2; wheel.add(rim);
+  // 크랭크 원판 (구멍 표시) — 바퀴 앞면
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 32), matYellow); disc.rotation.x = Math.PI / 2; disc.position.z = 0.045; wheel.add(disc);
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0x111418 });
+  for (let i = 1; i <= 2; i++) { const h = new THREE.Mesh(new THREE.CircleGeometry(0.019, 14), holeMat); h.position.set(i * HOLE, 0, 0.0565); wheel.add(h);
+    const h2 = h.clone(); h2.position.x = -i * HOLE; wheel.add(h2); }
+  const axle = pin(matDark, 0.3); wheel.add(axle);
+  // 바퀴살 표시(회전이 잘 보이게)
+  for (let k = 0; k < 3; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(WHEEL_R * 1.6, 0.03, 0.065), matWhite); sp.rotation.z = k * Math.PI / 3; wheel.add(sp); }
+}
+// 크랭크 핀(빨간 점) — 바퀴 그룹 안에서 위치만 바꿈
+const crankPin = new THREE.Group(); wheel.add(crankPin);
+{ const p = pin(matDark, 0.14); p.position.z = 0.1; crankPin.add(p);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), new THREE.MeshStandardMaterial({ color: 0xff3b30, emissive: 0xff2a1a, emissiveIntensity: 0.6 }));
+  dot.position.z = 0.17; crankPin.add(dot); }
+/* 몸통 프레임 — 바퀴 축에서 어깨까지 (뒤쪽 z−) */
+{
+  const fr = new THREE.Mesh(new THREE.BoxGeometry(0.075, Math.hypot(S.x - C.x, S.y - C.y) + 0.08, 0.07), matWhite);
+  fr.position.set((S.x + C.x) / 2, (S.y + C.y) / 2, -0.09); fr.rotation.z = Math.atan2(-(S.x - C.x), S.y - C.y); fr.castShadow = true; rig.add(fr);
+  // 몸통·머리 (인형)
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.36, 0.2), matBlue); torso.position.set(-0.04, S.y + 0.02, -0.2); torso.castShadow = true; rig.add(torso);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.14, 24), matYellow); head.position.set(-0.04, S.y + 0.3, -0.2); head.castShadow = true; rig.add(head);
+  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.14, 24), matRed); hat.position.set(-0.04, S.y + 0.44, -0.2); rig.add(hat);
+  const eyeM = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  [-0.03, 0.03].forEach(z => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), eyeM); e.position.set(0.045, S.y + 0.32, -0.2 + z); rig.add(e); });
+  // 어깨 축
+  const sh = pin(matDark, 0.32); sh.position.set(S.x, S.y, -0.04); rig.add(sh);
+  const shBall = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), matGray); shBall.position.set(S.x, S.y, 0.11); rig.add(shBall);
+  const lab = textSprite('어깨', { size: 30, color: '#dbe7ff', bg: 'rgba(8,12,22,.7)', scale: 0.0028 }); lab.position.set(S.x - 0.12, S.y + 0.12, 0.12); rig.add(lab);
+  const lab2 = textSprite('크랭크', { size: 30, color: '#ffd9d6', bg: 'rgba(8,12,22,.7)', scale: 0.0028 }); lab2.position.set(C.x + 0.5, C.y - 0.15, 0.2); rig.add(lab2);
+}
+/* 팔 (빨간 빔, 어깨에서 앞쪽) */
+const arm = new THREE.Group(); arm.position.set(S.x, S.y, 0.04); rig.add(arm);
+arm.add(beam(ARM_HOLES + 1, matRed));
+const handDot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), new THREE.MeshStandardMaterial({ color: 0x2f8cff, emissive: 0x1a5fff, emissiveIntensity: 0.6 }));
+handDot.position.set(ARM_LEN, 0, 0.06); arm.add(handDot);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.014, 10, 24), M(0xffc83d, 0.3)); ring.position.set(ARM_LEN - 0.02, 0.055, 0); ring.rotation.x = Math.PI / 2; arm.add(ring);
+const armPin = pin(matDark, 0.18); arm.add(armPin);
+/* 초록 빔 (크랭크 핀 ↔ 팔 연결 핀) — 길이는 조건마다 다시 만든다 */
+const linkG = new THREE.Group(); rig.add(linkG);
+let linkMesh = null;
+function buildLink(L) {
+  if (linkMesh) linkG.remove(linkMesh);
+  linkMesh = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(L, 0.07, 0.06), matGreen); body.position.x = L / 2; body.castShadow = true; linkMesh.add(body);
+  [0, L].forEach(x => { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 16), matGreen); cap.rotation.x = Math.PI / 2; cap.position.x = x; linkMesh.add(cap); });
+  linkG.add(linkMesh);
+}
+linkG.position.z = 0.12;
+/* 손끝 궤적 (파란 점이 지나간 길) */
+const trailGeo = new THREE.BufferGeometry(); const TRAIL_N = 400; const trailPos = new Float32Array(TRAIL_N * 3);
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3)); trailGeo.setDrawRange(0, 0);
+const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0x6fb6ff })); trail.position.z = 0; rig.add(trail);
+let trailCount = 0;
+// 손끝 위·아래 끝 표시선
+const limG = new THREE.Group(); rig.add(limG);
+function showLimits(sw, dH) {
+  while (limG.children.length) limG.remove(limG.children[0]);
+  [sw.up, sw.dn].forEach(th => {
+    const g = new THREE.Mesh(new THREE.BoxGeometry(ARM_LEN, 0.006, 0.006), new THREE.MeshBasicMaterial({ color: 0x2ee06f, transparent: true, opacity: 0.55 }));
+    g.position.set(S.x + Math.cos(th) * ARM_LEN / 2, S.y + Math.sin(th) * ARM_LEN / 2, 0.04); g.rotation.z = th; limG.add(g);
+  });
+  // 연결 핀 자리 강조 고리
+  const mark = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.008, 8, 24), new THREE.MeshBasicMaterial({ color: 0x9cff7a }));
+  mark.userData.follow = dH; limG.add(mark);
+}
+
 camPresets(camera, controls, {
-  camSide: { pos: [3.5, 1.7, 7.6], target: [3.2, 0.4, 0] },
-  camDiag: { pos: [-3.4, 3.4, 5.6], target: [3.0, 0.3, 0] },
-  camTop:  { pos: [3.5, 10.5, 0.02], target: [3.5, 0, 0] },
+  camSide: { pos: [0.45, 1.0, 3.1], target: [0.4, 0.85, 0] },
+  camDiag: { pos: [2.1, 1.7, 2.3], target: [0.35, 0.8, 0] },
+  camFront: { pos: [2.9, 1.0, 0.25], target: [0.3, 0.85, 0] },
 }, 'camSide');
-let followMode = false;
-['camSide', 'camDiag', 'camTop'].forEach(id => $(id).addEventListener('click', () => {
-  followMode = false; $('camFollow').classList.remove('on');
-}));
-$('camFollow').onclick = () => {
-  followMode = true;
-  ['camSide', 'camDiag', 'camTop'].forEach(id => $(id).classList.remove('on'));
-  $('camFollow').classList.add('on');
-};
-/* 씬 갱신 + 렌더 루프 (탐색·회전은 항상 살아있게 상시 렌더) */
-let lastRT = performance.now();
+
+/* ═════════ 실험 로직 ═════════ */
+let phi = 0, running = false, done = false, samples = [], prevSamples = [], prevLabel = '', runCount = 0;
+let P = {}, sw = null, L = 0;
+const getQ = pick($('pickQ'), 'q');
+const getD = pick($('pickD'), 'd', onParam);
+const getR = pick($('pickR'), 'r', onParam);
+let spd = 1;
+[['spa', 1], ['spb', 0.5], ['spc', 0.25]].forEach(([id, v]) => $(id).onclick = () => { spd = v; ['spa', 'spb', 'spc'].forEach(k => $(k).classList.toggle('on', k === id)); });
+
+function setSt(m) {
+  $('led').className = 'led ' + (m === 'run' ? 'run' : m === 'done' ? 'done' : '');
+  $('st').textContent = m === 'run' ? '바퀴가 도는 중' : m === 'done' ? '2바퀴 완료' : '준비';
+}
+function placeRig() {
+  const r = armAngle(phi, P.d, P.r, L);
+  wheel.rotation.z = phi;
+  crankPin.position.set(P.r * HOLE, 0, 0);
+  arm.rotation.z = r.th;
+  linkMesh.position.set(r.px, r.py, 0);
+  linkMesh.rotation.z = Math.atan2(r.ay - r.py, r.ax - r.px);
+  armPin.position.set(P.d * HOLE, 0, 0.04);
+  const mk = limG.children.find(o => o.userData.follow);
+  if (mk) mk.position.set(r.ax, r.ay, 0.17);
+  return r;
+}
+function reset() {
+  P = { d: +getD(), r: +getR() };
+  sw = sweep(P.d, P.r); L = sw.L;
+  buildLink(L); showLimits(sw, P.d);
+  phi = 0; done = false; samples = []; trailCount = 0; trailGeo.setDrawRange(0, 0);
+  $('v_d').textContent = `${D_KO[P.d]} (${P.d}칸)`;
+  $('v_r').textContent = `${R_KO[P.r]} (${P.r}칸)`;
+  $('ro_rng').textContent = '?';
+  $('ro_sub').textContent = '바퀴를 돌려 확인해 보세요';
+  ['ro_up', 'ro_dn', 'ro_hand'].forEach(k => $(k).textContent = '—');
+  $('hud_rng').textContent = '—';
+  $('bd').className = 'badge';
+  placeRig(); hud(); drawG(); buildMatrix();
+  if (window.CTMResult) CTMResult.reset();
+}
+function onParam() { running = false; $('run').disabled = false; setSt('ready'); reset(); }
+function hud() {
+  const th = deg(armAngle(phi, P.d, P.r, L).th);
+  $('hud_turn').textContent = (phi / (2 * Math.PI)).toFixed(1) + ' 바퀴';
+  $('hud_ang').textContent = (th >= 0 ? '+' : '') + th.toFixed(0) + '°';
+}
+function yMaxNow() {
+  const all = [...samples, ...prevSamples].map(p => Math.abs(p[1]));
+  return Math.max(15, Math.ceil((Math.max(deg(sw.up), -deg(sw.dn), ...all) + 5) / 10) * 10);
+}
+function drawG() {
+  const series = [];
+  if (prevSamples.length > 1) series.push({ name: '전: ' + prevLabel, color: '#8b98ad', dash: true, pts: prevSamples });
+  series.push({ name: '지금 팔 각도', color: '#ff5a52', pts: samples, band: done ? [deg(sw.up), deg(sw.dn)] : null });
+  drawGraph(series, yMaxNow());
+}
+function finish() {
+  running = false; done = true; setSt('done'); $('run').disabled = false;
+  const rng = deg(sw.range);
+  $('ro_rng').textContent = rng.toFixed(0) + '°';
+  $('ro_up').textContent = '+' + deg(sw.up).toFixed(0) + '°';
+  $('ro_dn').textContent = deg(sw.dn).toFixed(0) + '°';
+  $('ro_hand').textContent = (sw.hand * 10).toFixed(1) + ' cm';
+  $('hud_rng').textContent = rng.toFixed(0) + '°';
+  results[P.d + '|' + P.r] = rng; buildMatrix();
+  // 예측 확인 — 같은 크랭크 핀에서 가깝게/멀리 둘 다 해 봤으면 판정
+  const near = results['3|' + P.r], far = results['7|' + P.r];
+  const bd = $('bd'); bd.className = 'badge on';
+  if (near != null && far != null) {
+    const ok = getQ() === 'less';
+    bd.textContent = `${ok ? '🎉 예측 성공!' : '🤔 예측과 달라요!'} 멀리(7칸) ${far.toFixed(0)}° < 가깝게(3칸) ${near.toFixed(0)}° → 멀리 연결하면 더 적게 움직여요`;
+    if (window.CtmFX) ok ? CtmFX.success() : CtmFX.fail();
+  } else {
+    bd.textContent = `💪 팔 범위 ${rng.toFixed(0)}° · 이제 연결 핀을 ${P.d === 7 ? '가깝게(3칸)' : '멀리(7칸)'}로 바꿔 비교해 보세요`;
+  }
+  $('ro_sub').textContent = `✓ ${D_KO[P.d]} 연결 · ${R_KO[P.r]} 크랭크 측정`;
+  const tb = $('logtb').querySelector('tbody'); const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${++runCount}</td><td class="cond">${D_KO[P.d]}</td><td class="cond">${R_KO[P.r]}</td><td>+${deg(sw.up).toFixed(0)}</td><td>${deg(sw.dn).toFixed(0)}</td><td>${rng.toFixed(0)}°</td>`;
+  tb.prepend(tr); while (tb.children.length > 8) tb.removeChild(tb.lastChild);
+  prevSamples = samples.slice(); prevLabel = `${D_KO[P.d]}·${R_KO[P.r]}`;
+  if (window.CTMResult) CTMResult.trial(+rng.toFixed(1), `팔 연결 핀 ${D_KO[P.d]}(${P.d}칸) · 크랭크 핀 ${R_KO[P.r]}(${P.r}칸)`);
+  drawG();
+}
+let lastT = performance.now();
 function animate(now) {
-  const rdt = Math.min(0.05, (now - lastRT) / 1000); lastRT = now;
-  const x = Math.min(pos, TRACK_M + 1.5);
-  car.position.x = x;
-  const ang = pos / WHEEL_M;
-  car.userData.wheels.forEach(w => w.rotation.z = -ang);
-  const pushing = pushPhase > 0 && pushPhase < 1 && pos === 0 && eng.running;
-  hand.visible = pushing;
-  if (pushing) hand.position.set(x - 0.72 + pushPhase * 0.25, 0.38, 0.1);
-  clouds.forEach((cl, i) => { cl.position.x += rdt * (0.06 + i * 0.025); if (cl.position.x > 17) cl.position.x = -11; });
-  if (followMode) {
-    controls.target.lerp(new THREE.Vector3(x, 0.35, 0), 1 - Math.exp(-4 * rdt));
-    camera.position.lerp(new THREE.Vector3(x - 1.3, 1.15, 3.3), 1 - Math.exp(-3 * rdt));
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  if (running) {
+    phi = Math.min(TURNS * 2 * Math.PI, phi + OMEGA * spd * dt);
+    const r = placeRig();
+    const x = deg(phi), y = deg(r.th);
+    if (!samples.length || x - samples[samples.length - 1][0] > 3) samples.push([x, y]);
+    // 손끝 궤적
+    if (trailCount < TRAIL_N) {
+      const hx = S.x + Math.cos(r.th) * ARM_LEN, hy = S.y + Math.sin(r.th) * ARM_LEN;
+      trailPos.set([hx, hy, 0.1], trailCount * 3); trailCount++; trailGeo.attributes.position.needsUpdate = true; trailGeo.setDrawRange(0, trailCount);
+    }
+    hud(); drawG();
+    if (phi >= TURNS * 2 * Math.PI - 1e-6) finish();
   }
   controls.update();
   if (fitStage(renderer, camera, stage)) renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
+$('run').onclick = () => { if (done || phi > 0) reset(); running = true; setSt('run'); $('run').disabled = true; $('bd').className = 'badge'; };
+$('reset').onclick = () => { running = false; setSt('ready'); $('run').disabled = false; reset(); };
 
-/* ═════════ 실험 로직 ═════════ */
-const cv = $('cv');
-let t = 0, pos = 0, v = 0, pushPhase = 0, finished = false, samples = [], prevSamples = [], prevLabel = '';
-let cur = null, runCount = 0;
-let P = {};
-
-const getP = pick($('pickP'), 'p', onParam);
-const getF = pick($('pickF'), 'f', onParam);
-const getM = pick($('pickM'), 'm', onParam);
-
-function readParams() {
-  P = { p: +getP(), floor: getF(), massKey: getM() };
-  cur = physics(P.p, P.floor, P.massKey);
-}
-function preview() {
-  $('v_p').textContent = P.p + '단계';
-  $('v_f').textContent = FLOOR_KO[P.floor] + ' (μ ' + cur.mu.toFixed(2) + ')';
-  $('v_m').textContent = MASS_KO[P.massKey];
-  $('ro_v0').textContent = cur.v0.toFixed(2) + ' m/s';
-  $('ro_a').textContent = '−' + cur.a.toFixed(2) + ' m/s²';
-  $('ro_dist').textContent = cur.dist.toFixed(2) + ' m';
-  $('ro_time').textContent = cur.tStop.toFixed(2) + ' s';
-  $('ro_sub').textContent = '이 조건의 예상 거리';
-  $('ro_state').textContent = '준비';
-}
-function reset() {
-  readParams();
-  t = 0; pos = 0; v = 0; pushPhase = 0; finished = false; samples = [];
-  preview();
-  $('bd').className = 'badge';
-  // 3D 씬 상태 반영 — 바닥·차 색·무게추·깃발
-  for (const k in tracks) tracks[k].visible = (k === P.floor);
-  const heavy = P.massKey === 'heavy';
-  car.userData.body.material.color.set(heavy ? 0xb8402f : 0x2f9fe0);
-  heavyBrick.visible = heavy;
-  clearFlag();
-  draw(); drawG();
-  markMatrix();
-}
-function onParam() {
-  if (!eng.running) { reset(); setSt('ready'); $('run').disabled = false; }
-}
-function step(dt) {
-  if (finished) return;
-  if (pushPhase < 1 && pos === 0) {
-    // 짧은 밀기 연출
-    pushPhase += dt * 4;
-    if (pushPhase >= 1) pushPhase = 1;
-    v = cur.v0 * pushPhase;
-    return;
-  }
-  t += dt;
-  v = cur.v0 - cur.a * t;
-  if (v <= 0 || t >= cur.tStop) { v = 0; t = cur.tStop; pos = cur.dist; finished = true; }
-  else pos = cur.v0 * t - 0.5 * cur.a * t * t;
-  if (samples.length === 0 || t - samples[samples.length - 1][0] > 0.03)
-    samples.push([t, Math.max(0, v)]);
-}
-function draw() {
-  // 3D 씬은 상시 렌더 루프가 그린다 — 여기선 HUD만 갱신
-  $('hud_t').textContent = t.toFixed(1) + ' s';
-  $('hud_v').textContent = Math.max(0, v).toFixed(1) + ' m/s';
-  $('hud_d').textContent = pos.toFixed(2) + ' m';
-  $('ro_state').textContent = finished ? '정지 🛑' : (eng.running ? '굴러가는 중 🏎️' : '준비');
-}
-function drawG() {
-  const vMax = Math.max(1, cur ? cur.v0 : 1, ...samples.map(s => s[1]), ...prevSamples.map(s => s[1])) * 1.18;
-  const tMax = Math.max(0.5, cur ? cur.tStop : 1, samples.length ? samples[samples.length - 1][0] : 0) * 1.08;
-  const series = [];
-  if (prevSamples.length > 1) series.push({ name: '이전: ' + prevLabel, color: '#8b98ad', dash: true, pts: prevSamples.slice() });
-  series.push({ name: '현재 속도', color: '#2ee06f', pts: samples.slice() });
-  drawGraph(series, tMax, vMax, finished ? 0 : t, '속도 (m/s)');
-}
-function onDone() {
-  results[matKey(P.p, P.floor)] = cur.dist;
-  buildMatrix();
-  setFlag(cur.dist);
-  const bd = $('bd');
-  bd.className = 'badge on';
-  bd.textContent = `🏁 ${cur.dist.toFixed(2)}m 이동 — 관성으로 ${cur.tStop.toFixed(1)}s 굴러가다 마찰로 정지`;
-  $('ro_sub').textContent = '✓ 방금 측정한 거리';
-  // 기록
-  const tb = $('logtb').querySelector('tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${++runCount}</td><td>${P.p}</td><td class="cond">${FLOOR_KO[P.floor]}</td>` +
-    `<td class="cond">${MASS_KO[P.massKey]}</td><td>${cur.v0.toFixed(2)}</td><td>${cur.dist.toFixed(2)}</td>`;
-  tb.prepend(tr);
-  while (tb.children.length > 8) tb.removeChild(tb.lastChild);
-  // 이전 곡선 저장(비교용)
-  prevSamples = samples.slice(); prevLabel = `${P.p}·${FLOOR_KO[P.floor]}`;
-  $('run').disabled = false;
-  drawG();
-}
-
-const setSt = statusUI($('led'), $('st'));
-const scale = speedCtl([$('spa'), $('spb'), $('spc')]);
-const eng = makeEngine({ step, draw: () => { draw(); drawG(); }, isDone: () => finished, onDone, setStatus: setSt, scale });
-
-$('run').onclick = () => { if (finished) reset(); eng.start(); $('run').disabled = true; };
-$('reset').onclick = () => { eng.stop(); reset(); setSt('ready'); $('run').disabled = false; };
-
-/* ── 격자 결과표 ── */
-const FORCES = [1, 2, 3, 4, 5, 6, 7, 8];
-const FLOORS = ['smooth', 'normal', 'rough'];
-const results = {};                       // key: `${p}|${floor}` → dist (현재 무게 기준)
-const matKey = (p, f) => p + '|' + f;
-function distColor(d) {
-  const t = Math.min(1, d / 6);
-  const r = Math.round(255 - t * 210), g = Math.round(90 + t * 130), b = Math.round(80 + t * 30);
-  return `rgba(${r},${g},${b},${0.14 + t * 0.22})`;
-}
+/* ── 결과표 ── */
+const results = {};
 function buildMatrix() {
-  const el = $('matrix');
-  let html = '<thead><tr><th>힘＼바닥</th>' + FLOORS.map(f => `<th>${FLOOR_KO[f]}</th>`).join('') + '</tr></thead><tbody>';
-  for (const p of FORCES) {
-    html += `<tr><td class="lab">${p}</td>`;
-    for (const f of FLOORS) {
-      const d = results[matKey(p, f)];
-      const isCur = (P && +P.p === p && P.floor === f);
-      if (d == null) html += `<td class="empty${isCur ? ' cur' : ''}">·</td>`;
-      else html += `<td class="${isCur ? 'cur' : ''}" style="background:${distColor(d)}">${d.toFixed(2)}</td>`;
+  let html = '<thead><tr><th>팔 핀＼바퀴 핀</th>' + [1, 2].map(r => `<th>${R_KO[r]} (${r}칸)</th>`).join('') + '</tr></thead><tbody>';
+  for (const d of [3, 5, 7]) {
+    html += `<tr><td class="lab">${D_KO[d]} (${d}칸)</td>`;
+    for (const r of [1, 2]) {
+      const v = results[d + '|' + r], cur = P.d === d && P.r === r;
+      if (v == null) html += `<td class="empty${cur ? ' cur' : ''}">·</td>`;
+      else { const t = Math.min(1, v / 90); html += `<td class="${cur ? 'cur' : ''}" style="background:rgba(${Math.round(255 - t * 200)},${Math.round(110 + t * 110)},90,${0.15 + t * 0.25})">${v.toFixed(0)}°</td>`; }
     }
     html += '</tr>';
   }
-  el.innerHTML = html + '</tbody>';
+  $('matrix').innerHTML = html + '</tbody>';
 }
-function markMatrix() { buildMatrix(); }
 $('autoScan').onclick = () => {
-  if (eng.running) return;
-  for (const p of FORCES) for (const f of FLOORS)
-    results[matKey(p, f)] = physics(p, f, P.massKey).dist;
+  if (running) return;
+  for (const d of [3, 5, 7]) for (const r of [1, 2]) results[d + '|' + r] = deg(sweep(d, r).range);
   buildMatrix();
   $('bd').className = 'badge on';
-  $('bd').textContent = `⚡ 자동 실험 완료 — ${MASS_KO[P.massKey]} 무게로 8×3 = 24칸 채움`;
+  $('bd').textContent = '⚡ 자동 실험 완료 — 위에서 아래로 갈수록(멀리 연결) 숫자가 작아져요';
+  if (window.CtmFX) CtmFX.tick();
 };
 $('clearMx').onclick = () => { for (const k in results) delete results[k]; buildMatrix(); };
 
-$('pickM').addEventListener('click', () => {
-  // 무게가 바뀌면 표는 무게 종속이라 초기화
-  for (const k in results) delete results[k];
-  buildMatrix();
-});
-
-/* ── 탭 ── */
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
   $('exp').classList.toggle('on', b.dataset.tab === 'exp');
   $('theory').classList.toggle('on', b.dataset.tab === 'theory');
-  if (b.dataset.tab === 'exp') requestAnimationFrame(() => { if (!eng.running) { draw(); drawG(); } });
+  if (b.dataset.tab === 'exp') requestAnimationFrame(drawG);
 });
-
-window.addEventListener('resize', () => { if (!eng.running) { draw(); drawG(); } });
-buildMatrix();
-requestAnimationFrame(() => reset());
+window.addEventListener('resize', () => drawG());
+if (window.CTMResult) CTMResult.init({ experimentId: 'bqp01-wind-wheeler', modelVersion: 'bqp01-crank-arm-2', unit: '°(팔 움직임 범위)' });
+requestAnimationFrame(reset);
 </script>
 </body>
 </html>
